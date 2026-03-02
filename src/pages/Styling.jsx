@@ -90,7 +90,7 @@ const DEFAULT_THEME = {
   consoleOpacity: 0.8,
   borderRadius: 12,
   bgMedia: { url: "", type: "none" },
-  sidebarGlow: 0.3,
+  sidebarGlow: 0,
   globalGlow: 0,
   panelOpacity: 0.85,
   bgOverlay: 0.4,
@@ -121,12 +121,12 @@ function Styling() {
           root.style.setProperty("--surface-color", t.surfaceColor);
           root.style.setProperty("--glass-blur", `${t.glassBlur}px`);
           root.style.setProperty("--glass-opacity", t.glassOpacity);
-          root.style.setProperty("--console-opacity", t.consoleOpacity || 0.8);
-          root.style.setProperty("--border-radius", `${t.borderRadius || 12}px`);
-          root.style.setProperty("--sidebar-glow-intensity", t.sidebarGlow ?? 0.3);
+          root.style.setProperty("--console-opacity", t.consoleOpacity ?? 0.8);
+          root.style.setProperty("--border-radius", `${t.borderRadius ?? 12}px`);
+          root.style.setProperty("--sidebar-glow-intensity", t.sidebarGlow ?? 0);
           root.style.setProperty("--global-glow-intensity", t.globalGlow ?? 0);
-          root.style.setProperty("--panel-opacity", t.panelOpacity || 0.85);
-          root.style.setProperty("--bg-overlay-opacity", t.bgOverlay || 0.4);
+          root.style.setProperty("--panel-opacity", t.panelOpacity ?? 0.85);
+          root.style.setProperty("--bg-overlay-opacity", t.bgOverlay ?? 0.4);
 
           const adjustColor = (hex, pct) => {
             const n = parseInt(hex.replace("#", ""), 16);
@@ -235,8 +235,8 @@ function Styling() {
       surfaceColor: p.surface,
       sidebarGlow: p.sidebarGlow ?? theme.sidebarGlow,
       globalGlow: p.globalGlow ?? theme.globalGlow,
-      panelOpacity: p.panelOpacity || theme.panelOpacity,
-      bgOverlay: p.bgOverlay || theme.bgOverlay,
+      panelOpacity: p.panelOpacity ?? theme.panelOpacity,
+      bgOverlay: p.bgOverlay ?? theme.bgOverlay,
     };
     setTheme(nt);
     applyTheme(nt, true);
@@ -260,12 +260,12 @@ function Styling() {
     root.style.setProperty("--surface-color", t.surfaceColor);
     root.style.setProperty("--glass-blur", `${t.glassBlur}px`);
     root.style.setProperty("--glass-opacity", t.glassOpacity);
-    root.style.setProperty("--console-opacity", t.consoleOpacity || 0.8);
-    root.style.setProperty("--border-radius", `${t.borderRadius || 12}px`);
-    root.style.setProperty("--sidebar-glow-intensity", t.sidebarGlow ?? 0.3);
+    root.style.setProperty("--console-opacity", t.consoleOpacity ?? 0.8);
+    root.style.setProperty("--border-radius", `${t.borderRadius ?? 12}px`);
+    root.style.setProperty("--sidebar-glow-intensity", t.sidebarGlow ?? 0);
     root.style.setProperty("--global-glow-intensity", t.globalGlow ?? 0);
-    root.style.setProperty("--panel-opacity", t.panelOpacity || 0.85);
-    root.style.setProperty("--bg-overlay-opacity", t.bgOverlay || 0.4);
+    root.style.setProperty("--panel-opacity", t.panelOpacity ?? 0.85);
+    root.style.setProperty("--bg-overlay-opacity", t.bgOverlay ?? 0.4);
 
     const adjustColor = (hex, pct) => {
       const n = parseInt(hex.replace("#", ""), 16);
@@ -523,7 +523,7 @@ function Styling() {
               <div className="space-y-5">
                 <SliderControl
                   label={t('styling.corner_roundness')}
-                  value={theme.borderRadius || 12}
+                  value={theme.borderRadius ?? 12}
                   min={0}
                   max={32}
                   step={2}
@@ -541,7 +541,7 @@ function Styling() {
                 />
                 <SliderControl
                   label={t('styling.sidebar_glow')}
-                  value={Math.round((theme.sidebarGlow || 0.3) * 100)}
+                  value={Math.round((theme.sidebarGlow ?? 0) * 100)}
                   min={0}
                   max={100}
                   step={5}
@@ -559,8 +559,8 @@ function Styling() {
                 />
                 <SliderControl
                   label={t('styling.panel_opacity')}
-                  value={Math.round((theme.panelOpacity || 0.85) * 100)}
-                  min={10}
+                  value={Math.round((theme.panelOpacity ?? 0.85) * 100)}
+                  min={0}
                   max={100}
                   step={5}
                   unit="%"
@@ -568,8 +568,8 @@ function Styling() {
                 />
                 <SliderControl
                   label={t('styling.console_opacity')}
-                  value={Math.round((theme.consoleOpacity || 0.8) * 100)}
-                  min={10}
+                  value={Math.round((theme.consoleOpacity ?? 0.8) * 100)}
+                  min={0}
                   max={100}
                   step={5}
                   unit="%"
@@ -649,7 +649,7 @@ function Styling() {
                   <div className="space-y-4">
                     <SliderControl
                       label={t('styling.overlay_intensity')}
-                      value={Math.round((theme.bgOverlay || 0.4) * 100)}
+                      value={Math.round((theme.bgOverlay ?? 0.4) * 100)}
                       min={0}
                       max={100}
                       step={5}

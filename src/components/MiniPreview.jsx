@@ -13,7 +13,7 @@ function MiniPreview({ theme }) {
                         className="absolute inset-0 bg-cover bg-center"
                         style={{
                             backgroundImage: `url(app-media:///${theme.bgMedia.url.replace(/\\/g, '/')})`,
-                            opacity: 1 - (theme.bgOverlay || 0.4)
+                            opacity: 1 - (theme.bgOverlay ?? 0.4)
                         }}
                     />
                 )}
@@ -21,7 +21,7 @@ function MiniPreview({ theme }) {
                     className="absolute inset-0"
                     style={{
                         background: theme.backgroundColor,
-                        opacity: theme.bgOverlay || 0.4
+                        opacity: theme.bgOverlay ?? 0.4
                     }}
                 />
             </div>
@@ -30,7 +30,7 @@ function MiniPreview({ theme }) {
             <div
                 className="absolute left-2 top-2 bottom-2 w-8 rounded-xl flex flex-col items-center py-3 gap-1"
                 style={{
-                    background: `rgba(${theme.surfaceColor ? hexToRgb(theme.surfaceColor) : '28, 28, 28'}, ${theme.panelOpacity || 0.85})`,
+                    background: `rgba(${theme.surfaceColor ? hexToRgb(theme.surfaceColor) : '28, 28, 28'}, ${theme.panelOpacity ?? 0.85})`,
                     backdropFilter: `blur(${theme.glassBlur || 10}px)`,
                     border: '1px solid rgba(255, 255, 255, 0.05)'
                 }}
@@ -56,10 +56,10 @@ function MiniPreview({ theme }) {
                 <div
                     className="flex-1 rounded-xl p-3"
                     style={{
-                        background: `rgba(${theme.surfaceColor ? hexToRgb(theme.surfaceColor) : '28, 28, 28'}, ${theme.panelOpacity || 0.85})`,
+                        background: `rgba(${theme.surfaceColor ? hexToRgb(theme.surfaceColor) : '28, 28, 28'}, ${theme.panelOpacity ?? 0.85})`,
                         backdropFilter: `blur(${theme.glassBlur || 10}px)`,
                         border: '1px solid rgba(255, 255, 255, 0.05)',
-                        borderRadius: `${theme.borderRadius || 12}px`
+                        borderRadius: `${theme.borderRadius ?? 12}px`
                     }}
                 >
                     <div className="flex items-center gap-2 mb-2">
@@ -67,7 +67,7 @@ function MiniPreview({ theme }) {
                             className="w-4 h-4 rounded"
                             style={{
                                 background: theme.primaryColor,
-                                borderRadius: `${(theme.borderRadius || 12) / 2}px`
+                                borderRadius: `${(theme.borderRadius ?? 12) / 2}px`
                             }}
                         />
                         <div className="flex-1 h-2 bg-white/10 rounded-full" />
@@ -84,7 +84,7 @@ function MiniPreview({ theme }) {
                     style={{
                         background: theme.primaryColor,
                         color: '#000',
-                        borderRadius: `${theme.borderRadius || 12}px`,
+                        borderRadius: `${theme.borderRadius ?? 12}px`,
                         boxShadow: `0 0 ${(theme.sidebarGlow ?? 0) * 20}px ${theme.primaryColor}40`
                     }}
                 >
