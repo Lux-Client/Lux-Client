@@ -33,6 +33,13 @@ module.exports = (ipcMain, win) => {
         console.log('[ModpackCode-Handler] 📤 Export handler AUFGERUFEN', data);
         try {
             const { name, mods, resourcePacks, shaders, instanceVersion, instanceLoader, instanceName } = data;
+
+            // Get current account UUID for rate limiting
+            const Store = require('electron-store');
+            const store = new Store();
+            const profile = store.get('user_profile');
+            const ownerUuid = profile ? profile.uuid : null;
+
             let optionsContent = null;
             if (instanceName) {
                 const optionsPath = path.join(instancesDir, instanceName, 'options.txt');
@@ -66,7 +73,8 @@ module.exports = (ipcMain, win) => {
                 })) || [],
                 instanceVersion,
                 instanceLoader,
-                keybinds: optionsContent
+                keybinds: optionsContent,
+                ownerUuid // Include UUID for backend rate limiting
             };
             const response = await axios.post(`${SERVER_URL}/api/modpack/save`, exportData, {
                 timeout: 10000,
@@ -89,7 +97,44 @@ module.exports = (ipcMain, win) => {
             };
         }
     });
+
+    console.log('[ModpackCode-Handler] 📋 Registriere modpack:list-codes...');
+    ipcMain.handle('modpack:list-codes', async () => {
+        console.log('[ModpackCode-Handler] 📋 modpack:list-codes AUFGERUFEN');
+        try {
+            const Store = require('electron-store');
+            const store = new Store();
+            const profile = store.get('user_profile');
+            if (!profile) return { success: false, error: 'Not logged in' };
+
+            const response = await axios.get(`${SERVER_URL}/api/modpack/my-codes?uuid=${profile.uuid}`, { timeout: 10000 });
+            return response.data;
+        } catch (error) {
+            console.error('[ModpackCode-Handler] ❌ List codes error:', error);
+            return { success: false, error: error.response?.data?.error || 'Failed to fetch codes' };
+        }
+    });
+
+    console.log('[ModpackCode-Handler] 🗑️ Registriere modpack:delete-code...');
+    ipcMain.handle('modpack:delete-code', async (event, code) => {
+        console.log('[ModpackCode-Handler] 🗑️ modpack:delete-code AUFGERUFEN:', code);
+        try {
+            const Store = require('electron-store');
+            const store = new Store();
+            const profile = store.get('user_profile');
+            if (!profile) return { success: false, error: 'Not logged in' };
+
+            const response = await axios.delete(`${SERVER_URL}/api/modpack/delete/${code}?uuid=${profile.uuid}`, { timeout: 10000 });
+            return response.data;
+        } catch (error) {
+            console.error('[ModpackCode-Handler] ❌ Delete code error:', error);
+            return { success: false, error: error.response?.data?.error || 'Failed to delete code' };
+        }
+    });
+
+    console.log('[ModpackCode-Handler] 📥 Registriere modpack:import-code...');
     ipcMain.handle('modpack:import-code', async (event, code) => {
+        console.log('[ModpackCode-Handler] 📥 modpack:import-code AUFGERUFEN:', code);
         try {
             if (!code || code.length !== 8) {
                 return { success: false, error: 'Invalid code format. Code must be 8 characters.' };

@@ -106,6 +106,10 @@ const electronAPI = {
         console.log('[Preload] 📋 getModpackCodes aufgerufen');
         return ipcRenderer.invoke('modpack:list-codes');
     },
+    deleteModpackCode: (code) => {
+        console.log('[Preload] 🗑️ deleteModpackCode aufgerufen:', code);
+        return ipcRenderer.invoke('modpack:delete-code', code);
+    },
     installSharedContent: (instanceName, modpackData) => {
         console.log('[Preload] 📥 installSharedContent aufgerufen');
         return ipcRenderer.invoke('modpack:install-shared-content', { instanceName, modpackData });
