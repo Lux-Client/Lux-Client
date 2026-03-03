@@ -5,6 +5,8 @@ import ColorPicker from "../components/ColorPicker";
 import SliderControl from "../components/SliderControl";
 import ThemeCard from "../components/ThemeCard";
 import MiniPreview from "../components/MiniPreview";
+import Dropdown from "../components/Dropdown";
+import { syncCustomFonts } from "../services/fontManager";
 
 const PRESETS = [
   {
@@ -81,6 +83,14 @@ const PRESETS = [
   },
 ];
 
+const FONT_OPTIONS = [
+  { value: "Poppins", label: "Poppins" },
+  { value: "Inter", label: "Inter" },
+  { value: "Montserrat", label: "Montserrat" },
+  { value: "Roboto", label: "Roboto" },
+  { value: "Geist", label: "Geist" },
+];
+
 const DEFAULT_THEME = {
   primaryColor: "#22e07a",
   backgroundColor: "#0d1117",
@@ -95,6 +105,8 @@ const DEFAULT_THEME = {
   panelOpacity: 0.85,
   bgOverlay: 0.4,
   autoAdaptColor: false,
+  fontFamily: "Poppins",
+  customFonts: [],
 };
 
 function Styling() {
@@ -105,6 +117,24 @@ function Styling() {
   });
 
   const [customPresets, setCustomPresets] = useState([]);
+  const fontOptions = [
+    ...FONT_OPTIONS.map((font) => ({
+      value: font.value,
+      label: font.label,
+      style: { fontFamily: font.value },
+    })),
+    ...(theme.customFonts ?? []).map((font) => ({
+      value: font.family,
+      label: font.name,
+      style: { fontFamily: font.family },
+      actionIcon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+        </svg>
+      ),
+      fontId: font.id,
+    })),
+  ];
 
   useEffect(() => {
     loadTheme();
@@ -116,6 +146,7 @@ function Styling() {
         if (res.success && res.settings.theme) {
           const t = res.settings.theme;
           const root = document.documentElement;
+          syncCustomFonts(t.customFonts ?? []);
           root.style.setProperty("--primary-color", t.primaryColor);
           root.style.setProperty("--background-color", t.backgroundColor);
           root.style.setProperty("--surface-color", t.surfaceColor);
@@ -127,6 +158,7 @@ function Styling() {
           root.style.setProperty("--global-glow-intensity", t.globalGlow ?? 0);
           root.style.setProperty("--panel-opacity", t.panelOpacity ?? 0.85);
           root.style.setProperty("--bg-overlay-opacity", t.bgOverlay ?? 0.4);
+          root.style.setProperty("--launcher-font", `'${t.fontFamily ?? "Poppins"}'`);
 
           const adjustColor = (hex, pct) => {
             const n = parseInt(hex.replace("#", ""), 16);
@@ -207,6 +239,7 @@ function Styling() {
       globalGlow: theme.globalGlow,
       panelOpacity: theme.panelOpacity,
       bgOverlay: theme.bgOverlay,
+      fontFamily: theme.fontFamily,
     };
 
     const res = await window.electronAPI.exportCustomPreset(presetData);
@@ -237,6 +270,7 @@ function Styling() {
       globalGlow: p.globalGlow ?? theme.globalGlow,
       panelOpacity: p.panelOpacity ?? theme.panelOpacity,
       bgOverlay: p.bgOverlay ?? theme.bgOverlay,
+      fontFamily: p.fontFamily ?? theme.fontFamily,
     };
     setTheme(nt);
     applyTheme(nt, true);
@@ -253,8 +287,31 @@ function Styling() {
     }
   };
 
+  const handleSelectCustomFont = async () => {
+    const res = await window.electronAPI.selectCustomFont();
+    if (res.success && res.settings?.theme) {
+      const nextTheme = { ...DEFAULT_THEME, ...res.settings.theme };
+      setTheme(nextTheme);
+      applyTheme(nextTheme);
+    }
+  };
+
+  const handleDeleteCustomFont = async (option) => {
+    if (!option.fontId) {
+      return;
+    }
+
+    const res = await window.electronAPI.deleteCustomFont(option.fontId);
+    if (res.success && res.settings?.theme) {
+      const nextTheme = { ...DEFAULT_THEME, ...res.settings.theme };
+      setTheme(nextTheme);
+      applyTheme(nextTheme);
+    }
+  };
+
   const applyTheme = (t, isPreview = false) => {
     const root = document.documentElement;
+    syncCustomFonts(t.customFonts ?? []);
     root.style.setProperty("--primary-color", t.primaryColor);
     root.style.setProperty("--background-color", t.backgroundColor);
     root.style.setProperty("--surface-color", t.surfaceColor);
@@ -266,6 +323,7 @@ function Styling() {
     root.style.setProperty("--global-glow-intensity", t.globalGlow ?? 0);
     root.style.setProperty("--panel-opacity", t.panelOpacity ?? 0.85);
     root.style.setProperty("--bg-overlay-opacity", t.bgOverlay ?? 0.4);
+    root.style.setProperty("--launcher-font", `'${t.fontFamily ?? "Poppins"}'`);
 
     const adjustColor = (hex, pct) => {
       const n = parseInt(hex.replace("#", ""), 16);
@@ -391,8 +449,12 @@ function Styling() {
   };
 
   const handleFactoryReset = () => {
-    setTheme(DEFAULT_THEME);
-    applyTheme(DEFAULT_THEME, false);
+    const nextTheme = {
+      ...DEFAULT_THEME,
+      customFonts: theme.customFonts ?? [],
+    };
+    setTheme(nextTheme);
+    applyTheme(nextTheme, false);
     addNotification(t('styling.reset_factory_success'), "success");
   };
 
@@ -521,6 +583,26 @@ function Styling() {
                 {t('styling.interactive_effects')}
               </h2>
               <div className="space-y-5">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex-1">
+                      {t('styling.launcher_font')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSelectCustomFont}
+                      className="shrink-0 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-[10px] font-bold uppercase tracking-wider transition-colors border border-white/10"
+                    >
+                      {t('styling.add_font')}
+                    </button>
+                  </div>
+                  <Dropdown
+                    options={fontOptions}
+                    value={theme.fontFamily ?? "Poppins"}
+                    onChange={(val) => handleUpdate("fontFamily", val)}
+                    onOptionAction={handleDeleteCustomFont}
+                  />
+                </div>
                 <SliderControl
                   label={t('styling.corner_roundness')}
                   value={theme.borderRadius ?? 12}

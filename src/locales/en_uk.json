@@ -253,6 +253,8 @@
         "Presets": "Presets",
         "live_preview": "Live preview",
         "interactive_effects": "Effects",
+        "launcher_font": "Launcher Font",
+        "add_font": "Add Font",
         "corner_roundness": "Corner roundness",
         "glass_blur": "Glass blur",
         "sidebar_glow": "Sidebar glow",

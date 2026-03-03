@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const Dropdown = ({ options, value, onChange, placeholder = "Select...", disabled = false, className = "" }) => {
+const Dropdown = ({
+    options,
+    value,
+    onChange,
+    placeholder = "Select...",
+    disabled = false,
+    className = "",
+    onOptionAction = null
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -32,7 +40,10 @@ const Dropdown = ({ options, value, onChange, placeholder = "Select...", disable
                 className={`w-full bg-background border border-white/10 rounded-xl p-3 text-left flex justify-between items-center transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20'} ${isOpen ? 'border-primary ring-1 ring-primary' : ''}`}
                 disabled={disabled}
             >
-                <span className={`truncate ${selectedOption ? 'text-white' : 'text-gray-400'}`}>
+                <span
+                    className={`truncate ${selectedOption ? 'text-white' : 'text-gray-400'}`}
+                    style={selectedOption?.style}
+                >
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
                 <svg
@@ -51,20 +62,38 @@ const Dropdown = ({ options, value, onChange, placeholder = "Select...", disable
                         <div className="p-3 text-gray-500 text-sm text-center">No options</div>
                     ) : (
                         options.map((option) => (
-                            <button
+                            <div
                                 key={option.value}
-                                type="button"
-                                onClick={() => !option.disabled && handleSelect(option)}
-                                disabled={option.disabled}
-                                className={`w-full text-left p-3 text-sm transition-colors ${option.disabled
-                                    ? 'text-gray-600 cursor-not-allowed bg-white/2'
-                                    : option.value === value
-                                        ? 'text-primary bg-primary/10 font-bold'
-                                        : 'text-gray-300 hover:bg-white/5'
-                                    }`}
+                                className={`flex items-center gap-1 p-1 ${option.disabled ? 'bg-white/2' : ''}`}
                             >
-                                {option.label}
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => !option.disabled && handleSelect(option)}
+                                    disabled={option.disabled}
+                                    className={`flex-1 text-left px-3 py-2 text-sm rounded-lg transition-colors ${option.disabled
+                                        ? 'text-gray-600 cursor-not-allowed'
+                                        : option.value === value
+                                            ? 'text-primary bg-primary/10 font-bold'
+                                            : 'text-gray-300 hover:bg-white/5'
+                                        }`}
+                                >
+                                    <span className="truncate block" style={option.style}>
+                                        {option.label}
+                                    </span>
+                                </button>
+                                {option.actionIcon && onOptionAction && (
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onOptionAction(option);
+                                        }}
+                                        className="shrink-0 h-9 w-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                    >
+                                        {option.actionIcon}
+                                    </button>
+                                )}
+                            </div>
                         ))
                     )}
                 </div>

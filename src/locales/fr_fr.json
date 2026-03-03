@@ -253,6 +253,8 @@
         "Presets": "Préréglages",
         "live_preview": "Aperçu en direct",
         "interactive_effects": "Effets",
+        "launcher_font": "Police du launcher",
+        "add_font": "Ajouter une police",
         "corner_roundness": "Arrondi des coins",
         "glass_blur": "Flou de verre",
         "sidebar_glow": "Lueur de la barre latérale",

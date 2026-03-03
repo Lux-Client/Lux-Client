@@ -252,6 +252,8 @@
         "Presets": "Пресеты",
         "live_preview": "Живое превью",
         "interactive_effects": "Эффекты",
+        "launcher_font": "Шрифт лаунчера",
+        "add_font": "Добавить шрифт",
         "corner_roundness": "Скругление углов",
         "glass_blur": "Размытие (эффект стекла)",
         "sidebar_glow": "Свечение боковой панели",

@@ -253,6 +253,8 @@
         "Presets": "Voreinstellungen",
         "live_preview": "Live-Vorschau",
         "interactive_effects": "Effekte",
+        "launcher_font": "Launcher-Schriftart",
+        "add_font": "Schrift hinzufugen",
         "corner_roundness": "Eckenabrundung",
         "glass_blur": "Glas-Unschärfe",
         "sidebar_glow": "Seitenleiste hervorheben",

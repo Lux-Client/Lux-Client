@@ -252,6 +252,8 @@
         "Presets": "Szablony",
         "live_preview": "Podgląd na żywo",
         "interactive_effects": "Efekty",
+        "launcher_font": "Czcionka launchera",
+        "add_font": "Dodaj czcionke",
         "corner_roundness": "Zaokrąglenie rogów",
         "glass_blur": "Rozmycie szkła",
         "sidebar_glow": "Poświata paska bocznego",

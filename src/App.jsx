@@ -25,6 +25,7 @@ import AnnouncementBar from './components/AnnouncementBar';
 import AgreementModal from './components/AgreementModal';
 import LanguageSelectionModal from './components/LanguageSelectionModal';
 import LoadingOverlay from './components/LoadingOverlay';
+import { syncCustomFonts } from './services/fontManager';
 import { useTranslation } from 'react-i18next';
 
 class ErrorBoundary extends React.Component {
@@ -75,7 +76,15 @@ function App() {
         surfaceColor: '#1c1c1c',
         glassBlur: 10,
         glassOpacity: 0.8,
+        consoleOpacity: 0.8,
         borderRadius: 12,
+        sidebarGlow: 0,
+        globalGlow: 0,
+        panelOpacity: 0.85,
+        bgOverlay: 0.4,
+        autoAdaptColor: false,
+        fontFamily: 'Poppins',
+        customFonts: [],
         bgMedia: { url: '', type: 'none' }
     });
     const [selectedInstance, setSelectedInstance] = useState(null);
@@ -290,6 +299,7 @@ function App() {
 
     const applyTheme = (t) => {
         const root = document.documentElement;
+        syncCustomFonts(t.customFonts ?? []);
         root.style.setProperty('--primary-color', t.primaryColor);
         root.style.setProperty('--background-color', t.backgroundColor);
         root.style.setProperty('--surface-color', t.surfaceColor);
@@ -301,6 +311,7 @@ function App() {
         root.style.setProperty('--global-glow-intensity', t.globalGlow ?? 0);
         root.style.setProperty('--panel-opacity', t.panelOpacity ?? 0.85);
         root.style.setProperty('--bg-overlay-opacity', t.bgOverlay ?? 0.4);
+        root.style.setProperty('--launcher-font', `'${t.fontFamily ?? 'Poppins'}'`);
 
         const adjustColor = (hex, percent) => {
             if (!hex || typeof hex !== 'string') return '#ffffff';

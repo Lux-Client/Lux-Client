@@ -252,6 +252,8 @@
         "Presets": "Förinställningar",
         "live_preview": "Förhandsgranskning",
         "interactive_effects": "Effekter",
+        "launcher_font": "Startprogrammets typsnitt",
+        "add_font": "Lagg till typsnitt",
         "corner_roundness": "Rundade hörn",
         "glass_blur": "Glas-oskärpa",
         "sidebar_glow": "Sidopanelsglöd",
