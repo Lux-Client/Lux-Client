@@ -72,7 +72,8 @@
         "switch_to_client": "Prepnúť na Klienta",
         "switch_to_server": "Prepnúť na Server",
         "news": "Novinky",
-        "no_news_available": "Žiadne novinky nie sú dostupné"
+        "no_news_available": "Žiadne novinky nie sú dostupné",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Panel akcií",
@@ -465,7 +466,9 @@
         "install": "Inštalovať rozšírenie",
         "install_file": "Inštalovať zo súboru",
         "uninstall": "Odinštalovať",
-        "view_online": "Zobraziť online"
+        "view_online": "Zobraziť online",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Prehľadávať obsah",

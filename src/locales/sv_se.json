@@ -72,7 +72,8 @@
         "switch_to_client": "Växla till Klient",
         "switch_to_server": "Växla till Server",
         "news": "Nyheter",
-        "no_news_available": "Inga nyheter tillgängliga"
+        "no_news_available": "Inga nyheter tillgängliga",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Åtgärdsfält",
@@ -465,7 +466,9 @@
         "install": "Installera tillägg",
         "install_file": "Installera från fil",
         "uninstall": "Avinstallera",
-        "view_online": "Visa online"
+        "view_online": "Visa online",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Bläddra innehåll",

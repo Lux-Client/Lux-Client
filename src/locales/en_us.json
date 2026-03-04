@@ -73,7 +73,8 @@
         "name": "Name",
         "size": "Size",
         "modified": "Modified",
-        "readonly": "Read-only"
+        "readonly": "Read-only",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Action Bar",
@@ -471,7 +472,9 @@
         "install": "Install Extension",
         "install_file": "Install from File",
         "uninstall": "Uninstall",
-        "view_online": "View Online"
+        "view_online": "View Online",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Browse Content",

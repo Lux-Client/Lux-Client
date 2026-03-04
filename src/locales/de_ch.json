@@ -72,7 +72,8 @@
         "switch_to_client": "Zum Client wechseln",
         "switch_to_server": "Zum Server wechseln",
         "news": "Neuigkeiten",
-        "no_news_available": "Keine Neuigkeiten verfügbar"
+        "no_news_available": "Keine Neuigkeiten verfügbar",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Aktionsleiste",
@@ -465,7 +466,9 @@
         "install": "Erwiiterig installiere",
         "install_file": "Us Datei installiere",
         "uninstall": "Deinstalliere",
-        "view_online": "Online aluege"
+        "view_online": "Online aluege",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Inhalt durchluege",

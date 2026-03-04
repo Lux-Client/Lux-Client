@@ -8,6 +8,7 @@ import MiniPreview from "../components/MiniPreview";
 import Dropdown from "../components/Dropdown";
 import ThemeExportModal from "../components/ThemeExportModal";
 import { syncCustomFonts } from "../services/fontManager";
+import ThemeMarketplace from "./ThemeMarketplace";
 
 const PRESETS = [
   {
@@ -138,6 +139,7 @@ function Styling() {
     ...DEFAULT_THEME
   });
 
+  const [activeView, setActiveView] = useState("editor"); // 'editor' or 'marketplace'
   const [customPresets, setCustomPresets] = useState([]);
   const [showExportModal, setShowExportModal] = useState(false);
   const fontOptions = [
@@ -498,329 +500,353 @@ function Styling() {
   return (
     <div className="p-10 text-white h-full overflow-y-auto custom-scrollbar">
       { }
-      <header className="mb-10">
-        <h1 className="text-4xl font-black text-white tracking-tight mb-2">
-          {t('styling.title')}
-        </h1>
-        <p className="text-gray-400">
-          {t('styling.desc')}
-        </p>
-      </header>
-
-      { }
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl">
-
-        { }
-        <div className="lg:col-span-3 space-y-6">
-          { }
-          <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-            <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
-              {t('styling.accent_base')}
-            </h2>
-            <div className="space-y-5">
-              <ColorPicker
-                label={t('styling.accent_color')}
-                value={theme.primaryColor}
-                onChange={(val) => handleUpdate("primaryColor", val)}
-              />
-              <ColorPicker
-                label={t('styling.background')}
-                value={theme.backgroundColor}
-                onChange={(val) => handleUpdate("backgroundColor", val)}
-              />
-              <ColorPicker
-                label={t('styling.panels')}
-                value={theme.surfaceColor}
-                onChange={(val) => handleUpdate("surfaceColor", val)}
-              />
-            </div>
-          </section>
-
-          { }
-          <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
-                {t('styling.quick_themes')}
-              </h2>
-              <button
-                onClick={handleImportTheme}
-                className="text-[10px] font-bold text-primary uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                {t('styling.import')}
-              </button>
-            </div>
-
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-              { }
-              {customPresets.length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-[10px] font-bold text-gray-600 uppercase">{t('styling.custom')}</span>
-                  <div className="grid grid-cols-1 gap-2">
-                    {customPresets.map((p) => (
-                      <ThemeCard
-                        key={p.handle}
-                        theme={p}
-                        onApply={() => applyPreset(p)}
-                        onDelete={() => handleDeletePreset(p.handle)}
-                        isCustom={true}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              { }
-              <div className="space-y-3">
-                <span className="text-[10px] font-bold text-gray-600 uppercase">{t('styling.presets')}</span>
-                <div className="grid grid-cols-1 gap-2">
-                  {PRESETS.map((p) => (
-                    <ThemeCard
-                      key={p.name}
-                      theme={p}
-                      onApply={() => applyPreset(p)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
+      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+            {t('styling.title')}
+          </h1>
+          <p className="text-gray-400">
+            {activeView === 'editor' ? t('styling.desc') : t('extensions.theme_marketplace_desc', 'Discover and install custom themes built by the community.')}
+          </p>
         </div>
 
-        { }
-        <div className="lg:col-span-9 space-y-6">
-          { }
-          <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-            <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
-              {t('styling.live_preview')}
-            </h2>
-            <MiniPreview theme={theme} />
-          </section>
+        <div className="flex bg-surface/30 p-1 rounded-xl border border-white/5 w-max">
+          <button
+            onClick={() => setActiveView('editor')}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'editor' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-gray-400 hover:text-white'}`}
+          >
+            {t('styling.editor', 'Editor')}
+          </button>
+          <button
+            onClick={() => setActiveView('marketplace')}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'marketplace' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-gray-400 hover:text-white'}`}
+          >
+            {t('extensions.theme_marketplace', 'Marketplace')}
+          </button>
+        </div>
+      </header>
 
+      {activeView === 'marketplace' ? (
+        <ThemeMarketplace />
+      ) : (
+        <>
           { }
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl">
+
             { }
-            <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
-                {t('styling.interactive_effects')}
-              </h2>
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex-1">
-                      {t('styling.launcher_font')}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleSelectCustomFont}
-                      className="shrink-0 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-[10px] font-bold uppercase tracking-wider transition-colors border border-white/10"
-                    >
-                      {t('styling.add_font')}
-                    </button>
-                  </div>
-                  <Dropdown
-                    options={fontOptions}
-                    value={theme.fontFamily ?? "Poppins"}
-                    onChange={(val) => handleUpdate("fontFamily", val)}
-                    onOptionAction={handleDeleteCustomFont}
+            <div className="lg:col-span-3 space-y-6">
+              { }
+              <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
+                  {t('styling.accent_base')}
+                </h2>
+                <div className="space-y-5">
+                  <ColorPicker
+                    label={t('styling.accent_color')}
+                    value={theme.primaryColor}
+                    onChange={(val) => handleUpdate("primaryColor", val)}
+                  />
+                  <ColorPicker
+                    label={t('styling.background')}
+                    value={theme.backgroundColor}
+                    onChange={(val) => handleUpdate("backgroundColor", val)}
+                  />
+                  <ColorPicker
+                    label={t('styling.panels')}
+                    value={theme.surfaceColor}
+                    onChange={(val) => handleUpdate("surfaceColor", val)}
                   />
                 </div>
-                <SliderControl
-                  label={t('styling.corner_roundness')}
-                  value={theme.borderRadius ?? 12}
-                  min={0}
-                  max={32}
-                  step={2}
-                  unit="px"
-                  onChange={(val) => handleUpdate("borderRadius", val)}
-                />
-                <SliderControl
-                  label={t('styling.glass_blur')}
-                  value={theme.glassBlur}
-                  min={0}
-                  max={40}
-                  step={1}
-                  unit="px"
-                  onChange={(val) => handleUpdate("glassBlur", val)}
-                />
-                <SliderControl
-                  label={t('styling.sidebar_glow')}
-                  value={Math.round((theme.sidebarGlow ?? 0) * 100)}
-                  min={0}
-                  max={100}
-                  step={5}
-                  unit="%"
-                  onChange={(val) => handleUpdate("sidebarGlow", val / 100)}
-                />
-                <SliderControl
-                  label={t('styling.global_glow')}
-                  value={Math.round((theme.globalGlow ?? 0) * 100)}
-                  min={0}
-                  max={100}
-                  step={5}
-                  unit="%"
-                  onChange={(val) => handleUpdate("globalGlow", val / 100)}
-                />
-                <SliderControl
-                  label={t('styling.panel_opacity')}
-                  value={Math.round((theme.panelOpacity ?? 0.85) * 100)}
-                  min={0}
-                  max={100}
-                  step={5}
-                  unit="%"
-                  onChange={(val) => handleUpdate("panelOpacity", val / 100)}
-                />
-                <SliderControl
-                  label={t('styling.console_opacity')}
-                  value={Math.round((theme.consoleOpacity ?? 0.8) * 100)}
-                  min={0}
-                  max={100}
-                  step={5}
-                  unit="%"
-                  onChange={(val) => handleUpdate("consoleOpacity", val / 100)}
-                />
-              </div>
-            </section>
+              </section>
 
-            { }
-            <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-              <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
-                {t('styling.atmosphere')}
-              </h2>
-              <div className="space-y-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('styling.auto_color')}</span>
+              { }
+              <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
+                    {t('styling.quick_themes')}
+                  </h2>
                   <button
-                    onClick={() => handleUpdate("autoAdaptColor", !theme.autoAdaptColor)}
-                    className={`w-10 h-5 rounded-full transition-all relative ${theme.autoAdaptColor ? 'bg-primary' : 'bg-white/10'}`}
+                    onClick={handleImportTheme}
+                    className="text-[10px] font-bold text-primary uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1"
                   >
-                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${theme.autoAdaptColor ? 'left-6' : 'left-1'}`} />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    {t('styling.import')}
                   </button>
                 </div>
 
-                <div
-                  onClick={handleSelectBackground}
-                  className="aspect-video rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/5 hover:border-primary/50 transition-all group overflow-hidden relative"
-                >
-                  {theme.bgMedia?.url ? (
-                    <>
-                      {theme.bgMedia.type === "video" ? (
-                        <video
-                          src={`app-media:///${theme.bgMedia.url.replace(/\\/g, "/")}`}
-                          className="absolute inset-0 w-full h-full object-cover opacity-40"
-                          autoPlay
-                          loop
-                          muted
-                        />
-                      ) : (
-                        <img
-                          key={theme.bgMedia.url}
-                          src={`app-media:///${theme.bgMedia.url.replace(/\\/g, "/")}`}
-                          className="absolute inset-0 w-full h-full object-cover opacity-40"
-                          alt=""
-                        />
-                      )}
-                      <div className="relative z-10 text-center">
-                        <div className="text-[10px] font-black uppercase text-white tracking-widest bg-black/50 px-3 py-1 rounded-full border border-white/20">
-                          {t('styling.change_bg')}
-                        </div>
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  { }
+                  {customPresets.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-bold text-gray-600 uppercase">{t('styling.custom')}</span>
+                      <div className="grid grid-cols-1 gap-2">
+                        {customPresets.map((p) => (
+                          <ThemeCard
+                            key={p.handle}
+                            theme={p}
+                            onApply={() => applyPreset(p)}
+                            onDelete={() => handleDeletePreset(p.handle)}
+                            isCustom={true}
+                          />
+                        ))}
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-8 w-8 text-gray-600 group-hover:text-primary transition-colors"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <div className="text-[10px] font-black text-gray-500 uppercase text-center break-words px-4">
-                        {t('styling.select_media')}
-                      </div>
-                    </>
+                    </div>
                   )}
-                </div>
 
-                {theme.bgMedia?.url && (
-                  <div className="space-y-4">
+                  { }
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-bold text-gray-600 uppercase">{t('styling.presets')}</span>
+                    <div className="grid grid-cols-1 gap-2">
+                      {PRESETS.map((p) => (
+                        <ThemeCard
+                          key={p.name}
+                          theme={p}
+                          onApply={() => applyPreset(p)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            { }
+            <div className="lg:col-span-9 space-y-6">
+              { }
+              <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
+                  {t('styling.live_preview')}
+                </h2>
+                <MiniPreview theme={theme} />
+              </section>
+
+              { }
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                { }
+                <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                  <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
+                    {t('styling.interactive_effects')}
+                  </h2>
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex-1">
+                          {t('styling.launcher_font')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleSelectCustomFont}
+                          className="shrink-0 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-[10px] font-bold uppercase tracking-wider transition-colors border border-white/10"
+                        >
+                          {t('styling.add_font')}
+                        </button>
+                      </div>
+                      <Dropdown
+                        options={fontOptions}
+                        value={theme.fontFamily ?? "Poppins"}
+                        onChange={(val) => handleUpdate("fontFamily", val)}
+                        onOptionAction={handleDeleteCustomFont}
+                      />
+                    </div>
                     <SliderControl
-                      label={t('styling.overlay_intensity')}
-                      value={Math.round((theme.bgOverlay ?? 0.4) * 100)}
+                      label={t('styling.corner_roundness')}
+                      value={theme.borderRadius ?? 12}
+                      min={0}
+                      max={32}
+                      step={2}
+                      unit="px"
+                      onChange={(val) => handleUpdate("borderRadius", val)}
+                    />
+                    <SliderControl
+                      label={t('styling.glass_blur')}
+                      value={theme.glassBlur}
+                      min={0}
+                      max={40}
+                      step={1}
+                      unit="px"
+                      onChange={(val) => handleUpdate("glassBlur", val)}
+                    />
+                    <SliderControl
+                      label={t('styling.sidebar_glow')}
+                      value={Math.round((theme.sidebarGlow ?? 0) * 100)}
                       min={0}
                       max={100}
                       step={5}
                       unit="%"
-                      onChange={(val) => handleUpdate("bgOverlay", val / 100)}
+                      onChange={(val) => handleUpdate("sidebarGlow", val / 100)}
                     />
-                    <button
-                      onClick={async () => {
-                        if (theme.bgMedia.url) {
-                          await window.electronAPI.deleteBackgroundMedia(theme.bgMedia.url);
-                        }
-                        handleUpdate("bgMedia", { url: "", type: "none" });
-                      }}
-                      className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-2 mx-auto transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {t('styling.remove_bg')}
-                    </button>
+                    <SliderControl
+                      label={t('styling.global_glow')}
+                      value={Math.round((theme.globalGlow ?? 0) * 100)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      unit="%"
+                      onChange={(val) => handleUpdate("globalGlow", val / 100)}
+                    />
+                    <SliderControl
+                      label={t('styling.panel_opacity')}
+                      value={Math.round((theme.panelOpacity ?? 0.85) * 100)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      unit="%"
+                      onChange={(val) => handleUpdate("panelOpacity", val / 100)}
+                    />
+                    <SliderControl
+                      label={t('styling.console_opacity')}
+                      value={Math.round((theme.consoleOpacity ?? 0.8) * 100)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      unit="%"
+                      onChange={(val) => handleUpdate("consoleOpacity", val / 100)}
+                    />
                   </div>
-                )}
+                </section>
+
+                { }
+                <section className="bg-surface/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                  <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">
+                    {t('styling.atmosphere')}
+                  </h2>
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('styling.auto_color')}</span>
+                      <button
+                        onClick={() => handleUpdate("autoAdaptColor", !theme.autoAdaptColor)}
+                        className={`w-10 h-5 rounded-full transition-all relative ${theme.autoAdaptColor ? 'bg-primary' : 'bg-white/10'}`}
+                      >
+                        <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${theme.autoAdaptColor ? 'left-6' : 'left-1'}`} />
+                      </button>
+                    </div>
+
+                    <div
+                      onClick={handleSelectBackground}
+                      className="aspect-video rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/5 hover:border-primary/50 transition-all group overflow-hidden relative"
+                    >
+                      {theme.bgMedia?.url ? (
+                        <>
+                          {theme.bgMedia.type === "video" ? (
+                            <video
+                              src={`app-media:///${theme.bgMedia.url.replace(/\\/g, "/")}`}
+                              className="absolute inset-0 w-full h-full object-cover opacity-40"
+                              autoPlay
+                              loop
+                              muted
+                            />
+                          ) : (
+                            <img
+                              key={theme.bgMedia.url}
+                              src={`app-media:///${theme.bgMedia.url.replace(/\\/g, "/")}`}
+                              className="absolute inset-0 w-full h-full object-cover opacity-40"
+                              alt=""
+                            />
+                          )}
+                          <div className="relative z-10 text-center">
+                            <div className="text-[10px] font-black uppercase text-white tracking-widest bg-black/50 px-3 py-1 rounded-full border border-white/20">
+                              {t('styling.change_bg')}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-8 w-8 text-gray-600 group-hover:text-primary transition-colors"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <div className="text-[10px] font-black text-gray-500 uppercase text-center break-words px-4">
+                            {t('styling.select_media')}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {theme.bgMedia?.url && (
+                      <div className="space-y-4">
+                        <SliderControl
+                          label={t('styling.overlay_intensity')}
+                          value={Math.round((theme.bgOverlay ?? 0.4) * 100)}
+                          min={0}
+                          max={100}
+                          step={5}
+                          unit="%"
+                          onChange={(val) => handleUpdate("bgOverlay", val / 100)}
+                        />
+                        <button
+                          onClick={async () => {
+                            if (theme.bgMedia.url) {
+                              await window.electronAPI.deleteBackgroundMedia(theme.bgMedia.url);
+                            }
+                            handleUpdate("bgMedia", { url: "", type: "none" });
+                          }}
+                          className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-2 mx-auto transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {t('styling.remove_bg')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
               </div>
-            </section>
-          </div>
 
-          { }
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={loadTheme}
-              className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-6 py-3 rounded-xl font-bold transition-all text-sm border border-white/5 hover:border-white/10"
-            >
-              {t('styling.reset')}
-            </button>
-            <button
-              onClick={handleFactoryReset}
-              className="bg-white/5 hover:bg-white/10 text-red-400/70 hover:text-red-400 px-6 py-3 rounded-xl font-bold transition-all text-sm border border-white/5 hover:border-white/10"
-            >
-              {t('styling.reset_factory')}
-            </button>
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-6 py-3 rounded-xl font-bold transition-all text-sm border border-white/5 hover:border-white/10 flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              {t('styling.export')}
-            </button>
-            <button
-              onClick={handleSave}
-              className="bg-primary hover:bg-primary-hover text-black px-10 py-3 rounded-xl font-bold transition-all text-sm shadow-lg shadow-primary/20"
-            >
-              {t('styling.save')}
-            </button>
+              { }
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={loadTheme}
+                  className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-6 py-3 rounded-xl font-bold transition-all text-sm border border-white/5 hover:border-white/10"
+                >
+                  {t('styling.reset')}
+                </button>
+                <button
+                  onClick={handleFactoryReset}
+                  className="bg-white/5 hover:bg-white/10 text-red-400/70 hover:text-red-400 px-6 py-3 rounded-xl font-bold transition-all text-sm border border-white/5 hover:border-white/10"
+                >
+                  {t('styling.reset_factory')}
+                </button>
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-6 py-3 rounded-xl font-bold transition-all text-sm border border-white/5 hover:border-white/10 flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {t('styling.export')}
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="bg-primary hover:bg-primary-hover text-black px-10 py-3 rounded-xl font-bold transition-all text-sm shadow-lg shadow-primary/20"
+                >
+                  {t('styling.save')}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
+      )}
 
-        {showExportModal && (
-          <ThemeExportModal
-            onClose={() => setShowExportModal(false)}
-            onExport={handleExportTheme}
-          />
-        )}
-      </div>
+      {showExportModal && (
+        <ThemeExportModal
+          presetData={theme}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExportTheme}
+        />
+      )}
     </div>
   );
 }

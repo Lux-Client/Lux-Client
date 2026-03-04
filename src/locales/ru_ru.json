@@ -72,7 +72,8 @@
         "switch_to_client": "Переключиться на Клиент",
         "switch_to_server": "Переключиться на Сервер",
         "news": "Новости",
-        "no_news_available": "Нет доступных новостей"
+        "no_news_available": "Нет доступных новостей",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Панель действий",
@@ -465,7 +466,9 @@
         "install": "Установить расширение",
         "install_file": "Установить из файла",
         "uninstall": "Удалить",
-        "view_online": "Посмотреть в сети"
+        "view_online": "Посмотреть в сети",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Просмотр контента",

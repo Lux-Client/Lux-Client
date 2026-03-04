@@ -72,7 +72,8 @@
         "switch_to_client": "Przejdź do Klienta",
         "switch_to_server": "Przejdź do Serwera",
         "news": "Aktualności",
-        "no_news_available": "Brak dostępnych aktualności"
+        "no_news_available": "Brak dostępnych aktualności",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Pasek akcji",
@@ -465,7 +466,9 @@
         "install": "Zainstaluj rozszerzenie",
         "install_file": "Zainstaluj z pliku",
         "uninstall": "Odinstaluj",
-        "view_online": "Zobacz online"
+        "view_online": "Zobacz online",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Przeglądaj zawartość",

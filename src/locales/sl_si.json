@@ -72,7 +72,8 @@
         "switch_to_client": "Preklopi na odjemalca",
         "switch_to_server": "Preklopi na strežnik",
         "news": "Novice",
-        "no_news_available": "Ni razpoložljivih novic"
+        "no_news_available": "Ni razpoložljivih novic",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Vrstica dejanj",
@@ -465,7 +466,9 @@
         "install": "Namesti razširitev",
         "install_file": "Namesti iz datoteke",
         "uninstall": "Odstrani",
-        "view_online": "Ogled v spletu"
+        "view_online": "Ogled v spletu",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Brskanje po vsebini",

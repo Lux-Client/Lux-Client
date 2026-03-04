@@ -2611,6 +2611,39 @@ module.exports = (ipcMain, win) => {
             }
         });
 
+        ipcMain.handle('theme:install-from-marketplace', async (event, url) => {
+            console.log(`[Theme] Installing from marketplace: ${url}`);
+            try {
+                const axios = require('axios');
+                const response = await axios.get(url);
+                const content = response.data;
+
+                if (typeof content !== 'object') {
+                    return { success: false, error: 'Downloaded theme file is not valid JSON' };
+                }
+
+                const requiredFields = ['name', 'handle', 'primary', 'bg', 'surface'];
+                const missing = requiredFields.filter(field => !content[field]);
+
+                if (missing.length > 0) {
+                    return { success: false, error: `Invalid theme file. Missing fields: ${missing.join(', ')}` };
+                }
+
+                const userData = app.getPath('userData');
+                const presetsDir = path.join(userData, 'custom_themes');
+                await fs.ensureDir(presetsDir);
+
+                const handle = content.handle.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+                const targetPath = path.join(presetsDir, `${handle}.json`);
+                await fs.writeJson(targetPath, content, { spaces: 4 });
+
+                return { success: true, handle: handle };
+            } catch (e) {
+                console.error('Failed to install theme from marketplace:', e);
+                return { success: false, error: e.message };
+            }
+        });
+
         console.log('[Instances] All theme handlers registered successfully.');
         ipcMain.handle('app:soft-reset', async () => {
             console.log('[Maintenance] Soft reset triggered');

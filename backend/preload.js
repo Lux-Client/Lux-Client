@@ -36,6 +36,7 @@ const electronAPI = {
     deleteCustomPreset: (handle) => ipcRenderer.invoke('theme:delete-custom-preset', handle),
     exportCustomPreset: (preset) => ipcRenderer.invoke('theme:export-custom-preset', preset),
     importCustomPreset: () => ipcRenderer.invoke('theme:import-custom-preset'),
+    installThemeFromMarketplace: (url) => ipcRenderer.invoke('theme:install-from-marketplace', url),
 
     softReset: () => ipcRenderer.invoke('app:soft-reset'),
     factoryReset: () => ipcRenderer.invoke('app:factory-reset'),

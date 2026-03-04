@@ -72,7 +72,8 @@
         "switch_to_client": "Passa al Client",
         "switch_to_server": "Passa al Server",
         "news": "Notizie",
-        "no_news_available": "Nessuna notizia disponibile"
+        "no_news_available": "Nessuna notizia disponibile",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Barra azioni",
@@ -465,7 +466,9 @@
         "install": "Installa estensione",
         "install_file": "Installa da file",
         "uninstall": "Disinstalla",
-        "view_online": "Visualizza online"
+        "view_online": "Visualizza online",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Sfoglia Contenuti",

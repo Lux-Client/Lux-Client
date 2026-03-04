@@ -73,7 +73,8 @@
         "name": "Name",
         "size": "Größe",
         "modified": "Geändert",
-        "readonly": "Schreibgeschützt"
+        "readonly": "Schreibgeschützt",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Aktionsleiste",
@@ -466,7 +467,9 @@
         "install": "Erweiterung installieren",
         "install_file": "Aus Datei installieren",
         "uninstall": "Deinstallieren",
-        "view_online": "Online ansehen"
+        "view_online": "Online ansehen",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Inhalte durchsuchen",

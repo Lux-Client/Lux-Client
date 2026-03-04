@@ -72,7 +72,8 @@
         "switch_to_client": "Comutați la Client",
         "switch_to_server": "Comutați la Server",
         "news": "Știri",
-        "no_news_available": "Nu sunt știri disponibile"
+        "no_news_available": "Nu sunt știri disponibile",
+        "theme_marketplace": "Theme Marketplace"
     },
     "action_bar": {
         "title": "Bară de acțiuni",
@@ -465,7 +466,9 @@
         "install": "Instalați extensia",
         "install_file": "Instalare din fișier",
         "uninstall": "Dezinstalare",
-        "view_online": "Vezi online"
+        "view_online": "Vezi online",
+        "theme_marketplace": "Theme Marketplace",
+        "theme_marketplace_desc": "Discover and install custom themes built by the community."
     },
     "search": {
         "title": "Răsfoiește Conținut",

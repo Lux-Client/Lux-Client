@@ -25,7 +25,8 @@ const Extensions = () => {
             const response = await fetch('https://mclc.pluginhub.de/api/extensions');
             if (response.ok) {
                 const data = await response.json();
-                setOnlineExtensions(data);
+                const extsOnly = data.filter(ext => ext.type !== 'theme');
+                setOnlineExtensions(extsOnly);
             } else {
                 console.error('Failed to fetch extensions', response.status);
             }
