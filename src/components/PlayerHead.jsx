@@ -37,7 +37,16 @@ const PlayerHead = ({ src, uuid, name, size = 40, className = "" }) => {
     };
     const headPos = "14.285% 14.285%";
     const hatPos = "71.428% 14.285%";
-    const isTextureUrl = src && (src.includes('textures.minecraft.net') || src.includes('skin') || src.length > 100);
+    let isTextureUrl = false;
+    if (src) {
+        try {
+            const srcUrl = new URL(src);
+            isTextureUrl = srcUrl.hostname === 'textures.minecraft.net' || srcUrl.hostname.endsWith('.minecraft.net');
+        } catch {
+            // Not a valid URL, check if it's a long base64 texture string
+            isTextureUrl = src.length > 100;
+        }
+    }
 
     if (!isTextureUrl) {
         const getHeadUrl = () => {

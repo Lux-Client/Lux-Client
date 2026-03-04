@@ -1820,7 +1820,7 @@ eula=false
                 if (await fs.pathExists(tomlPath)) {
                     let content = await fs.readFile(tomlPath, 'utf-8');
                     if (properties['motd'] !== undefined) {
-                        const safeMotd = properties['motd'].replace(/"/g, '\\"');
+                        const safeMotd = properties['motd'].replace(/\\/g, '\\\\').replace(/"/g, '\\"');
                         content = content.replace(/(motd\s*=\s*)(["']?)(.*?)\2(\r?\n|$)/, `$1"${safeMotd}"$4`);
                     }
                     if (properties['server-port'] !== undefined) {

@@ -196,9 +196,11 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
                             fs.writeFileSync(updateScript, vbsContent);
                             spawn('wscript.exe', [updateScript, targetPath, exeTarget], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
                         } else if (process.platform === 'linux') {
-                            if (targetPath.endsWith('.AppImage')) {
-                                fs.chmodSync(targetPath, 0o755);
-                                spawn(targetPath, [], { detached: true, stdio: 'ignore' }).unref();
+                            const resolvedTarget = path.resolve(targetPath);
+                            const resolvedDownloadDir = path.resolve(downloadDir);
+                            if (resolvedTarget.startsWith(resolvedDownloadDir + path.sep) && resolvedTarget.endsWith('.AppImage')) {
+                                fs.chmodSync(resolvedTarget, 0o755);
+                                spawn(resolvedTarget, [], { detached: true, stdio: 'ignore' }).unref();
                             } else {
                                 require('electron').shell.openPath(path.dirname(targetPath));
                             }
