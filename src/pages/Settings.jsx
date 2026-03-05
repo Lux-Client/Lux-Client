@@ -755,13 +755,6 @@ function Settings() {
                     />
                     <ToggleBox
                         className="mt-4 pt-4 border-t border-white/5"
-                        checked={settings.optimization || false}
-                        onChange={(val) => handleChange('optimization', val)}
-                        label={t('settings.integration.optimization')}
-                        description={t('settings.integration.optimization_desc')}
-                    />
-                    <ToggleBox
-                        className="mt-4 pt-4 border-t border-white/5"
                         checked={settings.focusMode || false}
                         onChange={(val) => handleChange('focusMode', val)}
                         label={t('settings.integration.focus_mode', 'Focus Mode')}
@@ -785,29 +778,17 @@ function Settings() {
                     )}
                     <ToggleBox
                         className="mt-4 pt-4 border-t border-white/5"
+                        checked={settings.optimization || false}
+                        onChange={(val) => handleChange('optimization', val)}
+                        label={'Enable Optimization Mods'}
+                        description={t('settings.integration.optimization_desc')}
+                    />
+                    <ToggleBox
+                        className="mt-4 pt-4 border-t border-white/5"
                         checked={settings.enableAutoInstallMods || false}
                         onChange={(val) => handleChange('enableAutoInstallMods', val)}
                         label={t('settings.integration.auto_mod_install')}
                         description={t('settings.integration.auto_mod_install_desc')}
-                    />
-                </div>
-
-                {/* Compatibility Section */}
-                <div className="bg-surface/50 p-8 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-                    <h2 className="text-lg font-bold mb-6 text-white">{t('settings.compatibility.title', 'Compatibility')}</h2>
-
-                    <ToggleBox
-                        checked={settings.lowGraphicsMode || false}
-                        onChange={(val) => handleChange('lowGraphicsMode', val)}
-                        label={t('settings.compatibility.low_graphics', 'Low Graphics Mode')}
-                        description={t('settings.compatibility.low_graphics_desc', 'Disables resource-intensive 3D previews (e.g. skin preview) to improve performance on older hardware.')}
-                    />
-                    <ToggleBox
-                        className="mt-4 pt-4 border-t border-white/5"
-                        checked={settings.legacyGpuSupport || false}
-                        onChange={(val) => handleChange('legacyGpuSupport', val)}
-                        label={t('settings.compatibility.legacy_gpu', 'Legacy GPU Support')}
-                        description={t('settings.compatibility.legacy_gpu_desc', 'Disables hardware acceleration and uses basic OpenGL. Enable this if you experience crashes or black screens. (Requires App Restart)')}
                     />
                 </div>
 
@@ -911,6 +892,25 @@ function Settings() {
                         )}
                     </div>
                 )}
+
+                {/* Compatibility Section */}
+                <div className="bg-surface/50 p-8 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                    <h2 className="text-lg font-bold mb-6 text-white">{t('settings.compatibility.title', 'Compatibility')}</h2>
+
+                    <ToggleBox
+                        checked={settings.lowGraphicsMode || false}
+                        onChange={(val) => handleChange('lowGraphicsMode', val)}
+                        label={t('settings.compatibility.low_graphics', 'Low Graphics Mode')}
+                        description={t('settings.compatibility.low_graphics_desc', 'Disables resource-intensive 3D previews (e.g. skin preview) to improve performance on older hardware.')}
+                    />
+                    <ToggleBox
+                        className="mt-4 pt-4 border-t border-white/5"
+                        checked={settings.legacyGpuSupport || false}
+                        onChange={(val) => handleChange('legacyGpuSupport', val)}
+                        label={t('settings.compatibility.legacy_gpu', 'Legacy GPU Support')}
+                        description={t('settings.compatibility.legacy_gpu_desc', 'Disables hardware acceleration and uses basic OpenGL. Enable this if you experience crashes or black screens. (Requires App Restart)')}
+                    />
+                </div>
 
                 { }
                 <div className="bg-surface/50 p-8 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
