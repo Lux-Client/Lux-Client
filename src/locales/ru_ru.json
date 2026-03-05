@@ -380,7 +380,9 @@
         "memory": {
             "title": "Выделение памяти",
             "min": "Минимум (МБ)",
-            "max": "Максимум (МБ)"
+            "max": "Максимум (МБ)",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Разрешение экрана",
@@ -406,7 +408,9 @@
             "auto_mod_install": "Включить автоустановку модов",
             "auto_mod_install_desc": "Автоматически устанавливать выбранные моды при создании новой сборки. Недоступные для конкретных версий моды будут пропущены.",
             "minimize_to_tray": "Сворачивать в трей",
-            "minimize_to_tray_desc": "Скрывать лаунчер в системный трей при закрытии или сворачивании."
+            "minimize_to_tray_desc": "Скрывать лаунчер в системный трей при закрытии или сворачивании.",
+            "smart_log_analytics": "Умная аналитика логов",
+            "smart_log_analytics_desc": "Автоматический анализ сбоев и предложение исправлений."
         },
         "cloud": {
             "title": "Настройки облачных сохранений",
@@ -652,7 +656,9 @@
             "path_placeholder": "Оставьте пустым для использования глобального пути",
             "memory_label": "Выделение памяти (МБ)",
             "min_memory": "Минимум",
-            "max_memory": "Максимум"
+            "max_memory": "Максимум",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Хуки запуска (Команды)",
@@ -790,5 +796,12 @@
         "opt_out": "Отказ от аналитики",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Обнаружен сбой игры",
+        "analysis": "Анализ логов",
+        "no_issues": "Мы не смогли автоматически определить причину этого сбоя.",
+        "view_log": "Просмотреть загруженный лог",
+        "check_manually": "Пожалуйста, проверьте файл latest.log вручную."
     }
 }

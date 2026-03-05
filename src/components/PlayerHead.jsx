@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { getAvatarUrl, hasMoreFallbacks, DEFAULT_SKIN } from '../utils/avatarUtils';
 
 /**
  * Renders a Minecraft player head directly from a skin texture
@@ -10,6 +11,8 @@ import React from 'react';
  * @param {string} props.className - Optional classes
  */
 const PlayerHead = ({ src, uuid, name, size = 40, className = "" }) => {
+    const [fallbackLevel, setFallbackLevel] = useState(0);
+
     const baseStyle = {
         width: size,
         height: size,
@@ -26,7 +29,7 @@ const PlayerHead = ({ src, uuid, name, size = 40, className = "" }) => {
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundImage: `url(${src})`,
+        backgroundImage: `url(${src || DEFAULT_SKIN})`,
         backgroundSize: '800%',
         imageRendering: 'pixelated',
         transition: 'background-image 0.3s ease'
@@ -51,10 +54,18 @@ const PlayerHead = ({ src, uuid, name, size = 40, className = "" }) => {
     if (!isTextureUrl) {
         const getHeadUrl = () => {
             if (src && src.startsWith('http')) return src;
-            if (uuid) return `https://crafatar.com/avatars/${uuid}?size=${size}&overlay`;
-            if (name) return `https://crafatar.com/avatars/${name}?size=${size}&overlay`;
-            return `https://crafatar.com/avatars/steve?size=${size}&overlay`;
+            return getAvatarUrl(uuid, name, size, fallbackLevel);
         };
+
+        const handleAvatarError = (e) => {
+            if (hasMoreFallbacks(fallbackLevel)) {
+                setFallbackLevel(prev => prev + 1);
+            } else {
+                // If all services fail, fallback to a local default if possible or Steve
+                e.target.src = getAvatarUrl('steve', 'steve', size, 0);
+            }
+        };
+
         return (
             <div style={baseStyle} className={className}>
                 <img
@@ -66,15 +77,7 @@ const PlayerHead = ({ src, uuid, name, size = 40, className = "" }) => {
                         objectFit: 'cover',
                         imageRendering: 'pixelated'
                     }}
-                    onError={(e) => {
-                        if (e.target.src.includes(uuid || name || 'steve')) {
-                            e.target.src = `https://crafatar.com/avatars/steve?size=${size}&overlay`;
-                        } else {
-                            e.target.src = uuid
-                                ? `https://crafatar.com/avatars/${uuid}?size=${size}&overlay`
-                                : `https://crafatar.com/avatars/steve?size=${size}&overlay`;
-                        }
-                    }}
+                    onError={handleAvatarError}
                 />
             </div>
         );

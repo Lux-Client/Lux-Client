@@ -354,6 +354,29 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                             </div>
                                         </div>
                                     </div>
+                                    <div className="space-y-2 mt-4">
+                                        <label className="text-sm font-bold text-gray-400">{t('instance_settings.java.profile_label')}</label>
+                                        <div className="relative">
+                                            <select
+                                                value={config.javaProfile || 'default'}
+                                                onChange={(e) => handleChange('javaProfile', e.target.value)}
+                                                className="w-full bg-surface border border-white/10 rounded p-3 text-sm focus:border-primary outline-none appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                                            >
+                                                <option value="default">{t('common.disabled')} / Inherit Global</option>
+                                                <option value="performance">Performance (Aikar's Flags)</option>
+                                                <option value="low-end">Low-End PC (Aggressive GC)</option>
+                                                <option value="zgc">ZGC (Stable FPS - Java 17+)</option>
+                                            </select>
+                                            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 italic px-1">
+                                            {t('instance_settings.java.profile_desc')}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 

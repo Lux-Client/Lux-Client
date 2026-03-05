@@ -6,6 +6,72 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.6.11] - 2026-03-05
+
+### Fixed
+- Game input issues in EdClub typing script.
+- Precision of `sendKey` event dispatching.
+
+---
+
+## [1.6.10] - 2026-03-03
+
+### Added
+- Detailed updater status messages ("Downloading", "Comparing", etc.).
+
+### Fixed
+- Updater progress getting stuck in "Starting" phase.
+- CI/CD environment variable handling for `.env` files in production builds.
+
+---
+
+## [1.6.9] - 2026-03-03
+
+### Fixed
+- Launcher version display in the sidebar.
+- Correct retrieval of versioning information from package metadata.
+
+---
+
+## [1.6.8] - 2026-03-03
+
+### Added
+- Download retry and skip mechanism for modpacks.
+
+### Fixed
+- `ReferenceError: modCachePath is not defined` in modpack code.
+- Reliable mod cache saving and persistence.
+
+---
+
+## [1.6.7] - 2026-03-03
+
+### Added
+- **Animations Mode**: Smooth UI transitions for pages, modals, and sidebar.
+- Compatibility toggle for animations in Settings.
+
+---
+
+## [1.6.6] - 2026-03-03
+
+### Fixed
+- Java import resolution errors for `com.vexsoftware`.
+- Development environment dependencies and pathing.
+
+---
+
+## [1.6.5] - 2026-02-26
+
+### Added
+- Minekube plugin integration for Paper servers.
+
+### Fixed
+- App crash on startup due to `onThemeUpdated` being undefined.
+- Plugin filtering for vanilla Minecraft servers.
+- Minekube configuration loading and JAR placement issues.
+
+---
+
 ## [Unreleased]
 
 ### Added
@@ -29,6 +95,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Mobile application for the administration panel
 - Cross-platform UI polishing: Mac-specific window controls and Linux system tray integration
 - Command-line support
+
+---
+
+## [1.6.12] - 2026-03-05
+
+### Added
+- Robust Minecraft avatar fetching system with multi-service fallback (Crafatar, MC-Heads, Minotar, Visage).
+- Centralized `avatarUtils` for consistent player head rendering across the application.
+
+### Fixed
+- Avatar loading failures during Crafatar service outages (521 Cloudflare error).
+- Unified avatar component usage in account switcher for better reliability.
 
 ---
 

@@ -380,7 +380,9 @@
         "memory": {
             "title": "Alocare Memorie",
             "min": "Minim (MB)",
-            "max": "Maxim (MB)"
+            "max": "Maxim (MB)",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Rezoluție",
@@ -406,7 +408,9 @@
             "auto_mod_install": "Activează Instalarea Automată a Mod-urilor",
             "auto_mod_install_desc": "Instalează automat mod-urile selectate la crearea unei noi instanțe. Mod-urile indisponibile pentru versiuni specifice vor fi sărite.",
             "minimize_to_tray": "Minimizare în bara de sistem",
-            "minimize_to_tray_desc": "Ascunde lansatorul în bara de sistem la închidere sau minimizare."
+            "minimize_to_tray_desc": "Ascunde lansatorul în bara de sistem la închidere sau minimizare.",
+            "smart_log_analytics": "Analiză inteligentă a log-urilor",
+            "smart_log_analytics_desc": "Analizează automat erorile și sugerează remedieri."
         },
         "cloud": {
             "title": "Setări Copie de Rezervă în Cloud",
@@ -652,7 +656,9 @@
             "path_placeholder": "Lasă gol pentru a utiliza setarea globală",
             "memory_label": "Alocare Memorie (MB)",
             "min_memory": "Minim",
-            "max_memory": "Maxim"
+            "max_memory": "Maxim",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Scripturi de Lansare",
@@ -790,5 +796,12 @@
         "opt_out": "Renunțare la analiză",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Eroare de joc detectată",
+        "analysis": "Analiza log-ului",
+        "no_issues": "Nu am putut identifica automat cauza acestei erori.",
+        "view_log": "Vezi log-ul încărcat",
+        "check_manually": "Te rugăm să verifici fișierul latest.log manual."
     }
 }

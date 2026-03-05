@@ -388,7 +388,9 @@
         "memory": {
             "title": "Memory Allocation",
             "min": "Minimum (MB)",
-            "max": "Maximum (MB)"
+            "max": "Maximum (MB)",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Resolution",
@@ -413,6 +415,8 @@
             "optimization_desc": "Automatically install performance mods when making a new instance.",
             "auto_mod_install": "Enable Auto Install Mods",
             "auto_mod_install_desc": "Auto-install selected mods in new instances. Mods not available for certain versions will be skipped.",
+            "smart_log_analytics": "Smart Log Analytics",
+            "smart_log_analytics_desc": "Automatically analyze crashes and suggest fixes.",
             "minimize_to_tray": "Minimize to Tray",
             "minimize_to_tray_desc": "Hide the launcher to the system tray when closing or minimizing."
         },
@@ -660,7 +664,9 @@
             "path_placeholder": "Leave blank to use global default",
             "memory_label": "Memory (MB)",
             "min_memory": "Minimum",
-            "max_memory": "Maximum"
+            "max_memory": "Maximum",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Launch Hooks",
@@ -798,5 +804,12 @@
         "opt_out": "Analytics Opt-Out",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Game Crash Detected",
+        "analysis": "Log Analysis",
+        "no_issues": "We couldn't automatically identify the cause of this crash.",
+        "view_log": "View Uploaded Log",
+        "check_manually": "Please check the latest.log file manually."
     }
 }

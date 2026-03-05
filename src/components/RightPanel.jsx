@@ -141,9 +141,10 @@ function RightPanel({ userProfile, onProfileUpdate }) {
                                                 onClick={() => handleSwitch(acc.uuid)}
                                                 className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer group group"
                                             >
-                                                <img
-                                                    src={`https://crafatar.com/avatars/${acc.uuid || acc.name}?size=32&overlay`}
-                                                    alt={acc.name}
+                                                <PlayerHead
+                                                    uuid={acc.uuid}
+                                                    name={acc.name}
+                                                    size={32}
                                                     className="w-8 h-8 rounded-md"
                                                 />
                                                 <span className="text-sm font-medium text-gray-300 group-hover:text-white truncate flex-1">{acc.name}</span>

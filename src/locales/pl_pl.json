@@ -380,7 +380,9 @@
         "memory": {
             "title": "Alokacja pamięci RAM",
             "min": "Minimalna pamięć",
-            "max": "Maksimum (MB)"
+            "max": "Maksimum (MB)",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Rozdzielczość",
@@ -406,7 +408,9 @@
             "auto_mod_install": "Włącz automatyczną instalację modów",
             "auto_mod_install_desc": "Automatycznie instaluje wybrane mody przy tworzeniu nowej instancji. Mody niedostępne dla danej wersji zostaną pominięte.",
             "minimize_to_tray": "Minimalizuj do zasobnika",
-            "minimize_to_tray_desc": "Ukryj program w zasobniku systemowym po zamknięciu lub minimalizacji."
+            "minimize_to_tray_desc": "Ukryj program w zasobniku systemowym po zamknięciu lub minimalizacji.",
+            "smart_log_analytics": "Inteligentna analiza logów",
+            "smart_log_analytics_desc": "Automatycznie analizuj awarie i sugeruj poprawki."
         },
         "cloud": {
             "title": "Ustawienia Kopii w Chmurze",
@@ -652,7 +656,9 @@
             "path_placeholder": "Pozostaw puste, aby użyć globalnej wartości",
             "memory_label": "Alokacja pamięci RAM (MB)",
             "min_memory": "Minimalna pamięć",
-            "max_memory": "Maksimum"
+            "max_memory": "Maksimum",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Skrypty uruchamiania (Hooks)",
@@ -790,5 +796,12 @@
         "opt_out": "Rezygnacja z analityki",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Wykryto awarię gry",
+        "analysis": "Analiza logów",
+        "no_issues": "Nie udało się automatycznie zidentyfikować przyczyny tej awarii.",
+        "view_log": "Zobacz przesłany log",
+        "check_manually": "Sprawdź plik latest.log ręcznie."
     }
 }

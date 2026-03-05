@@ -380,7 +380,9 @@
         "memory": {
             "title": "Alocação de Memória",
             "min": "Mínimo (MB)",
-            "max": "Máximo (MB)"
+            "max": "Máximo (MB)",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Resolução",
@@ -406,7 +408,9 @@
             "auto_mod_install": "Ativar Instalação Automática de Mods",
             "auto_mod_install_desc": "Instale automaticamente os mods selecionados ao criar uma nova instância. Mods indisponíveis para versões específicas serão ignorados.",
             "minimize_to_tray": "Minimizar para a bandeja",
-            "minimize_to_tray_desc": "Ocultar o inicializador na bandeja do sistema ao fechar ou minimizar."
+            "minimize_to_tray_desc": "Ocultar o inicializador na bandeja do sistema ao fechar ou minimizar.",
+            "smart_log_analytics": "Análise inteligente de logs",
+            "smart_log_analytics_desc": "Analisa automaticamente falhas e sugere correções."
         },
         "cloud": {
             "title": "Definições de Cópia de Segurança na Nuvem",
@@ -652,7 +656,9 @@
             "path_placeholder": "Deixe vazio para usar o padrão global",
             "memory_label": "Alocação de Memória (MB)",
             "min_memory": "Mínimo",
-            "max_memory": "Máximo"
+            "max_memory": "Máximo",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Ganchos de Lançamento (Hooks)",
@@ -790,5 +796,12 @@
         "opt_out": "Opt-Out de Analytics",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Falha no jogo detectada",
+        "analysis": "Análise de log",
+        "no_issues": "Não conseguimos identificar automaticamente a causa desta falha.",
+        "view_log": "Ver log enviado",
+        "check_manually": "Por favor, verifique o arquivo latest.log manualmente."
     }
 }

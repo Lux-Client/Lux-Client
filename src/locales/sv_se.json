@@ -380,7 +380,9 @@
         "memory": {
             "title": "Minnesallokering",
             "min": "Minsta minne",
-            "max": "Maximalt minne"
+            "max": "Maximalt minne",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Upplösning",
@@ -406,7 +408,9 @@
             "auto_mod_install": "Aktivera automatisk modinstallation",
             "auto_mod_install_desc": "Installerar automatiskt utvalda moddar vid skapandet av en ny instans. Moddar som inte är tillgängliga för specifika versioner hoppas över.",
             "minimize_to_tray": "Minimera till systemfältet",
-            "minimize_to_tray_desc": "Dölj startprogrammet i systemfältet när du stänger eller minimerar det."
+            "minimize_to_tray_desc": "Dölj startprogrammet i systemfältet när du stänger eller minimerar det.",
+            "smart_log_analytics": "Smart logganalys",
+            "smart_log_analytics_desc": "Analysera krascher automatiskt och föreslå åtgärder."
         },
         "cloud": {
             "title": "Inställningar för säkerhetskopiering i molnet",
@@ -652,7 +656,9 @@
             "path_placeholder": "Lämna tomt för att använda global standard",
             "memory_label": "Minnesallokering (MB)",
             "min_memory": "Minsta minne",
-            "max_memory": "Maximalt minne"
+            "max_memory": "Maximalt minne",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Startkrokar (Hooks)",
@@ -790,5 +796,12 @@
         "opt_out": "Avanmäl analys",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Spelkrasch upptäckt",
+        "analysis": "Logganalys",
+        "no_issues": "Vi kunde inte automatiskt identifiera orsaken till denna krasch.",
+        "view_log": "Visa uppladdad logg",
+        "check_manually": "Kontrollera filen latest.log manuellt."
     }
 }

@@ -380,7 +380,9 @@
         "memory": {
             "title": "Dodelitev pomnilnika",
             "min": "Najmanj (MB)",
-            "max": "Največ (MB)"
+            "max": "Največ (MB)",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Ločljivost",
@@ -406,7 +408,9 @@
             "auto_mod_install": "Omogoči samodejno namestitev modov",
             "auto_mod_install_desc": "Pri ustvarjanju nove instance samodejno namesti izbrane mode. Modi, ki niso na voljo za določene različice, bodo preskočeni.",
             "minimize_to_tray": "Pomanjšaj v orodno vrstico",
-            "minimize_to_tray_desc": "Skrij zaganjalnik v sistemsko vrstico pri zapiranju ali pomanjšanju."
+            "minimize_to_tray_desc": "Skrij zaganjalnik v sistemsko vrstico pri zapiranju ali pomanjšanju.",
+            "smart_log_analytics": "Pametna analiza dnevnikov",
+            "smart_log_analytics_desc": "Samodejno analizirajte sesutja in predlagajte popravke."
         },
         "cloud": {
             "title": "Nastavitve varnostnega kopiranja v oblak",
@@ -652,7 +656,9 @@
             "path_placeholder": "Pustite prazno za uporabo globalne privzete nastavitve",
             "memory_label": "Dodelitev pomnilnika (MB)",
             "min_memory": "Najmanj",
-            "max_memory": "Največ"
+            "max_memory": "Največ",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Zagonske skripte (Hooks)",
@@ -790,5 +796,12 @@
         "opt_out": "Odjava iz analitike",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Zaznano sesutje igre",
+        "analysis": "Analiza dnevnika",
+        "no_issues": "Vzroka tega sesutja nismo mogli samodejno prepoznati.",
+        "view_log": "Ogled naloženega dnevnika",
+        "check_manually": "Ročno preverite datoteko latest.log."
     }
 }

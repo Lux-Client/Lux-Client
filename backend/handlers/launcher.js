@@ -85,6 +85,59 @@ Add-Type -TypeDefinition $code -Language CSharp
         });
     }
 
+    const getJavaProfileArgs = (profile, javaVersion) => {
+        if (!profile || profile === 'default') return [];
+
+        const aikarsFlags = [
+            "-XX:+UseG1GC",
+            "-XX:+ParallelRefProcEnabled",
+            "-XX:MaxGCPauseMillis=200",
+            "-XX:+UnlockExperimentalVMOptions",
+            "-XX:+DisableExplicitGC",
+            "-XX:+AlwaysPreTouch",
+            "-XX:G1NewSizePercent=30",
+            "-XX:G1MaxNewSizePercent=40",
+            "-XX:G1HeapRegionSize=8M",
+            "-XX:G1ReservePercent=20",
+            "-XX:G1HeapWastePercent=5",
+            "-XX:G1MixedGCCountTarget=4",
+            "-XX:InitiatingHeapOccupancyPercent=15",
+            "-XX:G1MixedGCLiveThresholdPercent=90",
+            "-XX:G1RSetUpdatingPauseTimePercent=5",
+            "-XX:SurvivorRatio=32",
+            "-XX:+PerfDisableSharedMem",
+            "-XX:MaxTenuringThreshold=1",
+            "-Dusing.aikars.flags=https://mcflags.emc.gs",
+            "-Daikars.new.flags=true"
+        ];
+
+        const lowEndFlags = [
+            "-XX:+UseG1GC",
+            "-XX:MaxGCPauseMillis=50",
+            "-XX:G1HeapRegionSize=4M",
+            "-XX:+UnlockExperimentalVMOptions",
+            "-XX:+DisableExplicitGC",
+            "-XX:G1NewSizePercent=20",
+            "-XX:G1MaxNewSizePercent=30",
+            "-XX:G1ReservePercent=15",
+            "-Dmclc.profile=low-end"
+        ];
+
+        // ZGC for Java 17+
+        const zgcFlags = [
+            "-XX:+UseZGC",
+            "-XX:+ZGenerational",
+            "-XX:+UnlockExperimentalVMOptions",
+            "-Dmclc.profile=zgc"
+        ];
+
+        if (profile === 'performance') return aikarsFlags;
+        if (profile === 'low-end') return lowEndFlags;
+        if (profile === 'zgc' && javaVersion >= 17) return zgcFlags;
+
+        return [];
+    };
+
     ipcMain.handle('launcher:abort-launch', async (_, instanceName) => {
         if (activeLaunches.has(instanceName)) {
             activeLaunches.get(instanceName).cancelled = true;
@@ -221,6 +274,7 @@ Add-Type -TypeDefinition $code -Language CSharp
             if (config.maxMemory) settings.maxMemory = config.maxMemory;
             if (config.resolutionWidth) settings.resolutionWidth = config.resolutionWidth;
             if (config.resolutionHeight) settings.resolutionHeight = config.resolutionHeight;
+            if (config.javaProfile) settings.javaProfile = config.javaProfile;
 
             // Shared Assets Directory to speed up launch and save space
             const sharedDir = path.join(app.getPath('userData'), 'common');
@@ -428,6 +482,16 @@ Add-Type -TypeDefinition $code -Language CSharp
                     opts.customArgs = neoForgeArgs;
                 }
                 console.log("Added NeoForge JVM arguments");
+            }
+
+            // Apply Java Performance Profile
+            if (settings.javaProfile && settings.javaProfile !== 'default') {
+                const profileArgs = getJavaProfileArgs(settings.javaProfile, javaVersion);
+                if (profileArgs.length > 0) {
+                    if (!opts.customArgs) opts.customArgs = [];
+                    opts.customArgs.push(...profileArgs);
+                    console.log(`[Launcher] Applied Java Profile: ${settings.javaProfile}`);
+                }
             }
 
             // Stable Window Title Tier 1: JVM Arguments

@@ -383,7 +383,9 @@
         "memory": {
             "title": "Speicherzuweisung",
             "min": "Minimaler Speicher",
-            "max": "Maximaler Speicher"
+            "max": "Maximaler Speicher",
+            "java_profile": "Java-Performance-Profil",
+            "java_profile_desc": "Aikar's Flags werden für die meisten gemoddeten Instanzen empfohlen, um 'Micro-Stuttering' zu verhindern."
         },
         "resolution": {
             "title": "Auflösung",
@@ -408,6 +410,8 @@
             "optimization_desc": "Installiert automatisch Performance-Mods bei jeder neuen Instanz.",
             "auto_mod_install": "Auto-Install-Mods aktivieren",
             "auto_mod_install_desc": "Installiert automatisch ausgewählte Mods bei neuen Instanzen. Mods, die für bestimmte Versionen nicht verfügbar sind, werden übersprungen.",
+            "smart_log_analytics": "Smart Log Analytics",
+            "smart_log_analytics_desc": "Analysiert Abstürze automatisch und schlägt Lösungen vor.",
             "minimize_to_tray": "In den System-Tray minimieren",
             "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren."
         },
@@ -655,7 +659,9 @@
             "path_placeholder": "Leer lassen für Standard",
             "memory_label": "Speicherzuweisung (MB)",
             "min_memory": "Minimaler Speicher",
-            "max_memory": "Maximaler Speicher"
+            "max_memory": "Maximaler Speicher",
+            "profile_label": "Java-Performance-Profil",
+            "profile_desc": "Überschreibt die globale Launcher-Einstellung für diese Instanz."
         },
         "hooks": {
             "title": "Start-Hooks",
@@ -793,5 +799,12 @@
         "opt_out": "Analytics Opt-Out",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Spielabsturz erkannt",
+        "analysis": "Log-Analyse",
+        "no_issues": "Wir konnten die Ursache dieses Absturzes nicht automatisch identifizieren.",
+        "view_log": "Hochgeladenes Protokoll ansehen",
+        "check_manually": "Bitte überprüfe die Datei latest.log manuell."
     }
 }

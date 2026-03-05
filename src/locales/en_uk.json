@@ -381,7 +381,9 @@
         "memory": {
             "title": "Memory allocation",
             "min": "Minimum (MB)",
-            "max": "Maximum (MB)"
+            "max": "Maximum (MB)",
+            "java_profile": "Java Performance Profile",
+            "java_profile_desc": "Aikar's Flags are recommended for most modded instances to prevent 'micro-stuttering'."
         },
         "resolution": {
             "title": "Resolution",
@@ -407,7 +409,9 @@
             "auto_mod_install": "Enable auto-install mods",
             "auto_mod_install_desc": "Automatically install selected mods when creating a new instance. Mods unavailable for that version will be skipped.",
             "minimize_to_tray": "Minimise to Tray",
-            "minimize_to_tray_desc": "Hide the launcher to the system tray when closing or minimising."
+            "minimize_to_tray_desc": "Hide the launcher to the system tray when closing or minimising.",
+            "smart_log_analytics": "Smart Log Analytics",
+            "smart_log_analytics_desc": "Automatically analyze crashes and suggest fixes."
         },
         "cloud": {
             "title": "Cloud Backup",
@@ -653,7 +657,9 @@
             "path_placeholder": "Leave blank to use the global default",
             "memory_label": "Memory allocation (MB)",
             "min_memory": "Minimum",
-            "max_memory": "Maximum"
+            "max_memory": "Maximum",
+            "profile_label": "Java Performance Profile",
+            "profile_desc": "Overrides the global launcher setting for this instance."
         },
         "hooks": {
             "title": "Launch hooks",
@@ -791,5 +797,12 @@
         "opt_out": "Analytics Opt-Out",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Game Crash Detected",
+        "analysis": "Log Analysis",
+        "no_issues": "We couldn't automatically identify the cause of this crash.",
+        "view_log": "View Uploaded Log",
+        "check_manually": "Please check the latest.log file manually."
     }
 }

@@ -381,7 +381,9 @@
         "memory": {
             "title": "Allocation de la mémoire",
             "min": "Minimum (Mo)",
-            "max": "Maximum (Mo)"
+            "max": "Maximum (Mo)",
+            "java_profile": "Profil de performance Java",
+            "java_profile_desc": "Les drapeaux d'Aikar sont recommandés pour la plupart des instances moddées pour éviter les micro-saccades."
         },
         "resolution": {
             "title": "Résolution",
@@ -407,7 +409,9 @@
             "auto_mod_install": "Activer l'installation automatique des mods",
             "auto_mod_install_desc": "Installe automatiquement les mods sélectionnés lors de la création d'une nouvelle instance. Les mods non disponibles pour des versions spécifiques seront ignorés.",
             "minimize_to_tray": "Réduire dans la barre des taches",
-            "minimize_to_tray_desc": "Masquer le lanceur dans la barre des taches lors de la fermeture ou de la réduction."
+            "minimize_to_tray_desc": "Masquer le lanceur dans la barre des taches lors de la fermeture ou de la réduction.",
+            "smart_log_analytics": "Analyse intelligente des logs",
+            "smart_log_analytics_desc": "Analyse automatiquement les crashs et suggère des corrections."
         },
         "cloud": {
             "title": "Paramètres de sauvegarde dans le Cloud",
@@ -653,7 +657,9 @@
             "path_placeholder": "Laissez vide pour utiliser la valeur globale par défaut",
             "memory_label": "Allocation de mémoire (Mo)",
             "min_memory": "Mémoire minimale",
-            "max_memory": "Mémoire maximale"
+            "max_memory": "Mémoire maximale",
+            "profile_label": "Profil de performance Java",
+            "profile_desc": "Remplace le paramètre global du lanceur pour cette instance."
         },
         "hooks": {
             "title": "Crochets de lancement",
@@ -791,5 +797,12 @@
         "opt_out": "Opt-Out Analytics",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Crash du jeu détecté",
+        "analysis": "Analyse du log",
+        "no_issues": "Nous n'avons pas pu identifier automatiquement la cause de ce crash.",
+        "view_log": "Voir le log téléversé",
+        "check_manually": "Veuillez vérifier le fichier latest.log manuellement."
     }
 }

@@ -380,7 +380,9 @@
         "memory": {
             "title": "Speicherzuewiisig",
             "min": "Minimaler Speicher",
-            "max": "Maximaler Speicher"
+            "max": "Maximaler Speicher",
+            "java_profile": "Java-Performance-Profil",
+            "java_profile_desc": "Aikar's Flags werden für die meisten gemoddeten Instanzen empfohlen, um 'Micro-Stuttering' zu verhindern."
         },
         "resolution": {
             "title": "Uflösig",
@@ -406,7 +408,9 @@
             "auto_mod_install": "Auto-Install Mods aktiviere",
             "auto_mod_install_desc": "Installiert automatisch usgwehlti Mods bim Erstelle vo neune Instanze. Nöd verfüegbari Mods wärdet übersprunge.",
             "minimize_to_tray": "In den System-Tray minimieren",
-            "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren."
+            "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren.",
+            "smart_log_analytics": "Smart Log Analytics",
+            "smart_log_analytics_desc": "Analysiert Abstürz automatisch und schlaat Lösige vor."
         },
         "cloud": {
             "title": "Cloud-Backup-Iistellige",
@@ -652,7 +656,9 @@
             "path_placeholder": "Laar für Standardwert",
             "memory_label": "Speicherzuewiisig (MB)",
             "min_memory": "Minimaler Speicher",
-            "max_memory": "Maximaler Speicher"
+            "max_memory": "Maximaler Speicher",
+            "profile_label": "Java-Performance-Profil",
+            "profile_desc": "Überschreibt die globale Launcher-Einstellung für diese Instanz."
         },
         "hooks": {
             "title": "Launch-Hooks",
@@ -790,5 +796,12 @@
         "opt_out": "Analytics-Opt-Out",
         "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
         "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+    },
+    "crash": {
+        "title": "Spielabsturz erchannt",
+        "analysis": "Log-Analyse",
+        "no_issues": "Mir händ d'Ursach vo dem Absturz nöd automatisch chöne identifiziere.",
+        "view_log": "Ufegladnes Protokoll aaluege",
+        "check_manually": "Bitte überprüef d'Datei latest.log manuell."
     }
 }
