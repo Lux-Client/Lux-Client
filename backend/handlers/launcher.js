@@ -508,7 +508,9 @@ Add-Type -TypeDefinition $code -Language CSharp
             try {
                 const discord = require('./discord');
                 discord.setActivity(`Playing ${instanceName}`, 'Starting Game...', 'mclc_icon', 'MCLC', runningInstances.get(instanceName));
-            } catch (e) 
+            } catch (e) {
+                console.error('[Launcher] Failed to update Discord activity on start:', e.message);
+            }
 
             let logCrashDetected = false;
             const crashPatterns = [
@@ -562,7 +564,9 @@ Add-Type -TypeDefinition $code -Language CSharp
                 try {
                     const discord = require('./discord');
                     discord.setActivity(`Playing ${instanceName}`, 'In Game', 'minecraft', 'Minecraft', runningInstances.get(instanceName));
-                } catch (e) 
+                } catch (e) {
+                    console.error('[Launcher] Failed to update Discord activity on game start:', e.message);
+                }
             });
 
             launcher.on('close', async (code) => {
@@ -636,7 +640,9 @@ Add-Type -TypeDefinition $code -Language CSharp
                 try {
                     const discord = require('./discord');
                     discord.setActivity('In Launcher', 'Idle', 'mclc_icon', 'MCLC');
-                } catch (e) 
+                } catch (e) {
+                    console.error('[Launcher] Failed to restore Discord activity after close:', e.message);
+                }
 
                 backupManager.stopScheduler(instanceName);
 
@@ -698,7 +704,9 @@ Add-Type -TypeDefinition $code -Language CSharp
                 try {
                     const discord = require('./discord');
                     discord.setActivity('In Launcher', 'Idle', 'minecraft', 'Minecraft');
-                } catch (err) 
+                } catch (err) {
+                    console.error('[Launcher] Failed to restore Discord activity after launch error:', err.message);
+                }
                 return { success: false, error: e.message };
             }
 

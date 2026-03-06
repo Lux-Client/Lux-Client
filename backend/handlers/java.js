@@ -71,7 +71,9 @@ module.exports = (ipcMain) => {
                             type: 'system'
                         });
                     }
-                } catch (e) 
+                } catch (e) {
+                    console.error('[JavaHandler] Failed to detect system java via which:', e.message);
+                }
             }
 
             return { success: true, runtimes };
@@ -97,7 +99,9 @@ module.exports = (ipcMain) => {
                     });
                 }
             }
-        } catch (e) 
+        } catch (e) {
+            console.error('[JavaHandler] Failed to scan PATH for java:', e.message);
+        }
 
         const commonDirs = [
             'C:\\Program Files\\Java',
@@ -122,7 +126,9 @@ module.exports = (ipcMain) => {
                             });
                         }
                     }
-                } catch (e) 
+                } catch (e) {
+                    console.error(`[JavaHandler] Failed to scan java directory ${baseDir}:`, e.message);
+                }
             }
         }
 
