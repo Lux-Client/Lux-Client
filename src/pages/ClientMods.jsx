@@ -494,6 +494,18 @@ function ClientMods() {
         return availableVersions.filter((version) => version === versionFilter);
     }, [availableVersions, versionFilter]);
 
+    const installedProjectIds = useMemo(() => {
+        const ids = [];
+        Object.values(installedModsByVersion || {}).forEach((versionEntry) => {
+            (versionEntry?.items || []).forEach((item) => {
+                if (item?.projectId) {
+                    ids.push(item.projectId);
+                }
+            });
+        });
+        return [...new Set(ids)];
+    }, [installedModsByVersion]);
+
     useEffect(() => {
         const initialize = async () => {
             await Promise.all([
@@ -513,6 +525,11 @@ function ClientMods() {
         const idsToHydrate = [...DEFAULT_OPEN_CLIENT_MOD_IDS, ...customAutoInstallMods];
         hydrateProjectTitles(idsToHydrate);
     }, [customAutoInstallMods]);
+
+    useEffect(() => {
+        if (installedProjectIds.length === 0) return;
+        hydrateProjectTitles(installedProjectIds);
+    }, [installedProjectIds]);
 
     const maxPage = Math.max(1, Math.ceil(totalHits / limit));
     const currentPage = Math.floor(offset / limit) + 1;
@@ -701,7 +718,7 @@ function ClientMods() {
                         <div className="space-y-2 mb-4">
                             {DEFAULT_OPEN_CLIENT_MOD_IDS.map((projectId) => (
                                 <div key={projectId} className="flex items-center justify-between bg-black/10 border border-white/10 rounded-lg px-3 py-2">
-                                    <span className="text-sm text-gray-200 truncate">{projectTitles[projectId] || projectId}</span>
+                                    <span className="text-sm text-gray-200 truncate">{projectTitles[projectId] || t('client_mods.loading_project_name', 'Loading mod name...')}</span>
                                     <span className="text-[10px] px-2 py-1 rounded bg-white/10 text-gray-400 border border-white/10">{t('client_mods.locked', 'Locked')}</span>
                                 </div>
                             ))}
@@ -716,7 +733,7 @@ function ClientMods() {
                             ) : (
                                 customAutoInstallMods.map((projectId) => (
                                     <div key={projectId} className="flex items-center justify-between bg-black/10 border border-white/10 rounded-lg px-3 py-2 gap-2">
-                                        <span className="text-sm text-gray-200 truncate">{projectTitles[projectId] || projectId}</span>
+                                        <span className="text-sm text-gray-200 truncate">{projectTitles[projectId] || t('client_mods.loading_project_name', 'Loading mod name...')}</span>
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveAutoInstall(projectId)}
@@ -760,7 +777,7 @@ function ClientMods() {
                                                         return (
                                                             <div key={modItem.key} className="flex items-center justify-between gap-2 bg-white/5 border border-white/10 rounded-lg px-2.5 py-2">
                                                                 <div className="min-w-0">
-                                                                    <div className="text-sm text-gray-200 truncate">{modItem.title || modItem.fileName}</div>
+                                                                    <div className="text-sm text-gray-200 truncate">{(modItem.projectId && projectTitles[modItem.projectId]) || modItem.title || modItem.fileName}</div>
                                                                     <div className="text-[11px] text-gray-500">{t('client_mods.instances_count', '{{count}} instance(s)', { count: modItem.instanceFiles.length })}</div>
                                                                 </div>
                                                                 <button
