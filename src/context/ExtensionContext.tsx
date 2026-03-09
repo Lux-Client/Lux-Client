@@ -115,7 +115,7 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
             const module: any = { exports };
             const api = createExtensionApi(ext.id, ext.localPath);
 
-            window.MCLC_API = api;
+            window.Lux_API = api;
             const wrapper = new Function('require', 'exports', 'module', 'React', 'api', code);
             wrapper(customRequire, exports, module, window.React, api);
             const ExportedModule = module.exports;

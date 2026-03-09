@@ -6,7 +6,7 @@ const AnnouncementBar = () => {
     useEffect(() => {
         const fetchAnnouncement = async () => {
             try {
-                const res = await fetch('https://mclc.pluginhub.de/api/announcement');
+                const res = await fetch('https://lux.pluginhub.de/api/announcement');
                 const data = await res.json();
                 if (data && data.text) {
                     setAnnouncement(data.text);

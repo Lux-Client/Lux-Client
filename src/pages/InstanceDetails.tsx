@@ -370,7 +370,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 if (count > 0) {
                     if (!silent) addNotification(`Found ${count} update(s)!`, 'success');
                 } else {
-                    if (!silent) addNotification("All mods and resource packs are up to date.", 'success');
+                    if (!silent) addNotification("All mods, resource packs and shaders are up to date.", 'success');
                 }
             } else {
                 if (!silent) addNotification("Failed to check for updates: " + res.error, 'error');
@@ -383,13 +383,13 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         }
     };
     useEffect(() => {
-        if (activeTab === 'content' && (mods.length > 0 || resourcePacks.length > 0)) {
+        if (activeTab === 'content' && (mods.length > 0 || resourcePacks.length > 0 || shaders.length > 0)) {
 
             if (Object.keys(updates).length === 0 && !checkingUpdates) {
                 handleCheckUpdates(true);
             }
         }
-    }, [mods.length, resourcePacks.length, activeTab]);
+    }, [mods.length, resourcePacks.length, shaders.length, activeTab]);
 
     const handleUpdateMod = async (updateData) => {
         setUpdatingMod(updateData.projectId);
@@ -412,6 +412,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 });
 
                 if (updateData.type === 'mod') loadMods();
+                else if (updateData.type === 'shader') loadShaders();
                 else loadResourcePacks();
             } else {
                 addNotification(`Failed to update: ${res.error}`, 'error');
@@ -452,7 +453,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             offset: searchOffset,
             limit,
             projectType: searchCategory,
-            includeCurseforge: searchCategory === 'mod'
+            includeCurseforge: ['mod', 'resourcepack', 'shader'].includes(searchCategory)
         });
         if (res.success) {
             setSearchResults(res.results);
@@ -570,6 +571,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
                 if (contentView === 'mods') loadMods();
                 if (contentView === 'resourcepacks') loadResourcePacks();
+                if (contentView === 'shaders') loadShaders();
             } else {
                 addNotification(`Failed to install: ${installRes?.error || 'Unknown error'}`, 'error');
                 setInstallationStatus(prev => ({ ...prev, [project.project_id]: 'failed' }));
@@ -626,6 +628,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 Analytics.trackDownload(searchCategory, selectedProject.title, selectedProject.project_id);
                 if (contentView === 'mods') loadMods();
                 if (contentView === 'resourcepacks') loadResourcePacks();
+                if (contentView === 'shaders') loadShaders();
                 setSelectedProject(null);
             } else {
                 addNotification(`Failed to install: ${installRes?.error || 'Unknown error'}`, 'error');

@@ -802,15 +802,15 @@
         "skipSelection": "Hoppa över val (Standard: Engelska)"
     },
     "agreement": {
-        "title": "Välkommen till MCLC",
+        "title": "Välkommen till Lux",
         "desc": "Vänligen läs och godkänn vår Integritetspolicy (i vilken vi har integrerat våra Användarvillkor) för att fortsätta. Din integritet och datasäkerhet är viktiga för oss.",
         "checkbox": "Jag har läst och godkänner Integritetspolicyn",
         "privacy": "Integritetspolicy",
-        "start": "Starta MCLC",
+        "start": "Starta Lux",
         "decline": "Neka",
         "opt_out": "Avanmäl analys",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Spelkrasch upptäckt",

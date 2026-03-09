@@ -802,15 +802,15 @@
         "skipSelection": "Omite selecția (Implicit: Engleză)"
     },
     "agreement": {
-        "title": "Bun venit la MCLC",
+        "title": "Bun venit la Lux",
         "desc": "Vă rugăm să citiți și să acceptați Politica de confidențialitate (în care am integrat Termenii și condițiile noastre) pentru a continua. Confidențialitatea și securitatea datelor dvs. sunt importante pentru noi.",
         "checkbox": "Am citit și sunt de acord cu Politica de confidențialitate",
         "privacy": "Politică de confidențialitate",
-        "start": "Porniți MCLC",
+        "start": "Porniți Lux",
         "decline": "Refuză",
         "opt_out": "Renunțare la analiză",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Eroare de joc detectată",

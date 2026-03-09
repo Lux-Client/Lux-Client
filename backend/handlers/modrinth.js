@@ -18,7 +18,7 @@ const CURSEFORGE_CLASS_BY_PROJECT_TYPE = {
     plugin: 5,
     resourcepack: 12,
     modpack: 4471,
-    shader: 6
+    shader: 6552
 };
 
 const CURSEFORGE_KNOWN_LOADERS = new Set([
@@ -53,9 +53,10 @@ const CURSEFORGE_LOADER_ALIASES = {
 };
 
 const normalizeProjectType = (projectType) => {
-    if (projectType === 'shaderpack') return 'shader';
-    if (projectType === 'resource_pack') return 'resourcepack';
-    return projectType || 'mod';
+    const normalized = String(projectType || '').toLowerCase().trim();
+    if (normalized === 'shaderpack' || normalized === 'shader_pack') return 'shader';
+    if (normalized === 'resource_pack' || normalized === 'texturepack' || normalized === 'texture_pack') return 'resourcepack';
+    return normalized || 'mod';
 };
 
 const normalizeModrinthProjectId = (projectId) => {
@@ -69,6 +70,7 @@ const normalizeModrinthProjectId = (projectId) => {
 const mapCurseForgeClassToProjectType = (classId) => {
     if (classId === 5) return 'plugin';
     if (classId === 12) return 'resourcepack';
+    if (classId === 6552) return 'shader';
     if (classId === 4471) return 'modpack';
     return 'mod';
 };
@@ -830,7 +832,7 @@ const updateModCacheForInstall = async ({ destination, projectId, versionId, sou
 };
 
 const getFolderForProjectType = (projectType) => {
-    switch (projectType) {
+    switch (normalizeProjectType(projectType)) {
         case 'resourcepack': return 'resourcepacks';
         case 'shader': return 'shaderpacks';
         case 'plugin': return 'plugins';
@@ -1318,7 +1320,8 @@ module.exports = (ipcMain, win) => {
 
         const normalizedData = {
             ...data,
-            projectId: normalizeModrinthProjectId(data?.projectId)
+            projectId: normalizeModrinthProjectId(data?.projectId),
+            projectType: normalizeProjectType(data?.projectType)
         };
 
         if (isCurseForgeInstall) {

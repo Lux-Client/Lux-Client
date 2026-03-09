@@ -10,12 +10,12 @@ class AnalyticsService {
 
     constructor() {
         this.socket = null;
-        this.serverUrl = 'https://mclc.pluginhub.de';
+        this.serverUrl = 'https://lux.pluginhub.de';
         this.clientVersion = packageJson.version;
         this.os = 'win32';
         this.userProfile = null;
     }
-    init(serverUrl = 'https://mclc.pluginhub.de') {
+    init(serverUrl = 'https://lux.pluginhub.de') {
         if (this.socket) return;
 
         console.log('[Analytics] Initializing connection to', serverUrl);

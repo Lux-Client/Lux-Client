@@ -803,15 +803,15 @@
         "skipSelection": "Passer la sélection (Par défaut : Anglais)"
     },
     "agreement": {
-        "title": "Bienvenue sur MCLC",
+        "title": "Bienvenue sur Lux",
         "desc": "Veuillez lire et accepter notre politique de confidentialité (dans laquelle nous avons intégré nos conditions d'utilisation) pour continuer. Votre vie privée et la sécurité de vos données sont importantes pour nous.",
         "checkbox": "J'ai lu et j'accepte la politique de confidentialité",
         "privacy": "Politique de confidentialité",
-        "start": "Démarrer MCLC",
+        "start": "Démarrer Lux",
         "decline": "Refuser",
         "opt_out": "Opt-Out Analytics",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Crash du jeu détecté",

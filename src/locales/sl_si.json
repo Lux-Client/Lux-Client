@@ -802,15 +802,15 @@
         "skipSelection": "Preskoči izbiro (Privzeto: Angleščina)"
     },
     "agreement": {
-        "title": "Dobrodošli v MCLC",
+        "title": "Dobrodošli v Lux",
         "desc": "Prosimo, preberite in sprejmite naš Pravilnik o zasebnosti (v katerega smo vključili naše Pogoje storitve), da nadaljujete. Vaša zasebnost in varnost podatkov sta nam pomembni.",
         "checkbox": "Prebral sem in se strinjam s Pravilnikom o zasebnosti",
         "privacy": "Pravilnik o zasebnosti",
-        "start": "Začni MCLC",
+        "start": "Začni Lux",
         "decline": "Zavrni",
         "opt_out": "Odjava iz analitike",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Zaznano sesutje igre",

@@ -200,7 +200,7 @@
 
 @layer base {
   :root {
-    --primary-color: #1bd96a;
+    --primary-color: #e27602;
     --primary-color-rgb: 27, 217, 106;
     --background-color: #111111;
     --background-dark-color: #0b0b0b;
@@ -290,6 +290,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .sidebar-shell-transition,
   .sidebar-layout-transition,
   .sidebar-toggle-transition,
@@ -305,6 +306,7 @@
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.94);
   }
+
   100% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
@@ -316,6 +318,7 @@
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.96);
@@ -342,11 +345,13 @@
     width: 30%;
     opacity: 0.3;
   }
+
   50% {
     transform: translateX(0%);
     width: 60%;
     opacity: 1;
   }
+
   100% {
     transform: translateX(100%);
     width: 30%;

@@ -40,7 +40,7 @@ export default function LanguageSelectionModal({ onSelect }) {
                         <div className="space-y-3">
                             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
                                 <Languages className="h-3.5 w-3.5 text-primary" />
-                                MCLC
+                                Lux
                             </div>
                             <div>
                                 <h1 className="text-3xl font-semibold tracking-tight text-foreground">{t('setup.chooseLanguage')}</h1>
@@ -48,7 +48,7 @@ export default function LanguageSelectionModal({ onSelect }) {
                             </div>
                         </div>
                         <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
-                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">MCLC</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Lux</p>
                             <p className="mt-1 text-sm font-medium text-foreground">
                                 {languages.find((lang) => lang.code === i18n.language)?.name || i18n.language}
                             </p>

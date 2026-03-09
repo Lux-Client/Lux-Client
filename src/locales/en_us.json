@@ -809,15 +809,15 @@
         "skipSelection": "Skip Selection (Default: English)"
     },
     "agreement": {
-        "title": "Welcome to MCLC",
+        "title": "Welcome to Lux",
         "desc": "Please read and accept our Privacy Policy (into which we have merged our Terms of Service) to continue. Your privacy and data security are important to us.",
         "checkbox": "I have read and agree to the Privacy Policy",
         "privacy": "Privacy Policy",
-        "start": "Start MCLC",
+        "start": "Start Lux",
         "decline": "Decline",
         "opt_out": "Analytics Opt-Out",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Game Crash Detected",

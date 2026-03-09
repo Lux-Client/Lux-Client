@@ -44,7 +44,7 @@ const Extensions = () => {
     const fetchOnlineExtensions = async () => {
         setLoadingOnline(true);
         try {
-            const response = await fetch('https://mclc.pluginhub.de/api/extensions');
+            const response = await fetch('https://lux.pluginhub.de/api/extensions');
             if (response.ok) {
                 const data = await response.json();
                 const extsOnly = data.filter(ext => ext.type !== 'theme');
@@ -65,7 +65,7 @@ const Extensions = () => {
         setInstalling(ext.id);
 
         try {
-            const detailResponse = await fetch(`https://mclc.pluginhub.de/api/extensions/i/${ext.identifier}`);
+            const detailResponse = await fetch(`https://lux.pluginhub.de/api/extensions/i/${ext.identifier}`);
             if (!detailResponse.ok) {
                 throw new Error('Could not fetch extension details');
             }
@@ -76,13 +76,13 @@ const Extensions = () => {
             }
 
             const latestVersionPath = detailData.versions[0].file_path;
-            const downloadUrl = `https://mclc.pluginhub.de/uploads/${encodeURIComponent(latestVersionPath)}`;
+            const downloadUrl = `https://lux.pluginhub.de/uploads/${encodeURIComponent(latestVersionPath)}`;
 
             const result = await window.electronAPI.installExtension(downloadUrl);
 
             if (result.success) {
                 try {
-                    await fetch(`https://mclc.pluginhub.de/api/extensions/${ext.id}/download`, {
+                    await fetch(`https://lux.pluginhub.de/api/extensions/${ext.id}/download`, {
                         method: 'POST'
                     });
                 } catch (e) {
@@ -104,7 +104,7 @@ const Extensions = () => {
         if (!window.electronAPI) return;
 
         const file = await window.electronAPI.openFileDialog({
-            filters: [{ name: 'MC Extension', extensions: ['mclcextension', 'zip'] }]
+            filters: [{ name: 'MC Extension', extensions: ['luxextension', 'zip'] }]
         });
 
         if (file && !file.canceled && file.filePaths && file.filePaths.length > 0) {
@@ -277,7 +277,7 @@ const Extensions = () => {
                                         <div className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-semibold overflow-hidden shrink-0 bg-primary/10 text-primary border border-border">
                                             {ext.banner_path ? (
                                                 <img
-                                                    src={`https://mclc.pluginhub.de/uploads/${ext.banner_path}`}
+                                                    src={`https://lux.pluginhub.de/uploads/${ext.banner_path}`}
                                                     alt={ext.name}
                                                     className="w-full h-full object-cover"
                                                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
@@ -329,7 +329,7 @@ const Extensions = () => {
                                                 variant="outline"
                                                 size="sm"
                                                 className="gap-1.5"
-                                                onClick={() => window.electronAPI?.openExternal(`https://mclc.pluginhub.de/extensions/${ext.identifier}`)}
+                                                onClick={() => window.electronAPI?.openExternal(`https://lux.pluginhub.de/extensions/${ext.identifier}`)}
                                             >
                                                 <Eye className="w-3.5 h-3.5" />
                                                 {t('extensions.view_online')}

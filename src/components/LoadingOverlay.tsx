@@ -11,7 +11,7 @@ const LoadingOverlay = ({ message = 'Loading...' }) => {
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/55 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    MCLC
+                    Lux
                 </div>
                 <p className="mt-4 text-2xl font-semibold tracking-tight text-foreground">{message}</p>
                 <div className="mt-6 h-2 overflow-hidden rounded-full bg-muted">

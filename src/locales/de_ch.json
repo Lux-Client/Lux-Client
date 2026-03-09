@@ -802,15 +802,15 @@
         "skipSelection": "Uswahl überspringen (Standard: Englisch)"
     },
     "agreement": {
-        "title": "Willkomme bi MCLC",
+        "title": "Willkomme bi Lux",
         "desc": "Bitte lies und akzeptier üsi Dateschutzbestimmige (i dene mer üsi Nutzigsbedingige zämegfüert händ) zum wytermache. Dini Privatsphär und Datesicherheit sind üs wichtig.",
         "checkbox": "Ich ha d'Dateschutzbestimmige gläse und stimme ihne zue",
         "privacy": "Dateschutz",
-        "start": "MCLC starte",
+        "start": "Lux starte",
         "decline": "Ablehne",
         "opt_out": "Analytics-Opt-Out",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Spielabsturz erchannt",

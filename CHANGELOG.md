@@ -145,7 +145,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Cloud stability improvements:
   - Automatic token refresh/retry logic for all cloud operations (upload, download, list, folder management).
   - Automatic re-authentication if a session expires and cannot be refreshed.
-- Standardized storage: Local backups stored in `AppData/Roaming/MCLC/backups/<instanceName>`.
+- Standardized storage: Local backups stored in `AppData/Roaming/Lux/backups/<instanceName>`.
 
 ### Fixed
 - World Restoration Structure: World backups now preserve folder names and restore correctly to the `saves` directory.

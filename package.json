@@ -1,8 +1,8 @@
 {
-  "productName": "MCLC",
-  "name": "mclc",
-  "description": "MCLC Client",
-  "author": "MCLC Team <mclc@pluginhub.de>",
+  "productName": "Lux",
+  "name": "lux",
+  "description": "Lux Client",
+  "author": "Lux Team <lux@pluginhub.de>",
   "version": "1.6.12",
   "main": "electron/main.js",
   "scripts": {
@@ -17,15 +17,15 @@
     "dist-all": "npm run dist-clean && npm run build && electron-builder -wl"
   },
   "build": {
-    "appId": "de.pluginhub.mclc",
-    "productName": "MCLC",
+    "appId": "de.pluginhub.lux",
+    "productName": "Lux",
     "compression": "normal",
     "icon": "resources/icon.png",
     "publish": [
       {
         "provider": "github",
-        "owner": "MCLC-Client",
-        "repo": "MCLC-Client"
+        "owner": "LuxClient",
+        "repo": "LuxClient"
       }
     ],
     "files": [
@@ -76,12 +76,12 @@
         "dmg",
         "zip"
       ],
-      "executableName": "MCLC",
+      "executableName": "Lux",
       "icon": "resources/icon.icns",
       "extendInfo": {
-        "CFBundleName": "MCLC",
-        "CFBundleDisplayName": "MCLC",
-        "CFBundleExecutable": "MCLC"
+        "CFBundleName": "Lux",
+        "CFBundleDisplayName": "Lux",
+        "CFBundleExecutable": "Lux"
       },
       "category": "public.app-category.games",
       "artifactName": "${productName}-setup.${ext}"
@@ -93,7 +93,7 @@
         "rpm"
       ],
       "category": "Game",
-      "executableName": "mclc",
+      "executableName": "lux",
       "artifactName": "${productName}-setup.${ext}"
     }
   },

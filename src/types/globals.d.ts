@@ -8,6 +8,6 @@ declare global {
     electronAPI: ElectronAPI;
     React: typeof React;
     ReactDOM: typeof ReactDOM;
-    MCLC_API: Record<string, unknown>;
+    Lux_API: Record<string, unknown>;
   }
 }

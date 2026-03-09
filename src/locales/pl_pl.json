@@ -802,15 +802,15 @@
         "skipSelection": "Pomiń wybór (Domyślnie: Angielski)"
     },
     "agreement": {
-        "title": "Witamy w MCLC",
+        "title": "Witamy w Lux",
         "desc": "Aby kontynuować, przeczytaj i zaakceptuj naszą Politykę prywatności (z którą połączyliśmy nasze Warunki korzystania z usługi). Twoja prywatność i bezpieczeństwo danych są dla nas ważne.",
         "checkbox": "Przeczytałem i akceptuję Politykę prywatności",
         "privacy": "Polityka prywatności",
-        "start": "Uruchom MCLC",
+        "start": "Uruchom Lux",
         "decline": "Odrzuć",
         "opt_out": "Rezygnacja z analityki",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Wykryto awarię gry",

@@ -802,15 +802,15 @@
         "skipSelection": "Preskočiť výber (Predvolené: Angličtina)"
     },
     "agreement": {
-        "title": "Vitajte v MCLC",
+        "title": "Vitajte v Lux",
         "desc": "Prosím, prečítajte si a prijmite naše Zásady ochrany osobných údajov (do ktorých sme integrovali naše Zmluvné podmienky), aby ste mohli pokračovať. Vaše súkromie a bezpečnosť údajov sú pre nás dôležité.",
         "checkbox": "Prečítal som si a súhlasím so Zásadami ochrany osobných údajov",
         "privacy": "Zásady ochrany osobných údajov",
-        "start": "Spustiť MCLC",
+        "start": "Spustiť Lux",
         "decline": "Odmietnuť",
         "opt_out": "Odhlásenie z analytiky",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Zistený pád hry",

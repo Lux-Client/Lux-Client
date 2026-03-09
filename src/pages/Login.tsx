@@ -35,7 +35,7 @@ function Login({ onLoginSuccess, onGuestMode }) {
                     <CardContent className="p-6 sm:p-8">
                         <div className="mb-8 flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium uppercase tracking-[0.22em] text-muted-foreground">MCLC</p>
+                                <p className="text-sm font-medium uppercase tracking-[0.22em] text-muted-foreground">Lux</p>
                                 <h2 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{t('login.title')}</h2>
                             </div>
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/70 bg-background/60 text-primary shadow-sm">

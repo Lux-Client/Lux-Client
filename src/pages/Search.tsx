@@ -185,7 +185,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                 limit,
                 index: sortMethod,
                 projectType,
-                includeCurseforge: projectType === 'mod'
+                includeCurseforge: ['mod', 'resourcepack', 'shader'].includes(projectType)
             });
 
             if (res.success) {

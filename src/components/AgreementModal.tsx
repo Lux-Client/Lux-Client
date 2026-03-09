@@ -17,7 +17,7 @@ const AgreementModal = ({ onAccept, onDecline }) => {
                         <div className="space-y-3">
                             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
                                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                                MCLC
+                                Lux
                             </div>
                             <div>
                                 <h1 className="text-3xl font-semibold tracking-tight text-foreground">{t('agreement.title')}</h1>

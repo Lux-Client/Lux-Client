@@ -802,15 +802,15 @@
         "skipSelection": "Пропустить выбор (По умолчанию: Английский)"
     },
     "agreement": {
-        "title": "Добро пожаловать в MCLC",
+        "title": "Добро пожаловать в Lux",
         "desc": "Пожалуйста, прочтите и примите нашу Политику конфиденциальности (в которую мы включили наши Условия использования), чтобы продолжить. Ваша конфиденциальность и безопасность данных важны для нас.",
         "checkbox": "Я прочитал и согласен с Политикой конфиденциальности",
         "privacy": "Политика конфиденциальности",
-        "start": "Запустить MCLC",
+        "start": "Запустить Lux",
         "decline": "Отклонить",
         "opt_out": "Отказ от аналитики",
-        "privacy_url": "https://mclc.pluginhub.de/privacy-policy.html",
-        "opt_out_url": "https://mclc.pluginhub.de/analytics-opt-out.html"
+        "privacy_url": "https://lux.pluginhub.de/privacy-policy.html",
+        "opt_out_url": "https://lux.pluginhub.de/analytics-opt-out.html"
     },
     "crash": {
         "title": "Обнаружен сбой игры",

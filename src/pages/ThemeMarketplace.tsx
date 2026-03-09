@@ -30,7 +30,7 @@ const ThemeMarketplace = () => {
     const fetchOnlineThemes = async () => {
         setLoadingOnline(true);
         try {
-            const response = await fetch('https://mclc.pluginhub.de/api/extensions?type=theme');
+            const response = await fetch('https://lux.pluginhub.de/api/extensions?type=theme');
             if (response.ok) {
                 const data = await response.json();
                 const themesOnly = data.filter(ext => ext.type === 'theme');
@@ -51,7 +51,7 @@ const ThemeMarketplace = () => {
         setInstalling(theme.id);
 
         try {
-            const detailResponse = await fetch(`https://mclc.pluginhub.de/api/extensions/i/${theme.identifier}`);
+            const detailResponse = await fetch(`https://lux.pluginhub.de/api/extensions/i/${theme.identifier}`);
             if (!detailResponse.ok) {
                 throw new Error('Could not fetch theme details');
             }
@@ -62,13 +62,13 @@ const ThemeMarketplace = () => {
             }
 
             const latestVersionPath = detailData.versions[0].file_path;
-            const downloadUrl = `https://mclc.pluginhub.de/uploads/${encodeURIComponent(latestVersionPath)}`;
+            const downloadUrl = `https://lux.pluginhub.de/uploads/${encodeURIComponent(latestVersionPath)}`;
 
             const result = await window.electronAPI.installThemeFromMarketplace(downloadUrl);
 
             if (result.success) {
                 try {
-                    await fetch(`https://mclc.pluginhub.de/api/extensions/${theme.id}/download`, {
+                    await fetch(`https://lux.pluginhub.de/api/extensions/${theme.id}/download`, {
                         method: 'POST'
                     });
                 } catch (e) {
@@ -206,7 +206,7 @@ const ThemeMarketplace = () => {
                                         <div className="w-full aspect-video bg-muted relative overflow-hidden flex items-center justify-center border-b border-border">
                                             {ext.banner_path ? (
                                                 <img
-                                                    src={`https://mclc.pluginhub.de/uploads/${ext.banner_path}`}
+                                                    src={`https://lux.pluginhub.de/uploads/${ext.banner_path}`}
                                                     alt={ext.name}
                                                     className="w-full h-full object-cover transition-transform duration-500"
                                                     onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}

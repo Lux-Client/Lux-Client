@@ -9,15 +9,15 @@ function Toaster(props: React.ComponentProps<typeof Sonner>) {
             visibleToasts={4}
             toastOptions={{
                 classNames: {
-                    toast: 'mclc-sonner-toast',
-                    title: 'mclc-sonner-title',
-                    description: 'mclc-sonner-description',
-                    success: 'mclc-sonner-success',
-                    error: 'mclc-sonner-error',
-                    info: 'mclc-sonner-info',
-                    warning: 'mclc-sonner-warning',
-                    actionButton: 'mclc-sonner-action',
-                    cancelButton: 'mclc-sonner-cancel'
+                    toast: 'lux-sonner-toast',
+                    title: 'lux-sonner-title',
+                    description: 'lux-sonner-description',
+                    success: 'lux-sonner-success',
+                    error: 'lux-sonner-error',
+                    info: 'lux-sonner-info',
+                    warning: 'lux-sonner-warning',
+                    actionButton: 'lux-sonner-action',
+                    cancelButton: 'lux-sonner-cancel'
                 }
             }}
             {...props}
