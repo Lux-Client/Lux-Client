@@ -6,8 +6,8 @@
   
   <p>
     <em>
-      A modern Minecraft launcher, built with <b>Electron</b>, <b>React</b>, and <b>Tailwind CSS</b>.<br />
-      Manage instances, skins, and modpacks with style.
+      <b>Lux</b> is a Minecraft launcher built with <b>Electron</b>, <b>React</b>, and <b>Tailwind CSS</b>.<br />
+      Seamlessly manage all your Minecraft instances, skins, and modpacks in a clean, simple app.
     </em>
   </p>
   
@@ -34,20 +34,22 @@
 
 </div>
 
+---
+
 ## Features
 
 ### Instance Management
 
-- **Advanced Sorting & Grouping**: Organize your library by name, version, or playtime. Group instances by game version or loader for a cleaner look.
-- **Modrinth Integration**: Import modpacks and instances directly from Modrinth.
-- **One-Click Launch**: Launch Vanilla, Fabric, Forge, NeoForge, and Quilt instances.
+- **Sorting & Grouping**: Sort your instances by name, version, or playtime. You can also group them by version or loader.
+- **Modrinth Support**: Import modpacks and instances from Modrinth directly.
+- **Multiloader Launch**: Start Vanilla, Fabric, Forge, NeoForge, or Quilt with one click.
 
 ### Skin & Cape Viewer
 
-- **3D Previewing**: Real-time 3D rendering of your Minecraft skin and cape.
-- **2D Previews**: Head and body previews with depth shading.
-- **Direct Integration**: Equip default skins (Steve/Alex) or custom textures directly within the launcher.
-- **Slim Support**: Full support for slim (Alex) arm models.
+- **Live 3D Preview**: See your skin and cape in 3D inside the launcher.
+- **2D Previews**: Check out head and body images with lighting.
+- **Easy Skin Switching**: Use drag & drop or select files to change your skin.
+- **Slim Model**: Works with both standard and slim arm models.
 
 ---
 
@@ -57,7 +59,7 @@
 
 #### Quick Install (CLI)
 
-Open your terminal and run the following command:
+Open a terminal and run the matching command for your system:
 
 **Linux & macOS:**
 ```bash
@@ -71,121 +73,82 @@ iwr https://lux.pluginhub.de/install.ps1 | iex
 
 #### Manual Installation
 
-1. **Download** the latest installer for your operating system from the [official website](https://lux.pluginhub.de). Choose between:
+1. Download the installer for your OS from the [official website](https://lux.pluginhub.de).
+2. Run the installer and follow the prompts.
+
+---
 
 ### For Developers
 
 #### Prerequisites
 
-- [Node.js](https://nodejs.org/) (Latest LTS version is recommended)
-- Package manager: [npm](https://www.npmjs.com/) (comes with Node.js) or [yarn](https://yarnpkg.com/)
+- [Node.js](https://nodejs.org/) (latest LTS)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
 
-#### Getting Started
+#### Steps
 
-1. **Clone the Repository**
-
+1. Clone the repository:
    ```bash
    git clone https://github.com/LuxClient/LuxClient.git
    cd LuxClient
    ```
 
-2. **Install Dependencies**
-
-   Using npm:
-
+2. Install dependencies:
    ```bash
    npm install
-   ```
-
-   Or, if you prefer yarn:
-
-   ```bash
+   # or
    yarn install
    ```
 
-3. **Start the Development Server**
-
-   Run the app in development mode for live reloading:
-
-   Using npm:
-
+3. Start the dev server:
    ```bash
    npm run dev
-   ```
-
-   Using yarn:
-
-   ```bash
+   # or
    yarn dev
    ```
 
-4. **Build for Production**
-
-   Create optimized builds for production release:
-
-   Using npm:
-
+4. Build for production:
    ```bash
    npm run dist
-   ```
-
-   Using yarn:
-
-   ```bash
+   # or
    yarn dist
    ```
 
-5. **Additional Scripts**
+5. Useful scripts:
+   - Lint: `npm run lint`
+   - Local test: `npm run dev`
 
-   - **Lint the codebase**  
-
-     ```bash
-     npm run lint
-     ```
-
-   - **Test locally**  
-
-     ```bash
-     npm run dev
-     ```
-
-6. **Useful Tips**
-
-   - If you encounter issues with native modules (e.g., `node-gyp`), ensure your Node version matches the Electron version used.
-   - The project uses [Vite](https://vitejs.dev/) for fast refresh and build times.
+6. Tips:
+   - If you have errors with native dependencies, check that Node and Electron match versions.
+   - The project uses [Vite](https://vitejs.dev/) for fast building and hot reload.
 
 ---
 
-Feel free to open an issue or discussion if you run into setup problems!
+Found a bug or need help? [Create an issue](https://github.com/Lux-Client/LuxClient/issues) or join a [discussion](https://github.com/Lux-Client/LuxClient/discussions).
 
 ---
 
 ## Tech Stack
 
-- **Electron** – Cross-platform desktop application runtime ([electronjs.org](https://www.electronjs.org/))
-- **React** – Modern component-based UI library ([reactjs.org](https://reactjs.org/))
-- **Vite** – Lightning-fast development/build tooling ([vitejs.dev](https://vitejs.dev/))
-- **Tailwind CSS** – Utility-first CSS framework for rapid UI development ([tailwindcss.com](https://tailwindcss.com/))
-- **Minecraft Integration**:
-  - [skinview3d](https://github.com/bs-community/skinview3d) (real-time 3D skin/model previews)
-- **State Management**: React Context API & Hooks (efficient and scalable local state handling)
-- **Other**:
-  - JavaScript
-  - ESLint & Prettier (code quality and formatting)
-
-*The stack is designed for performance, extensibility, and visually rich Minecraft integrations.*
+- **Electron** – The desktop platform ([electronjs.org](https://www.electronjs.org/))
+- **React** – The UI framework ([reactjs.org](https://reactjs.org/))
+- **Vite** – Tooling ([vitejs.dev](https://vitejs.dev/))
+- **Tailwind CSS** – Styling ([tailwindcss.com](https://tailwindcss.com/))
+- **skinview3d** – 3D Minecraft skin/model previews.
+- **State Management**: React Context and Hooks.
+- **Tooling**: JavaScript (ESNext), ESLint, and Prettier.
 
 ---
 
 ## Screenshots
 
-Below are example screenshots showcasing Lux's interface and features.
-
-> Screenshots will be posted soon! Stay updated for a visual walkthrough of the latest version.
+Screenshots are coming soon.
 
 ---
 
 ## Contributors
 
-- Core team: **Fernsehheft, Mobilestars, ItzzMateo**
-- Contributors to the latest version: **Tamino112, Foxof7207, blaxk**
+- **Core Team:** Fernsehheft, Mobilestars, ItzzMateo
+- **Recent:** Tamino112, Foxof7207, blaxk
+
+Thanks to everyone who’s helped with Lux!
