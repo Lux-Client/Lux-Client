@@ -211,87 +211,89 @@ function AppSidebar({
         </div>
 
         <ScrollArea className="flex-1">
-          <div className={cn('flex flex-col gap-1.5 py-3', isCollapsed ? 'px-2.5' : 'px-3')}>
-            {menuItems.map((item) => (
-              <NavItem key={item.id} item={item} />
-            ))}
-          </div>
+          <div className="flex flex-col w-full h-full">
+            <div className={cn('flex flex-col gap-1.5 py-3', isCollapsed ? 'px-2.5' : 'px-3')}>
+              {menuItems.map((item) => (
+                <NavItem key={item.id} item={item} />
+              ))}
+            </div>
 
-          {currentMode === 'launcher' && recentInstances.length > 0 && (
-            <>
-              <div className={cn('py-2', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
-                <Separator className="opacity-50" />
-              </div>
-              <div
-                className={cn(
-                  'overflow-hidden px-5',
-                  layoutTransitionClass,
-                  isCollapsed ? 'max-h-0 pb-0 opacity-0 -translate-y-1' : 'max-h-8 pb-1 opacity-100 translate-y-0'
-                )}
-              >
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t('common.recent', 'Recent')}
-                </span>
-              </div>
-              <div className={cn('flex flex-col gap-1', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
-                {recentInstances.map((inst) => {
-                  const button = (
-                    <button
-                      key={inst.name}
-                      onClick={() => onInstanceClick && onInstanceClick(inst)}
-                      className={cn(
-                        'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground outline-none focus:outline-none focus-visible:outline-none',
-                        layoutTransitionClass,
-                        isCollapsed ? 'px-2.5' : 'px-4'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'flex shrink-0 items-center justify-center overflow-hidden',
-                          layoutTransitionClass,
-                          isCollapsed ? 'w-full' : 'w-6'
-                        )}
-                      >
-                        <div className={cn('overflow-hidden rounded-md bg-muted', layoutTransitionClass, isCollapsed ? 'h-5 w-5' : 'h-6 w-6')}>
-                          {inst.icon && inst.icon.startsWith('data:') ? (
-                            <img src={inst.icon} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <LayoutGrid className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <SidebarLabel className="truncate text-xs">{inst.name}</SidebarLabel>
-                    </button>
-                  );
-
-                  return wrapWithTooltip(button, inst.name, inst.name);
-                })}
-              </div>
-            </>
-          )}
-
-          {currentMode === 'launcher' && (
-            <div className={cn('py-2', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
-              {wrapWithTooltip(
-                <button
-                  onClick={() => onCreateInstance && onCreateInstance()}
+            {currentMode === 'launcher' && recentInstances.length > 0 && (
+              <>
+                <div className={cn('py-2', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
+                  <Separator className="opacity-50" />
+                </div>
+                <div
                   className={cn(
-                    'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 outline-none focus:outline-none focus-visible:outline-none',
+                    'overflow-hidden w-full',
                     layoutTransitionClass,
-                    isCollapsed ? 'px-2.5' : 'px-4'
+                    isCollapsed ? 'max-h-0 px-0 pb-0 opacity-0 -translate-y-1' : 'max-h-8 px-5 pb-1 opacity-100 translate-y-0'
                   )}
                 >
-                  <div className={iconShiftClass}>
-                    <Plus className="h-4 w-4 shrink-0" />
-                  </div>
-                  <SidebarLabel>{t('common.new_instance')}</SidebarLabel>
-                </button>,
-                t('common.new_instance')
-              )}
-            </div>
-          )}
+                  <span className="block truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('common.recent', 'Recent')}
+                  </span>
+                </div>
+                <div className={cn('flex flex-col gap-1', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
+                  {recentInstances.map((inst) => {
+                    const button = (
+                      <button
+                        key={inst.name}
+                        onClick={() => onInstanceClick && onInstanceClick(inst)}
+                        className={cn(
+                          'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground outline-none focus:outline-none focus-visible:outline-none',
+                          layoutTransitionClass,
+                          isCollapsed ? 'px-2.5' : 'px-4'
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'flex shrink-0 items-center justify-center overflow-hidden',
+                            layoutTransitionClass,
+                            isCollapsed ? 'w-full' : 'w-6'
+                          )}
+                        >
+                          <div className={cn('overflow-hidden rounded-md bg-muted', layoutTransitionClass, isCollapsed ? 'h-5 w-5' : 'h-6 w-6')}>
+                            {inst.icon && inst.icon.startsWith('data:') ? (
+                              <img src={inst.icon} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <LayoutGrid className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <SidebarLabel className="truncate text-xs">{inst.name}</SidebarLabel>
+                      </button>
+                    );
+
+                    return wrapWithTooltip(button, inst.name, inst.name);
+                  })}
+                </div>
+              </>
+            )}
+
+            {currentMode === 'launcher' && (
+              <div className={cn('py-2', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
+                {wrapWithTooltip(
+                  <button
+                    onClick={() => onCreateInstance && onCreateInstance()}
+                    className={cn(
+                      'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 outline-none focus:outline-none focus-visible:outline-none',
+                      layoutTransitionClass,
+                      isCollapsed ? 'px-2.5' : 'px-4'
+                    )}
+                  >
+                    <div className={iconShiftClass}>
+                      <Plus className="h-4 w-4 shrink-0" />
+                    </div>
+                    <SidebarLabel>{t('common.new_instance')}</SidebarLabel>
+                  </button>,
+                  t('common.new_instance')
+                )}
+              </div>
+            )}
+          </div>
         </ScrollArea>
 
         <div className={cn('mt-auto flex flex-col gap-1.5 py-3', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
