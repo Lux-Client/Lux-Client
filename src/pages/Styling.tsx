@@ -495,6 +495,8 @@ function Styling() {
         root.style.setProperty("--bg-type", "none");
       }
     }
+
+    updateShadcnVars(t);
   };
 
   const handleUpdate = (key, value) => {
