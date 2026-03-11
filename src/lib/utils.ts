@@ -57,12 +57,16 @@ export function updateShadcnVars(theme) {
   const surfaceHsl = hexToHsl(surface);
   const primaryHsl = hexToHsl(primary);
 
-  const darkerBg = hexToHsl(adjustHex(bg, -10));
-  const lighterBg = hexToHsl(adjustHex(bg, 12));
-  const mutedBg = hexToHsl(adjustHex(bg, 18));
-  const borderColor = hexToHsl(adjustHex(bg, 16));
+  const isBgLight = isLightHex(bg);
+  const dir = isBgLight ? -1 : 1;
+  const popBgDir = isBgLight ? 1 : -1;
+
+  const darkerBg = hexToHsl(adjustHex(bg, 10 * popBgDir));
+  const lighterBg = hexToHsl(adjustHex(bg, 12 * dir));
+  const mutedBg = hexToHsl(adjustHex(bg, 18 * dir));
+  const borderColor = hexToHsl(adjustHex(bg, 16 * dir));
   const mutedFg = hexToHsl(adjustHex(textOnSurface, isLightHex(textOnSurface) ? -26 : 26));
-  const accentBg = hexToHsl(adjustHex(bg, 22));
+  const accentBg = hexToHsl(adjustHex(bg, 22 * dir));
   const textOnBackgroundHsl = hexToHsl(textOnBackground);
   const textOnSurfaceHsl = hexToHsl(textOnSurface);
   const textOnPrimaryHsl = hexToHsl(textOnPrimary);

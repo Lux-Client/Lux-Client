@@ -6,7 +6,7 @@ import {
   Command, CommandInput, CommandList, CommandEmpty,
   CommandGroup, CommandItem, CommandSeparator, CommandShortcut
 } from './ui/command';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import {
   Home, LayoutGrid, Search, User, Puzzle, Palette,
   Settings, Newspaper, Play, Server, Rocket, Gamepad2, List
@@ -70,6 +70,8 @@ function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentM
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 max-w-xl rounded-xl border-border/50 shadow-2xl duration-300 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-2 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-bottom-4 data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-top-[50%] data-[state=open]:slide-in-from-top-[50%] [&>button]:hidden">
+        <DialogTitle className="sr-only">Command Palette</DialogTitle>
+        <DialogDescription className="sr-only">Search and quick navigation commands.</DialogDescription>
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground">
           <CommandInput placeholder={t('dashboard.search_placeholder', 'Type a command or search...')} className="h-12" />
           <CommandList className="max-h-[400px]">
