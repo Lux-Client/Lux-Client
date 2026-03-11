@@ -6,6 +6,7 @@ const Store = require('electron-store');
 const store = new Store();
 const backupManager = require('../backupManager');
 const { getProcessStats } = require('../utils/process-utils');
+const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
 module.exports = (ipcMain, mainWindow) => {
 
     const runningInstances = new Map();
@@ -212,7 +213,8 @@ Add-Type -TypeDefinition $code -Language CSharp
         activeLaunches.set(instanceName, { cancelled: false });
 
         try {
-            const instanceDir = path.join(app.getPath('userData'), 'instances', instanceName);
+            const fallbackInstanceDir = path.join(resolvePrimaryInstancesDir(), instanceName);
+            const instanceDir = resolveInstanceDirByName(instanceName) || fallbackInstanceDir;
             const configPath = path.join(instanceDir, 'instance.json');
 
             if (!await fs.pathExists(configPath)) return { success: false, error: 'Instance not found' };

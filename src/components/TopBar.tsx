@@ -179,21 +179,23 @@ function TopBar({
         )}
       </div>
 
-      <div className="flex-1 flex items-center justify-center mx-2 lg:mx-4 gap-2 no-drag min-w-0">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-10 w-full max-w-[280px] gap-2 rounded-xl border-border/50 bg-background/50 px-2 lg:px-4 text-sm text-muted-foreground justify-start"
-          onClick={onOpenCommandPalette}
-          disabled={!isCommandPaletteAvailable}
-        >
-          <Search className="h-4 w-4 shrink-0" />
-          <span className="hidden md:inline truncate">{t('dashboard.search_placeholder', 'Search...')}</span>
-          <kbd className="hidden lg:inline-flex ml-auto pointer-events-none h-6 select-none items-center gap-1 rounded-md border border-border bg-muted px-2 font-mono text-[11px] font-medium text-muted-foreground">
-            Ctrl+K
-          </kbd>
-        </Button>
-        <ExtensionSlot name="header.center" className="flex items-center gap-2" />
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 no-drag pointer-events-none" style={{ maxWidth: 'calc(100% - 480px)' }}>
+        <div className="pointer-events-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 w-full max-w-[280px] gap-2 rounded-xl border-border/50 bg-background/50 px-2 lg:px-4 text-sm text-muted-foreground justify-start"
+            onClick={onOpenCommandPalette}
+            disabled={!isCommandPaletteAvailable}
+          >
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="hidden md:inline truncate">{t('dashboard.search_placeholder', 'Search...')}</span>
+            <kbd className="hidden lg:inline-flex ml-auto pointer-events-none h-6 select-none items-center gap-1 rounded-md border border-border bg-muted px-2 font-mono text-[11px] font-medium text-muted-foreground">
+              Ctrl+K
+            </kbd>
+          </Button>
+          <ExtensionSlot name="header.center" className="flex items-center gap-2" />
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-1.5 lg:gap-2 no-drag shrink-0">

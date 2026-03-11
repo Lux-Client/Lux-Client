@@ -58,6 +58,7 @@ function Settings({ mode = 'default' }) {
         animationsExaggerated: false,
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
+        instancesPath: '',
         minMemory: 1024,
         maxMemory: 4096,
         resolutionWidth: 854,
@@ -333,6 +334,14 @@ function Settings({ mode = 'default' }) {
             addNotification(t('settings.java.select_valid'), 'error');
         }
     };
+
+    const handleSelectInstancesPath = async () => {
+        const result = await window.electronAPI.selectFolder();
+        if (result && !result.canceled && result.filePaths && result.filePaths[0]) {
+            handleChange('instancesPath', result.filePaths[0]);
+        }
+    };
+
     const handleManualSave = () => {
         saveSettings(settings, false);
     };
@@ -829,6 +838,36 @@ function Settings({ mode = 'default' }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                <div>
+                                    <Label className="mb-2 block">{t('settings.instance.storage_path', 'Instance Folder')}</Label>
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        <Input
+                                            value={settings.instancesPath || ''}
+                                            onChange={(e) => handleChange('instancesPath', e.target.value)}
+                                            placeholder={t('settings.instance.storage_path_placeholder', 'Default: %appdata%\\Lux\\instances')}
+                                            className="flex-1 font-mono text-xs"
+                                        />
+                                        <Button variant="outline" size="sm" onClick={handleSelectInstancesPath}>
+                                            <FolderOpen />
+                                            {t('settings.java.browse', 'Browse')}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleChange('instancesPath', '')}
+                                            disabled={!settings.instancesPath}
+                                        >
+                                            <RotateCcw />
+                                            {t('settings.instance.storage_path_reset', 'Default')}
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                        {t('settings.instance.storage_path_desc', 'Leave empty to use the default folder. Restart the launcher after changing this path.')}
+                                    </p>
+                                </div>
+
+                                <Separator />
+
                                 <ToggleBox
                                     checked={settings.copySettingsEnabled || false}
                                     onChange={(val) => handleChange('copySettingsEnabled', val)}

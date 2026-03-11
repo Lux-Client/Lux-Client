@@ -16,6 +16,7 @@ module.exports = (ipcMain) => {
         showDisabledFeatures: false,
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
+        instancesPath: '',
         optimization: true,
         focusMode: false,
         minimalMode: true,

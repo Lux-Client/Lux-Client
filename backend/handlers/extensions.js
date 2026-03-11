@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const axios = require('axios');
 const JSZip = require('jszip');
 const { transform } = require('sucrase');
+const { getAllInstanceDirsSync } = require('../utils/instances-path');
 
 module.exports = (ipcMain, mainWindow) => {
     const extensionsDir = path.join(app.getPath('userData'), 'extensions');
@@ -45,9 +46,27 @@ module.exports = (ipcMain, mainWindow) => {
         },
         launcher: {
             getInstances: () => {
-                const instDir = path.join(app.getPath('userData'), 'instances');
-                if (!fs.existsSync(instDir)) return [];
-                return fs.readdirSync(instDir).filter(f => fs.statSync(path.join(instDir, f)).isDirectory());
+                const names = new Set();
+                const baseDirs = getAllInstanceDirsSync();
+
+                for (const instDir of baseDirs) {
+                    if (!fs.existsSync(instDir)) continue;
+
+                    const dirs = fs.readdirSync(instDir);
+                    for (const dirName of dirs) {
+                        const instancePath = path.join(instDir, dirName);
+                        const configPath = path.join(instancePath, 'instance.json');
+
+                        try {
+                            if (fs.statSync(instancePath).isDirectory() && fs.existsSync(configPath)) {
+                                names.add(dirName);
+                            }
+                        } catch (_) {
+                        }
+                    }
+                }
+
+                return Array.from(names);
             }
         },
         app,

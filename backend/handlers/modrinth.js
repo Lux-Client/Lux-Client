@@ -10,7 +10,7 @@ const CURSEFORGE_VERSION_PREFIX = 'cf-file:';
 const MODRINTH_PROJECT_PREFIX = 'modrinth:';
 const USER_AGENT = 'LuxAGENT/MinecraftLauncher/1.0 (fernsehheft@pluginhub.de)';
 const appData = app.getPath('userData');
-const instancesDir = path.join(appData, 'instances');
+const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
 const modrinthToCurseForgeProjectMap = new Map();
 
 const CURSEFORGE_CLASS_BY_PROJECT_TYPE = {
@@ -791,7 +791,8 @@ const resolveInstallContext = async (data) => {
             version = serverConfig.version;
         }
     } else {
-        const instanceJsonPath = path.join(instancesDir, data.instanceName, 'instance.json');
+        const instanceDir = resolveInstanceDirByName(data.instanceName) || path.join(resolvePrimaryInstancesDir(), data.instanceName);
+        const instanceJsonPath = path.join(instanceDir, 'instance.json');
         if (await fs.pathExists(instanceJsonPath)) {
             const instance = await fs.readJson(instanceJsonPath);
             loader = instance.loader ? instance.loader.toLowerCase() : 'vanilla';
@@ -932,12 +933,12 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
         let folder = getFolderForProjectType(projectType);
         let resolvedServerSoftware = '';
 
-        const baseDir = isServer ? path.join(appData, 'servers') : instancesDir;
-        const resolvedName = isServer
-            ? await resolveServerSafeName(instanceName, serverSafeName)
-            : instanceName;
+        let resolvedName = instanceName;
+        let contentDir;
 
         if (isServer) {
+            const baseDir = path.join(appData, 'servers');
+            resolvedName = await resolveServerSafeName(instanceName, serverSafeName);
             const serverJsonPath = path.join(baseDir, resolvedName, 'server.json');
             if (await fs.pathExists(serverJsonPath)) {
                 try {
@@ -948,8 +949,12 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
                     console.warn('[Modrinth:Install] Could not read server config for folder resolution:', readError.message);
                 }
             }
+
+            contentDir = path.join(baseDir, resolvedName, folder);
+        } else {
+            const instanceDir = resolveInstanceDirByName(instanceName) || path.join(resolvePrimaryInstancesDir(), instanceName);
+            contentDir = path.join(instanceDir, folder);
         }
-        const contentDir = path.join(baseDir, resolvedName, folder);
 
         console.log(`[Modrinth:Install] Starting install for ${instanceName} (${projectType})`);
         console.log(`[Modrinth:Install] isServer=${!!isServer}, resolvedName=${resolvedName}, software=${resolvedServerSoftware || 'n/a'}, folder=${folder}`);
@@ -1064,7 +1069,8 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
         }
         if (projectType === 'shader') {
             try {
-                const instanceJsonPath = path.join(instancesDir, instanceName, 'instance.json');
+                const instanceDir = resolveInstanceDirByName(instanceName) || path.join(resolvePrimaryInstancesDir(), instanceName);
+                const instanceJsonPath = path.join(instanceDir, 'instance.json');
                 if (await fs.pathExists(instanceJsonPath)) {
                     const instance = await fs.readJson(instanceJsonPath);
                     const loader = instance.loader ? instance.loader.toLowerCase() : 'vanilla';
@@ -1081,7 +1087,7 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
 
                     for (const sw of softwares) {
                         try {
-                            const modsDir = path.join(instancesDir, instanceName, 'mods');
+                            const modsDir = path.join(instanceDir, 'mods');
                             await fs.ensureDir(modsDir);
                             const currentFiles = await fs.readdir(modsDir);
 
@@ -1511,9 +1517,16 @@ module.exports = (ipcMain, win) => {
         try {
             const folder = getFolderForProjectType(projectType);
 
-            const baseDir = isServer ? path.join(appData, 'servers') : instancesDir;
-            const resolvedName = isServer ? sanitizeFileName(instanceName) : instanceName;
-            const contentDir = path.join(baseDir, resolvedName, folder);
+            let contentDir;
+            if (isServer) {
+                const baseDir = path.join(appData, 'servers');
+                const resolvedName = sanitizeFileName(instanceName);
+                contentDir = path.join(baseDir, resolvedName, folder);
+            } else {
+                const instanceDir = resolveInstanceDirByName(instanceName) || path.join(resolvePrimaryInstancesDir(), instanceName);
+                contentDir = path.join(instanceDir, folder);
+            }
+
             const oldPath = path.join(contentDir, oldFileName);
             const newPath = path.join(contentDir, newFileName);
 

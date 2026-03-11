@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "../context/NotificationContext";
-import ColorPicker from "../components/ColorPicker";
 import SliderControl from "../components/SliderControl";
 import ThemeCard from "../components/ThemeCard";
 import MiniPreview from "../components/MiniPreview";
@@ -616,41 +615,72 @@ function Styling() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {t('styling.accent_base')}
+                      {t('styling.accent_base_text_color')}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-5">
-                    <ColorPicker
-                      label={t('styling.accent_color')}
-                      value={theme.primaryColor}
-                      onChange={(val) => handleUpdate("primaryColor", val)}
-                    />
-                    <ColorPicker
-                      label={t('styling.background')}
-                      value={theme.backgroundColor}
-                      onChange={(val) => handleUpdate("backgroundColor", val)}
-                    />
-                    <ColorPicker
-                      label={t('styling.panels')}
-                      value={theme.surfaceColor}
-                      onChange={(val) => handleUpdate("surfaceColor", val)}
-                    />
-                    <Separator />
-                    <ColorPicker
-                      label={t('styling.text_on_background', 'Text on Background')}
-                      value={theme.textOnBackground}
-                      onChange={(val) => handleUpdate("textOnBackground", val)}
-                    />
-                    <ColorPicker
-                      label={t('styling.text_on_surface', 'Text on Surface')}
-                      value={theme.textOnSurface}
-                      onChange={(val) => handleUpdate("textOnSurface", val)}
-                    />
-                    <ColorPicker
-                      label={t('styling.text_on_primary', 'Text on Primary')}
-                      value={theme.textOnPrimary}
-                      onChange={(val) => handleUpdate("textOnPrimary", val)}
-                    />
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-3">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {t('styling.color')}
+                      </span>
+                      <span className="w-10 justify-self-center text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {t('styling.base')}
+                      </span>
+                      <span className="w-10 justify-self-center text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {t('styling.text')}
+                      </span>
+
+                      {[
+                        {
+                          id: 'accent',
+                          label: t('styling.accent_color'),
+                          baseKey: 'primaryColor',
+                          textKey: 'textOnPrimary',
+                        },
+                        {
+                          id: 'background',
+                          label: t('styling.background'),
+                          baseKey: 'backgroundColor',
+                          textKey: 'textOnBackground',
+                        },
+                        {
+                          id: 'panels',
+                          label: t('styling.panels'),
+                          baseKey: 'surfaceColor',
+                          textKey: 'textOnSurface',
+                        },
+                      ].map((row) => (
+                        <React.Fragment key={row.id}>
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            {row.label}
+                          </Label>
+                          <input
+                            type="color"
+                            value={theme[row.baseKey]}
+                            onChange={(e) => handleUpdate(row.baseKey, e.target.value)}
+                            className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
+                            style={{
+                              background: theme[row.baseKey],
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'none',
+                              appearance: 'none',
+                            }}
+                          />
+                          <input
+                            type="color"
+                            value={theme[row.textKey]}
+                            onChange={(e) => handleUpdate(row.textKey, e.target.value)}
+                            className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
+                            style={{
+                              background: theme[row.textKey],
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'none',
+                              appearance: 'none',
+                            }}
+                          />
+                        </React.Fragment>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
 

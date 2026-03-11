@@ -4,6 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { app } = require('electron');
 const { installModInternal } = require('./modrinth');
+const { resolvePrimaryInstancesDir } = require('../utils/instances-path');
 const SERVER_URL = 'https://lux.pluginhub.de';
 
 console.log('[ModpackCode-Handler] 🔧 Modul wird geladen...');
@@ -22,7 +23,7 @@ module.exports = (ipcMain, win) => {
     console.log('[ModpackCode-Handler] 🔌 Registriere Handler...');
 
     const appData = app.getPath('userData');
-    const instancesDir = path.join(appData, 'instances');
+    const instancesDir = resolvePrimaryInstancesDir();
     const modCachePath = path.join(appData, 'mods_cache.json');
     ipcMain.handle('modpack:export-code', async (event, data) => {
         console.log('[ModpackCode-Handler] 📤 Export handler AUFGERUFEN', data);

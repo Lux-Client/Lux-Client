@@ -16,6 +16,11 @@ const AdmZip = require('adm-zip');
 const archiver = require('archiver');
 const { spawn } = require('child_process');
 const nbt = require('prismarine-nbt');
+const {
+    resolvePrimaryInstancesDir,
+    getAllInstanceDirsSync,
+    migrateLegacyInstancesToPrimarySync
+} = require('../utils/instances-path');
 let appData;
 let instancesDir;
 let globalBackupsDir;
@@ -437,8 +442,19 @@ module.exports = (ipcMain, win) => {
 
         if (!appData) {
             appData = app.getPath('userData');
-            instancesDir = path.join(appData, 'instances');
+            instancesDir = resolvePrimaryInstancesDir();
             globalBackupsDir = path.join(appData, 'backups');
+
+            const migration = migrateLegacyInstancesToPrimarySync();
+            instancesDir = migration.primaryDir;
+
+            if (migration.migrated.length > 0) {
+                console.log('[Instances] Migrated legacy instances:', migration.migrated);
+            }
+            if (migration.skipped.length > 0) {
+                console.log('[Instances] Skipped legacy instance migrations:', migration.skipped);
+            }
+
             console.log('[Instances] Initialized paths:', { appData, instancesDir, globalBackupsDir });
         }
 
@@ -1595,21 +1611,33 @@ module.exports = (ipcMain, win) => {
 
         ipcMain.handle('instance:get-all', async () => {
             try {
-                if (!await fs.pathExists(instancesDir)) return [];
-                const dirs = await fs.readdir(instancesDir);
-                const instances = [];
-                for (const dir of dirs) {
-                    const configPath = path.join(instancesDir, dir, 'instance.json');
-                    if (await fs.pathExists(configPath)) {
+                instancesDir = resolvePrimaryInstancesDir();
+                const baseDirs = getAllInstanceDirsSync();
+                if (baseDirs.length === 0) return [];
+
+                const instancesByName = new Map();
+
+                for (const baseDir of baseDirs) {
+                    if (!await fs.pathExists(baseDir)) continue;
+
+                    const dirs = await fs.readdir(baseDir);
+                    for (const dir of dirs) {
+                        const configPath = path.join(baseDir, dir, 'instance.json');
+                        if (!await fs.pathExists(configPath)) continue;
+
                         try {
                             const config = await fs.readJson(configPath);
-                            instances.push(config);
+                            const key = config?.name || dir;
+                            if (!instancesByName.has(key)) {
+                                instancesByName.set(key, config);
+                            }
                         } catch (e) {
                             console.error(`Failed to read instance config for ${dir}:`, e);
                         }
                     }
                 }
-                return instances;
+
+                return Array.from(instancesByName.values());
             } catch (e) {
                 console.error('Failed to list instances:', e);
                 return [];
@@ -1947,6 +1975,9 @@ module.exports = (ipcMain, win) => {
 
         ipcMain.handle('instance:create', async (_, { name, version, loader, loaderVersion, icon }) => {
             try {
+                instancesDir = resolvePrimaryInstancesDir();
+                await fs.ensureDir(instancesDir);
+
                 let finalName = name;
                 let dir = path.join(instancesDir, finalName);
                 let counter = 1;

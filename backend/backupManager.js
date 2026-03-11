@@ -2,11 +2,12 @@ const fs = require('fs-extra');
 const path = require('path');
 const archiver = require('archiver');
 const { app } = require('electron');
+const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('./utils/instances-path');
 
 class BackupManager {
     constructor() {
         this.backupsDir = path.join(app.getPath('userData'), 'backups');
-        this.instancesDir = path.join(app.getPath('userData'), 'instances');
+        this.instancesDir = resolvePrimaryInstancesDir();
         this.intervals = new Map();
     }
 
@@ -24,7 +25,8 @@ class BackupManager {
 
     
     async createBackup(instanceName) {
-        const instanceDir = path.join(this.instancesDir, instanceName);
+        this.instancesDir = resolvePrimaryInstancesDir();
+        const instanceDir = resolveInstanceDirByName(instanceName) || path.join(this.instancesDir, instanceName);
         const savesDir = path.join(instanceDir, 'saves');
         const instanceBackupsDir = path.join(this.backupsDir, instanceName);
 
