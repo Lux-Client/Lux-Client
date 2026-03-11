@@ -88,7 +88,8 @@
         "accounts": "Účty",
         "add_account": "Pridať účet",
         "installed": "Nainštalované",
-        "applying": "Aplikovanie..."
+        "applying": "Aplikovanie...",
+        "launching": "Spúšťa sa..."
     },
     "client_page": {
         "title": "Open Client",

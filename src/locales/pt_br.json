@@ -88,7 +88,8 @@
         "accounts": "Contas",
         "add_account": "Adicionar conta",
         "installed": "Instalado",
-        "applying": "Aplicando..."
+        "applying": "Aplicando...",
+        "launching": "Iniciando..."
     },
     "client_page": {
         "title": "Open Client",

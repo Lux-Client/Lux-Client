@@ -88,7 +88,8 @@
         "accounts": "Аккаунты",
         "add_account": "Добавить аккаунт",
         "installed": "Установлено",
-        "applying": "Применение..."
+        "applying": "Применение...",
+        "launching": "Запуск..."
     },
     "client_page": {
         "title": "Open Client",

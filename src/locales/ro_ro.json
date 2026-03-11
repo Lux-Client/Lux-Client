@@ -88,7 +88,8 @@
         "accounts": "Conturi",
         "add_account": "Adaugă cont",
         "installed": "Instalat",
-        "applying": "Se aplică..."
+        "applying": "Se aplică...",
+        "launching": "Pornire..."
     },
     "client_page": {
         "title": "Open Client",

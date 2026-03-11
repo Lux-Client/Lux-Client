@@ -90,7 +90,8 @@
         "accounts": "Accounts",
         "add_account": "Add Account",
         "installed": "Installed",
-        "applying": "Applying..."
+        "applying": "Applying...",
+        "launching": "Launching..."
     },
     "client_page": {
         "title": "Open Client",

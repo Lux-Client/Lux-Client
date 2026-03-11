@@ -88,7 +88,8 @@
         "accounts": "Konton",
         "add_account": "Lägg till konto",
         "installed": "Installerad",
-        "applying": "Tillämpar..."
+        "applying": "Tillämpar...",
+        "launching": "Startar..."
     },
     "client_page": {
         "title": "Open Client",

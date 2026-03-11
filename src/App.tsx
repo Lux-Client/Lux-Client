@@ -33,6 +33,7 @@ import CrashModal from './components/CrashModal';
 import { syncCustomFonts } from './services/fontManager';
 import { updateShadcnVars } from './lib/utils';
 import { useTranslation } from 'react-i18next';
+import i18n, { languageMap } from './i18n';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
     constructor(props: { children: React.ReactNode }) {
@@ -181,6 +182,16 @@ function App() {
             const res = await window.electronAPI?.getSettings();
             if (res.success) {
                 setAppSettings(res.settings);
+
+                if (res.settings.language) {
+                    let lang = res.settings.language;
+                    if (languageMap[lang as keyof typeof languageMap]) {
+                        lang = languageMap[lang as keyof typeof languageMap];
+                        window.electronAPI.saveSettings({ ...res.settings, language: lang });
+                    }
+                    i18n.changeLanguage(lang);
+                }
+
                 if (res.settings.theme) {
                     const t = res.settings.theme;
                     setTheme(t);
