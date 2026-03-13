@@ -267,6 +267,8 @@ export const AdvancedSkinEditorDialog = ({
     const pointerDownRef = useRef(false);
     const strokeActiveRef = useRef(false);
     const meshesRef = useRef<any[]>([]);
+    const innerLayerMeshesRef = useRef<any[]>([]);
+    const outerLayerMeshesRef = useRef<any[]>([]);
     const syncScheduledRef = useRef(false);
     const lastPointerRef = useRef({ x: -1, y: -1 });
     const historyRef = useRef<ImageData[]>([]);
@@ -277,6 +279,7 @@ export const AdvancedSkinEditorDialog = ({
     const mirrorModeRef = useRef<'none' | 'x' | 'y' | 'xy'>('none');
     const activeLargeViewRef = useRef<'player' | 'texture'>('player');
     const dragModeRef = useRef(false);
+    const paintLayerRef = useRef<'inner' | 'outer'>('inner');
 
     const [editorModel, setEditorModel] = useState(model || 'classic');
     const [brushColor, setBrushColor] = useState('#ff6600');
@@ -285,6 +288,7 @@ export const AdvancedSkinEditorDialog = ({
     const [mirrorMode, setMirrorMode] = useState<'none' | 'x' | 'y' | 'xy'>('none');
     const [activeLargeView, setActiveLargeView] = useState<'player' | 'texture'>('player');
     const [dragMode, setDragMode] = useState(false);
+    const [paintLayer, setPaintLayer] = useState<'inner' | 'outer'>('inner');
     const [pose, setPose] = useState('t_pose');
     const [flatPreview, setFlatPreview] = useState('');
     const [skinName, setSkinName] = useState('Edited Skin');
@@ -297,6 +301,7 @@ export const AdvancedSkinEditorDialog = ({
         setActiveLargeView('player');
         setPose('t_pose');
         setDragMode(false);
+        setPaintLayer('inner');
         logSkinEditorDebug(debugContext, 'dialog-opened', {
             editorModel: model || 'classic'
         });
@@ -333,6 +338,10 @@ export const AdvancedSkinEditorDialog = ({
             viewerRef.current.controls.enableRotate = dragMode;
         }
     }, [dragMode]);
+
+    useEffect(() => {
+        paintLayerRef.current = paintLayer;
+    }, [paintLayer]);
 
     const cloneImageData = (imageData) => {
         return new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
@@ -618,6 +627,15 @@ export const AdvancedSkinEditorDialog = ({
         const textureCanvas = textureCanvasRef.current;
         if (!viewer || !textureCanvas) return;
 
+        const collectMeshes = (root, target) => {
+            if (!root?.traverse) return;
+            root.traverse((obj) => {
+                if (obj?.isMesh && obj?.material?.map && obj?.geometry) {
+                    target.push(obj);
+                }
+            });
+        };
+
         try {
             setFlatPreview(textureCanvas.toDataURL('image/png'));
         } catch (previewError) {
@@ -648,13 +666,23 @@ export const AdvancedSkinEditorDialog = ({
             }
         });
 
-        const meshes = [];
-        viewer.playerObject.traverse(obj => {
-            if (obj?.isMesh && obj?.material?.map && obj?.geometry) {
-                meshes.push(obj);
-            }
+        const allMeshes = [];
+        const innerLayerMeshes = [];
+        const outerLayerMeshes = [];
+
+        ["head", "body", "rightArm", "leftArm", "rightLeg", "leftLeg"].forEach(part => {
+            const skinPart = viewer.playerObject.skin[part];
+            if (!skinPart) return;
+
+            collectMeshes(skinPart.innerLayer, innerLayerMeshes);
+            collectMeshes(skinPart.outerLayer, outerLayerMeshes);
         });
-        meshesRef.current = meshes;
+
+        allMeshes.push(...outerLayerMeshes, ...innerLayerMeshes);
+
+        meshesRef.current = allMeshes;
+        innerLayerMeshesRef.current = innerLayerMeshes;
+        outerLayerMeshesRef.current = outerLayerMeshes;
         applyPose();
         renderTextureLargeCanvas();
     };
@@ -963,7 +991,11 @@ export const AdvancedSkinEditorDialog = ({
 
                 pointerVectorRef.current.set(x, y);
                 raycasterRef.current.setFromCamera(pointerVectorRef.current, viewer.camera);
-                const intersections = raycasterRef.current.intersectObjects(meshesRef.current, false);
+                const preferredMeshes = paintLayerRef.current === 'inner'
+                    ? innerLayerMeshesRef.current
+                    : outerLayerMeshesRef.current;
+                const raycastMeshes = preferredMeshes.length > 0 ? preferredMeshes : meshesRef.current;
+                const intersections = raycasterRef.current.intersectObjects(raycastMeshes, false);
                 if (!intersections.length || !intersections[0].uv) return;
 
                 const uv = intersections[0].uv;
@@ -1067,6 +1099,8 @@ export const AdvancedSkinEditorDialog = ({
             pointerDownRef.current = false;
             strokeActiveRef.current = false;
             meshesRef.current = [];
+            innerLayerMeshesRef.current = [];
+            outerLayerMeshesRef.current = [];
             logSkinEditorDebug(debugContext, 'viewer-disposed');
         };
     }, [debugContext, open]);
@@ -1326,6 +1360,28 @@ export const AdvancedSkinEditorDialog = ({
                                 </Button>
                                 <Button type="button" variant={mirrorMode === 'xy' ? 'default' : 'outline'} size="sm" onClick={() => setMirrorMode('xy')}>
                                     {t('skins.mirror_both')}
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>{t('skins.paint_layer', 'Paint Layer')}</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant={paintLayer === 'inner' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setPaintLayer('inner')}
+                                >
+                                    {t('skins.first_layer', 'First Layer')}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={paintLayer === 'outer' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setPaintLayer('outer')}
+                                >
+                                    {t('skins.second_layer', 'Second Layer')}
                                 </Button>
                             </div>
                         </div>

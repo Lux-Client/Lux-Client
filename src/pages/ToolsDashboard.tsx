@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import PageContent from '../components/layout/PageContent';
@@ -6,8 +6,6 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { ScrollArea } from '../components/ui/scroll-area';
 import { AdvancedSkinEditorDialog } from './Skins';
 import { Wrench, Sparkles, Cuboid, FlaskConical, Hammer, ImageUp, Loader2, RotateCcw } from 'lucide-react';
 
@@ -67,14 +65,17 @@ const logToolsSkinEditorDebug = (event: string, details: Record<string, any> = {
     });
 };
 
+const toFileUrl = (filePath: string) => {
+    return `file:///${`${filePath}`.replace(/\\/g, '/')}`;
+};
+
 function ToolsDashboard() {
     const { t } = useTranslation();
     const { addNotification } = useNotification();
-    const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+    const [isStartEditorModalOpen, setIsStartEditorModalOpen] = useState(false);
     const [showAdvancedEditor, setShowAdvancedEditor] = useState(false);
-    const [loadSource, setLoadSource] = useState('file');
-    const [isImportingSkin, setIsImportingSkin] = useState(false);
-    const [localSkins, setLocalSkins] = useState<any[]>([]);
+    const [isSelectingTexture, setIsSelectingTexture] = useState(false);
+    const [editorSessionKey, setEditorSessionKey] = useState(0);
     const [skinSrc, setSkinSrc] = useState<string>(DEFAULT_STEVE.url);
     const [skinModel, setSkinModel] = useState<string>(DEFAULT_STEVE.model);
     const [selectedName, setSelectedName] = useState<string>(DEFAULT_STEVE.name);
@@ -86,104 +87,57 @@ function ToolsDashboard() {
         return t('tools.loaded_skin', 'Loaded: {{name}}', { name: selectedName });
     }, [selectedName, t]);
 
-    const loadLocalSkins = async () => {
-        try {
-            logToolsSkinEditorDebug('load-local-skins-start');
-            const skins = await window.electronAPI.getLocalSkins();
-            setLocalSkins(skins || []);
-            logToolsSkinEditorDebug('load-local-skins-success', {
-                count: (skins || []).length
-            });
-        } catch (error) {
-            console.error('Failed to load local skins for tools dashboard', error);
-            logToolsSkinEditorDebug('load-local-skins-failed', {
-                error: (error as any)?.message || String(error)
-            });
-        }
-    };
-
-    useEffect(() => {
-        if (isLoadModalOpen) {
-            loadLocalSkins();
-        }
-    }, [isLoadModalOpen]);
-
-    const handleLoadFromFile = async () => {
-        if (!window.electronAPI?.saveLocalSkin) return;
-        try {
-            setIsImportingSkin(true);
-            logToolsSkinEditorDebug('import-file-start');
-            const res = await window.electronAPI.saveLocalSkin();
-            if (!res.success) {
-                logToolsSkinEditorDebug('import-file-failed', {
-                    error: res.error || null
-                });
-                if (res.error !== 'Cancelled') {
-                    addNotification(t('skins.import_failed', { error: res.error }), 'error');
-                }
-                return;
-            }
-
-            await loadLocalSkins();
-
-            if (res.skin) {
-                const nextSkinSrc = res.skin.data || `file://${res.skin.path}`;
-                setSkinSrc(nextSkinSrc);
-                setSkinModel(res.skin.model || 'classic');
-                setSelectedName(res.skin.name || t('common.skins', 'Skin'));
-                logToolsSkinEditorDebug('import-file-success', {
-                    skinName: res.skin.name || null,
-                    skinModel: res.skin.model || 'classic',
-                    ...getToolsSkinSourceDebugInfo(nextSkinSrc)
-                });
-            }
-
-            addNotification(t('skins.import_success', 'Skin imported successfully.'), 'success');
-            setIsLoadModalOpen(false);
-        } catch (error: any) {
-            console.error('Failed to import skin file in tools dashboard', error);
-            logToolsSkinEditorDebug('import-file-error', {
-                error: error?.message || 'Unknown'
-            });
-            addNotification(t('skins.import_failed', { error: error?.message || 'Unknown' }), 'error');
-        } finally {
-            setIsImportingSkin(false);
-        }
-    };
-
-    const handleSelectLocalSkin = (skin: any) => {
-        const nextSkinSrc = skin.data || `file://${skin.path}`;
+    const openFreshEditorSession = (nextSkinSrc: string, nextModel: string, nextName: string) => {
         setSkinSrc(nextSkinSrc);
-        setSkinModel(skin.model || 'classic');
-        setSelectedName(skin.name || t('common.skins', 'Skin'));
-        setIsLoadModalOpen(false);
-        logToolsSkinEditorDebug('select-local-skin', {
-            skinId: skin.id,
-            skinName: skin.name || null,
-            skinModel: skin.model || 'classic',
-            ...getToolsSkinSourceDebugInfo(nextSkinSrc)
-        });
-        addNotification(t('tools.skin_loaded', 'Skin loaded into editor.'), 'success');
-    };
+        setSkinModel(nextModel);
+        setSelectedName(nextName);
+        setEditorSessionKey((prev) => prev + 1);
+        setShowAdvancedEditor(true);
+        setIsStartEditorModalOpen(false);
 
-    const handleResetToSteve = () => {
-        setSkinSrc(DEFAULT_STEVE.url);
-        setSkinModel(DEFAULT_STEVE.model);
-        setSelectedName(DEFAULT_STEVE.name);
-        logToolsSkinEditorDebug('reset-to-steve', {
-            skinName: DEFAULT_STEVE.name,
-            skinModel: DEFAULT_STEVE.model,
-            ...getToolsSkinSourceDebugInfo(DEFAULT_STEVE.url)
+        logToolsSkinEditorDebug('open-fresh-editor-session', {
+            selectedName: nextName,
+            skinModel: nextModel,
+            ...getToolsSkinSourceDebugInfo(nextSkinSrc)
         });
     };
 
     const handleOpenSkinEditor = () => {
-        logToolsSkinEditorDebug('open-skin-editor', {
-            selectedName,
-            skinModel,
-            ...getToolsSkinSourceDebugInfo(skinSrc)
-        });
-        setShowAdvancedEditor(true);
+        setIsStartEditorModalOpen(true);
+        logToolsSkinEditorDebug('open-editor-start-modal');
+    };
+
+    const handleStartWithSteve = () => {
+        openFreshEditorSession(DEFAULT_STEVE.url, DEFAULT_STEVE.model, DEFAULT_STEVE.name);
+    };
+
+    const handleStartWithTexture = async () => {
+        try {
+            setIsSelectingTexture(true);
+            const result = await window.electronAPI.openFileDialog({
+                properties: ['openFile'],
+                filters: [{ name: 'PNG Image', extensions: ['png'] }]
+            });
+
+            if (result?.canceled || !Array.isArray(result?.filePaths) || result.filePaths.length === 0) {
+                logToolsSkinEditorDebug('start-with-texture-cancelled');
+                return;
+            }
+
+            const selectedPath = `${result.filePaths[0]}`;
+            const fileNameWithExt = selectedPath.replace(/\\/g, '/').split('/').pop() || '';
+            const selectedSkinName = fileNameWithExt.replace(/\.[^.]+$/, '') || t('common.skins', 'Skin');
+
+            openFreshEditorSession(toFileUrl(selectedPath), 'classic', selectedSkinName);
+        } catch (error: any) {
+            console.error('Failed to start skin editor with texture', error);
+            logToolsSkinEditorDebug('start-with-texture-failed', {
+                error: error?.message || 'Unknown'
+            });
+            addNotification(t('skins.import_failed', { error: error?.message || 'Unknown' }), 'error');
+        } finally {
+            setIsSelectingTexture(false);
+        }
     };
 
     const handleSaveAdvancedSkin = async (skin: any, nextModel?: string, savedToPath?: string) => {
@@ -194,7 +148,7 @@ function ToolsDashboard() {
         if (skin.data) {
             setSkinSrc(skin.data);
         } else if (skin.path) {
-            setSkinSrc(`file://${skin.path}`);
+            setSkinSrc(toFileUrl(skin.path));
         }
 
         logToolsSkinEditorDebug('save-from-editor', {
@@ -216,62 +170,32 @@ function ToolsDashboard() {
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            <Dialog open={isLoadModalOpen} onOpenChange={setIsLoadModalOpen}>
-                <DialogContent className="max-w-3xl">
+            <Dialog open={isStartEditorModalOpen} onOpenChange={setIsStartEditorModalOpen}>
+                <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>{t('tools.load_skin', 'Load Skin')}</DialogTitle>
+                        <DialogTitle>{t('tools.start_skin_editor', 'Start Skin Editor')}</DialogTitle>
                     </DialogHeader>
 
-                    <Tabs value={loadSource} onValueChange={setLoadSource} className="space-y-4">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="file">{t('skins.source_file', 'File')}</TabsTrigger>
-                            <TabsTrigger value="library">{t('tools.library', 'Library')}</TabsTrigger>
-                        </TabsList>
+                    <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                            {t('tools.skin_editor_start_desc', 'Choose how you want to start: with Steve or with your own texture file.')}
+                        </p>
 
-                        <TabsContent value="file" className="mt-0 space-y-4">
-                            <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                                {t('tools.load_file_desc', 'Choose a PNG skin file to load it into the 3D editor.')}
-                            </div>
-                            <Button onClick={handleLoadFromFile} disabled={isImportingSkin} className="w-full">
-                                {isImportingSkin ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-                                {t('skins.choose_skin_file', 'Choose Skin File')}
-                            </Button>
-                        </TabsContent>
+                        <Button type="button" variant="outline" className="w-full justify-start" onClick={handleStartWithSteve}>
+                            <RotateCcw className="h-4 w-4" />
+                            {t('tools.start_with_steve', 'Start with Steve')}
+                        </Button>
 
-                        <TabsContent value="library" className="mt-0">
-                            <ScrollArea className="h-[360px] pr-3">
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {localSkins.length === 0 && (
-                                        <div className="col-span-full rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                                            {t('tools.library_empty', 'No skins in library yet. Import one from file first.')}
-                                        </div>
-                                    )}
-
-                                    {localSkins.map((skin: any) => (
-                                        <button
-                                            key={skin.id}
-                                            onClick={() => handleSelectLocalSkin(skin)}
-                                            className="rounded-lg border border-border bg-card/60 p-3 text-left hover:border-primary/60 transition-colors"
-                                        >
-                                            <div className="aspect-[1/1] rounded-md bg-muted/40 overflow-hidden mb-2 flex items-center justify-center">
-                                                <img
-                                                    src={skin.data || `file://${skin.path}`}
-                                                    alt={skin.name}
-                                                    className="w-full h-full object-contain image-pixelated"
-                                                />
-                                            </div>
-                                            <p className="text-xs font-medium text-foreground truncate">{skin.name}</p>
-                                            <p className="text-[11px] text-muted-foreground">{(skin.model || 'classic') === 'slim' ? t('skins.slim', 'Slim') : t('skins.wide', 'Wide')}</p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        </TabsContent>
-                    </Tabs>
+                        <Button type="button" className="w-full justify-start" onClick={handleStartWithTexture} disabled={isSelectingTexture}>
+                            {isSelectingTexture ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                            {t('tools.start_with_texture', 'Start with Texture')}
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 
             <AdvancedSkinEditorDialog
+                key={editorSessionKey}
                 open={showAdvancedEditor}
                 onOpenChange={setShowAdvancedEditor}
                 skinSrc={skinSrc}
@@ -310,7 +234,7 @@ function ToolsDashboard() {
                                     </h2>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    {t('tools.skin_editor_desc', 'Start with Steve by default. Use Load to import a file or choose a skin from your local library, then edit in the skin editor.')}
+                                    {t('tools.skin_editor_desc', 'Start the skin editor and choose Steve or your own texture as the base, then create your skin.')}
                                 </p>
                             </div>
                             <Badge variant="secondary" className="shrink-0">{t('common.new', 'New')}</Badge>
@@ -341,14 +265,6 @@ function ToolsDashboard() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                                <Button variant="secondary" onClick={() => setIsLoadModalOpen(true)}>
-                                    <ImageUp className="h-4 w-4" />
-                                    {t('tools.load_skin', 'Load Skin')}
-                                </Button>
-                                <Button variant="outline" onClick={handleResetToSteve}>
-                                    <RotateCcw className="h-4 w-4" />
-                                    {t('tools.reset_to_steve', 'Reset to Steve')}
-                                </Button>
                                 <Button onClick={handleOpenSkinEditor}>
                                     <Wrench className="h-4 w-4" />
                                     {t('tools.open_skin_editor', 'Open Skin Editor')}
