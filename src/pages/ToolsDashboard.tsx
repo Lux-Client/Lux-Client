@@ -186,7 +186,7 @@ function ToolsDashboard() {
         setShowAdvancedEditor(true);
     };
 
-    const handleSaveAdvancedSkin = async (skin: any, nextModel?: string) => {
+    const handleSaveAdvancedSkin = async (skin: any, nextModel?: string, savedToPath?: string) => {
         const resolvedModel = nextModel || skin.model || 'classic';
         setSkinModel(resolvedModel);
         setSelectedName(skin.name || t('skins.edited_skin', 'Edited Skin'));
@@ -202,10 +202,16 @@ function ToolsDashboard() {
             skinName: skin.name || null,
             skinModel: resolvedModel,
             hasData: !!skin.data,
-            hasPath: !!skin.path
+            hasPath: !!skin.path,
+            savedToPath: savedToPath || null
         });
 
-        addNotification(t('tools.skin_editor_saved', 'Saved from skin editor.'), 'success');
+        addNotification(
+            savedToPath
+                ? `${t('tools.skin_editor_saved', 'Saved from skin editor.')} ${savedToPath}`
+                : t('tools.skin_editor_saved', 'Saved from skin editor.'),
+            'success'
+        );
     };
 
     return (
@@ -275,6 +281,7 @@ function ToolsDashboard() {
                 t={t}
                 title={t('tools.skin_editor_title', 'Skin Editor')}
                 debugContext={TOOLS_SKIN_EDITOR_DEBUG_CONTEXT}
+                saveBehavior="prompt-location"
             />
 
             <div className="border-b border-border px-6 py-5 shrink-0">

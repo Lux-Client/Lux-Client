@@ -40,6 +40,23 @@ module.exports = (ipcMain, mainWindow) => {
         return sanitized || fallback;
     }
 
+    function normalizeOptionalOutputPath(outputPath) {
+        if (typeof outputPath !== 'string') {
+            return null;
+        }
+
+        const trimmed = outputPath.trim();
+        if (!trimmed) {
+            return null;
+        }
+
+        if (path.extname(trimmed).toLowerCase() !== '.png') {
+            return `${trimmed}.png`;
+        }
+
+        return trimmed;
+    }
+
     function getSkinNameFromUrl(skinUrl) {
         try {
             const parsedUrl = new URL(skinUrl);
@@ -61,7 +78,7 @@ module.exports = (ipcMain, mainWindow) => {
         }
     }
 
-    async function saveSkinBuffer(fileBuffer, name, extraData = {}) {
+    async function saveSkinBuffer(fileBuffer, name, extraData = {}, options = {}) {
         await validateSkinBuffer(fileBuffer);
 
         const hash = crypto.createHash('sha1').update(fileBuffer).digest('hex');
@@ -102,12 +119,19 @@ module.exports = (ipcMain, mainWindow) => {
             await saveSkinManifest(manifest);
         }
 
+        const outputPath = normalizeOptionalOutputPath(options.outputPath);
+        if (outputPath) {
+            await fs.ensureDir(path.dirname(outputPath));
+            await fs.writeFile(outputPath, fileBuffer);
+        }
+
         return {
             success: true,
             skin: {
                 ...skin,
                 data: `data:image/png;base64,${fileBuffer.toString('base64')}`
-            }
+            },
+            savedToPath: outputPath || undefined
         };
     }
 
@@ -280,14 +304,19 @@ module.exports = (ipcMain, mainWindow) => {
                 if (source === 'url') {
                     if (!value) return { success: false, error: 'No URL provided' };
                     const fileBuffer = await fetchSkinBuffer(value);
-                    return await saveSkinBuffer(fileBuffer, getSkinNameFromUrl(value));
+                    return await saveSkinBuffer(fileBuffer, getSkinNameFromUrl(value), {}, { outputPath: filePath.outputPath });
                 }
 
                 if (source === 'username') {
                     if (!value) return { success: false, error: 'No username provided' };
                     const resolvedSkin = await resolveSkinFromUsername(value);
                     const fileBuffer = await fetchSkinBuffer(resolvedSkin.skinUrl);
-                    return await saveSkinBuffer(fileBuffer, resolvedSkin.name, { model: resolvedSkin.model });
+                    return await saveSkinBuffer(
+                        fileBuffer,
+                        resolvedSkin.name,
+                        { model: resolvedSkin.model },
+                        { outputPath: filePath.outputPath }
+                    );
                 }
 
                 if (source === 'data-url' || source === 'data') {
@@ -309,7 +338,7 @@ module.exports = (ipcMain, mainWindow) => {
 
                     const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
                     const extraData = model ? { model } : {};
-                    return await saveSkinBuffer(fileBuffer, filePath.name || 'Edited Skin', extraData);
+                    return await saveSkinBuffer(fileBuffer, filePath.name || 'Edited Skin', extraData, { outputPath: filePath.outputPath });
                 }
 
                 if (source) {

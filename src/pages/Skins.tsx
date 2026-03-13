@@ -239,6 +239,12 @@ const logSkinEditorDebug = (context, event, details = {}) => {
     });
 };
 
+const sanitizeSkinFileName = (name) => {
+    const rawName = `${name || ''}`.trim();
+    const sanitized = rawName.replace(/[<>:"/\\|?*\x00-\x1F]/g, '').trim();
+    return sanitized || 'edited-skin';
+};
+
 export const AdvancedSkinEditorDialog = ({
     open,
     onOpenChange,
@@ -248,7 +254,8 @@ export const AdvancedSkinEditorDialog = ({
     onNotify,
     t,
     title = undefined,
-    debugContext = 'skins-page'
+    debugContext = 'skins-page',
+    saveBehavior = 'library'
 }) => {
     const viewerCanvasRef = useRef(null);
     const viewerContainerRef = useRef(null);
@@ -339,6 +346,33 @@ export const AdvancedSkinEditorDialog = ({
         const textureCanvas = textureCanvasRef.current;
         if (!textureCanvas) return null;
         return textureCanvas.getContext('2d', { willReadFrequently: true });
+    };
+
+    const waitForElementRef = (ref, isCancelled, timeoutMs = 1500) => {
+        return new Promise<any>((resolve) => {
+            const startedAt = Date.now();
+
+            const tick = () => {
+                if (isCancelled()) {
+                    resolve(null);
+                    return;
+                }
+
+                if (ref.current) {
+                    resolve(ref.current);
+                    return;
+                }
+
+                if (Date.now() - startedAt >= timeoutMs) {
+                    resolve(null);
+                    return;
+                }
+
+                requestAnimationFrame(tick);
+            };
+
+            tick();
+        });
     };
 
     const resetHistory = () => {
@@ -640,21 +674,11 @@ export const AdvancedSkinEditorDialog = ({
             logSkinEditorDebug(debugContext, 'texture-load-skipped', { reason: 'missing-skin-source' });
             return;
         }
-        if (!textureCanvasRef.current) {
-            logSkinEditorDebug(debugContext, 'texture-load-skipped', { reason: 'missing-texture-canvas' });
-            return;
-        }
 
         let cancelled = false;
         const isHttpUrl = (value) => typeof value === 'string' && /^https?:\/\//i.test(value.trim());
         const isRemoteHttp = isHttpUrl(skinSrc);
         const initialSourceInfo = getSkinSourceDebugInfo(skinSrc);
-
-        logSkinEditorDebug(debugContext, 'texture-load-start', {
-            editorModel,
-            isRemoteHttp,
-            ...initialSourceInfo
-        });
 
         const drawSkinToCanvas = (src, useCorsForHttp) => {
             return new Promise<void>((resolve, reject) => {
@@ -739,6 +763,26 @@ export const AdvancedSkinEditorDialog = ({
         };
 
         const loadTexture = async () => {
+            const textureCanvas = await waitForElementRef(textureCanvasRef, () => cancelled);
+            if (cancelled) {
+                return;
+            }
+
+            if (!textureCanvas) {
+                logSkinEditorDebug(debugContext, 'texture-load-skipped', {
+                    reason: 'texture-canvas-timeout',
+                    editorModel,
+                    ...initialSourceInfo
+                });
+                return;
+            }
+
+            logSkinEditorDebug(debugContext, 'texture-load-start', {
+                editorModel,
+                isRemoteHttp,
+                ...initialSourceInfo
+            });
+
             try {
                 await drawSkinToCanvas(skinSrc, true);
                 logSkinEditorDebug(debugContext, 'texture-load-primary-success', {
@@ -820,167 +864,203 @@ export const AdvancedSkinEditorDialog = ({
     }, [debugContext, open, skinSrc, editorModel]);
 
     useEffect(() => {
-        if (!open || !viewerCanvasRef.current) return;
+        if (!open) return;
 
-        logSkinEditorDebug(debugContext, 'viewer-init-start', {
-            hasCanvas: !!viewerCanvasRef.current
-        });
+        let disposed = false;
+        let viewer = null;
+        let viewerDomElement = null;
+        let textureLargeCanvas = null;
+        let resizeObserver = null;
+        let resizeObserverTexture = null;
+        let handlePointerDown = null;
+        let handlePointerMove = null;
+        let handlePointerUp = null;
 
-        if (viewerRef.current) {
-            try {
-                const staleRenderer = viewerRef.current.renderer;
-                viewerRef.current.dispose();
-                staleRenderer?.dispose?.();
-                staleRenderer?.forceContextLoss?.();
-            } catch (error) {
-                console.warn('Failed to dispose stale advanced skin viewer', error);
-                logSkinEditorDebug(debugContext, 'viewer-dispose-stale-failed', {
-                    error: error?.message || String(error)
-                });
-            } finally {
-                viewerRef.current = null;
+        const initViewer = async () => {
+            const [viewerCanvas, nextTextureLargeCanvas, viewerContainer] = await Promise.all([
+                waitForElementRef(viewerCanvasRef, () => disposed),
+                waitForElementRef(textureLargeCanvasRef, () => disposed),
+                waitForElementRef(viewerContainerRef, () => disposed),
+            ]);
+
+            if (disposed) {
+                return;
             }
-        }
 
-        const viewer = new SkinViewer({
-            canvas: viewerCanvasRef.current,
-            width: 680,
-            height: 520,
-            skin: null
-        });
+            if (!viewerCanvas || !nextTextureLargeCanvas) {
+                logSkinEditorDebug(debugContext, 'viewer-init-skipped', {
+                    reason: !viewerCanvas ? 'viewer-canvas-timeout' : 'texture-large-canvas-timeout'
+                });
+                return;
+            }
 
-        viewer.fov = 70;
-        viewer.zoom = 0.9;
-        viewer.autoRotate = false;
-        viewer.animation = null;
-        viewer.renderer.setPixelRatio(window.devicePixelRatio);
-        viewer.controls.enablePan = false;
-        viewer.controls.enableRotate = dragModeRef.current;
+            logSkinEditorDebug(debugContext, 'viewer-init-start', {
+                hasCanvas: true,
+                hasTextureCanvas: true,
+                hasContainer: !!viewerContainer
+            });
 
-        viewerRef.current = viewer;
-        resetViewerUnpackState(viewer);
-        logSkinEditorDebug(debugContext, 'viewer-init-success', {
-            editorModel,
-            devicePixelRatio: window.devicePixelRatio
-        });
-
-        const resizeObserver = new ResizeObserver(entries => {
-            for (const entry of entries) {
-                const { width, height } = entry.contentRect;
-                if (width > 0 && height > 0) {
-                    viewer.setSize(width, height);
+            if (viewerRef.current) {
+                try {
+                    const staleRenderer = viewerRef.current.renderer;
+                    viewerRef.current.dispose();
+                    staleRenderer?.dispose?.();
+                    staleRenderer?.forceContextLoss?.();
+                } catch (error) {
+                    console.warn('Failed to dispose stale advanced skin viewer', error);
+                    logSkinEditorDebug(debugContext, 'viewer-dispose-stale-failed', {
+                        error: error?.message || String(error)
+                    });
+                } finally {
+                    viewerRef.current = null;
                 }
             }
-        });
 
-        if (viewerContainerRef.current) {
-            resizeObserver.observe(viewerContainerRef.current);
-        }
+            viewer = new SkinViewer({
+                canvas: viewerCanvas,
+                width: 680,
+                height: 520,
+                skin: null
+            });
 
-        const paintFromViewerEvent = (event) => {
-            const textureCanvas = textureCanvasRef.current;
-            if (!textureCanvas || !viewerRef.current) return;
+            viewer.fov = 70;
+            viewer.zoom = 0.9;
+            viewer.autoRotate = false;
+            viewer.animation = null;
+            viewer.renderer.setPixelRatio(window.devicePixelRatio);
+            viewer.controls.enablePan = false;
+            viewer.controls.enableRotate = dragModeRef.current;
 
-            const rect = viewer.renderer.domElement.getBoundingClientRect();
-            const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            viewerRef.current = viewer;
+            resetViewerUnpackState(viewer);
+            logSkinEditorDebug(debugContext, 'viewer-init-success', {
+                editorModel,
+                devicePixelRatio: window.devicePixelRatio
+            });
 
-            pointerVectorRef.current.set(x, y);
-            raycasterRef.current.setFromCamera(pointerVectorRef.current, viewer.camera);
-            const intersections = raycasterRef.current.intersectObjects(meshesRef.current, false);
-            if (!intersections.length || !intersections[0].uv) return;
+            resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    const { width, height } = entry.contentRect;
+                    if (width > 0 && height > 0) {
+                        viewer.setSize(width, height);
+                    }
+                }
+            });
 
-            const uv = intersections[0].uv;
-            const pixelX = Math.max(0, Math.min(textureCanvas.width - 1, Math.floor(uv.x * textureCanvas.width)));
-            const pixelY = Math.max(0, Math.min(textureCanvas.height - 1, Math.floor((1 - uv.y) * textureCanvas.height)));
-
-            if (lastPointerRef.current.x === pixelX && lastPointerRef.current.y === pixelY) {
-                return;
+            if (viewerContainer) {
+                resizeObserver.observe(viewerContainer);
             }
-            lastPointerRef.current = { x: pixelX, y: pixelY };
 
-            if (toolRef.current === 'fill') {
-                fillFromPixel(pixelX, pixelY);
-            } else {
-                paintAtPixel(pixelX, pixelY);
+            textureLargeCanvas = nextTextureLargeCanvas;
+
+            const paintFromViewerEvent = (event) => {
+                const textureCanvas = textureCanvasRef.current;
+                if (!textureCanvas || !viewerRef.current) return;
+
+                const rect = viewer.renderer.domElement.getBoundingClientRect();
+                const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                pointerVectorRef.current.set(x, y);
+                raycasterRef.current.setFromCamera(pointerVectorRef.current, viewer.camera);
+                const intersections = raycasterRef.current.intersectObjects(meshesRef.current, false);
+                if (!intersections.length || !intersections[0].uv) return;
+
+                const uv = intersections[0].uv;
+                const pixelX = Math.max(0, Math.min(textureCanvas.width - 1, Math.floor(uv.x * textureCanvas.width)));
+                const pixelY = Math.max(0, Math.min(textureCanvas.height - 1, Math.floor((1 - uv.y) * textureCanvas.height)));
+
+                if (lastPointerRef.current.x === pixelX && lastPointerRef.current.y === pixelY) {
+                    return;
+                }
+                lastPointerRef.current = { x: pixelX, y: pixelY };
+
+                if (toolRef.current === 'fill') {
+                    fillFromPixel(pixelX, pixelY);
+                } else {
+                    paintAtPixel(pixelX, pixelY);
+                }
+            };
+
+            const paintFromTextureEvent = (event) => {
+                const pixel = getTexturePixelFromEvent(event);
+                if (!pixel) return;
+                if (lastPointerRef.current.x === pixel.px && lastPointerRef.current.y === pixel.py) return;
+                lastPointerRef.current = { x: pixel.px, y: pixel.py };
+
+                if (toolRef.current === 'fill') {
+                    fillFromPixel(pixel.px, pixel.py);
+                } else {
+                    paintAtPixel(pixel.px, pixel.py);
+                }
+            };
+
+            const beginStroke = () => {
+                if (strokeActiveRef.current) return;
+                strokeActiveRef.current = true;
+                pushHistorySnapshot();
+            };
+
+            const endStroke = () => {
+                strokeActiveRef.current = false;
+                pointerDownRef.current = false;
+                lastPointerRef.current = { x: -1, y: -1 };
+            };
+
+            handlePointerDown = (event) => {
+                if (dragModeRef.current) {
+                    return;
+                }
+                pointerDownRef.current = true;
+                lastPointerRef.current = { x: -1, y: -1 };
+                beginStroke();
+                if (activeLargeViewRef.current === 'player') {
+                    paintFromViewerEvent(event);
+                } else {
+                    paintFromTextureEvent(event);
+                }
+            };
+
+            handlePointerMove = (event) => {
+                if (!pointerDownRef.current) return;
+                if (activeLargeViewRef.current === 'player') {
+                    paintFromViewerEvent(event);
+                } else {
+                    paintFromTextureEvent(event);
+                }
+            };
+
+            handlePointerUp = () => endStroke();
+
+            viewerDomElement = viewer.renderer.domElement;
+
+            viewerDomElement.addEventListener('pointerdown', handlePointerDown);
+            viewerDomElement.addEventListener('pointermove', handlePointerMove);
+            textureLargeCanvas.addEventListener('pointerdown', handlePointerDown);
+            textureLargeCanvas.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
+
+            resizeObserverTexture = new ResizeObserver(() => renderTextureLargeCanvas());
+            if (textureLargeCanvas.parentElement) {
+                resizeObserverTexture.observe(textureLargeCanvas.parentElement);
             }
+
+            scheduleSkinSync();
         };
 
-        const paintFromTextureEvent = (event) => {
-            const pixel = getTexturePixelFromEvent(event);
-            if (!pixel) return;
-            if (lastPointerRef.current.x === pixel.px && lastPointerRef.current.y === pixel.py) return;
-            lastPointerRef.current = { x: pixel.px, y: pixel.py };
-
-            if (toolRef.current === 'fill') {
-                fillFromPixel(pixel.px, pixel.py);
-            } else {
-                paintAtPixel(pixel.px, pixel.py);
-            }
-        };
-
-        const beginStroke = () => {
-            if (strokeActiveRef.current) return;
-            strokeActiveRef.current = true;
-            pushHistorySnapshot();
-        };
-
-        const endStroke = () => {
-            strokeActiveRef.current = false;
-            pointerDownRef.current = false;
-            lastPointerRef.current = { x: -1, y: -1 };
-        };
-
-        const handlePointerDown = (event) => {
-            if (dragModeRef.current) {
-                return;
-            }
-            pointerDownRef.current = true;
-            lastPointerRef.current = { x: -1, y: -1 };
-            beginStroke();
-            if (activeLargeViewRef.current === 'player') {
-                paintFromViewerEvent(event);
-            } else {
-                paintFromTextureEvent(event);
-            }
-        };
-
-        const handlePointerMove = (event) => {
-            if (!pointerDownRef.current) return;
-            if (activeLargeViewRef.current === 'player') {
-                paintFromViewerEvent(event);
-            } else {
-                paintFromTextureEvent(event);
-            }
-        };
-
-        const handlePointerUp = () => endStroke();
-
-        const viewerDomElement = viewer.renderer.domElement;
-
-        viewerDomElement.addEventListener('pointerdown', handlePointerDown);
-        viewerDomElement.addEventListener('pointermove', handlePointerMove);
-        textureLargeCanvasRef.current?.addEventListener('pointerdown', handlePointerDown);
-        textureLargeCanvasRef.current?.addEventListener('pointermove', handlePointerMove);
-        window.addEventListener('pointerup', handlePointerUp);
-
-        const resizeObserverTexture = new ResizeObserver(() => renderTextureLargeCanvas());
-        if (textureLargeCanvasRef.current?.parentElement) {
-            resizeObserverTexture.observe(textureLargeCanvasRef.current.parentElement);
-        }
-
-        scheduleSkinSync();
+        initViewer();
 
         return () => {
-            viewerDomElement.removeEventListener('pointerdown', handlePointerDown);
-            viewerDomElement.removeEventListener('pointermove', handlePointerMove);
-            textureLargeCanvasRef.current?.removeEventListener('pointerdown', handlePointerDown);
-            textureLargeCanvasRef.current?.removeEventListener('pointermove', handlePointerMove);
+            disposed = true;
+            viewerDomElement?.removeEventListener('pointerdown', handlePointerDown);
+            viewerDomElement?.removeEventListener('pointermove', handlePointerMove);
+            textureLargeCanvas?.removeEventListener('pointerdown', handlePointerDown);
+            textureLargeCanvas?.removeEventListener('pointermove', handlePointerMove);
             window.removeEventListener('pointerup', handlePointerUp);
-            resizeObserver.disconnect();
-            resizeObserverTexture.disconnect();
-            const renderer = viewer.renderer;
-            viewer.dispose();
+            resizeObserver?.disconnect();
+            resizeObserverTexture?.disconnect();
+            const renderer = viewer?.renderer;
+            viewer?.dispose();
             renderer?.dispose?.();
             renderer?.forceContextLoss?.();
             viewerRef.current = null;
@@ -1026,24 +1106,46 @@ export const AdvancedSkinEditorDialog = ({
 
         try {
             setIsSaving(true);
+
+            let outputPath;
+            if (saveBehavior === 'prompt-location') {
+                const selectedPath = await window.electronAPI.showSaveDialog({
+                    title: t('skins.choose_save_location', 'Choose where to save the skin'),
+                    defaultPath: `${sanitizeSkinFileName(skinName)}.png`,
+                    filters: [{ name: 'PNG Image', extensions: ['png'] }]
+                });
+
+                if (typeof selectedPath !== 'string' || !selectedPath.trim()) {
+                    logSkinEditorDebug(debugContext, 'save-cancelled-location');
+                    return;
+                }
+
+                outputPath = selectedPath;
+            }
+
             logSkinEditorDebug(debugContext, 'save-start', {
                 editorModel,
-                skinName
+                skinName,
+                saveBehavior,
+                hasOutputPath: !!outputPath
             });
+
             const res = await window.electronAPI.saveLocalSkin({
                 source: 'data-url',
                 value: textureCanvasRef.current.toDataURL('image/png'),
                 name: skinName,
-                model: editorModel
+                model: editorModel,
+                outputPath
             });
 
             if (res.success && res.skin) {
                 logSkinEditorDebug(debugContext, 'save-success', {
                     skinId: res.skin.id,
                     skinModel: res.skin.model || editorModel,
-                    skinName: res.skin.name || skinName
+                    skinName: res.skin.name || skinName,
+                    savedToPath: res.savedToPath || null
                 });
-                onSave(res.skin, editorModel);
+                onSave(res.skin, editorModel, res.savedToPath);
                 onOpenChange(false);
             } else if (res.error && res.error !== 'Cancelled') {
                 logSkinEditorDebug(debugContext, 'save-failed', {

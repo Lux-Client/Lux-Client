@@ -101,7 +101,7 @@ interface ElectronAPI {
   uploadSkin: (token: string, skinPath: string, variant: string) => Promise<any>;
   uploadSkinFromUrl: (token: string, skinUrl: string, variant: string) => Promise<any>;
   setCape: (token: string, capeId: string) => Promise<any>;
-  saveLocalSkin: (filePath?: string | { source: string; value: string; name?: string; model?: string }) => Promise<any>;
+  saveLocalSkin: (filePath?: string | { source: string; value: string; name?: string; model?: string; outputPath?: string }) => Promise<any>;
   saveLocalSkinFromUrl: (skinUrl: string) => Promise<any>;
   saveLocalSkinFromUsername: (username: string) => Promise<any>;
   getLocalSkins: () => Promise<any>;
