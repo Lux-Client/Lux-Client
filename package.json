@@ -3,7 +3,7 @@
   "name": "lux",
   "description": "Lux Client",
   "author": "Lux Team <lux@pluginhub.de>",
-  "version": "1.6.14",
+  "version": "1.6.15",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "start": "electron .",
     "dist-clean": "rimraf dist && rimraf release",
-    "dist": "npm run dist-clean && npm run build && electron-builder --win",
+    "dist": "npm run dist-clean && npm run build && electron-builder --win --x64",
+    "dist-win-all-arch": "npm run dist-clean && npm run build && electron-builder --win",
     "dist-mac": "npm run dist-clean && npm run build && electron-builder --mac",
     "dist-all": "npm run dist-clean && npm run build && electron-builder -wl"
   },
@@ -54,8 +55,7 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "arm64"
+            "x64"
           ]
         }
       ],
