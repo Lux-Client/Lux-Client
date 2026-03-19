@@ -311,6 +311,40 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
       addNotification('To do that you have to be logged in', 'error');
       return;
     }
+
+    const liveStatus = runningInstances[instance.name];
+    const status = liveStatus;
+    const isRunning = status === 'running';
+
+    if (isRunning) {
+      window.electronAPI.killGame(instance.name);
+      return;
+    }
+
+    const installStateKey = Object.keys(activeDownloads).find(
+      k => k.toLowerCase() === instance.name.toLowerCase()
+    );
+    const installState = installStateKey ? activeDownloads[installStateKey] : null;
+    const isInstalling = !!installState;
+    const isLaunching = status === 'launching';
+    const isPending = pendingLaunches[instance.name];
+
+    if (isInstalling || isLaunching || isPending) return;
+
+    setPendingLaunches(prev => ({ ...prev, [instance.name]: true }));
+    window.electronAPI
+      .launchGame(instance.name)
+      .then(r => {
+        if (!r.success) console.error(r.error);
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        setPendingLaunches(prev => {
+          const n = { ...prev };
+          delete n[instance.name];
+          return n;
+        });
+      });
   };
 
   const handleDragStart = (e, index) => {
