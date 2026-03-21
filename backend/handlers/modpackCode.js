@@ -154,9 +154,27 @@ module.exports = (ipcMain, win) => {
     ipcMain.handle('modpack:install-shared-content', async (event, { instanceName, modpackData }) => {
         console.log(`[ModpackCode-Handler] Starting background install for: ${instanceName}`);
 
-        const totalItems = (modpackData.mods?.length || 0) +
-            (modpackData.resourcePacks?.length || 0) +
-            (modpackData.shaders?.length || 0);
+        const gameVersion = modpackData?.instanceVersion || modpackData?.version || null;
+        const loader = modpackData?.instanceLoader || modpackData?.loader || null;
+        const normalizedLoader = loader ? String(loader).toLowerCase() : null;
+        const normalizeContentItem = (item) => {
+            if (typeof item === 'string') {
+                return {
+                    projectId: item,
+                    title: item,
+                    fileName: item
+                };
+            }
+            return item || {};
+        };
+
+        const normalizedMods = (modpackData.mods || []).map(normalizeContentItem);
+        const normalizedResourcePacks = (modpackData.resourcePacks || []).map(normalizeContentItem);
+        const normalizedShaders = (modpackData.shaders || []).map(normalizeContentItem);
+
+        const totalItems = normalizedMods.length +
+            normalizedResourcePacks.length +
+            normalizedShaders.length;
         win.webContents.send('install:progress', {
             instanceName: instanceName,
             progress: 0,
@@ -217,27 +235,50 @@ module.exports = (ipcMain, win) => {
                 await fs.writeFile(optionsPath, modpackData.keybinds);
                 console.log('[ModpackCode-Handler] Keybinds restored.');
             }
-            const resolveModrinthDownloadUrl = async (versionId, expectedFileName) => {
+            const resolveModrinthDownloadUrl = async (item, projectType) => {
                 try {
-                    const versionRes = await axios.get(`https://api.modrinth.com/v2/version/${versionId}`, {
-                        headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
-                        timeout: 10000
-                    });
-                    const versionData = versionRes.data;
+                    let versionData = null;
+
+                    if (item.versionId) {
+                        const versionRes = await axios.get(`https://api.modrinth.com/v2/version/${item.versionId}`, {
+                            headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
+                            timeout: 10000
+                        });
+                        versionData = versionRes.data;
+                    } else if (item.projectId) {
+                        const params = {};
+                        if (gameVersion) params.game_versions = JSON.stringify([String(gameVersion)]);
+                        if (normalizedLoader && projectType === 'mod') params.loaders = JSON.stringify([normalizedLoader]);
+
+                        const versionsRes = await axios.get(`https://api.modrinth.com/v2/project/${item.projectId}/version`, {
+                            headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
+                            params,
+                            timeout: 10000
+                        });
+
+                        const versions = Array.isArray(versionsRes.data) ? versionsRes.data : [];
+                        versionData = versions.find(v => Array.isArray(v.files) && v.files.length > 0) || null;
+                    }
+
+                    if (!versionData || !Array.isArray(versionData.files) || versionData.files.length === 0) {
+                        return null;
+                    }
+
                     const file = versionData.files.find(f => f.primary) || versionData.files[0];
                     return {
                         url: file.url,
                         filename: file.filename,
-                        versionNumber: versionData.version_number
+                        versionNumber: versionData.version_number,
+                        versionId: versionData.id
                     };
                 } catch (e) {
-                    console.error(`[ModpackCode-Handler] Failed to resolve URL for version ${versionId}:`, e.message);
+                    console.error(`[ModpackCode-Handler] Failed to resolve URL for item ${item?.projectId || item?.versionId || 'unknown'}:`, e.message);
                     return null;
                 }
             };
-            for (const mod of modpackData.mods || []) {
+            for (const mod of normalizedMods) {
                 reportProgress(`Downloading mod: ${mod.title}`);
-                const resolved = await resolveModrinthDownloadUrl(mod.versionId, mod.fileName);
+                const resolved = await resolveModrinthDownloadUrl(mod, 'mod');
                 if (!resolved) {
                     console.error(`[ModpackCode-Handler] Skipping mod ${mod.title}: could not resolve download URL`);
                     installedCount++;
@@ -248,7 +289,7 @@ module.exports = (ipcMain, win) => {
                 const result = await installModInternal(win, {
                     instanceName,
                     projectId: mod.projectId,
-                    versionId: mod.versionId,
+                    versionId: mod.versionId || resolved.versionId,
                     filename: resolved.filename || mod.fileName,
                     url: resolved.url,
                     projectType: 'mod'
@@ -269,7 +310,7 @@ module.exports = (ipcMain, win) => {
                                     icon: mod.icon,
                                     version: resolved.versionNumber,
                                     projectId: mod.projectId,
-                                    versionId: mod.versionId,
+                                    versionId: mod.versionId || resolved.versionId,
                                     timestamp: Date.now()
                                 };
                                 console.log(`[ModpackCode-Handler] Cached metadata for mod: ${mod.title} (Key: ${cacheKey})`);
@@ -282,10 +323,10 @@ module.exports = (ipcMain, win) => {
                 installedCount++;
                 reportProgress();
             }
-            for (const pack of modpackData.resourcePacks || []) {
+            for (const pack of normalizedResourcePacks) {
                 reportProgress(`Downloading pack: ${pack.title}`);
 
-                const resolved = await resolveModrinthDownloadUrl(pack.versionId, pack.fileName);
+                const resolved = await resolveModrinthDownloadUrl(pack, 'resourcepack');
                 if (!resolved) {
                     console.error(`[ModpackCode-Handler] Skipping pack ${pack.title}: could not resolve download URL`);
                     installedCount++;
@@ -296,7 +337,7 @@ module.exports = (ipcMain, win) => {
                 const result = await installModInternal(win, {
                     instanceName,
                     projectId: pack.projectId,
-                    versionId: pack.versionId,
+                    versionId: pack.versionId || resolved.versionId,
                     filename: resolved.filename || pack.fileName,
                     url: resolved.url,
                     projectType: 'resourcepack'
@@ -317,7 +358,7 @@ module.exports = (ipcMain, win) => {
                                     icon: pack.icon,
                                     version: resolved.versionNumber,
                                     projectId: pack.projectId,
-                                    versionId: pack.versionId,
+                                    versionId: pack.versionId || resolved.versionId,
                                     timestamp: Date.now()
                                 };
                                 console.log(`[ModpackCode-Handler] Cached metadata for resourcepack: ${pack.title} (Key: ${cacheKey})`);
@@ -330,10 +371,10 @@ module.exports = (ipcMain, win) => {
                 installedCount++;
                 reportProgress();
             }
-            for (const shader of modpackData.shaders || []) {
+            for (const shader of normalizedShaders) {
                 reportProgress(`Downloading shader: ${shader.title}`);
 
-                const resolved = await resolveModrinthDownloadUrl(shader.versionId, shader.fileName);
+                const resolved = await resolveModrinthDownloadUrl(shader, 'shader');
                 if (!resolved) {
                     console.error(`[ModpackCode-Handler] Skipping shader ${shader.title}: could not resolve download URL`);
                     installedCount++;
@@ -344,7 +385,7 @@ module.exports = (ipcMain, win) => {
                 const result = await installModInternal(win, {
                     instanceName,
                     projectId: shader.projectId,
-                    versionId: shader.versionId,
+                    versionId: shader.versionId || resolved.versionId,
                     filename: resolved.filename || shader.fileName,
                     url: resolved.url,
                     projectType: 'shader'
@@ -365,7 +406,7 @@ module.exports = (ipcMain, win) => {
                                     icon: shader.icon,
                                     version: resolved.versionNumber,
                                     projectId: shader.projectId,
-                                    versionId: shader.versionId,
+                                    versionId: shader.versionId || resolved.versionId,
                                     timestamp: Date.now()
                                 };
                                 console.log(`[ModpackCode-Handler] Cached metadata for shader: ${shader.title} (Key: ${cacheKey})`);
