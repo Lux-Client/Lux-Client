@@ -416,13 +416,13 @@ function App() {
             });
         });
 
-        const removeInstallListener = window.electronAPI?.onInstallProgress(({ instanceName, progress, status }) => {
+        const removeInstallListener = window.electronAPI?.onInstallProgress(({ instanceName, progress, status, type }) => {
             setActiveDownloads(prev => {
                 const next = { ...prev };
                 if (progress >= 100) {
                     delete next[instanceName];
                 } else {
-                    next[instanceName] = { progress: progress || prev[instanceName]?.progress || 0, status, type: 'install' };
+                    next[instanceName] = { progress: progress || prev[instanceName]?.progress || 0, status, type: type || 'install' };
                 }
                 return next;
             });

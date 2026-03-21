@@ -40,6 +40,7 @@
         "stop": "Ferma",
         "starting": "Avvio in corso...",
         "installing": "Installazione...",
+        "duplicating": "Duplicazione...",
         "open_folder": "Apri Cartella",
         "export": "Esporta",
         "backup": "Backup",

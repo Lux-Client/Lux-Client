@@ -139,7 +139,9 @@ const InstanceCard = ({
                 {isRunning && <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
                 {isInstalling
                   ? installState
-                    ? `${t('common.installing')} (${installState.progress}%)`
+                    ? installState.type === 'duplicate'
+                      ? `${t('common.duplicating', 'Duplicating...')} (${installState.progress}%)`
+                      : `${t('common.installing')} (${installState.progress}%)`
                     : t('common.installing')
                   : isLaunching
                     ? t('common.starting')
@@ -246,7 +248,11 @@ const InstanceCard = ({
           ) : isInstalling || isLaunching || pendingLaunches[instance.name] ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin" />
-              {isInstalling ? t('common.installing') : t('common.starting')}
+              {isInstalling
+                ? installState?.type === 'duplicate'
+                  ? t('common.duplicating', 'Duplicating...')
+                  : t('common.installing')
+                : t('common.starting')}
             </>
           ) : (
             <>

@@ -2264,20 +2264,49 @@ module.exports = (ipcMain, win) => {
         });
 
         ipcMain.handle('instance:duplicate', async (_, instanceName) => {
+            let newName = `${instanceName} (Copy)`;
             try {
                 const sourcePath = path.join(instancesDir, instanceName);
                 if (!await fs.pathExists(sourcePath)) {
                     return { success: false, error: 'Instance not found' };
                 }
-                let newName = `${instanceName} (Copy)`;
                 let counter = 2;
                 while (await fs.pathExists(path.join(instancesDir, newName))) {
                     newName = `${instanceName} (Copy ${counter})`;
                     counter++;
                 }
 
+                // Count total items for progress tracking
+                let totalItems = 0;
+                let copiedItems = 0;
+                const countEntries = async (dir) => {
+                    const entries = await fs.readdir(dir, { withFileTypes: true });
+                    for (const entry of entries) {
+                        totalItems++;
+                        if (entry.isDirectory()) {
+                            await countEntries(path.join(dir, entry.name));
+                        }
+                    }
+                };
+                await countEntries(sourcePath);
+                if (totalItems === 0) totalItems = 1;
+
+                if (win && win.webContents) {
+                    win.webContents.send('install:progress', { instanceName: newName, progress: 1, status: 'Duplicating...', type: 'duplicate' });
+                }
+
                 const destPath = path.join(instancesDir, newName);
-                await fs.copy(sourcePath, destPath);
+                await fs.copy(sourcePath, destPath, {
+                    filter: (src) => {
+                        copiedItems++;
+                        const progress = Math.min(99, Math.floor((copiedItems / totalItems) * 99));
+                        if (win && win.webContents) {
+                            win.webContents.send('install:progress', { instanceName: newName, progress, status: 'Duplicating...', type: 'duplicate' });
+                        }
+                        return true;
+                    }
+                });
+
                 const configPath = path.join(destPath, 'instance.json');
                 if (await fs.pathExists(configPath)) {
                     const rawConfig = await fs.readJson(configPath);
@@ -2289,8 +2318,15 @@ module.exports = (ipcMain, win) => {
                     await fs.writeJson(configPath, config, { spaces: 4 });
                 }
 
+                if (win && win.webContents) {
+                    win.webContents.send('install:progress', { instanceName: newName, progress: 100, status: 'Done', type: 'duplicate' });
+                }
+
                 return { success: true, newName };
             } catch (e) {
+                if (win && win.webContents) {
+                    win.webContents.send('install:progress', { instanceName: newName, progress: 100, status: 'Error', type: 'duplicate' });
+                }
                 return { success: false, error: e.message };
             }
         });

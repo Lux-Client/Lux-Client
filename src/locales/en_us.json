@@ -45,6 +45,7 @@
         "stop": "Stop",
         "starting": "Starting...",
         "installing": "Installing...",
+        "duplicating": "Duplicating...",
         "open_folder": "Open Folder",
         "export": "Export",
         "backup": "Backup",
