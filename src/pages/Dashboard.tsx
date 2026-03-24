@@ -47,6 +47,7 @@ import {
   Plus,
   Search,
   MoreVertical,
+  Folder,
   Box,
   Eye,
   Copy,
@@ -55,6 +56,7 @@ import {
   Trash2,
   Loader2,
   ChevronDown,
+  ChevronRight,
   FileCode,
   FileDown,
   Zap,
@@ -69,6 +71,10 @@ const InstanceCard = ({
   activeDownloads,
   pendingLaunches,
   onInstanceClick,
+  selectionMode,
+  isSelected,
+  isSelectable,
+  onToggleSelect,
   onContextAction,
   actionMenu,
   addNotification,
@@ -101,12 +107,31 @@ const InstanceCard = ({
   return (
     <div
       onClick={() => onInstanceClick(instance)}
-      className={`group relative rounded-lg border p-3 transition-colors cursor-pointer ${isRunning
-        ? 'border-primary/40 bg-primary/5'
-        : 'border-border hover:bg-accent/50 active:bg-accent'
+      className={`group relative rounded-lg border p-3 transition-colors cursor-pointer ${isSelected
+        ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
+        : isRunning
+          ? 'border-primary/40 bg-primary/5'
+          : 'border-border hover:bg-accent/50 active:bg-accent'
         }`}
     >
       <div className="flex items-start gap-3 mb-2.5">
+        {selectionMode && (
+          <label
+            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${isSelectable ? 'cursor-pointer border-border' : 'cursor-not-allowed border-border/60 opacity-50'}`}
+            onClick={(e) => e.stopPropagation()}
+            title={isSelectable ? t('dashboard.selection.toggle', 'Select instance') : t('dashboard.selection.not_selectable', 'External profiles cannot be selected')}
+          >
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 cursor-pointer"
+              checked={!!isSelected}
+              disabled={!isSelectable}
+              onChange={() => {
+                if (isSelectable) onToggleSelect(instance.name);
+              }}
+            />
+          </label>
+        )}
         {instance.icon &&
           (instance.icon.startsWith('data:') ||
             instance.icon.startsWith('app-media://') ||
@@ -126,9 +151,9 @@ const InstanceCard = ({
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-medium text-foreground truncate">{instance.name}</h3>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-            <span className="capitalize">{instance.loader || 'Vanilla'}</span>
+            <span className="capitalize">{String(instance.loader || 'Vanilla').trim() || 'Vanilla'}</span>
             <span className="text-border">·</span>
-            <span>{instance.version}</span>
+            <span>{String(instance.version || '').trim() || 'Unknown'}</span>
           </div>
           {status && status !== 'ready' && status !== 'stopped' && (
             <div className="mt-1.5 flex items-center gap-1.5">
@@ -290,6 +315,7 @@ function Dashboard({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [instanceToDelete, setInstanceToDelete] = useState(null);
   const [newInstanceName, setNewInstanceName] = useState('');
+  const [newInstanceFolderPath, setNewInstanceFolderPath] = useState('');
   const [selectedVersion, setSelectedVersion] = useState('');
   const [selectedLoader, setSelectedLoader] = useState('Vanilla');
   const [newInstanceIcon, setNewInstanceIcon] = useState(DEFAULT_ICON);
@@ -313,11 +339,31 @@ function Dashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
   const [sortMethod, setSortMethod] = useState('playtime');
-  const [groupMethod, setGroupMethod] = useState('version');
+  const [groupMethod, setGroupMethod] = useState('none');
+  const [groupBySourceEnabled, setGroupBySourceEnabled] = useState(true);
   const [showCodeModal, setShowCodeModal] = useState(false);
+  const [showMoveFolderModal, setShowMoveFolderModal] = useState(false);
+  const [folderTargetInstance, setFolderTargetInstance] = useState(null);
+  const [folderInputPath, setFolderInputPath] = useState('');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedInstanceNames, setSelectedInstanceNames] = useState([]);
+  const [expandedFolders, setExpandedFolders] = useState({});
   const [actionBarActions, setActionBarActions] = useState([]);
   const fileInputRef = useRef(null);
   const [showSnapshots, setShowSnapshots] = useState(false);
+
+  const normalizeFolderPath = (value = '') => {
+    const segments = String(value)
+      .split(/[\\/]+/)
+      .map((segment) => segment.trim())
+      .filter((segment) => segment && segment !== '.' && segment !== '..');
+    return segments.join('/');
+  };
+
+  const splitFolderPath = (value = '') => {
+    const normalized = normalizeFolderPath(value);
+    return normalized ? normalized.split('/') : [];
+  };
 
   const handleCodeImportComplete = async (modpackData) => {
     addNotification(t('dashboard.import_starting', { name: modpackData.name }), 'info');
@@ -401,6 +447,7 @@ function Dashboard({
     if (showCreateModal) {
       fetchVersions();
       setNewInstanceName('');
+      setNewInstanceFolderPath('');
       setNewInstanceIcon(DEFAULT_ICON);
       setSelectedLoader('Vanilla');
       setIsCreating(false);
@@ -520,6 +567,7 @@ function Dashboard({
     setIsCreating(true);
     const nameToUse = newInstanceName.trim() || 'New Instance';
     const loaderForApi = selectedLoader.toLowerCase();
+    const folderPath = normalizeFolderPath(newInstanceFolderPath);
 
     try {
       const result = await window.electronAPI.createInstance(
@@ -527,7 +575,8 @@ function Dashboard({
         selectedVersion,
         loaderForApi,
         newInstanceIcon,
-        creationStep === 2 ? selectedLoaderVersion : null
+        creationStep === 2 ? selectedLoaderVersion : null,
+        folderPath ? { folderPath } : undefined
       );
 
       if (result.success) {
@@ -667,10 +716,90 @@ function Dashboard({
       case 'folder':
         window.electronAPI.openInstanceFolder(instance.name);
         break;
+      case 'move-to-folder':
+        setFolderTargetInstance(instance);
+        setFolderInputPath(String(instance.folderPath || ''));
+        setShowMoveFolderModal(true);
+        break;
+      case 'remove-from-folder':
+        try {
+          const res = await window.electronAPI.setInstanceFolderPath(instance, '');
+          if (res?.success) {
+            addNotification(`Removed ${instance.name} from folder`, 'success');
+            await loadInstances();
+          } else {
+            addNotification(`Failed to update folder: ${res?.error || 'Unknown error'}`, 'error');
+          }
+        } catch (e) {
+          addNotification(`Failed to update folder: ${e.message}`, 'error');
+        }
+        break;
       case 'delete':
         setInstanceToDelete(instance);
         setShowDeleteModal(true);
         break;
+    }
+  };
+
+  const handleSaveFolderPath = async () => {
+    const nextPath = normalizeFolderPath(folderInputPath);
+
+    if (!folderTargetInstance && selectedInstanceNames.length === 0) {
+      addNotification('No instances selected.', 'error');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (folderTargetInstance) {
+        const res = await window.electronAPI.setInstanceFolderPath(folderTargetInstance, nextPath);
+        if (res?.success) {
+          addNotification(
+            nextPath
+              ? `Moved ${folderTargetInstance.name} to ${nextPath}`
+              : `Removed ${folderTargetInstance.name} from folder`,
+            'success'
+          );
+        } else {
+          addNotification(`Failed to update folder: ${res?.error || 'Unknown error'}`, 'error');
+          return;
+        }
+      } else {
+        const updates = await Promise.all(
+          selectedInstanceNames.map((instanceName) => {
+            const instanceRef = instances.find((instance) => instance.name === instanceName) || { name: instanceName };
+            return window.electronAPI.setInstanceFolderPath(instanceRef, nextPath);
+          }
+          )
+        );
+        const failed = updates.filter((entry) => !entry?.success).length;
+        const successCount = updates.length - failed;
+
+        if (successCount > 0) {
+          addNotification(
+            nextPath
+              ? `Moved ${successCount} instance(s) to ${nextPath}`
+              : `Removed ${successCount} instance(s) from folders`,
+            'success'
+          );
+        }
+        if (failed > 0) {
+          addNotification(`Failed to move ${failed} instance(s).`, 'error');
+        }
+      }
+
+      await loadInstances();
+      setShowMoveFolderModal(false);
+      setFolderTargetInstance(null);
+      setFolderInputPath('');
+      if (!folderTargetInstance) {
+        setSelectedInstanceNames([]);
+        setSelectionMode(false);
+      }
+    } catch (e) {
+      addNotification(`Failed to update folder: ${e.message}`, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -721,6 +850,16 @@ function Dashboard({
     { value: 'loader', label: t('dashboard.group.loader') },
   ];
 
+  const getSourceGroupLabel = (inst) => {
+    if (String(inst?.instanceType || '').toLowerCase() === 'external') {
+      const source = String(inst?.externalSource || '').toLowerCase();
+      if (source === 'modrinth') return 'Modrinth';
+      if (source === 'curseforge') return 'CurseForge';
+      return 'External';
+    }
+    return 'LuxClient';
+  };
+
   const filteredInstances = instances.filter(
     inst =>
       inst.name.toLowerCase().includes(deferredSearchQuery.toLowerCase()) ||
@@ -739,28 +878,163 @@ function Dashboard({
     return 0;
   });
 
+  const isSelectableInstance = (_instance = null) => true;
+
+  const selectableVisibleInstanceNames = sortedInstances
+    .filter(isSelectableInstance)
+    .map((instance) => instance.name);
+
+  useEffect(() => {
+    const availableNames = new Set(instances.map((instance) => instance.name));
+    setSelectedInstanceNames((prev) => prev.filter((name) => availableNames.has(name)));
+  }, [instances]);
+
+  const toggleInstanceSelection = (instanceName) => {
+    setSelectedInstanceNames((prev) => {
+      if (prev.includes(instanceName)) {
+        return prev.filter((name) => name !== instanceName);
+      }
+      return [...prev, instanceName];
+    });
+  };
+
+  const enableSelectionMode = () => {
+    setSelectionMode(true);
+  };
+
+  const disableSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedInstanceNames([]);
+  };
+
+  const selectAllVisible = () => {
+    setSelectedInstanceNames(selectableVisibleInstanceNames);
+  };
+
+  const clearSelection = () => {
+    setSelectedInstanceNames([]);
+  };
+
+  const openBulkMoveDialog = () => {
+    if (selectedInstanceNames.length === 0) {
+      addNotification('Please select at least one instance first.', 'error');
+      return;
+    }
+    setFolderTargetInstance(null);
+    setFolderInputPath('');
+    setShowMoveFolderModal(true);
+  };
+
+  const buildFolderTree = (items) => {
+    const root = {
+      path: '',
+      name: '',
+      instances: [],
+      children: new Map(),
+    };
+
+    items.forEach((instance) => {
+      const segments = splitFolderPath(instance.folderPath);
+      if (segments.length === 0) {
+        root.instances.push(instance);
+        return;
+      }
+
+      let current = root;
+      const pathParts = [];
+      segments.forEach((segment) => {
+        pathParts.push(segment);
+        const segmentPath = pathParts.join('/');
+        if (!current.children.has(segment)) {
+          current.children.set(segment, {
+            path: segmentPath,
+            name: segment,
+            instances: [],
+            children: new Map(),
+          });
+        }
+        current = current.children.get(segment);
+      });
+      current.instances.push(instance);
+    });
+
+    const finalizeNode = (node) => ({
+      ...node,
+      children: Array.from(node.children.values())
+        .sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        .map(finalizeNode),
+    });
+
+    return finalizeNode(root);
+  };
+
+  const countFolderInstances = (node) =>
+    node.instances.length + node.children.reduce((sum, child) => sum + countFolderInstances(child), 0);
+
+  const toggleFolder = (folderKey) => {
+    setExpandedFolders((prev) => ({
+      ...prev,
+      [folderKey]: !(prev[folderKey] ?? true),
+    }));
+  };
+
+  const isFolderExpanded = (folderKey) => expandedFolders[folderKey] ?? true;
+
   const groupedData = [];
-  if (groupMethod === 'none') {
-    groupedData.push({ title: null, items: sortedInstances });
-  } else {
+  const buildGroupedSections = (items, sectionPrefix = null) => {
+    if (groupMethod === 'none') {
+      groupedData.push({ title: sectionPrefix, tree: buildFolderTree(items) });
+      return;
+    }
+
     const groups = {};
-    sortedInstances.forEach(inst => {
-      const key = groupMethod === 'version' ? inst.version : inst.loader || 'Vanilla';
+    items.forEach(inst => {
+      const key = groupMethod === 'version'
+        ? (inst.version || 'Unknown')
+        : (inst.loader || 'Vanilla');
       if (!groups[key]) groups[key] = [];
       groups[key].push(inst);
     });
+
     const sortedKeys = Object.keys(groups).sort((a, b) => {
-      if (groupMethod === 'version')
+      if (groupMethod === 'version') {
         return b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' });
+      }
       return a.localeCompare(b);
     });
+
     sortedKeys.forEach(key => {
-      groupedData.push({ title: key, items: groups[key] });
+      groupedData.push({
+        title: sectionPrefix ? `${sectionPrefix} - ${key}` : key,
+        tree: buildFolderTree(groups[key]),
+      });
     });
+  };
+
+  if (groupBySourceEnabled) {
+    const sourceGroups = {
+      LuxClient: [],
+      Modrinth: [],
+      CurseForge: [],
+      External: [],
+    };
+
+    sortedInstances.forEach((inst) => {
+      const sourceLabel = getSourceGroupLabel(inst);
+      if (!sourceGroups[sourceLabel]) sourceGroups[sourceLabel] = [];
+      sourceGroups[sourceLabel].push(inst);
+    });
+
+    ['LuxClient', 'Modrinth', 'CurseForge', 'External'].forEach((sourceLabel) => {
+      const sourceItems = sourceGroups[sourceLabel] || [];
+      if (sourceItems.length === 0) return;
+      buildGroupedSections(sourceItems, sourceLabel);
+    });
+  } else {
+    buildGroupedSections(sortedInstances, null);
   }
 
-  const isEmpty =
-    groupedData.length === 0 || (groupedData.length === 1 && groupedData[0].items.length === 0);
+  const isEmpty = sortedInstances.length === 0;
 
   const instanceMenuItems = (instance) => (
     <>
@@ -785,6 +1059,18 @@ function Dashboard({
         <FolderOpen className="w-4 h-4 mr-2" />
         {t('dashboard.context.folder')}
       </ContextMenuItem>
+      {String(instance?.instanceType || '').toLowerCase() !== 'external' && (
+        <>
+          <ContextMenuItem onClick={() => handleContextAction('move-to-folder', instance)}>
+            <Folder className="w-4 h-4 mr-2" />
+            {t('dashboard.context.move_to_folder', 'Move to folder')}
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleContextAction('remove-from-folder', instance)}>
+            <Folder className="w-4 h-4 mr-2" />
+            {t('dashboard.context.remove_from_folder', 'Remove from folder')}
+          </ContextMenuItem>
+        </>
+      )}
       {hasInstanceAction(instance.name) ? (
         <ContextMenuItem onClick={() => handleContextAction('remove-from-actionbar', instance)}>
           <Zap className="w-4 h-4 mr-2" />
@@ -815,7 +1101,17 @@ function Dashboard({
           runningInstances={runningInstances}
           activeDownloads={activeDownloads}
           pendingLaunches={pendingLaunches}
-          onInstanceClick={onInstanceClick}
+          onInstanceClick={(selectedInstance) => {
+            if (selectionMode) {
+              toggleInstanceSelection(selectedInstance.name);
+              return;
+            }
+            onInstanceClick(selectedInstance);
+          }}
+          selectionMode={selectionMode}
+          isSelected={selectedInstanceNames.includes(instance.name)}
+          isSelectable={isSelectableInstance(instance)}
+          onToggleSelect={toggleInstanceSelection}
           onContextAction={(e, inst) => {
             e.stopPropagation();
           }}
@@ -842,6 +1138,18 @@ function Dashboard({
                 <FolderOpen className="w-4 h-4 mr-2" />
                 {t('dashboard.context.folder')}
               </DropdownMenuItem>
+              {String(instance?.instanceType || '').toLowerCase() !== 'external' && (
+                <>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('move-to-folder', instance); }}>
+                    <Folder className="w-4 h-4 mr-2" />
+                    {t('dashboard.context.move_to_folder', 'Move to folder')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('remove-from-folder', instance); }}>
+                    <Folder className="w-4 h-4 mr-2" />
+                    {t('dashboard.context.remove_from_folder', 'Remove from folder')}
+                  </DropdownMenuItem>
+                </>
+              )}
               {hasInstanceAction(instance.name) ? (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('remove-from-actionbar', instance); }}>
                   <Zap className="w-4 h-4 mr-2" />
@@ -881,7 +1189,7 @@ function Dashboard({
       {isLoading && <LoadingOverlay message="Processing..." />}
 
       <PageHeader title={t('dashboard.title')} description={t('dashboard.desc')}>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
@@ -898,6 +1206,42 @@ function Dashboard({
           <div className="w-36">
             <Dropdown options={groupOptions} value={groupMethod} onChange={setGroupMethod} />
           </div>
+          <div className="flex items-center gap-2 px-2 h-8 border border-border rounded-md bg-card">
+            <Switch
+              checked={groupBySourceEnabled}
+              onCheckedChange={setGroupBySourceEnabled}
+              className="h-3.5 w-7 [&>span]:h-2.5 [&>span]:w-2.5"
+            />
+            <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+              {t('dashboard.group.launcher_toggle', 'Group by Launcher')}
+            </span>
+          </div>
+
+          {!selectionMode ? (
+            <Button type="button" size="sm" variant="outline" onClick={enableSelectionMode}>
+              {t('dashboard.selection.enable', 'Select')}
+            </Button>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 px-2 h-8 border border-primary/30 rounded-md bg-primary/10">
+                <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
+                  {t('dashboard.selection.count', { count: selectedInstanceNames.length, defaultValue: `${selectedInstanceNames.length} selected` })}
+                </span>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={selectAllVisible}>
+                {t('dashboard.selection.select_all', 'Select all visible')}
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={clearSelection}>
+                {t('dashboard.selection.clear', 'Clear')}
+              </Button>
+              <Button type="button" size="sm" onClick={openBulkMoveDialog}>
+                {t('dashboard.selection.move_to_folder', 'Move selected to folder')}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={disableSelectionMode}>
+                {t('dashboard.selection.done', 'Done')}
+              </Button>
+            </>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -971,8 +1315,88 @@ function Dashboard({
                     <Separator className="flex-1" />
                   </div>
                 )}
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
-                  {group.items.map((instance) => renderInstanceCard(instance))}
+                <div className="space-y-3">
+                  {group.tree.instances.length > 0 && (
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
+                      {group.tree.instances.map((instance) => renderInstanceCard(instance))}
+                    </div>
+                  )}
+
+                  {group.tree.children.map((folderNode) => {
+                    const folderKey = `${group.title || 'all'}::${folderNode.path}`;
+                    const expanded = isFolderExpanded(folderKey);
+                    const count = countFolderInstances(folderNode);
+
+                    const renderNestedFolder = (node, depth = 0) => {
+                      const nestedKey = `${group.title || 'all'}::${node.path}`;
+                      const nestedExpanded = isFolderExpanded(nestedKey);
+                      const nestedCount = countFolderInstances(node);
+
+                      return (
+                        <div key={nestedKey} className="space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleFolder(nestedKey)}
+                            className="w-full flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
+                            style={{ marginLeft: `${depth * 10}px` }}
+                          >
+                            {nestedExpanded ? (
+                              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                            )}
+                            <Folder className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-xs font-medium text-foreground truncate">{node.name}</span>
+                            <span className="ml-auto text-[10px] text-muted-foreground">{nestedCount}</span>
+                          </button>
+
+                          {nestedExpanded && (
+                            <div className="space-y-2">
+                              {node.instances.length > 0 && (
+                                <div
+                                  className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2"
+                                  style={{ marginLeft: `${(depth + 1) * 10}px` }}
+                                >
+                                  {node.instances.map((instance) => renderInstanceCard(instance))}
+                                </div>
+                              )}
+                              {node.children.map((childNode) => renderNestedFolder(childNode, depth + 1))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    };
+
+                    return (
+                      <div key={folderKey} className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleFolder(folderKey)}
+                          className="w-full flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
+                        >
+                          {expanded ? (
+                            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                          <Folder className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-xs font-medium text-foreground truncate">{folderNode.name}</span>
+                          <span className="ml-auto text-[10px] text-muted-foreground">{count}</span>
+                        </button>
+
+                        {expanded && (
+                          <div className="space-y-2">
+                            {folderNode.instances.length > 0 && (
+                              <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2 pl-2.5">
+                                {folderNode.instances.map((instance) => renderInstanceCard(instance))}
+                              </div>
+                            )}
+                            {folderNode.children.map((childNode) => renderNestedFolder(childNode, 1))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -1028,6 +1452,19 @@ function Dashboard({
                     onChange={(e) => setNewInstanceName(e.target.value)}
                     placeholder="New Instance"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Folder (optional)</Label>
+                  <Input
+                    type="text"
+                    value={newInstanceFolderPath}
+                    onChange={(e) => setNewInstanceFolderPath(e.target.value)}
+                    placeholder="e.g. PvP/1.20 or Modpacks/Fabric"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Use / to create nested folders.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1175,7 +1612,7 @@ function Dashboard({
           </form>
         </DialogContent>
       </Dialog>
-      
+
       <PixelEditorModal
         isOpen={showPixelEditor}
         onClose={() => setShowPixelEditor(false)}
@@ -1206,6 +1643,48 @@ function Dashboard({
           }}
         />
       )}
+
+      <Dialog open={showMoveFolderModal} onOpenChange={setShowMoveFolderModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {folderTargetInstance
+                ? t('dashboard.folder_modal.title', 'Move instance to folder')
+                : t('dashboard.folder_modal.title_multi', 'Move selected instances to folder')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">
+              {t('dashboard.folder_modal.path', 'Folder path')}
+            </Label>
+            <Input
+              value={folderInputPath}
+              onChange={(e) => setFolderInputPath(e.target.value)}
+              placeholder="e.g. Modpacks/Survival"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t('dashboard.folder_modal.help', 'Use / to create subfolders. Leave empty to remove folder assignment.')}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowMoveFolderModal(false);
+                setFolderTargetInstance(null);
+                setFolderInputPath('');
+              }}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button type="button" size="sm" onClick={handleSaveFolderPath}>
+              {t('common.save', 'Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

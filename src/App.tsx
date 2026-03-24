@@ -175,16 +175,57 @@ function App() {
     const [guideMode, setGuideMode] = useState<GuideMode>('launcher');
     const [guideStepIndex, setGuideStepIndex] = useState(0);
     const [isGuideRunning, setIsGuideRunning] = useState(false);
+    const [canNavigateBack, setCanNavigateBack] = useState(false);
+    const [canNavigateForward, setCanNavigateForward] = useState(false);
 
     const lastClientView = useRef('dashboard');
     const lastServerView = useRef('server-dashboard');
     const lastToolsView = useRef('tools-dashboard');
     const appSettingsRef = useRef<any>({});
     const guidePromptShownThisSessionRef = useRef<Record<GuideMode, boolean>>({ ...GUIDE_PROMPT_SESSION_DEFAULTS });
+    const navigationHistoryRef = useRef([{ mode: 'launcher', view: 'dashboard' }]);
+    const navigationIndexRef = useRef(0);
+    const isHistoryNavigationRef = useRef(false);
+    const hasInitializedHistoryRef = useRef(false);
 
     useEffect(() => {
         appSettingsRef.current = appSettings;
     }, [appSettings]);
+
+    const syncNavigationButtons = React.useCallback(() => {
+        const canGoBack = navigationIndexRef.current > 0;
+        const canGoForward = navigationIndexRef.current < navigationHistoryRef.current.length - 1;
+        setCanNavigateBack(canGoBack);
+        setCanNavigateForward(canGoForward);
+    }, []);
+
+    useEffect(() => {
+        if (!hasInitializedHistoryRef.current) {
+            navigationHistoryRef.current = [{ mode: currentMode, view: currentView }];
+            navigationIndexRef.current = 0;
+            hasInitializedHistoryRef.current = true;
+            syncNavigationButtons();
+            return;
+        }
+
+        if (isHistoryNavigationRef.current) {
+            isHistoryNavigationRef.current = false;
+            syncNavigationButtons();
+            return;
+        }
+
+        const activeEntry = navigationHistoryRef.current[navigationIndexRef.current];
+        if (activeEntry?.mode === currentMode && activeEntry?.view === currentView) {
+            syncNavigationButtons();
+            return;
+        }
+
+        const truncatedHistory = navigationHistoryRef.current.slice(0, navigationIndexRef.current + 1);
+        truncatedHistory.push({ mode: currentMode, view: currentView });
+        navigationHistoryRef.current = truncatedHistory;
+        navigationIndexRef.current = truncatedHistory.length - 1;
+        syncNavigationButtons();
+    }, [currentMode, currentView, syncNavigationButtons]);
 
     const resolveFontFamily = (nextTheme) => {
         const builtInFonts = new Set([
@@ -677,6 +718,47 @@ function App() {
         });
     };
 
+    const handleHistoryNavigate = (direction: 'back' | 'forward') => {
+        const nextIndex = direction === 'back'
+            ? navigationIndexRef.current - 1
+            : navigationIndexRef.current + 1;
+
+        if (nextIndex < 0 || nextIndex >= navigationHistoryRef.current.length) {
+            return;
+        }
+
+        const target = navigationHistoryRef.current[nextIndex];
+        if (!target) {
+            return;
+        }
+
+        navigationIndexRef.current = nextIndex;
+        isHistoryNavigationRef.current = true;
+        syncNavigationButtons();
+
+        startTransition(() => {
+            if (target.mode !== currentMode) {
+                setCurrentMode(target.mode);
+            }
+            setCurrentView(target.view);
+        });
+    };
+
+    const handleNavigateBack = () => {
+        handleHistoryNavigate('back');
+    };
+
+    const handleNavigateForward = () => {
+        handleHistoryNavigate('forward');
+    };
+
+    const topBarHistoryProps: any = {
+        canNavigateBack,
+        canNavigateForward,
+        onNavigateBack: handleNavigateBack,
+        onNavigateForward: handleNavigateForward
+    };
+
     const handleGuidePrevious = () => {
         setGuideStepIndex((prev) => Math.max(0, prev - 1));
     };
@@ -822,6 +904,7 @@ function App() {
                     <TopBar
                         currentMode={currentMode}
                         onModeSelect={handleModeSelect}
+                        {...topBarHistoryProps}
                         userProfile={userProfile}
                         onProfileUpdate={setUserProfile}
                         isGuest={isGuest}

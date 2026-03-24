@@ -5,8 +5,6 @@ const store = new Store();
 const path = require('path');
 const os = require('os');
 const { app, ipcMain, shell, dialog } = require('electron');
-console.log('Loaded instances handler. Dialog available:', !!dialog);
-console.log('[DEBUG] CANARY: INSTANCES_JS_V2_LOADED');
 const axios = require('axios');
 const zlib = require('zlib');
 const { promisify } = require('util');
@@ -24,6 +22,441 @@ const {
 let appData;
 let instancesDir;
 let globalBackupsDir;
+
+function normalizeFolderPathValue(value = '') {
+    const segments = String(value)
+        .split(/[\\/]+/)
+        .map(segment => segment.trim())
+        .filter(segment => segment && segment !== '.' && segment !== '..');
+    return segments.join('/');
+}
+
+function getInstanceFolderMetaPath() {
+    const base = appData || app.getPath('userData');
+    return path.join(base, 'instance_folder_meta.json');
+}
+
+async function readInstanceFolderMeta() {
+    try {
+        const metaPath = getInstanceFolderMetaPath();
+        if (!await fs.pathExists(metaPath)) return {};
+        const data = await fs.readJson(metaPath);
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return {};
+        return data;
+    } catch (e) {
+        console.warn('[Instances] Failed to read folder metadata:', e.message);
+        return {};
+    }
+}
+
+async function writeInstanceFolderMeta(meta) {
+    const metaPath = getInstanceFolderMetaPath();
+    await fs.writeJson(metaPath, meta, { spaces: 2 });
+}
+
+function buildInstanceFolderMetaKey(instance) {
+    const instanceType = String(instance?.instanceType || '').trim().toLowerCase();
+    const name = String(instance?.name || '').trim().toLowerCase();
+    const source = String(instance?.externalSource || 'external').trim().toLowerCase();
+    const externalPath = String(instance?.externalPath || '').trim().toLowerCase();
+
+    if (instanceType === 'external') {
+        return `external:${source}:${externalPath || name}`;
+    }
+
+    return `local:${name}`;
+}
+
+function normalizeLoaderFromString(value) {
+    let candidate = value;
+
+    if (candidate && typeof candidate === 'object') {
+        candidate = candidate.name || candidate.id || candidate.loader || candidate.type || '';
+    }
+
+    const raw = String(candidate || '').trim().toLowerCase();
+
+    if (!raw) return '';
+    if (raw.includes('fabric')) return 'fabric';
+    if (raw.includes('quilt')) return 'quilt';
+    if (raw.includes('neoforge') || raw.startsWith('neo')) return 'neoforge';
+    if (raw.includes('forge')) return 'forge';
+    return raw;
+}
+
+function inferLoaderFromName(name) {
+    const raw = String(name || '').trim().toLowerCase();
+    if (!raw) return '';
+    if (raw.includes('neoforge') || raw.includes('neo forge')) return 'neoforge';
+    if (raw.includes('forge')) return 'forge';
+    if (raw.includes('fabric')) return 'fabric';
+    if (raw.includes('quilt')) return 'quilt';
+    return '';
+}
+
+function inferVersionFromName(name) {
+    const raw = String(name || '');
+    const match = raw.match(/\b\d+\.\d+(?:\.\d+)?\b/);
+    return match ? match[0] : '';
+}
+
+function getMimeTypeFromImagePath(filePath) {
+    const ext = path.extname(String(filePath || '')).toLowerCase();
+    if (ext === '.png') return 'image/png';
+    if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+    if (ext === '.webp') return 'image/webp';
+    if (ext === '.gif') return 'image/gif';
+    if (ext === '.svg') return 'image/svg+xml';
+    return '';
+}
+
+async function readImageAsDataUrl(imagePath) {
+    if (!imagePath) return '';
+    const exists = await fs.pathExists(imagePath);
+    if (!exists) return '';
+
+    const stat = await fs.stat(imagePath);
+    if (!stat.isFile()) return '';
+
+    const mimeType = getMimeTypeFromImagePath(imagePath);
+    if (!mimeType) return '';
+
+    const fileBuffer = await fs.readFile(imagePath);
+    return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+}
+
+function normalizeExternalIconCandidate(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    if (raw.startsWith('data:')) return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    const cleaned = raw
+        .replace(/^file:\/\//i, '')
+        .replace(/^\\?\/+/, '')
+        .replace(/^\.\//, '');
+
+    return cleaned;
+}
+
+async function resolveExternalProfileIcon(source, profileDir, profile) {
+    const normalizedSource = String(source || '').toLowerCase();
+    const candidates = [];
+    const addCandidate = (value) => {
+        const candidate = normalizeExternalIconCandidate(value);
+        if (candidate) candidates.push(candidate);
+    };
+
+    if (normalizedSource === 'modrinth') {
+        addCandidate(profile?.icon_path);
+        addCandidate(profile?.iconPath);
+        addCandidate(profile?.icon_url);
+        addCandidate(profile?.iconUrl);
+        addCandidate(profile?.icon);
+    }
+
+    if (normalizedSource === 'curseforge') {
+        addCandidate(profile?.profileImagePath);
+        addCandidate(profile?.installedModpack?.thumbnailUrl);
+        addCandidate(profile?.manifest?.thumbnailUrl);
+        addCandidate(profile?.thumbnailUrl);
+    }
+
+    const localIconNames = [
+        'icon.png',
+        'icon.jpg',
+        'icon.jpeg',
+        'icon.webp',
+        'pack.png',
+        'pack.jpg',
+        'pack.jpeg',
+        'pack.webp',
+        'logo.png',
+        'logo.jpg',
+        'logo.jpeg',
+        'logo.webp'
+    ];
+
+    for (const fileName of localIconNames) {
+        candidates.push(path.join(profileDir, fileName));
+    }
+
+    for (const candidate of candidates) {
+        if (candidate.startsWith('data:') || /^https?:\/\//i.test(candidate)) {
+            return candidate;
+        }
+
+        const candidatePath = path.isAbsolute(candidate)
+            ? candidate
+            : path.join(profileDir, candidate);
+
+        try {
+            const dataUrl = await readImageAsDataUrl(candidatePath);
+            if (dataUrl) {
+                return dataUrl;
+            }
+        } catch (e) {
+            // Ignore icon read errors and continue with next candidate.
+        }
+    }
+
+    return '';
+}
+
+function getExternalLauncherRoots() {
+    if (process.platform !== 'win32') {
+        return [];
+    }
+
+    const homeDir = os.homedir();
+    const roamingDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+
+    const roots = [
+        {
+            source: 'modrinth',
+            baseDir: path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'profiles')
+        },
+        {
+            source: 'modrinth',
+            baseDir: path.join(roamingDir, 'com.modrinth.theseus', 'profiles')
+        },
+        {
+            source: 'curseforge',
+            baseDir: path.join(homeDir, 'curseforge', 'minecraft', 'Instances')
+        }
+    ];
+
+    return roots;
+}
+
+async function readExternalProfileConfig(source, profileDir, fallbackName) {
+    const fallbackConfig = {
+        name: fallbackName,
+        version: '',
+        loader: '',
+        instanceType: 'external',
+        externalSource: source,
+        externalManaged: true,
+        externalPath: profileDir
+    };
+
+    if (source === 'modrinth') {
+        const profilePath = path.join(profileDir, 'profile.json');
+        let profile = null;
+
+        const profileExists = await fs.pathExists(profilePath);
+
+        if (profileExists) {
+            try {
+                profile = await fs.readJson(profilePath);
+            } catch (e) {
+                console.error(`[readExternalProfileConfig:modrinth] Error reading profile.json:`, e.message);
+            }
+        }
+
+        const hasFabricMarker = await fs.pathExists(path.join(profileDir, '.fabric'));
+        const hasQuiltMarker = await fs.pathExists(path.join(profileDir, '.quilt'));
+
+        const inferredLoaderFromName = inferLoaderFromName(fallbackName);
+
+        let detectedLoader = '';
+        if (hasFabricMarker) {
+            detectedLoader = 'fabric';
+        } else if (hasQuiltMarker) {
+            detectedLoader = 'quilt';
+        } else if (inferredLoaderFromName) {
+            detectedLoader = inferredLoaderFromName;
+        } else {
+            // If absolutely nothing found, assume vanilla
+            detectedLoader = 'vanilla';
+        }
+
+        const version = String(profile?.game_version || profile?.gameVersion || inferVersionFromName(fallbackName) || '').trim();
+        const name = String(profile?.name || fallbackName || '').trim() || fallbackName;
+        const icon = await resolveExternalProfileIcon(source, profileDir, profile);
+
+        // IMPORTANT: Return config even if profile.json doesn't exist
+        return {
+            ...fallbackConfig,
+            name: name,
+            version: version,
+            loader: detectedLoader,
+            icon: icon || null
+        };
+    }
+
+    if (source === 'curseforge') {
+        const instancePath = path.join(profileDir, 'minecraftinstance.json');
+
+        const exists = await fs.pathExists(instancePath);
+
+        if (!exists) {
+            return null;
+        }
+
+        let profile;
+        try {
+            profile = await fs.readJson(instancePath);
+        } catch (e) {
+            console.error(`[readExternalProfileConfig:curseforge] Error reading JSON:`, e.message);
+            return null;
+        }
+
+        // Extract loader - safely handle baseModLoader as object
+        let loaderValue = '';
+        if (profile?.baseModLoader) {
+            // Try .name first - most reliable
+            if (profile.baseModLoader.name) {
+                loaderValue = profile.baseModLoader.name;
+            }
+            // Try .forgeVersion for forge
+            else if (profile.baseModLoader.forgeVersion) {
+                loaderValue = `forge-${profile.baseModLoader.forgeVersion}`;
+            }
+            // Try .id as fallback
+            else if (profile.baseModLoader.id) {
+                loaderValue = profile.baseModLoader.id;
+            }
+        }
+
+        // Fallback to other fields
+        if (!loaderValue) {
+            loaderValue = profile?.modLoader?.name || profile?.modLoader || profile?.modloader || '';
+        }
+
+        const minecraftVersion = String(profile?.minecraftVersion || profile?.gameVersion || profile?.baseModLoader?.minecraftVersion || '').trim();
+
+        const normalizedLoader = normalizeLoaderFromString(loaderValue);
+        const icon = await resolveExternalProfileIcon(source, profileDir, profile);
+
+        return {
+            ...fallbackConfig,
+            name: String(profile?.name || fallbackName || '').trim() || fallbackName,
+            version: minecraftVersion,
+            loader: String(normalizedLoader || '').trim(),  // Force to string
+            icon: icon || null
+        };
+    }
+
+    return null;
+}
+
+async function discoverExternalProfiles() {
+    const results = [];
+
+    const launcherRoots = getExternalLauncherRoots();
+
+    for (const launcherRoot of launcherRoots) {
+        const { source, baseDir } = launcherRoot;
+
+        const dirExists = await fs.pathExists(baseDir);
+
+        if (!dirExists) {
+            continue;
+        }
+
+        let entries = [];
+        try {
+            entries = await fs.readdir(baseDir, { withFileTypes: true });
+        } catch (err) {
+            console.error(`[discoverExternalProfiles] Error reading directory:`, err.message);
+            continue;
+        }
+
+        let dirCount = 0;
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            dirCount++;
+
+            const profileDir = path.join(baseDir, entry.name);
+
+            try {
+                const externalConfig = await readExternalProfileConfig(source, profileDir, entry.name);
+                if (externalConfig) {
+                    results.push(externalConfig);
+                }
+            } catch (error) {
+                console.error(`[discoverExternalProfiles] Error reading ${source} profile ${entry.name}:`, error.message);
+            }
+        }
+    }
+    return results;
+}
+
+async function getMergedInstances() {
+    instancesDir = resolvePrimaryInstancesDir();
+    const baseDirs = getAllInstanceDirsSync();
+    const instancesByName = new Map();
+    const folderMeta = await readInstanceFolderMeta();
+
+    for (const baseDir of baseDirs) {
+        if (!await fs.pathExists(baseDir)) continue;
+
+        const dirs = await fs.readdir(baseDir);
+        for (const dir of dirs) {
+            const configPath = path.join(baseDir, dir, 'instance.json');
+            if (!await fs.pathExists(configPath)) continue;
+
+            try {
+                const config = await fs.readJson(configPath);
+                const instanceType = typeof config?.instanceType === 'string' ? config.instanceType.trim().toLowerCase() : '';
+                const loader = String(config?.loader || '').trim().toLowerCase();
+                const instanceName = String(config?.name || dir).trim().toLowerCase();
+                if (!instanceType && loader === 'fabric' && instanceName.startsWith('client ')) {
+                    config.instanceType = 'open-client';
+                }
+
+                const key = config?.name || dir;
+                const folderMetaKey = buildInstanceFolderMetaKey(config);
+                const metaFolderPath = normalizeFolderPathValue(folderMeta[folderMetaKey]);
+                const configFolderPath = normalizeFolderPathValue(config?.folderPath);
+                if (configFolderPath) {
+                    config.folderPath = configFolderPath;
+                } else if (metaFolderPath) {
+                    config.folderPath = metaFolderPath;
+                }
+                if (!instancesByName.has(key)) {
+                    instancesByName.set(key, config);
+                }
+            } catch (e) {
+                console.error(`Failed to read instance config for ${dir}:`, e);
+            }
+        }
+    }
+
+    const externalProfiles = await discoverExternalProfiles();
+    for (const profile of externalProfiles) {
+        const baseName = String(profile?.name || '').trim();
+        if (!baseName) continue;
+
+        const source = String(profile?.externalSource || 'external').toLowerCase();
+        const sourceLabel = source === 'modrinth'
+            ? 'Modrinth'
+            : source === 'curseforge'
+                ? 'CurseForge'
+                : 'External';
+
+        let displayName = baseName;
+        let suffixIndex = 1;
+        while (instancesByName.has(displayName)) {
+            const suffix = suffixIndex === 1 ? ` (${sourceLabel})` : ` (${sourceLabel} ${suffixIndex})`;
+            displayName = `${baseName}${suffix}`;
+            suffixIndex += 1;
+        }
+
+        instancesByName.set(displayName, {
+            ...profile,
+            name: displayName,
+            folderPath: normalizeFolderPathValue(folderMeta[buildInstanceFolderMetaKey({
+                ...profile,
+                name: displayName
+            })])
+        });
+    }
+
+    return Array.from(instancesByName.values());
+}
 
 async function calculateSha1(filePath) {
     return new Promise((resolve, reject) => {
@@ -130,92 +563,6 @@ async function getFolderSize(directory) {
         }
     }
     return size;
-// External launcher profile support (Modrinth & CurseForge)
-function normalizeLoaderFromString(value) {
-    const str = String(value || '').trim().toLowerCase();
-    const loaders = {
-        fabric: 'fabric', quilt: 'quilt', forge: 'forge', neoforge: 'neoforge',
-        vanilla: 'vanilla', paper: 'paper', spigot: 'spigot', bukkit: 'bukkit',
-        purpur: 'purpur', folia: 'folia'
-    };
-    return loaders[str] || (str ? str : 'vanilla');
-}
-
-function getExternalLauncherRoots() {
-    if (process.platform !== 'win32') return [];
-    const homeDir = os.homedir();
-    return [
-        path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'profiles'),
-        path.join(homeDir, 'curseforge', 'minecraft', 'Instances')
-    ];
-}
-
-async function readExternalProfileConfig(profilePath, sourceLauncher) {
-    const fallbackConfig = {
-        name: path.basename(profilePath),
-        version: '',
-        loader: 'vanilla',
-        icon: '',
-        externalPath: profilePath,
-        externalSource: sourceLauncher,
-        externalManaged: true
-    };
-
-    try {
-        if (sourceLauncher === 'modrinth') {
-            const profileJsonPath = path.join(profilePath, 'profile.json');
-            if (await fs.pathExists(profileJsonPath)) {
-                const profile = await fs.readJson(profileJsonPath);
-                fallbackConfig.name = profile.name || fallbackConfig.name;
-                fallbackConfig.version = profile.metadata?.mc_version || '';
-                fallbackConfig.loader = normalizeLoaderFromString(profile.metadata?.loader_name || '');
-            } else {
-                // Heuristic detection
-                const dirContents = await fs.readdir(profilePath).catch(() => []);
-                if (dirContents.includes('.fabric')) fallbackConfig.loader = 'fabric';
-                else if (dirContents.includes('.quilt')) fallbackConfig.loader = 'quilt';
-            }
-        } else if (sourceLauncher === 'curseforge') {
-            const minecraftInstancePath = path.join(profilePath, 'minecraftinstance.json');
-            if (await fs.pathExists(minecraftInstancePath)) {
-                const instance = await fs.readJson(minecraftInstancePath);
-                fallbackConfig.name = instance.name || fallbackConfig.name;
-                fallbackConfig.version = instance.javaVersion?.majorVersion || '';
-                if (instance.baseModLoader) {
-                    const loaderName = instance.baseModLoader.name || instance.baseModLoader.forgeVersion || '';
-                    fallbackConfig.loader = normalizeLoaderFromString(loaderName);
-                }
-            }
-        }
-    } catch (e) {
-        // Use fallback config on error
-    }
-    return fallbackConfig;
-}
-
-async function discoverExternalProfiles() {
-    const profiles = [];
-    if (process.platform !== 'win32') return profiles;
-    const externalRoots = getExternalLauncherRoots();
-
-    for (const sourcePath of externalRoots) {
-        const sourceLauncher = sourcePath.includes('Modrinth') ? 'modrinth' : 'curseforge';
-        try {
-            if (!await fs.pathExists(sourcePath)) continue;
-            const dirs = await fs.readdir(sourcePath);
-            for (const dir of dirs) {
-                const profilePath = path.join(sourcePath, dir);
-                if ((await fs.stat(profilePath)).isDirectory()) {
-                    const config = await readExternalProfileConfig(profilePath, sourceLauncher);
-                    profiles.push(config);
-                }
-            }
-        } catch (e) {
-            // Continue on error
-        }
-    }
-    return profiles;
-}
 }
 
 const GAME_MODES = {
@@ -512,7 +859,8 @@ function sanitizeInstanceConfig(config) {
     const allowedKeys = [
         'name', 'version', 'loader', 'loaderVersion', 'versionId', 'icon',
         'created', 'playtime', 'lastPlayed', 'status', 'imported',
-        'javaPath', 'minMemory', 'maxMemory', 'resolutionWidth', 'resolutionHeight'
+        'javaPath', 'minMemory', 'maxMemory', 'resolutionWidth', 'resolutionHeight',
+        'folderPath'
     ];
     const cleanConfig = {};
     for (const key of allowedKeys) {
@@ -1693,56 +2041,21 @@ module.exports = (ipcMain, win) => {
                 return { success: false, error: e.message };
             }
         });
-        console.log('[Instances] Checkpoint 3: About to register instance:get-all');
-
         ipcMain.handle('instance:get-all', async () => {
             try {
-                instancesDir = resolvePrimaryInstancesDir();
-                const baseDirs = getAllInstanceDirsSync();
-                if (baseDirs.length === 0) return [];
-
-                const instancesByName = new Map();
-
-                for (const baseDir of baseDirs) {
-                    if (!await fs.pathExists(baseDir)) continue;
-
-                    const dirs = await fs.readdir(baseDir);
-                    for (const dir of dirs) {
-                        const configPath = path.join(baseDir, dir, 'instance.json');
-                        if (!await fs.pathExists(configPath)) continue;
-
-                        try {
-                            const config = await fs.readJson(configPath);
-                            const instanceType = typeof config?.instanceType === 'string' ? config.instanceType.trim().toLowerCase() : '';
-                            const loader = String(config?.loader || '').trim().toLowerCase();
-                            const instanceName = String(config?.name || dir).trim().toLowerCase();
-                            if (!instanceType && loader === 'fabric' && instanceName.startsWith('client ')) {
-                                config.instanceType = 'open-client';
-                            }
-                            const key = config?.name || dir;
-                            if (!instancesByName.has(key)) {
-                                instancesByName.set(key, config);
-                            }
-                        } catch (e) {
-                            console.error(`Failed to read instance config for ${dir}:`, e);
-                        }
-                    }
-                }
-
-                return Array.from(instancesByName.values());
+                return await getMergedInstances();
             } catch (e) {
                 console.error('Failed to list instances:', e);
                 return [];
             }
         });
+
         ipcMain.handle('instance:get-log-files', async (_, instanceName) => {
             try {
+                console.log(`Getting log files for: ${instanceName}`);
                 const instanceDir = path.join(instancesDir, instanceName);
                 const logsDir = path.join(instanceDir, 'logs');
-                        if (baseDirs.length === 0) {
-                            // Return external profiles if no LuxClient dirs
-                            return await discoverExternalProfiles();
-                        }
+                const logFiles = [];
                 const installLogPath = path.join(instanceDir, 'install.log');
                 if (await fs.pathExists(installLogPath)) {
                     const stats = await fs.stat(installLogPath);
@@ -1754,15 +2067,6 @@ module.exports = (ipcMain, win) => {
                 }
 
                 if (await fs.pathExists(logsDir)) {
-                // Add external profiles
-                const externalProfiles = await discoverExternalProfiles();
-                for (const profile of externalProfiles) {
-                    const key = profile.name;
-                    if (!instancesByName.has(key)) {
-                        instancesByName.set(key, profile);
-                    }
-                }
-
                     const files = await fs.readdir(logsDir);
                     for (const file of files) {
                         if (file.endsWith('.log') || file.endsWith('.log.gz')) {
@@ -1785,6 +2089,7 @@ module.exports = (ipcMain, win) => {
 
         ipcMain.handle('instance:get-worlds', async (_, instanceName) => {
             try {
+                console.log(`Getting worlds for: ${instanceName}`);
                 const instanceDir = path.join(instancesDir, instanceName);
                 const savesDir = path.join(instanceDir, 'saves');
                 if (!await fs.pathExists(savesDir)) return { success: true, worlds: [] };
@@ -2111,6 +2416,7 @@ module.exports = (ipcMain, win) => {
                     console.error('Failed to copy settings:', e);
                 }
                 const instanceType = typeof options?.instanceType === 'string' ? options.instanceType.trim() : '';
+                const folderPath = typeof options?.folderPath === 'string' ? options.folderPath.trim() : '';
                 const config = {
                     name: finalName,
                     version,
@@ -2126,6 +2432,9 @@ module.exports = (ipcMain, win) => {
 
                 if (instanceType) {
                     config.instanceType = instanceType;
+                }
+                if (folderPath) {
+                    config.folderPath = folderPath;
                 }
 
                 await fs.writeJson(path.join(dir, 'instance.json'), config, { spaces: 4 });
@@ -2326,6 +2635,44 @@ module.exports = (ipcMain, win) => {
             }
         });
 
+        ipcMain.handle('instance:set-folder-path', async (_, instanceRef, folderPath) => {
+            try {
+                const normalizedFolderPath = normalizeFolderPathValue(folderPath);
+                const safeRef = instanceRef && typeof instanceRef === 'object'
+                    ? instanceRef
+                    : { name: String(instanceRef || '') };
+                const localConfigPath = path.join(instancesDir, String(safeRef?.name || ''), 'instance.json');
+
+                if (await fs.pathExists(localConfigPath)) {
+                    const current = await fs.readJson(localConfigPath);
+                    if (normalizedFolderPath) {
+                        current.folderPath = normalizedFolderPath;
+                    } else {
+                        delete current.folderPath;
+                    }
+                    await fs.writeJson(localConfigPath, current, { spaces: 4 });
+                    return { success: true, mode: 'local-config' };
+                }
+
+                const meta = await readInstanceFolderMeta();
+                const metaKey = buildInstanceFolderMetaKey(safeRef);
+                if (!metaKey || metaKey.endsWith(':')) {
+                    return { success: false, error: 'Invalid instance reference' };
+                }
+
+                if (normalizedFolderPath) {
+                    meta[metaKey] = normalizedFolderPath;
+                } else {
+                    delete meta[metaKey];
+                }
+
+                await writeInstanceFolderMeta(meta);
+                return { success: true, mode: 'dashboard-meta' };
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        });
+
         ipcMain.handle('instance:rename', async (_, oldName, newName) => {
             try {
                 console.log(`Renaming instance: "${oldName}" -> "${newName}"`);
@@ -2437,27 +2784,25 @@ module.exports = (ipcMain, win) => {
 
         ipcMain.handle('instance:open-folder', async (_, instanceName) => {
             try {
-                // Try LuxClient directory first
-                const instancePath = path.join(instancesDir, instanceName);
-                if (await fs.pathExists(instancePath)) {
-                    await shell.openPath(instancePath);
+                const localInstancePath = path.join(instancesDir, instanceName);
+                if (await fs.pathExists(localInstancePath)) {
+                    await shell.openPath(localInstancePath);
                     return { success: true };
                 }
-                // Search in external launcher directories (Modrinth/CurseForge)
-                if (process.platform === 'win32') {
-                    const homeDir = os.homedir();
-                    const externalRoots = [
-                        path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'profiles'),
-                        path.join(homeDir, 'curseforge', 'minecraft', 'Instances')
-                    ];
-                    for (const rootDir of externalRoots) {
-                        const externalPath = path.join(rootDir, instanceName);
-                        if (await fs.pathExists(externalPath)) {
-                            await shell.openPath(externalPath);
-                            return { success: true };
-                        }
-                    }
+
+                const mergedInstances = await getMergedInstances();
+                const normalizedName = String(instanceName || '').trim().toLowerCase();
+                const externalInstance = mergedInstances.find((entry) => {
+                    const entryName = String(entry?.name || '').trim().toLowerCase();
+                    return entryName === normalizedName && String(entry?.instanceType || '').toLowerCase() === 'external';
+                });
+
+                const externalPath = String(externalInstance?.externalPath || '').trim();
+                if (externalPath && await fs.pathExists(externalPath)) {
+                    await shell.openPath(externalPath);
+                    return { success: true };
                 }
+
                 return { success: false, error: 'Instance folder not found' };
             } catch (e) {
                 return { success: false, error: e.message };

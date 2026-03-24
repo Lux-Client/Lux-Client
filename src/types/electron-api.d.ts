@@ -56,6 +56,7 @@ interface ElectronAPI {
   createInstance: (name: string, version: string, loader: string, icon: string | null, loaderVersion?: string | null, options?: any) => Promise<any>;
   updateInstance: (name: string, config: any) => Promise<any>;
   updateInstanceConfig: (name: string, config: any) => Promise<any>;
+  setInstanceFolderPath: (instanceRef: any, folderPath: string) => Promise<any>;
   migrateInstance: (name: string, config: any) => Promise<any>;
   reinstallInstance: (name: string, type?: string) => Promise<any>;
   deleteInstance: (name: string) => Promise<any>;

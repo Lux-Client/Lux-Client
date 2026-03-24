@@ -16,13 +16,36 @@ import {
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup
 } from './ui/dropdown-menu';
 import {
-  Search, ChevronDown, Newspaper, Rocket,
+  Search, ChevronDown, ChevronLeft, ChevronRight, Newspaper, Rocket,
   Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap, Wrench
 } from 'lucide-react';
+
+type TopBarProps = {
+  currentMode: any;
+  onModeSelect: any;
+  canNavigateBack: boolean;
+  canNavigateForward: boolean;
+  onNavigateBack: () => void;
+  onNavigateForward: () => void;
+  userProfile: any;
+  onProfileUpdate: any;
+  isGuest: any;
+  isMaximized: any;
+  onOpenCommandPalette: any;
+  onNavigate: any;
+  runningInstances: any;
+  activeDownloads: any;
+  appSettings: any;
+  isCommandPaletteAvailable: boolean;
+};
 
 function TopBar({
   currentMode,
   onModeSelect,
+  canNavigateBack,
+  canNavigateForward,
+  onNavigateBack,
+  onNavigateForward,
   userProfile,
   onProfileUpdate,
   isGuest,
@@ -33,7 +56,7 @@ function TopBar({
   activeDownloads,
   appSettings,
   isCommandPaletteAvailable
-}) {
+}: TopBarProps) {
   const { t } = useTranslation();
   const [accounts, setAccounts] = useState([]);
   const [liveSkin, setLiveSkin] = useState(null);
@@ -139,6 +162,46 @@ function TopBar({
         </div>
 
         <>
+          <TooltipProvider>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg"
+                    aria-label={t('common.back', 'Back')}
+                    onClick={onNavigateBack}
+                    disabled={!canNavigateBack}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>{t('common.back', 'Back')}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg"
+                    aria-label={t('common.forward', 'Forward')}
+                    onClick={onNavigateForward}
+                    disabled={!canNavigateForward}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>{t('common.forward', 'Forward')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
+
           <TooltipProvider>
             <div data-guide-id="mode-switcher">
               <ToggleGroup
