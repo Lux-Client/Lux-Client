@@ -31,6 +31,463 @@ function getExternalLauncherRoots() {
     ];
 }
 
+function normalizeLoaderFromString(value) {
+    let candidate = value;
+
+    if (candidate && typeof candidate === 'object') {
+        candidate = candidate.name || candidate.id || candidate.loader || candidate.type || '';
+    }
+
+    const raw = String(candidate || '').trim().toLowerCase();
+
+    if (!raw) return '';
+    if (raw.includes('neoforge') || raw.startsWith('neo')) return 'neoforge';
+    if (raw.includes('fabric')) return 'fabric';
+    if (raw.includes('quilt')) return 'quilt';
+    if (raw.includes('forge')) return 'forge';
+    if (raw.includes('vanilla')) return 'vanilla';
+    return raw;
+}
+
+function parseFiniteNumber(value) {
+    if (value === null || value === undefined) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function readJsonIfExists(filePath) {
+    try {
+        if (!await fs.pathExists(filePath)) return null;
+        return await fs.readJson(filePath);
+    } catch (_) {
+        return null;
+    }
+}
+
+async function readTextIfExists(filePath) {
+    try {
+        if (!await fs.pathExists(filePath)) return '';
+        return await fs.readFile(filePath, 'utf8');
+    } catch (_) {
+        return '';
+    }
+}
+
+async function listDirectoryNames(dirPath) {
+    try {
+        if (!await fs.pathExists(dirPath)) return [];
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        return entries
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => String(entry.name || '').trim())
+            .filter(Boolean);
+    } catch (_) {
+        return [];
+    }
+}
+
+function getExternalRuntimeRoot(externalProfile) {
+    const baseDir = String(externalProfile?.baseDir || '').trim();
+    const source = String(externalProfile?.source || '').trim().toLowerCase();
+    if (!baseDir || !source) return '';
+
+    const launcherBaseDir = path.dirname(baseDir);
+    if (source === 'curseforge') {
+        return path.join(launcherBaseDir, 'Install');
+    }
+
+    if (source === 'modrinth') {
+        return path.join(launcherBaseDir, 'meta');
+    }
+
+    return '';
+}
+
+function buildVersionIdCandidates({ version, loader, loaderVersion, explicitVersionId }) {
+    const candidates = [];
+    const addCandidate = (value) => {
+        const candidate = String(value || '').trim();
+        if (!candidate) return;
+        if (!candidates.includes(candidate)) candidates.push(candidate);
+    };
+
+    addCandidate(explicitVersionId);
+
+    if (!loader || loader === 'vanilla') {
+        addCandidate(version);
+        return candidates;
+    }
+
+    switch (loader) {
+        case 'fabric':
+            addCandidate(`fabric-loader-${loaderVersion}-${version}`);
+            addCandidate(`fabric-${loaderVersion}-${version}`);
+            addCandidate(`${version}-${loaderVersion}`);
+            break;
+        case 'quilt':
+            addCandidate(`quilt-loader-${loaderVersion}-${version}`);
+            addCandidate(`quilt-${loaderVersion}-${version}`);
+            addCandidate(`${version}-${loaderVersion}`);
+            break;
+        case 'forge':
+            addCandidate(`forge-${loaderVersion}`);
+            addCandidate(`${version}-forge-${loaderVersion}`);
+            addCandidate(`${version}-${loaderVersion}`);
+            break;
+        case 'neoforge':
+            addCandidate(`neoforge-${loaderVersion}`);
+            addCandidate(`${version}-neoforge-${loaderVersion}`);
+            addCandidate(`${version}-${loaderVersion}`);
+            break;
+        default:
+            addCandidate(`${loader}-${loaderVersion}-${version}`);
+            addCandidate(`${version}-${loaderVersion}`);
+            break;
+    }
+
+    return candidates;
+}
+
+async function resolveSharedVersionId(versionsDir, details) {
+    const versionNames = await listDirectoryNames(versionsDir);
+    if (!versionNames.length) return '';
+
+    const byLower = new Map(versionNames.map((name) => [name.toLowerCase(), name]));
+    const candidates = buildVersionIdCandidates(details);
+
+    for (const candidate of candidates) {
+        const exactMatch = byLower.get(candidate.toLowerCase());
+        if (exactMatch) return exactMatch;
+    }
+
+    const version = String(details?.version || '').trim().toLowerCase();
+    const loader = String(details?.loader || '').trim().toLowerCase();
+    const loaderVersion = String(details?.loaderVersion || '').trim().toLowerCase();
+
+    let bestMatch = '';
+    let bestScore = -1;
+
+    for (const versionName of versionNames) {
+        const current = versionName.toLowerCase();
+        let score = 0;
+
+        if (version && current.includes(version)) score += 40;
+        if (loaderVersion && current.includes(loaderVersion)) score += 35;
+        if (loader && current.includes(loader)) score += 20;
+        if (current.startsWith(version)) score += 10;
+        if (current.startsWith(`${loader}-`) || current.includes(`-${loader}-`)) score += 10;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = versionName;
+        }
+    }
+
+    return bestScore > 0 ? bestMatch : '';
+}
+
+async function resolveAssetIndex(runtimeRoot, version, versionId) {
+    const visited = new Set();
+    const queue = [];
+
+    if (versionId) queue.push(versionId);
+    if (version && version !== versionId) queue.push(version);
+
+    while (queue.length > 0) {
+        const current = String(queue.shift() || '').trim();
+        if (!current || visited.has(current)) continue;
+        visited.add(current);
+
+        const versionJsonPath = path.join(runtimeRoot, 'versions', current, `${current}.json`);
+        const versionJson = await readJsonIfExists(versionJsonPath);
+        if (!versionJson) continue;
+
+        const assetsValue = String(versionJson.assets || '').trim();
+        if (assetsValue) {
+            return assetsValue;
+        }
+
+        const inheritedFrom = String(versionJson.inheritsFrom || '').trim();
+        if (inheritedFrom && !visited.has(inheritedFrom)) {
+            queue.push(inheritedFrom);
+        }
+    }
+
+    return '';
+}
+
+async function readExternalLaunchDetails(externalProfile) {
+    const source = String(externalProfile?.source || '').trim().toLowerCase();
+    const profileDir = String(externalProfile?.path || '').trim();
+    const runtimeRoot = getExternalRuntimeRoot(externalProfile);
+    const versionsDir = runtimeRoot ? path.join(runtimeRoot, 'versions') : '';
+
+    const launcherLog = await readTextIfExists(path.join(profileDir, 'logs', 'launcher_log.txt'));
+    const latestLog = await readTextIfExists(path.join(profileDir, 'logs', 'latest.log'));
+    const combinedLogs = `${launcherLog}\n${latestLog}`;
+
+    const readLogValue = (pattern) => {
+        const match = combinedLogs.match(pattern);
+        return match && match[1] ? String(match[1]).trim() : '';
+    };
+
+    let version = '';
+    let loader = '';
+    let loaderVersion = '';
+    let explicitVersionId = '';
+    let assetIndex = '';
+
+    if (source === 'modrinth') {
+        const profile = await readJsonIfExists(path.join(profileDir, 'profile.json'));
+        const metadata = profile && typeof profile.metadata === 'object' ? profile.metadata : {};
+
+        version = String(
+            profile?.game_version ||
+            profile?.gameVersion ||
+            profile?.minecraft_version ||
+            profile?.minecraftVersion ||
+            metadata?.game_version ||
+            metadata?.gameVersion ||
+            metadata?.minecraft_version ||
+            metadata?.minecraftVersion ||
+            readLogValue(/--fml\.mcVersion,\s*([^,\]\s]+)/i) ||
+            readLogValue(/--version,\s*([^,\]\s]+)/i) ||
+            ''
+        ).trim();
+
+        loader = normalizeLoaderFromString(
+            profile?.loader ||
+            profile?.loader_id ||
+            profile?.loaderId ||
+            metadata?.loader ||
+            metadata?.loader_id ||
+            metadata?.loaderId ||
+            metadata?.loader_version?.id ||
+            metadata?.loaderVersion?.id ||
+            metadata?.loader_version ||
+            metadata?.loaderVersion ||
+            ''
+        );
+
+        const neoForgeVersion = readLogValue(/--fml\.neoForgeVersion,\s*([^,\]\s]+)/i);
+        const forgeVersion = readLogValue(/--fml\.forgeVersion,\s*([^,\]\s]+)/i);
+        const fabricVersion = readLogValue(/fabric-loader-([0-9][0-9a-z.+\-]*)-/i);
+        const quiltVersion = readLogValue(/quilt-loader-([0-9][0-9a-z.+\-]*)-/i);
+
+        if (!loader) {
+            if (neoForgeVersion) loader = 'neoforge';
+            else if (forgeVersion) loader = 'forge';
+            else if (fabricVersion) loader = 'fabric';
+            else if (quiltVersion) loader = 'quilt';
+            else loader = 'vanilla';
+        }
+
+        loaderVersion = String(
+            metadata?.loader_version?.version ||
+            metadata?.loaderVersion?.version ||
+            metadata?.loader_version ||
+            metadata?.loaderVersion ||
+            profile?.loader_version ||
+            profile?.loaderVersion ||
+            ''
+        ).trim();
+
+        if (!loaderVersion) {
+            if (loader === 'neoforge') loaderVersion = neoForgeVersion;
+            else if (loader === 'forge') loaderVersion = forgeVersion;
+            else if (loader === 'fabric') loaderVersion = fabricVersion;
+            else if (loader === 'quilt') loaderVersion = quiltVersion;
+        }
+
+        explicitVersionId = String(
+            profile?.versionId ||
+            profile?.version_id ||
+            metadata?.versionId ||
+            metadata?.version_id ||
+            ''
+        ).trim();
+        assetIndex = readLogValue(/--assetIndex,\s*([^,\]\s]+)/i);
+    }
+
+    if (source === 'curseforge') {
+        const profile = await readJsonIfExists(path.join(profileDir, 'minecraftinstance.json'));
+        const manifest = await readJsonIfExists(path.join(profileDir, 'manifest.json'));
+
+        const primaryLoader = Array.isArray(manifest?.minecraft?.modLoaders)
+            ? manifest.minecraft.modLoaders.find((entry) => entry?.primary) || manifest.minecraft.modLoaders[0]
+            : null;
+
+        const loaderSource =
+            primaryLoader?.id ||
+            profile?.baseModLoader?.name ||
+            profile?.baseModLoader?.id ||
+            profile?.baseModLoader?.forgeVersion ||
+            profile?.modLoader?.name ||
+            profile?.modLoader ||
+            profile?.modloader ||
+            '';
+
+        version = String(
+            manifest?.minecraft?.version ||
+            profile?.minecraftVersion ||
+            profile?.gameVersion ||
+            profile?.baseModLoader?.minecraftVersion ||
+            readLogValue(/--version,\s*([^,\]\s]+)/i) ||
+            ''
+        ).trim();
+
+        explicitVersionId = String(loaderSource || '').trim();
+        loader = normalizeLoaderFromString(loaderSource);
+        loaderVersion = String(
+            profile?.baseModLoader?.forgeVersion ||
+            readLogValue(/--fml\.forgeVersion,\s*([^,\]\s]+)/i) ||
+            ''
+        ).trim();
+
+        if (!loaderVersion && explicitVersionId) {
+            const dashIndex = explicitVersionId.indexOf('-');
+            if (dashIndex >= 0) {
+                loaderVersion = explicitVersionId.slice(dashIndex + 1).trim();
+            }
+        }
+    }
+
+    if (!version) {
+        const availableVersions = await listDirectoryNames(versionsDir);
+        const directVersionMatch = availableVersions.find((entry) => /^\d+\.\d+(?:\.\d+)?$/i.test(entry));
+        if (directVersionMatch) version = directVersionMatch;
+    }
+
+    if (!loader) {
+        loader = explicitVersionId ? normalizeLoaderFromString(explicitVersionId) : 'vanilla';
+    }
+
+    const resolvedVersionId = await resolveSharedVersionId(versionsDir, {
+        version,
+        loader,
+        loaderVersion,
+        explicitVersionId
+    });
+
+    const resolvedAssetIndex = assetIndex || await resolveAssetIndex(runtimeRoot, version, resolvedVersionId);
+
+    return {
+        runtimeRoot,
+        profileDir,
+        version,
+        loader: loader || 'vanilla',
+        loaderVersion,
+        versionId: resolvedVersionId,
+        assetIndex: resolvedAssetIndex
+    };
+}
+
+async function buildExternalLaunchContext(externalProfile) {
+    const details = await readExternalLaunchDetails(externalProfile);
+
+    if (!details.runtimeRoot || !await fs.pathExists(details.runtimeRoot)) {
+        return { success: false, error: 'Shared launcher runtime for this external profile was not found.' };
+    }
+
+    if (!details.version) {
+        return { success: false, error: 'Minecraft version for this external profile could not be determined.' };
+    }
+
+    const versionDirName = details.versionId || details.version;
+    const versionDir = path.join(details.runtimeRoot, 'versions', versionDirName);
+    const customJarPath = path.join(versionDir, `${versionDirName}.jar`);
+    const vanillaJarPath = path.join(details.runtimeRoot, 'versions', details.version, `${details.version}.jar`);
+    const libraryRoot = path.join(details.runtimeRoot, 'libraries');
+
+    const config = {
+        version: details.version,
+        loader: details.loader || 'vanilla',
+        versionId: details.versionId || '',
+        assetIndex: details.assetIndex || ''
+    };
+
+    const overrides = {
+        detached: false,
+        gameDirectory: details.profileDir,
+        cwd: details.profileDir,
+        assetRoot: path.join(details.runtimeRoot, 'assets'),
+        libraryRoot
+    };
+
+    if (details.versionId) {
+        overrides.directory = versionDir;
+    }
+
+    if (config.assetIndex) {
+        overrides.assetIndex = config.assetIndex;
+    }
+
+    if (!await fs.pathExists(customJarPath) && await fs.pathExists(vanillaJarPath)) {
+        overrides.minecraftJar = vanillaJarPath;
+    }
+
+    const nativesCandidates = [
+        path.join(details.runtimeRoot, 'natives', versionDirName),
+        path.join(details.runtimeRoot, 'natives', details.version)
+    ];
+
+    for (const nativesPath of nativesCandidates) {
+        if (await fs.pathExists(nativesPath)) {
+            overrides.natives = nativesPath;
+            break;
+        }
+    }
+
+    return {
+        success: true,
+        isExternal: true,
+        config,
+        configPath: null,
+        instanceDir: details.profileDir,
+        rootDir: details.runtimeRoot,
+        overrides,
+        librariesDir: libraryRoot,
+        versionDir,
+        supportsBackups: false,
+        supportsPersistence: false
+    };
+}
+
+async function buildLocalLaunchContext(instanceName) {
+    const fallbackInstanceDir = path.join(resolvePrimaryInstancesDir(), instanceName);
+    const instanceDir = resolveInstanceDirByName(instanceName) || fallbackInstanceDir;
+    const configPath = path.join(instanceDir, 'instance.json');
+
+    if (!await fs.pathExists(configPath)) {
+        return { success: false, error: 'Instance not found' };
+    }
+
+    const config = await fs.readJson(configPath);
+    const overrides = {
+        detached: false,
+        assetRoot: path.join(app.getPath('userData'), 'common', 'assets')
+    };
+
+    const resolvedAssetIndex = await resolveAssetIndex(instanceDir, config.version, config.versionId);
+    if (resolvedAssetIndex) {
+        overrides.assetIndex = resolvedAssetIndex;
+    }
+
+    return {
+        success: true,
+        isExternal: false,
+        config,
+        configPath,
+        instanceDir,
+        rootDir: instanceDir,
+        overrides,
+        librariesDir: path.join(instanceDir, 'libraries'),
+        versionDir: path.join(instanceDir, 'versions', config.versionId || config.version),
+        supportsBackups: true,
+        supportsPersistence: true
+    };
+}
+
 async function findExternalProfileByDisplayName(instanceName) {
     const requested = normalizeExternalRequestName(instanceName);
     if (!requested) return null;
@@ -61,7 +518,7 @@ async function findExternalProfileByDisplayName(instanceName) {
                 dirLower === stripped ||
                 `${dirLower} (${sourceLabel})` === requested
             ) {
-                return { source, path: path.join(baseDir, dirName) };
+                return { source, baseDir, path: path.join(baseDir, dirName) };
             }
 
             if (source === 'modrinth') {
@@ -78,7 +535,7 @@ async function findExternalProfileByDisplayName(instanceName) {
                         profileName === stripped ||
                         `${profileName} (${sourceLabel})` === requested
                     ) {
-                        return { source, path: path.join(baseDir, dirName) };
+                        return { source, baseDir, path: path.join(baseDir, dirName) };
                     }
                 } catch (_) {
                 }
@@ -98,7 +555,7 @@ async function findExternalProfileByDisplayName(instanceName) {
                         profileName === stripped ||
                         `${profileName} (${sourceLabel})` === requested
                     ) {
-                        return { source, path: path.join(baseDir, dirName) };
+                        return { source, baseDir, path: path.join(baseDir, dirName) };
                     }
                 } catch (_) {
                 }
@@ -316,31 +773,37 @@ Add-Type -TypeDefinition $code -Language CSharp
 
         try {
             const externalProfile = await findExternalProfileByDisplayName(instanceName);
-            if (externalProfile) {
+            const launchContext = externalProfile
+                ? await buildExternalLaunchContext(externalProfile)
+                : await buildLocalLaunchContext(instanceName);
+
+            if (!launchContext.success) {
                 activeLaunches.delete(instanceName);
-                return {
-                    success: false,
-                    error: 'External profiles from Modrinth/CurseForge cannot be launched directly by LuxClient. Please launch them from their original launcher.'
-                };
+                return { success: false, error: launchContext.error };
             }
 
-            const fallbackInstanceDir = path.join(resolvePrimaryInstancesDir(), instanceName);
-            const instanceDir = resolveInstanceDirByName(instanceName) || fallbackInstanceDir;
-            const configPath = path.join(instanceDir, 'instance.json');
-
-            if (!await fs.pathExists(configPath)) return { success: false, error: 'Instance not found' };
-
-            const config = await fs.readJson(configPath);
+            const {
+                config,
+                configPath,
+                instanceDir,
+                rootDir,
+                overrides: launchOverrides,
+                librariesDir,
+                versionDir,
+                supportsBackups,
+                supportsPersistence,
+                isExternal
+            } = launchContext;
 
             const backupConfig = store.get('settings') || {};
-            if (backupConfig.backupSettings?.enabled && backupConfig.backupSettings?.onLaunch) {
+            if (supportsBackups && backupConfig.backupSettings?.enabled && backupConfig.backupSettings?.onLaunch) {
                 console.log(`[Launcher] Triggering on-launch backup for ${instanceName}`);
                 await backupManager.createBackup(instanceName).catch(err => {
                     console.error('[Launcher] On-launch backup failed:', err);
                 });
             }
 
-            if (backupConfig.backupSettings?.enabled && backupConfig.backupSettings?.interval > 0) {
+            if (supportsBackups && backupConfig.backupSettings?.enabled && backupConfig.backupSettings?.interval > 0) {
                 backupManager.startScheduler(instanceName, backupConfig.backupSettings.interval);
             }
 
@@ -385,11 +848,8 @@ Add-Type -TypeDefinition $code -Language CSharp
                     name: userProfile.name,
                     user_properties: {}
                 },
-                root: instanceDir,
-                overrides: {
-                    detached: false,
-                    assetRoot: path.join(sharedDir, 'assets')
-                },
+                root: rootDir,
+                overrides: { ...launchOverrides },
                 version: {
                     number: config.version,
                     type: "release"
@@ -536,12 +996,14 @@ Add-Type -TypeDefinition $code -Language CSharp
             console.log(`[Launcher] Final launch options for ${instanceName}:`, {
                 version: opts.version,
                 memory: opts.memory,
-                javaPath: opts.javaPath || 'default'
+                javaPath: opts.javaPath || 'default',
+                external: isExternal,
+                root: opts.root
             });
 
             if (config.loader && config.loader.toLowerCase() === 'neoforge') {
                 const neoForgeArgs = [
-                    `-DlibraryDirectory=${path.join(instanceDir, 'libraries')}`,
+                    `-DlibraryDirectory=${librariesDir}`,
                     "--add-modules=ALL-SYSTEM",
                     "--add-opens=java.base/java.util.jar=ALL-UNNAMED",
                     "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
@@ -583,10 +1045,12 @@ Add-Type -TypeDefinition $code -Language CSharp
 
             if (config.loader && config.loader.toLowerCase() !== 'vanilla') {
                 if (!config.versionId) {
+                    activeLaunches.delete(instanceName);
                     return { success: false, error: `Instance configuration incomplete (missing versionId). Please reinstall ${instanceName}.` };
                 }
-                const specificVersionDir = path.join(instanceDir, 'versions', config.versionId);
+                const specificVersionDir = versionDir;
                 if (!await fs.pathExists(specificVersionDir)) {
+                    activeLaunches.delete(instanceName);
                     return { success: false, error: `Mod loader files missing for ${config.versionId}. Please reinstall.` };
                 }
             }
@@ -594,7 +1058,7 @@ Add-Type -TypeDefinition $code -Language CSharp
             const launcher = new Client();
 
             liveLogs.set(instanceName, []);
-            if (config.preLaunchHook && config.preLaunchHook.trim()) {
+            if (!isExternal && config.preLaunchHook && config.preLaunchHook.trim()) {
                 try {
                     const hook = config.preLaunchHook.trim();
                     const forbiddenChars = /[;&|`$<>]/;
@@ -691,15 +1155,17 @@ Add-Type -TypeDefinition $code -Language CSharp
                     console.log(`[Launcher] Session finished for ${instanceName}. Duration: ${sessionTime}ms`);
 
                     try {
-                        const currentConfig = await fs.readJson(configPath);
-                        currentConfig.playtime = (currentConfig.playtime || 0) + sessionTime;
-                        currentConfig.lastPlayed = Date.now();
-                        await fs.writeJson(configPath, currentConfig, { spaces: 4 });
+                        if (supportsPersistence && configPath && await fs.pathExists(configPath)) {
+                            const currentConfig = await fs.readJson(configPath);
+                            currentConfig.playtime = (currentConfig.playtime || 0) + sessionTime;
+                            currentConfig.lastPlayed = Date.now();
+                            await fs.writeJson(configPath, currentConfig, { spaces: 4 });
 
-                        const playtimePath = path.join(instanceDir, 'playtime.txt');
-                        await fs.writeFile(playtimePath, String(currentConfig.playtime));
+                            const playtimePath = path.join(instanceDir, 'playtime.txt');
+                            await fs.writeFile(playtimePath, String(currentConfig.playtime));
 
-                        console.log(`[Launcher] Updated total playtime for ${instanceName}: ${currentConfig.playtime}ms`);
+                            console.log(`[Launcher] Updated total playtime for ${instanceName}: ${currentConfig.playtime}ms`);
+                        }
 
                         const isShortSession = sessionTime < 15000;
                         const isCrash = (code !== 0 && code !== null) || logCrashDetected || isShortSession;
@@ -760,7 +1226,7 @@ Add-Type -TypeDefinition $code -Language CSharp
                 backupManager.stopScheduler(instanceName);
 
                 const settings = store.get('settings') || {};
-                if (settings.backupSettings?.enabled && settings.backupSettings?.onClose) {
+                if (supportsBackups && settings.backupSettings?.enabled && settings.backupSettings?.onClose) {
                     console.log(`[Launcher] Triggering on-close backup for ${instanceName}`);
                     await backupManager.createBackup(instanceName).catch(err => {
                         console.error('[Launcher] On-close backup failed:', err);
