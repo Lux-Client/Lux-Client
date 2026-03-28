@@ -3009,11 +3009,21 @@ module.exports = (ipcMain, win) => {
                 console.log(`Renaming instance: "${oldName}" -> "${newName}"`);
                 console.log(`Instances dir: ${instancesDir}`);
 
-                if (!newName || newName.trim() === '') {
+                const trimmedNewName = String(newName || '').trim();
+                if (!trimmedNewName) {
                     return { success: false, error: 'New name cannot be empty' };
                 }
+
+                if (/[\\/]/.test(trimmedNewName) || trimmedNewName === '.' || trimmedNewName === '..') {
+                    return { success: false, error: 'Invalid instance name' };
+                }
+
+                if (String(oldName || '') === trimmedNewName) {
+                    return { success: true };
+                }
+
                 const oldPath = path.join(instancesDir, oldName);
-                const newPath = path.join(instancesDir, newName);
+                const newPath = path.join(instancesDir, trimmedNewName);
 
                 console.log(`Old path: ${oldPath}`);
                 console.log(`Exists: ${await fs.pathExists(oldPath)}`);
@@ -3024,11 +3034,27 @@ module.exports = (ipcMain, win) => {
                 if (await fs.pathExists(newPath)) {
                     return { success: false, error: 'An instance with that name already exists' };
                 }
+
                 await fs.rename(oldPath, newPath);
-                const configPath = path.join(newPath, 'instance.json');
-                const config = await fs.readJson(configPath);
-                config.name = newName;
-                await fs.writeJson(configPath, config, { spaces: 4 });
+
+                let configPath = path.join(newPath, 'instance.json');
+                if (!await fs.pathExists(configPath)) {
+                    // Some packs may contain a differently-cased filename (works on Windows, fails on Linux).
+                    const dirEntries = await fs.readdir(newPath, { withFileTypes: true });
+                    const matched = dirEntries.find((entry) => {
+                        return entry.isFile() && String(entry.name || '').toLowerCase() === 'instance.json';
+                    });
+                    if (matched) {
+                        configPath = path.join(newPath, matched.name);
+                    }
+                }
+
+                if (await fs.pathExists(configPath)) {
+                    const rawConfig = await fs.readJson(configPath);
+                    const config = sanitizeInstanceConfig(rawConfig);
+                    config.name = trimmedNewName;
+                    await fs.writeJson(configPath, config, { spaces: 4 });
+                }
 
                 return { success: true };
             } catch (e) {
