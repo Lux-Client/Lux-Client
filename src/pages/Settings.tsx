@@ -636,7 +636,7 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                             </DialogHeader>
                             <p className="text-sm text-muted-foreground">{t('settings.java.install_desc')}</p>
                             <div className="space-y-2">
-                                {[8, 17, 21].map(v => (
+                                {[8, 17, 21, 25].map(v => (
                                     <Button
                                         key={v}
                                         variant="outline"

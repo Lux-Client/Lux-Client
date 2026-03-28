@@ -67,18 +67,18 @@ export default function GuideOverlay({
                 return;
             }
 
-            const padding = 8;
+            const padding = 4;
             setTargetRect({
-                top: Math.max(6, rect.top - padding),
-                left: Math.max(6, rect.left - padding),
-                width: rect.width + padding * 2,
-                height: rect.height + padding * 2
+                top: Math.max(0, Math.round(rect.top - padding)),
+                left: Math.max(0, Math.round(rect.left - padding)),
+                width: Math.round(rect.width + padding * 2),
+                height: Math.round(rect.height + padding * 2)
             });
         };
 
         measure();
 
-        const interval = window.setInterval(measure, 180);
+        const interval = window.setInterval(measure, 90);
         window.addEventListener('resize', measure);
         window.addEventListener('scroll', measure, true);
 
