@@ -36,9 +36,51 @@ const resetViewerUnpackState = (viewer) => {
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
 };
 
-// Browsers typically allow ~16 concurrent WebGL contexts. Reserve room for the main viewer.
+const disposeSkinViewer = (
+    viewer,
+    options: { forceContextLoss?: boolean } = {}
+) => {
+    if (!viewer) return;
+
+    const { forceContextLoss = false } = options;
+
+    try {
+        viewer.animation = null;
+        viewer.autoRotate = false;
+    } catch (_) {
+    }
+
+    const renderer = viewer?.renderer;
+    const domElement = renderer?.domElement;
+
+    try {
+        viewer.dispose?.();
+    } catch (error) {
+        console.warn('Failed to dispose SkinViewer instance', error);
+    }
+
+    try {
+        renderer?.dispose?.();
+        if (forceContextLoss) {
+            renderer?.forceContextLoss?.();
+            const gl = renderer?.getContext?.();
+            const loseContextExt = gl?.getExtension?.('WEBGL_lose_context');
+            loseContextExt?.loseContext?.();
+        }
+    } catch (error) {
+        console.warn('Failed to dispose SkinViewer renderer', error);
+    }
+
+    if (domElement) {
+        domElement.width = 1;
+        domElement.height = 1;
+    }
+};
+
+// Browsers typically allow ~16 concurrent WebGL contexts.
+// Keep the limit conservative so the main preview and editor can always allocate a context.
 let activeWebGLContexts = 0;
-const MAX_WEBGL_CONTEXTS = 12;
+const MAX_WEBGL_CONTEXTS = 3;
 
 const SkinPreview = ({ src, className, model = 'classic' }: { src?: any; className?: string; model?: string }) => {
     const canvasRef = useRef(null);
@@ -120,6 +162,7 @@ const SkinPreview3D = ({ src, className, model = 'classic' }: { src?: any; class
             return;
         }
 
+        let ownsContextSlot = true;
         activeWebGLContexts++;
         let viewer;
         try {
@@ -152,13 +195,17 @@ const SkinPreview3D = ({ src, className, model = 'classic' }: { src?: any; class
 
             return () => {
                 resizeObserver.disconnect();
-                if (viewer) {
-                    viewer.dispose();
-                    activeWebGLContexts--;
+                disposeSkinViewer(viewer);
+                if (ownsContextSlot) {
+                    activeWebGLContexts = Math.max(0, activeWebGLContexts - 1);
+                    ownsContextSlot = false;
                 }
             };
         } catch (e) {
-            activeWebGLContexts--;
+            if (ownsContextSlot) {
+                activeWebGLContexts = Math.max(0, activeWebGLContexts - 1);
+                ownsContextSlot = false;
+            }
             console.error("Failed to render 3D preview", e);
             setUseFallback(true);
         }
@@ -1182,10 +1229,7 @@ export const AdvancedSkinEditorDialog = ({
 
             if (viewerRef.current) {
                 try {
-                    const staleRenderer = viewerRef.current.renderer;
-                    viewerRef.current.dispose();
-                    staleRenderer?.dispose?.();
-                    staleRenderer?.forceContextLoss?.();
+                    disposeSkinViewer(viewerRef.current);
                 } catch (error) {
                     console.warn('Failed to dispose stale advanced skin viewer', error);
                     logSkinEditorDebug(debugContext, 'viewer-dispose-stale-failed', {
@@ -1385,10 +1429,7 @@ export const AdvancedSkinEditorDialog = ({
             window.removeEventListener('pointerup', handlePointerUp);
             resizeObserver?.disconnect();
             resizeObserverTexture?.disconnect();
-            const renderer = viewer?.renderer;
-            viewer?.dispose();
-            renderer?.dispose?.();
-            renderer?.forceContextLoss?.();
+            disposeSkinViewer(viewer);
             viewerRef.current = null;
             pointerDownRef.current = false;
             strokeActiveRef.current = false;
@@ -1903,9 +1944,8 @@ function Skins({ onLogout, onProfileUpdate }) {
 
             return () => {
                 resizeObserver.disconnect();
-                if (viewer) {
-                    viewer.dispose();
-                }
+                disposeSkinViewer(viewer);
+                skinViewerRef.current = null;
             };
         } catch (e) {
             console.error("Failed to initialize SkinViewer:", e);
