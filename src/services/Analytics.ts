@@ -7,6 +7,7 @@ class AnalyticsService {
     private clientVersion: string;
     private os: string;
     private userProfile: any;
+    private machineId: string;
 
     constructor() {
         this.socket = null;
@@ -14,6 +15,39 @@ class AnalyticsService {
         this.clientVersion = packageJson.version;
         this.os = 'win32';
         this.userProfile = null;
+        this.machineId = this.getOrCreateMachineId();
+    }
+
+    private generateMachineId() {
+        try {
+            if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+                const bytes = new Uint8Array(16);
+                crypto.getRandomValues(bytes);
+                return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+            }
+        } catch (e) {
+        }
+        return `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    }
+
+    private getOrCreateMachineId() {
+        const storageKey = 'lux_machine_id';
+        try {
+            if (typeof window === 'undefined' || !window.localStorage) {
+                return this.generateMachineId();
+            }
+
+            const existing = window.localStorage.getItem(storageKey);
+            if (existing && existing.length >= 16) {
+                return existing;
+            }
+
+            const created = this.generateMachineId();
+            window.localStorage.setItem(storageKey, created);
+            return created;
+        } catch (e) {
+            return this.generateMachineId();
+        }
     }
     init(serverUrl = 'https://lux.pluginhub.de') {
         if (this.socket) return;
@@ -72,7 +106,8 @@ class AnalyticsService {
         if (!this.socket) return;
         const data: any = {
             version: this.clientVersion,
-            os: this.os
+            os: this.os,
+            machineId: this.machineId
         };
         if (this.userProfile) {
             data.username = this.userProfile.name;

@@ -94,17 +94,40 @@ const LIGHT_LUX_THEME_PRESET = {
     textOnPrimary: '#fff4ea'
 };
 
-const normalizeThemeSchema = (theme = {}) => ({
+const DEFAULT_THEME = {
+    primaryColor: '#e26602',
+    backgroundColor: '#111111',
+    surfaceColor: '#1c1c1c',
+    sidebarColor: '',
+    textOnBackground: '#fafafa',
+    textOnSurface: '#fafafa',
+    textOnPrimary: '#0d0d0d',
+    glassBlur: 10,
+    glassOpacity: 0.8,
+    consoleOpacity: 0.8,
+    borderRadius: 12,
+    sidebarGlow: 0,
+    globalGlow: 0,
+    panelOpacity: 0.85,
+    bgOverlay: 0.4,
+    autoAdaptColor: false,
+    fontFamily: 'Poppins',
+    customFonts: [],
+    bgMedia: { url: '', type: 'none' }
+};
+
+const normalizeThemeSchema = (theme: any = {}) => ({
+    ...DEFAULT_THEME,
     ...theme,
-    primaryColor: theme.primaryColor || theme.primary || '#e26602',
-    backgroundColor: theme.backgroundColor || theme.bg || theme.background || '#111111',
-    surfaceColor: theme.surfaceColor || theme.surface || '#1c1c1c',
+    primaryColor: theme.primaryColor || theme.primary || DEFAULT_THEME.primaryColor,
+    backgroundColor: theme.backgroundColor || theme.bg || theme.background || DEFAULT_THEME.backgroundColor,
+    surfaceColor: theme.surfaceColor || theme.surface || DEFAULT_THEME.surfaceColor,
     sidebarColor: typeof theme.sidebarColor === 'string'
         ? theme.sidebarColor
         : (typeof theme.sidebar === 'string' ? theme.sidebar : ''),
-    textOnBackground: theme.textOnBackground || theme.foreground || '#fafafa',
-    textOnSurface: theme.textOnSurface || theme.text || '#fafafa',
-    textOnPrimary: theme.textOnPrimary || '#0d0d0d',
+    textOnBackground: theme.textOnBackground || theme.foreground || DEFAULT_THEME.textOnBackground,
+    textOnSurface: theme.textOnSurface || theme.text || DEFAULT_THEME.textOnSurface,
+    textOnPrimary: theme.textOnPrimary || DEFAULT_THEME.textOnPrimary,
 });
 
 const GUIDE_PROMPT_DEFAULTS: Record<GuideMode, boolean> = {
@@ -149,26 +172,7 @@ function App() {
     const [currentMode, setCurrentMode] = useState('launcher');
     const [userProfile, setUserProfile] = useState(null);
     const [isGuest, setIsGuest] = useState(false);
-    const [theme, setTheme] = useState({
-        primaryColor: '#e26602',
-        backgroundColor: '#111111',
-        surfaceColor: '#1c1c1c',
-        textOnBackground: '#fafafa',
-        textOnSurface: '#fafafa',
-        textOnPrimary: '#0d0d0d',
-        glassBlur: 10,
-        glassOpacity: 0.8,
-        consoleOpacity: 0.8,
-        borderRadius: 12,
-        sidebarGlow: 0,
-        globalGlow: 0,
-        panelOpacity: 0.85,
-        bgOverlay: 0.4,
-        autoAdaptColor: false,
-        fontFamily: 'Poppins',
-        customFonts: [],
-        bgMedia: { url: '', type: 'none' }
-    });
+    const [theme, setTheme] = useState(DEFAULT_THEME);
     const [selectedInstance, setSelectedInstance] = useState(null);
     const [selectedServer, setSelectedServer] = useState(null);
     const [runningInstances, setRunningInstances] = useState({});
