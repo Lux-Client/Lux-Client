@@ -12,6 +12,18 @@ function normalizeExternalRequestName(value) {
     return String(value || '').trim().toLowerCase();
 }
 
+function extractXuidFromToken(accessToken) {
+    try {
+        const base64Url = String(accessToken || '').split('.')[1];
+        if (!base64Url) return '';
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+        return payload.xuid || '';
+    } catch {
+        return '';
+    }
+}
+
 function stripExternalSuffix(value) {
     return String(value || '')
         .replace(/\s+\((modrinth|curseforge)(?:\s+\d+)?\)$/i, '')
@@ -954,7 +966,11 @@ Add-Type -TypeDefinition $code -Language CSharp
                     client_token: userProfile.uuid,
                     uuid: userProfile.uuid,
                     name: userProfile.name,
-                    user_properties: {}
+                    user_properties: '{}',
+                    meta: {
+                        type: 'msa',
+                        xuid: userProfile.xuid || extractXuidFromToken(userProfile.access_token)
+                    }
                 },
                 root: rootDir,
                 overrides: { ...launchOverrides },
