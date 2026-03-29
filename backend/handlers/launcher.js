@@ -265,6 +265,7 @@ async function resolveAssetIndex(runtimeRoot, version, versionId) {
 async function resolveAssetIndexMetadata(runtimeRoot, version, versionId) {
     const visited = new Set();
     const queue = [];
+    let fallbackAssetId = '';
 
     if (versionId) queue.push(versionId);
     if (version && version !== versionId) queue.push(version);
@@ -280,10 +281,16 @@ async function resolveAssetIndexMetadata(runtimeRoot, version, versionId) {
 
         const assetIndex = versionJson?.assetIndex;
         const assetId = String(assetIndex?.id || versionJson.assets || '').trim();
-        if (assetId) {
+        const assetUrl = String(assetIndex?.url || '').trim();
+
+        if (!fallbackAssetId && assetId) {
+            fallbackAssetId = assetId;
+        }
+
+        if (assetId && assetUrl) {
             return {
                 id: assetId,
-                url: String(assetIndex?.url || '').trim()
+                url: assetUrl
             };
         }
 
@@ -293,11 +300,56 @@ async function resolveAssetIndexMetadata(runtimeRoot, version, versionId) {
         }
     }
 
+    if (fallbackAssetId) {
+        return {
+            id: fallbackAssetId,
+            url: ''
+        };
+    }
+
     return null;
 }
 
+const VERSION_MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
+
+async function fetchAssetIndexMetadataFromVersionManifest(version) {
+    const targetVersion = String(version || '').trim();
+    if (!targetVersion) return null;
+
+    try {
+        const axios = require('axios');
+        const manifestResponse = await axios.get(VERSION_MANIFEST_URL, { timeout: 30000 });
+        const versions = Array.isArray(manifestResponse?.data?.versions) ? manifestResponse.data.versions : [];
+        const matched = versions.find((entry) => String(entry?.id || '').trim() === targetVersion);
+        const versionUrl = String(matched?.url || '').trim();
+        if (!versionUrl) return null;
+
+        const versionResponse = await axios.get(versionUrl, { timeout: 30000 });
+        const assetIndex = versionResponse?.data?.assetIndex || {};
+        const assetId = String(assetIndex?.id || '').trim();
+        const assetUrl = String(assetIndex?.url || '').trim();
+
+        if (!assetId) return null;
+        return { id: assetId, url: assetUrl };
+    } catch (error) {
+        console.warn(`[Launcher] Failed to resolve asset index from version manifest for ${targetVersion}: ${error.message}`);
+        return null;
+    }
+}
+
 async function ensureAssetIndexFile(runtimeRoot, assetRoot, version, versionId, fallbackAssetIndex = '') {
-    const metadata = await resolveAssetIndexMetadata(runtimeRoot, version, versionId);
+    let metadata = await resolveAssetIndexMetadata(runtimeRoot, version, versionId);
+
+    if (metadata?.id && !metadata?.url) {
+        const manifestMetadata = await fetchAssetIndexMetadataFromVersionManifest(version);
+        if (manifestMetadata && (!metadata.id || manifestMetadata.id === metadata.id)) {
+            metadata = {
+                id: metadata.id || manifestMetadata.id,
+                url: manifestMetadata.url
+            };
+        }
+    }
+
     const assetIndexId = String(metadata?.id || fallbackAssetIndex || '').trim();
     if (!assetIndexId || !assetRoot) return assetIndexId;
 
