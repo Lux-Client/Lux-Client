@@ -15,7 +15,8 @@
     "dist": "npm run dist-clean && npm run build && electron-builder --win --x64",
     "dist-win-all-arch": "npm run dist-clean && npm run build && electron-builder --win",
     "dist-mac": "npm run dist-clean && npm run build && electron-builder --mac",
-    "dist-all": "npm run dist-clean && npm run build && electron-builder -wl"
+    "dist-all": "npm run dist-clean && npm run build && electron-builder -wl",
+    "dist-linux-deb": "npm run dist-clean && npm run build && electron-builder --linux deb"
   },
   "build": {
     "appId": "de.pluginhub.lux",

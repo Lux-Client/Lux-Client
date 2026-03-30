@@ -44,7 +44,9 @@ async function downloadAndCacheIcon(iconUrl) {
             await downloadFile(iconUrl, iconPath);
         }
 
-        return `app-media:///${iconPath.replace(/\\/g, '/')}`;
+        const normalizedPath = iconPath.replace(/\\/g, '/');
+        const uri = `app-media:///${normalizedPath.replace(/^\/+/, '')}`;
+        return uri;
     } catch (e) {
         console.warn(`[IconCache] Failed to cache icon (${iconUrl}), falling back:`, e.message);
         return iconUrl;

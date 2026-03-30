@@ -525,6 +525,9 @@ function setupAppMediaProtocol() {
                 }
             } else {
                 decodedPath = decodeURIComponent(url.host + url.pathname);
+                if (!decodedPath.startsWith('/')) {
+                    decodedPath = '/' + decodedPath;
+                }
             }
 
             console.log(`[Main] app-media request: ${request.url} -> decodedPath: ${decodedPath}`);
