@@ -69,6 +69,7 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
         autoUploadLogs: true,
         showDisabledFeatures: false,
         settingsStorageFormat: 'json',
+        enableModrinthPackSupport: true,
         optimization: false,
         focusMode: false,
         minimalMode: false,

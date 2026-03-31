@@ -17,6 +17,7 @@ module.exports = (ipcMain) => {
         enableDiscordRPC: true,
         showDisabledFeatures: false,
         settingsStorageFormat: 'json',
+        enableModrinthPackSupport: true,
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
         instancesPath: '',
