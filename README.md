@@ -1,17 +1,6 @@
 <div align="center">
-
   <img src="resources/icon.png" alt="Lux Logo" width="128" />
-
   <h1><strong>Lux</strong></h1>
-  
-  <p>
-    <em>
-      <b>Lux</b> is a Minecraft launcher built with <b>Electron</b>, <b>React</b>, and <b>Tailwind CSS</b>.<br />
-      Seamlessly manage all your Minecraft instances, skins, and modpacks in a clean, simple app.  
-      Now with built-in support for both <b>Modrinth</b> and <b>CurseForge</b> modpacks.
-    </em>
-  </p>
-  
   <div>
     <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-appimage.yml">
       <img src="https://img.shields.io/github/actions/workflow/status/Lux-Client/LuxClient/build-appimage.yml?branch=main&label=AppImage&logo=linux&logoColor=white&style=for-the-badge" alt="AppImage Linux Build" />
@@ -32,7 +21,6 @@
       <img src="https://img.shields.io/github/v/release/Lux-Client/LuxClient?include_prereleases&label=Release&style=for-the-badge" alt="Release" />
     </a>
   </div>
-
 </div>
 
 ---
@@ -42,7 +30,7 @@
 ### Instance Management
 
 - **Sorting & Grouping**: Sort your instances by name, version, or playtime. You can also group them by version or loader.
-- **Modrinth & CurseForge Support**: Import modpacks and instances from <b>Modrinth</b> and <b>CurseForge</b> directly.
+- **Modrinth & CurseForge Support**: Import modpacks and instances from **Modrinth** and **CurseForge** directly.
 - **Multiloader Launch**: Start Vanilla, Fabric, Forge, NeoForge, or Quilt with one click.
 
 ### Skin & Cape Viewer
@@ -63,11 +51,13 @@
 Open a terminal and run the matching command for your system:
 
 **Linux & macOS:**
+
 ```bash
 curl -sSL https://lux.pluginhub.de/install.sh | bash
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 iwr https://lux.pluginhub.de/install.ps1 | iex
 ```
@@ -84,35 +74,33 @@ iwr https://lux.pluginhub.de/install.ps1 | iex
 #### Prerequisites
 
 - [Node.js](https://nodejs.org/) (latest LTS)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- [npm](https://www.npmjs.com/)
 
 #### Steps
 
 1. Clone the repository:
+
    ```bash
-   git clone https://github.com/LuxClient/LuxClient.git
-   cd LuxClient
+   git clone https://github.com/Lux-Client/Lux-Client.git
+   cd Lux-Client
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
-   # or
-   yarn install
    ```
 
 3. Start the dev server:
+
    ```bash
    npm run dev
-   # or
-   yarn dev
    ```
 
 4. Build for production:
+
    ```bash
    npm run dist
-   # or
-   yarn dist
    ```
 
 5. Useful scripts:
@@ -131,13 +119,7 @@ Found a bug or need help? [Create an issue](https://github.com/Lux-Client/LuxCli
 
 ## Tech Stack
 
-- **Electron** – The desktop platform ([electronjs.org](https://www.electronjs.org/))
-- **React** – The UI framework ([reactjs.org](https://reactjs.org/))
-- **Vite** – Tooling ([vitejs.dev](https://vitejs.dev/))
-- **Tailwind CSS** – Styling ([tailwindcss.com](https://tailwindcss.com/))
-- **skinview3d** – 3D Minecraft skin/model previews.
-- **State Management**: React Context and Hooks.
-- **Tooling**: JavaScript (ESNext), ESLint, and Prettier.
+For a detailed overview of the tech stack, see [TECHSTACK.md](./TECHSTACK.md).
 
 ---
 
