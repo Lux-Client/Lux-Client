@@ -129,7 +129,12 @@
         "browse": "Parcourir",
         "no_targets": "Aucune cible disponible",
         "image": "Image",
-        "add": "Ajouter"
+        "add": "Ajouter",
+        "remove": "Supprimer",
+        "add_to_actionbar": "Ajouter à la barre d'action",
+        "added": "Ajouté à la barre d'action",
+        "remove_from_actionbar": "Retirer de la barre d'action",
+        "removed": "Retiré de la barre d'action"
     },
     "home": {
         "welcome_back": "Bon retour !",
@@ -350,7 +355,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Glissez et déposez pour appliquer le skin",
+        "drop_success": "Nouveau skin appliqué"
     },
     "styling": {
         "title": "Apparence",
@@ -484,7 +491,11 @@
             "minimize_to_tray": "Réduire dans la barre des taches",
             "minimize_to_tray_desc": "Masquer le lanceur dans la barre des taches lors de la fermeture ou de la réduction.",
             "smart_log_analytics": "Analyse intelligente des logs",
-            "smart_log_analytics_desc": "Analyse automatiquement les crashs et suggère des corrections."
+            "smart_log_analytics_desc": "Analyse automatiquement les crashs et suggère des corrections.",
+            "modrinth_support": "Modpacks Modrinth",
+            "modrinth_support_desc": "Activer la recherche et l'installation des modpacks Modrinth.",
+            "curseforge_support": "Modpacks CurseForge",
+            "curseforge_support_desc": "Activer la recherche et l'installation des modpacks CurseForge."
         },
         "cloud": {
             "title": "Paramètres de sauvegarde dans le Cloud",
@@ -549,7 +560,11 @@
             "add_success": "Mod ajouté à l'installation automatique",
             "remove_success": "Mod retiré de l'installation automatique",
             "search_failed": "Échec de la recherche sur Modrinth"
-        }
+        },
+        "storage_format": "Format de stockage des paramètres",
+        "storage_format_desc": "YAML est recommandé pour une meilleure lisibilité et un meilleur contrôle de version. JSON est la valeur par défaut.",
+        "storage_format_migrated": "Paramètres migrés vers {{format}} avec succès",
+        "storage_format_failed": "Échec de la migration des paramètres : {{error}}"
     },
     "extensions": {
         "title": "Extensions",
@@ -852,13 +867,31 @@
             "new_folder": "Nouveau dossier",
             "folder_name": "Nom du dossier",
             "delete_title": "Supprimer l'élément",
-            "delete_confirm": "Êtes-vous sûr de vouloir supprimer \"{{name}}\" ?"
+            "delete_confirm": "Êtes-vous sûr de vouloir supprimer \"{{name}}\" ?",
+            "upload": "Téléverser",
+            "upload_title": "Téléverser des fichiers",
+            "drag_or_click": "Glissez des fichiers/dossiers ici ou cliquez pour parcourir",
+            "drop_here": "Déposez les fichiers/dossiers ici !",
+            "upload_hint": "Prend en charge les fichiers et dossiers",
+            "uploading": "Téléversement...",
+            "upload_success": "Fichier téléversé avec succès",
+            "upload_results": "Résultats du téléversement",
+            "files_uploaded": "fichiers téléversés"
         }
     },
     "setup": {
         "chooseLanguage": "Choisissez votre langue",
         "chooseLanguageDesc": "Sélectionnez votre langue préférée pour continuer la configuration.",
-        "skipSelection": "Passer la sélection (Par défaut : Anglais)"
+        "skipSelection": "Passer la sélection (Par défaut : Anglais)",
+        "chooseFormat": "Choisir le format des paramètres",
+        "chooseFormatDesc": "Sélectionnez comment vos paramètres doivent être stockés. Vous pouvez modifier cela plus tard dans Paramètres.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Le format par défaut et le plus compatible.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Format de données lisible. Recommandé pour une édition plus facile et un meilleur contrôle de version.",
+        "recommended": "Recommandé",
+        "default": "Par défaut",
+        "useFormat": "Utiliser le format"
     },
     "agreement": {
         "title": "Bienvenue sur Lux",

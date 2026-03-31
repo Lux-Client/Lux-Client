@@ -128,7 +128,12 @@
         "browse": "Bläddra",
         "no_targets": "Inga mål tillgängliga",
         "image": "Bild",
-        "add": "Lägg till"
+        "add": "Lägg till",
+        "remove": "Ta bort",
+        "add_to_actionbar": "Lägg till i åtgärdsfält",
+        "added": "Lagt till i åtgärdsfält",
+        "remove_from_actionbar": "Ta bort från åtgärdsfält",
+        "removed": "Borttagen från åtgärdsfält"
     },
     "home": {
         "welcome_back": "Välkommen tillbaka!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Dra och släpp för att applicera utseende",
+        "drop_success": "Nytt utseende applicerat"
     },
     "styling": {
         "title": "Utseende",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Minimera till systemfältet",
             "minimize_to_tray_desc": "Dölj startprogrammet i systemfältet när du stänger eller minimerar det.",
             "smart_log_analytics": "Smart logganalys",
-            "smart_log_analytics_desc": "Analysera krascher automatiskt och föreslå åtgärder."
+            "smart_log_analytics_desc": "Analysera krascher automatiskt och föreslå åtgärder.",
+            "modrinth_support": "Modrinth Modpacks",
+            "modrinth_support_desc": "Aktivera sökning och installation av Modrinth modpacks.",
+            "curseforge_support": "CurseForge Modpacks",
+            "curseforge_support_desc": "Aktivera sökning och installation av CurseForge modpacks."
         },
         "cloud": {
             "title": "Inställningar för säkerhetskopiering i molnet",
@@ -548,7 +559,11 @@
             "add_success": "Mod tillagd i autoinstallation",
             "remove_success": "Mod borttagen från autoinstallation",
             "search_failed": "Misslyckades att söka på Modrinth"
-        }
+        },
+        "storage_format": "Lagringsformat för inställningar",
+        "storage_format_desc": "YAML rekommenderas för bättre läsbarhet och versionskontroll. JSON är standard.",
+        "storage_format_migrated": "Inställningar migrerade till {{format}} framgångsrikt",
+        "storage_format_failed": "Misslyckades att migrera inställningar: {{error}}"
     },
     "extensions": {
         "title": "Tillägg",
@@ -851,13 +866,31 @@
             "new_folder": "Ny mapp",
             "folder_name": "Mappnamn",
             "delete_title": "Radera?",
-            "delete_confirm": "Är du säker på att du vill radera denna fil?"
+            "delete_confirm": "Är du säker på att du vill radera denna fil?",
+            "upload": "Ladda upp",
+            "upload_title": "Ladda upp filer",
+            "drag_or_click": "Dra filer/mappar hit eller klicka för att bläddra",
+            "drop_here": "Släpp filer/mappar här!",
+            "upload_hint": "Stöder filer och mappar",
+            "uploading": "Laddar upp...",
+            "upload_success": "Fil uppladdad framgångsrikt",
+            "upload_results": "Uppladdningsresultat",
+            "files_uploaded": "filer uppladdade"
         }
     },
     "setup": {
         "chooseLanguage": "Välj ditt språk",
         "chooseLanguageDesc": "Välj ditt föredragna språk för att fortsätta installationen.",
-        "skipSelection": "Hoppa över val (Standard: Engelska)"
+        "skipSelection": "Hoppa över val (Standard: Engelska)",
+        "chooseFormat": "Välj format för inställningar",
+        "chooseFormatDesc": "Välj hur dina inställningar ska lagras. Du kan ändra detta senare i Inställningar.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Standard och mest kompatibla formatet.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Läsbart dataformat. Rekommenderas för enklare redigering och versionskontroll.",
+        "recommended": "Rekommenderad",
+        "default": "Standard",
+        "useFormat": "Använd format"
     },
     "agreement": {
         "title": "Välkommen till Lux",

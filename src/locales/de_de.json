@@ -363,8 +363,10 @@
         "mirror_top_bottom": "Top/Bottom",
         "mirror_both": "Both",
         "history": "History",
-        "undo": "Undo",
-        "redo": "Redo"
+        "undo": "Rückgängig",
+        "redo": "Wiederholen",
+        "drop_skin": "Skin hier ablegen zum Anwenden",
+        "drop_success": "Neuer Skin angewendet"
     },
     "styling": {
         "title": "Erscheinungsbild",
@@ -498,7 +500,11 @@
             "smart_log_analytics": "Smart Log Analytics",
             "smart_log_analytics_desc": "Analysiert Abstürze automatisch und schlägt Lösungen vor.",
             "minimize_to_tray": "In den System-Tray minimieren",
-            "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren."
+            "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren.",
+            "modrinth_support": "Modrinth-Modpacks",
+            "modrinth_support_desc": "Suche und Installation von Modrinth-Modpacks aktivieren.",
+            "curseforge_support": "CurseForge-Modpacks",
+            "curseforge_support_desc": "Suche und Installation von CurseForge-Modpacks aktivieren."
         },
         "cloud": {
             "title": "Cloud-Backup-Einstellungen",
@@ -563,7 +569,11 @@
             "add_success": "Mod zu Auto-Install-Mods hinzugefügt",
             "remove_success": "Mod von Auto-Install-Mods entfernt",
             "search_failed": "Suche auf Modrinth fehlgeschlagen"
-        }
+        },
+        "storage_format": "Einstellungsspeicherformat",
+        "storage_format_desc": "YAML wird für bessere Lesbarkeit und Versionskontrolle empfohlen. JSON ist die Standardeinstellung.",
+        "storage_format_migrated": "Einstellungen erfolgreich zu {{format}} migriert",
+        "storage_format_failed": "Migration der Einstellungen fehlgeschlagen: {{error}}"
     },
     "extensions": {
         "title": "Erweiterungen",
@@ -866,7 +876,16 @@
             "new_folder": "Neuer Ordner",
             "folder_name": "Ordnername",
             "delete_title": "Löschen?",
-            "delete_confirm": "Möchten Sie diese Datei wirklich löschen?"
+            "delete_confirm": "Möchtest du diese Datei wirklich löschen?",
+            "upload": "Hochladen",
+            "upload_title": "Dateien hochladen",
+            "drag_or_click": "Dateien/Ordner hierher ziehen oder klicken zum Durchsuchen",
+            "drop_here": "Dateien/Ordner hier ablegen!",
+            "upload_hint": "Unterstützt Dateien und Ordner",
+            "uploading": "Wird hochgeladen...",
+            "upload_success": "Datei erfolgreich hochgeladen",
+            "upload_results": "Upload-Ergebnisse",
+            "files_uploaded": "Dateien hochgeladen"
         }
     },
     "setup": {
@@ -880,7 +899,16 @@
         "lightMode": "Lightmode",
         "lightModeDesc": "Setzt Light Lux als Standard-Theme.",
         "useDarkMode": "Darkmode verwenden",
-        "useLightMode": "Lightmode verwenden"
+        "useLightMode": "Lightmode verwenden",
+        "chooseFormat": "Einstellungsformat wählen",
+        "chooseFormatDesc": "Wähle, wie deine Einstellungen gespeichert werden sollen. Du kannst dies später in den Einstellungen ändern.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Das Standard- und am weitesten verbreitete Format.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Lesbares Datenformat. Empfohlen für einfachere Bearbeitung und Versionskontrolle.",
+        "recommended": "Empfohlen",
+        "default": "Standard",
+        "useFormat": "Format verwenden"
     },
     "agreement": {
         "title": "Herzlich Willkommen bei Lux",

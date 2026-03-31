@@ -128,7 +128,12 @@
         "browse": "Durchsuchen",
         "no_targets": "Keine Ziele verfügbar",
         "image": "Bild",
-        "add": "Hinzufügen"
+        "add": "Hinzufügen",
+        "remove": "Entferne",
+        "add_to_actionbar": "Zue Actionleiste hinzuefüege",
+        "added": "Zue Actionleiste hinzuegfüegt",
+        "remove_from_actionbar": "Vo Actionleiste entferne",
+        "removed": "Vo Actionleiste entfernt"
     },
     "home": {
         "welcome_back": "Willkomme zrugg!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Skin da ahzoge zum Aawände",
+        "drop_success": "Neui Skin aagwändet"
     },
     "styling": {
         "title": "Erscheinigsbild",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "In den System-Tray minimieren",
             "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren.",
             "smart_log_analytics": "Smart Log Analytics",
-            "smart_log_analytics_desc": "Analysiert Abstürz automatisch und schlaat Lösige vor."
+            "smart_log_analytics_desc": "Analysiert Abstürz automatisch und schlaat Lösige vor.",
+            "modrinth_support": "Modrinth-Modpacks",
+            "modrinth_support_desc": "Sueche und Installation vo Modrinth-Modpacks aktiviere.",
+            "curseforge_support": "CurseForge-Modpacks",
+            "curseforge_support_desc": "Sueche und Installation vo CurseForge-Modpacks aktiviere."
         },
         "cloud": {
             "title": "Cloud-Backup-Iistellige",
@@ -548,7 +559,11 @@
             "add_success": "Mod zu Auto-Install Mods hizufüegt",
             "remove_success": "Mod us Auto-Install Mods entfernt",
             "search_failed": "Suechi bim Modrinth isch gscheitert"
-        }
+        },
+        "storage_format": "Iistellige-Speicherformat",
+        "storage_format_desc": "YAML wird für besseri Lesbarkeit und Versionskontrolle empfohle. JSON isch de Standard.",
+        "storage_format_migrated": "Iistelligen erfolgrich zue {{format}} migriert",
+        "storage_format_failed": "Migration vo de Iistellige gscheitert: {{error}}"
     },
     "extensions": {
         "title": "Erwiiterige",
@@ -851,13 +866,31 @@
             "new_folder": "Neuer Ordner",
             "folder_name": "Ordnername",
             "delete_title": "Löschen?",
-            "delete_confirm": "Möchten Sie diese Datei wirklich löschen?"
+            "delete_confirm": "Möchten Sie diese Datei wirklich löschen?",
+            "upload": "Hochladen",
+            "upload_title": "Dateien hochladen",
+            "drag_or_click": "Dateien/Ordner hierher ziehen oder klicken zum Durchsuchen",
+            "drop_here": "Dateien/Ordner hier ablegen!",
+            "upload_hint": "Unterstützt Dateien und Ordner",
+            "uploading": "Wird hochgeladen...",
+            "upload_success": "Datei erfolgreich hochgeladen",
+            "upload_results": "Upload-Ergebnisse",
+            "files_uploaded": "Dateien hochgeladen"
         }
     },
     "setup": {
         "chooseLanguage": "Sprache uswähle",
         "chooseLanguageDesc": "Wähl dini Lieblingssprach us, um ds Setup wiiterzumache.",
-        "skipSelection": "Uswahl überspringen (Standard: Englisch)"
+        "skipSelection": "Uswahl überspringen (Standard: Englisch)",
+        "chooseFormat": "Iistelligsformat wähle",
+        "chooseFormatDesc": "Wähl, wie dini Iistellige gspeichert wärde. Du chasch das später i de Iistellige ändere.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. De Standard und s'am wytiste verbreitete Format.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Lesbars Datenformat. Empfohle für eifacheri Bearbeitig und Versionskontrolle.",
+        "recommended": "Empfohle",
+        "default": "Standard",
+        "useFormat": "Format verwände"
     },
     "agreement": {
         "title": "Willkomme bi Lux",

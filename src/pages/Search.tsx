@@ -50,7 +50,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [settings, setSettings] = useState({ enableModrinthPackSupport: true });
+    const [settings, setSettings] = useState({ enableModrinthPackSupport: true, enableCurseForgePackSupport: true });
     const [projectType, setProjectType] = useState(initialCategory || 'mod');
     const [offset, setOffset] = useState(0);
     const limit = 21;
@@ -127,6 +127,12 @@ function Search({ initialCategory, onCategoryConsumed }) {
             setOffset(0);
         }
     }, [settings.enableModrinthPackSupport]);
+
+    useEffect(() => {
+        if (!settings.enableCurseForgePackSupport && provider === 'curseforge') {
+            setProvider('modrinth');
+        }
+    }, [settings.enableCurseForgePackSupport]);
 
     const handlePreview = async (mod) => {
         try {
@@ -560,9 +566,11 @@ function Search({ initialCategory, onCategoryConsumed }) {
                                     <TabsTrigger value="modrinth" className="text-xs h-7 px-3">
                                         {t('search.modrinth')}
                                     </TabsTrigger>
-                                    <TabsTrigger value="curseforge" className="text-xs h-7 px-3">
-                                        {t('search.curseforge')}
-                                    </TabsTrigger>
+                                    {settings.enableCurseForgePackSupport !== false && (
+                                        <TabsTrigger value="curseforge" className="text-xs h-7 px-3">
+                                            {t('search.curseforge')}
+                                        </TabsTrigger>
+                                    )}
                                 </TabsList>
                             </Tabs>
                             <Select value={sortMethod} onValueChange={setSortMethod}>

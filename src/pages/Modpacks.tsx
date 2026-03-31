@@ -5,8 +5,27 @@ const Modpacks = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [installingPack, setInstallingPack] = useState(null);
+    const [settings, setSettings] = useState({ enableModrinthPackSupport: true });
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const res = await window.electronAPI.getSettings();
+                if (res.success) {
+                    setSettings(res.settings);
+                }
+            } catch (e) { }
+        };
+        loadSettings();
+        const cleanup = window.electronAPI.onSettingsUpdated?.((s) => setSettings(s));
+        return () => cleanup?.();
+    }, []);
 
     const searchModpacks = async (query = '') => {
+        if (settings.enableModrinthPackSupport === false) {
+            setSearchResults([]);
+            return;
+        }
         setLoading(true);
         try {
             const res = await window.electronAPI.searchModrinth(query, [['project_type:modpack']], { limit: 20 });
@@ -22,7 +41,7 @@ const Modpacks = () => {
 
     useEffect(() => {
         searchModpacks();
-    }, []);
+    }, [settings.enableModrinthPackSupport]);
 
     const handleSearch = (e) => {
         e.preventDefault();

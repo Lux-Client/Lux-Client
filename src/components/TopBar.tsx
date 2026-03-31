@@ -158,7 +158,7 @@ function TopBar({
     <div className="h-16 w-full titlebar flex items-center justify-between px-3 lg:px-5 border-b border-border bg-background/80 backdrop-blur-md flex-none relative z-[60]">
       <div className="flex items-center gap-1.5 lg:gap-2.5 no-drag shrink-0">
         <div className="w-10 h-10 bg-primary/15 rounded-xl flex items-center justify-center text-primary font-bold text-base border border-primary/20">
-          M
+          L
         </div>
 
         <>

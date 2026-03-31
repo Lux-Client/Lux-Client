@@ -128,7 +128,12 @@
         "browse": "Prehľadávať",
         "no_targets": "Žiadne dostupné ciele",
         "image": "Obrázok",
-        "add": "Pridať"
+        "add": "Pridať",
+        "remove": "Odstrániť",
+        "add_to_actionbar": "Pridať do panelu akcií",
+        "added": "Pridané do panelu akcií",
+        "remove_from_actionbar": "Odstrániť z panelu akcií",
+        "removed": "Odstránené z panelu akcií"
     },
     "home": {
         "welcome_back": "Vitajte späť!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Presuňte a upustite na aplikáciu skinu",
+        "drop_success": "Nový skin aplikovaný"
     },
     "styling": {
         "title": "Vzhľad",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Minimalizovať do lišty",
             "minimize_to_tray_desc": "Skryť spúšťač do systémovej lišty pri zatvorení alebo minimalizácii.",
             "smart_log_analytics": "Inteligentná analýza logov",
-            "smart_log_analytics_desc": "Automaticky analyzujte pády a navrhujte opravy."
+            "smart_log_analytics_desc": "Automaticky analyzujte pády a navrhujte opravy.",
+            "modrinth_support": "Modpacky Modrinth",
+            "modrinth_support_desc": "Povoliť vyhľadávanie a inštaláciu modpackov z Modrinth.",
+            "curseforge_support": "Modpacky CurseForge",
+            "curseforge_support_desc": "Povoliť vyhľadávanie a inštaláciu modpackov z CurseForge."
         },
         "cloud": {
             "title": "Nastavenia cloudových záloh",
@@ -548,7 +559,11 @@
             "add_success": "Mód bol pridaný do automatickej inštalácie",
             "remove_success": "Mód bol odstránený z automatickej inštalácie",
             "search_failed": "Vyhľadávanie na Modrinth zlyhalo"
-        }
+        },
+        "storage_format": "Formát ukladania nastavení",
+        "storage_format_desc": "YAML sa odporúča pre lepšiu čitateľnosť a kontrolu verzií. JSON je predvolený.",
+        "storage_format_migrated": "Nastavenia úspešne migrované do {{format}}",
+        "storage_format_failed": "Migrácia nastavení zlyhala: {{error}}"
     },
     "extensions": {
         "title": "Rozšírenia",
@@ -851,13 +866,31 @@
             "new_folder": "Nový priečinok",
             "folder_name": "Meno priečinka",
             "delete_title": "Vymazať?",
-            "delete_confirm": "Ste si istí, že chcete vymazať tento súbor?"
+            "delete_confirm": "Ste si istí, že chcete vymazať tento súbor?",
+            "upload": "Nahrať",
+            "upload_title": "Nahrať súbory",
+            "drag_or_click": "Presuňte súbory/priečinky sem alebo kliknite na prehľadávanie",
+            "drop_here": "Upustite súbory/priečinky sem!",
+            "upload_hint": "Podporuje súbory a priečinky",
+            "uploading": "Nahrávanie...",
+            "upload_success": "Súbor úspešne nahraný",
+            "upload_results": "Výsledky nahrávania",
+            "files_uploaded": "súborov nahraných"
         }
     },
     "setup": {
         "chooseLanguage": "Vyberte váš jazyk",
         "chooseLanguageDesc": "Vyberte si preferovaný jazyk a pokračujte v nastavení.",
-        "skipSelection": "Preskočiť výber (Predvolené: Angličtina)"
+        "skipSelection": "Preskočiť výber (Predvolené: Angličtina)",
+        "chooseFormat": "Vyberte formát nastavení",
+        "chooseFormatDesc": "Vyberte, ako majú byť vaše nastavenia uložené. Môžete to zmeniť neskôr v Nastaveniach.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Predvolený a najkompatibilnejší formát.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Ľudsky čitateľný formát údajov. Odporúča sa pre jednoduchšiu úpravu a kontrolu verzií.",
+        "recommended": "Odporúčané",
+        "default": "Predvolené",
+        "useFormat": "Použiť formát"
     },
     "agreement": {
         "title": "Vitajte v Lux",

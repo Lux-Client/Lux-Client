@@ -128,7 +128,12 @@
         "browse": "Procurar",
         "no_targets": "Nenhum alvo disponível",
         "image": "Imagem",
-        "add": "Adicionar"
+        "add": "Adicionar",
+        "remove": "Remover",
+        "add_to_actionbar": "Adicionar à barra de ações",
+        "added": "Adicionado à barra de ações",
+        "remove_from_actionbar": "Remover da barra de ações",
+        "removed": "Removido da barra de ações"
     },
     "home": {
         "welcome_back": "Bem-vindo de volta!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Arraste e solte para aplicar a skin",
+        "drop_success": "Nova skin aplicada"
     },
     "styling": {
         "title": "Aparência",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Minimizar para a bandeja",
             "minimize_to_tray_desc": "Ocultar o inicializador na bandeja do sistema ao fechar ou minimizar.",
             "smart_log_analytics": "Análise inteligente de logs",
-            "smart_log_analytics_desc": "Analisa automaticamente falhas e sugere correções."
+            "smart_log_analytics_desc": "Analisa automaticamente falhas e sugere correções.",
+            "modrinth_support": "Modpacks do Modrinth",
+            "modrinth_support_desc": "Habilitar pesquisa e instalação de modpacks do Modrinth.",
+            "curseforge_support": "Modpacks do CurseForge",
+            "curseforge_support_desc": "Habilitar pesquisa e instalação de modpacks do CurseForge."
         },
         "cloud": {
             "title": "Configurações de Backup em Nuvem",
@@ -548,7 +559,11 @@
             "add_success": "Mod adicionado à Instalação Automática",
             "remove_success": "Mod removido da Instalação Automática",
             "search_failed": "Falha ao pesquisar no Modrinth"
-        }
+        },
+        "storage_format": "Formato de Armazenamento de Configurações",
+        "storage_format_desc": "YAML é recomendado para melhor legibilidade e controle de versão. JSON é o padrão.",
+        "storage_format_migrated": "Configurações migradas para {{format}} com sucesso",
+        "storage_format_failed": "Falha ao migrar configurações: {{error}}"
     },
     "extensions": {
         "title": "Extensões",
@@ -851,13 +866,31 @@
             "new_folder": "Nova Pasta",
             "folder_name": "Nome da Pasta",
             "delete_title": "Excluir?",
-            "delete_confirm": "Tem certeza de que deseja excluir este arquivo?"
+            "delete_confirm": "Tem certeza de que deseja excluir este arquivo?",
+            "upload": "Enviar",
+            "upload_title": "Enviar Arquivos",
+            "drag_or_click": "Arraste arquivos/pastas aqui ou clique para navegar",
+            "drop_here": "Solte arquivos/pastas aqui!",
+            "upload_hint": "Suporta arquivos e pastas",
+            "uploading": "Enviando...",
+            "upload_success": "Arquivo enviado com sucesso",
+            "upload_results": "Resultados do Envio",
+            "files_uploaded": "arquivos enviados"
         }
     },
     "setup": {
         "chooseLanguage": "Escolha seu idioma",
         "chooseLanguageDesc": "Selecione seu idioma preferido para continuar a configuração.",
-        "skipSelection": "Pular seleção (Padrão: Inglês)"
+        "skipSelection": "Pular seleção (Padrão: Inglês)",
+        "chooseFormat": "Escolher Formato de Configurações",
+        "chooseFormatDesc": "Selecione como suas configurações devem ser armazenadas. Você pode alterar isso depois em Configurações.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. O padrão e formato mais amplamente compatível.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Formato de dados legível. Recomendado para edição mais fácil e controle de versão.",
+        "recommended": "Recomendado",
+        "default": "Padrão",
+        "useFormat": "Usar Formato"
     },
     "agreement": {
         "title": "Bem-vindo ao Lux",

@@ -36,7 +36,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
     const [selectedSoftware, setSelectedSoftware] = useState('vanilla');
     const [newServerIcon, setNewServerIcon] = useState(DEFAULT_ICON);
     const [serverPort, setServerPort] = useState('25565');
-    const [maxPlayers, setMaxPlayers] = useState('20');
+    const [maxPlayers, setMaxPlayers] = useState(new Date().getFullYear().toString());
     const [serverMemory, setServerMemory] = useState('1024');
 
     const [availableVersions, setAvailableVersions] = useState([]);
@@ -890,9 +890,10 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                         type="number"
                                         value={maxPlayers}
                                         onChange={(e) => setMaxPlayers(e.target.value)}
+                                        placeholder="20"
                                         className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                         min="1"
-                                        max="100"
+                                        max="100000"
                                     />
                                 </div>
 

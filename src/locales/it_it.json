@@ -128,7 +128,12 @@
         "browse": "Sfoglia",
         "no_targets": "Nessuna destinazione disponibile",
         "image": "Immagine",
-        "add": "Aggiungi"
+        "add": "Aggiungi",
+        "remove": "Rimuovi",
+        "add_to_actionbar": "Aggiungi alla barra azioni",
+        "added": "Aggiunto alla barra azioni",
+        "remove_from_actionbar": "Rimuovi dalla barra azioni",
+        "removed": "Rimosso dalla barra azioni"
     },
     "home": {
         "welcome_back": "Bentornato!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Trascina e rilascia per applicare la skin",
+        "drop_success": "Nuova skin applicata"
     },
     "styling": {
         "title": "Aspetto",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Riduci a icona",
             "minimize_to_tray_desc": "Nasconde il launcher nel vassoio di sistema alla chiusura o riduzione.",
             "smart_log_analytics": "Analisi intelligente dei log",
-            "smart_log_analytics_desc": "Analizza automaticamente i crash e suggerisce correzioni."
+            "smart_log_analytics_desc": "Analizza automaticamente i crash e suggerisce correzioni.",
+            "modrinth_support": "Modpack Modrinth",
+            "modrinth_support_desc": "Abilita ricerca e installazione di modpack Modrinth.",
+            "curseforge_support": "Modpack CurseForge",
+            "curseforge_support_desc": "Abilita ricerca e installazione di modpack CurseForge."
         },
         "cloud": {
             "title": "Impostazioni Backup Cloud",
@@ -548,7 +559,11 @@
             "add_success": "Mod aggiunta all'Installazione Automatica",
             "remove_success": "Mod rimossa dall'Installazione Automatica",
             "search_failed": "Ricerca su Modrinth fallita"
-        }
+        },
+        "storage_format": "Formato archiviazione impostazioni",
+        "storage_format_desc": "YAML è consigliato per una migliore leggibilità e controllo di versione. JSON è l'impostazione predefinita.",
+        "storage_format_migrated": "Impostazioni migrate a {{format}} con successo",
+        "storage_format_failed": "Migrazione delle impostazioni fallita: {{error}}"
     },
     "extensions": {
         "title": "Estensioni",
@@ -851,13 +866,31 @@
             "new_folder": "Nuova cartella",
             "folder_name": "Nome cartella",
             "delete_title": "Elimina?",
-            "delete_confirm": "Sei sicuro di voler eliminare questo file?"
+            "delete_confirm": "Sei sicuro di voler eliminare questo file?",
+            "upload": "Carica",
+            "upload_title": "Carica file",
+            "drag_or_click": "Trascina file/cartelle qui o clicca per sfogliare",
+            "drop_here": "Rilascia i file/cartelle qui!",
+            "upload_hint": "Supporta file e cartelle",
+            "uploading": "Caricamento...",
+            "upload_success": "File caricato con successo",
+            "upload_results": "Risultati caricamento",
+            "files_uploaded": "file caricati"
         }
     },
     "setup": {
         "chooseLanguage": "Scegli la tua lingua",
         "chooseLanguageDesc": "Seleziona la tua lingua preferita per continuare la configurazione.",
-        "skipSelection": "Salta la selezione (Predefinito: Inglese)"
+        "skipSelection": "Salta la selezione (Predefinito: Inglese)",
+        "chooseFormat": "Scegli il formato delle impostazioni",
+        "chooseFormatDesc": "Seleziona come devono essere archiviate le tue impostazioni. Puoi modificarlo più tardi in Impostazioni.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Il formato predefinito e più ampiamente compatibile.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Formato dati leggibile. Consigliato per una modifica più semplice e controllo di versione.",
+        "recommended": "Consigliato",
+        "default": "Predefinito",
+        "useFormat": "Usa formato"
     },
     "agreement": {
         "title": "Benvenuto in Lux",

@@ -355,7 +355,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Arrastra y suelta para aplicar aspecto",
+        "drop_success": "Nuevo aspecto aplicado"
     },
     "styling": {
         "title": "Apariencia",
@@ -489,7 +491,11 @@
             "minimize_to_tray": "Minimizar a la bandeja del sistema",
             "minimize_to_tray_desc": "Ocultar el lanzador en la bandeja del sistema al cerrar o minimizar.",
             "smart_log_analytics": "Análisis inteligente de registros",
-            "smart_log_analytics_desc": "Analiza automáticamente los fallos y sugiere soluciones."
+            "smart_log_analytics_desc": "Analiza automáticamente los fallos y sugiere soluciones.",
+            "modrinth_support": "Modpacks de Modrinth",
+            "modrinth_support_desc": "Habilitar búsqueda e instalación de modpacks de Modrinth.",
+            "curseforge_support": "Modpacks de CurseForge",
+            "curseforge_support_desc": "Habilitar búsqueda e instalación de modpacks de CurseForge."
         },
         "cloud": {
             "title": "Configuración de la nube",
@@ -554,7 +560,11 @@
             "add_success": "Mod añadido a los automáticos",
             "remove_success": "Mod retirado de los automáticos",
             "search_failed": "Error buscando en Modrinth"
-        }
+        },
+        "storage_format": "Formato de almacenamiento de configuración",
+        "storage_format_desc": "YAML se recomienda para mayor legibilidad y control de versiones. JSON es el valor predeterminado.",
+        "storage_format_migrated": "Configuración migrada a {{format}} correctamente",
+        "storage_format_failed": "Error al migrar la configuración: {{error}}"
     },
     "extensions": {
         "title": "Extensiones",
@@ -857,13 +867,31 @@
             "new_folder": "Nueva carpeta",
             "folder_name": "Nombre de la carpeta",
             "delete_title": "Eliminar elemento",
-            "delete_confirm": "¿Seguro que quieres eliminar \"{{name}}\"?"
+            "delete_confirm": "¿Seguro que quieres eliminar \"{{name}}\"?",
+            "upload": "Subir",
+            "upload_title": "Subir archivos",
+            "drag_or_click": "Arrastra archivos/carpetas aquí o haz clic para explorar",
+            "drop_here": "¡Suelta archivos/carpetas aquí!",
+            "upload_hint": "Soporta archivos y carpetas",
+            "uploading": "Subiendo...",
+            "upload_success": "Archivo subido con éxito",
+            "upload_results": "Resultados de subida",
+            "files_uploaded": "archivos subidos"
         }
     },
     "setup": {
         "chooseLanguage": "Elige tu idioma",
         "chooseLanguageDesc": "Selecciona tu idioma preferido para continuar la configuración.",
-        "skipSelection": "Omitir selección (Predeterminado: Inglés)"
+        "skipSelection": "Omitir selección (Predeterminado: Inglés)",
+        "chooseFormat": "Elegir formato de configuración",
+        "chooseFormatDesc": "Selecciona cómo deben almacenarse tus configuraciones. Puedes cambiar esto más tarde en Configuración.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. El formato predeterminado y más ampliamente compatible.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Formato de datos legible. Recomendado para edición más fácil y control de versiones.",
+        "recommended": "Recomendado",
+        "default": "Predeterminado",
+        "useFormat": "Usar formato"
     },
     "agreement": {
         "title": "Bienvenido a Lux",

@@ -128,7 +128,12 @@
         "browse": "Prebrskaj",
         "no_targets": "Ni razpoložljivih ciljev",
         "image": "Slika",
-        "add": "Dodaj"
+        "add": "Dodaj",
+        "remove": "Odstrani",
+        "add_to_actionbar": "Dodaj v vrstico dejanj",
+        "added": "Dodano v vrstico dejanj",
+        "remove_from_actionbar": "Odstrani iz vrstice dejanj",
+        "removed": "Odstranjeno iz vrstice dejanj"
     },
     "home": {
         "welcome_back": "Dobrodošli nazaj!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Povlecite in spustite za uporabo preobleke",
+        "drop_success": "Nova preobleka uporabljena"
     },
     "styling": {
         "title": "Videz",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Pomanjšaj v orodno vrstico",
             "minimize_to_tray_desc": "Skrij zaganjalnik v sistemsko vrstico pri zapiranju ali pomanjšanju.",
             "smart_log_analytics": "Pametna analiza dnevnikov",
-            "smart_log_analytics_desc": "Samodejno analizirajte sesutja in predlagajte popravke."
+            "smart_log_analytics_desc": "Samodejno analizirajte sesutja in predlagajte popravke.",
+            "modrinth_support": "Modpacki Modrinth",
+            "modrinth_support_desc": "Omogoči iskanje in nameščanje modpackov z Modrinth.",
+            "curseforge_support": "Modpacki CurseForge",
+            "curseforge_support_desc": "Omogoči iskanje in nameščanje modpackov z CurseForge."
         },
         "cloud": {
             "title": "Nastavitve varnostnega kopiranja v oblak",
@@ -548,7 +559,11 @@
             "add_success": "Mod dodan v samodejno namestitev",
             "remove_success": "Mod odstranjen iz samodejne namestitve",
             "search_failed": "Iskanje na Modrinth ni uspelo"
-        }
+        },
+        "storage_format": "Format shranjevanja nastavitev",
+        "storage_format_desc": "YAML je priporočljiv za boljšo berljivost in nadzor različic. JSON je privzeto.",
+        "storage_format_migrated": "Nastavitve uspešno prestavljene v {{format}}",
+        "storage_format_failed": "Prestavitev nastavitev ni uspela: {{error}}"
     },
     "extensions": {
         "title": "Razširitve",
@@ -851,13 +866,31 @@
             "new_folder": "Nova mapa",
             "folder_name": "Ime mape",
             "delete_title": "Izbrisati?",
-            "delete_confirm": "Ali ste prepričani, da želite izbrisati to datoteko?"
+            "delete_confirm": "Ali ste prepričani, da želite izbrisati to datoteko?",
+            "upload": "Naloži",
+            "upload_title": "Naloži datoteke",
+            "drag_or_click": "Povlecite datoteke/mape sem ali kliknite za brskanje",
+            "drop_here": "Spustite datoteke/mape sem!",
+            "upload_hint": "Podpira datoteke in mape",
+            "uploading": "Nalaganje...",
+            "upload_success": "Datoteka uspešno naložena",
+            "upload_results": "Rezultati nalaganja",
+            "files_uploaded": "datotek naloženo"
         }
     },
     "setup": {
         "chooseLanguage": "Izberite svoj jezik",
         "chooseLanguageDesc": "Izberite želen jezik za nadaljevanje namestitve.",
-        "skipSelection": "Preskoči izbiro (Privzeto: Angleščina)"
+        "skipSelection": "Preskoči izbiro (Privzeto: Angleščina)",
+        "chooseFormat": "Izberite format nastavitev",
+        "chooseFormatDesc": "Izberite, kako naj bodo vaše nastavitve shranjene. To lahko spremenite kasneje v Nastavitvah.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Privzeti in najbolj združljiv format.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Človeku berljiv format podatkov. Priporočljivo za lažje urejanje in nadzor različic.",
+        "recommended": "Priporočljivo",
+        "default": "Privzeto",
+        "useFormat": "Uporabi format"
     },
     "agreement": {
         "title": "Dobrodošli v Lux",

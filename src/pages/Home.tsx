@@ -100,7 +100,6 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
   useEffect(() => {
     loadModIds();
     loadInstances();
-    loadModpacks();
     loadDashSettings();
 
     const removeListener = window.electronAPI.onInstanceStatus(({ instanceName, status }) => {
@@ -124,6 +123,10 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
       if (cleanupSettings) cleanupSettings();
     };
   }, []);
+
+  useEffect(() => {
+    loadModpacks();
+  }, [settings.enableModrinthPackSupport]);
 
   const loadDashSettings = async () => {
     try {

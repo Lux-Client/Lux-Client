@@ -70,6 +70,7 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
         showDisabledFeatures: false,
         settingsStorageFormat: 'json',
         enableModrinthPackSupport: true,
+        enableCurseForgePackSupport: true,
         optimization: false,
         focusMode: false,
         minimalMode: false,
@@ -949,6 +950,13 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                                 onChange={(val) => handleChange('enableModrinthPackSupport', val)}
                                 label={t('settings.integration.modrinth_support')}
                                 description={t('settings.integration.modrinth_support_desc')}
+                            />
+                            <ToggleBox
+                                className="mt-4 pt-4 border-t border-border"
+                                checked={settings.enableCurseForgePackSupport !== false}
+                                onChange={(val) => handleChange('enableCurseForgePackSupport', val)}
+                                label={t('settings.integration.curseforge_support')}
+                                description={t('settings.integration.curseforge_support_desc')}
                             />
                             <ToggleBox
                                 className="mt-4 pt-4 border-t border-border"

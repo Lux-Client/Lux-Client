@@ -148,6 +148,7 @@ interface ElectronAPI {
   listServerFiles: (serverName: string, relativePath?: string) => Promise<any>;
   readServerFile: (serverName: string, relativePath: string) => Promise<any>;
   writeServerFile: (serverName: string, relativePath: string, content: string) => Promise<any>;
+  uploadServerFile: (serverName: string, relativePath: string, sourcePath: any) => Promise<any>;
   deleteServerFile: (serverName: string, relativePath: string) => Promise<any>;
   createServerDirectory: (serverName: string, relativePath: string) => Promise<any>;
   renameServerFile: (serverName: string, oldPath: string, newPath: string) => Promise<any>;

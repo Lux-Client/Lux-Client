@@ -18,6 +18,7 @@ module.exports = (ipcMain) => {
         showDisabledFeatures: false,
         settingsStorageFormat: 'json',
         enableModrinthPackSupport: true,
+        enableCurseForgePackSupport: true,
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
         instancesPath: '',

@@ -303,7 +303,7 @@ module.exports = (ipcMain, mainWindow) => {
 
                 console.log('[Skin:save-local] Received payload:', { source, valueLength: value.length, valuePreview: value.substring(0, 100) });
 
-                if (source === 'url') {
+                if (source === 'url' || source.startsWith('http')) {
                     if (!value) return { success: false, error: 'No URL provided' };
                     const fileBuffer = await fetchSkinBuffer(value);
                     return await saveSkinBuffer(fileBuffer, getSkinNameFromUrl(value), {}, { outputPath: filePath.outputPath });
@@ -321,53 +321,28 @@ module.exports = (ipcMain, mainWindow) => {
                     );
                 }
 
-                if (source === 'data-url' || source === 'data') {
-                    if (!value) return { success: false, error: 'No skin data provided' };
-
+                if (value) {
                     let base64Payload = value;
                     const dataUrlMatch = value.match(/^data:image\/png;base64,(.+)$/i);
                     if (dataUrlMatch && dataUrlMatch[1]) {
                         base64Payload = dataUrlMatch[1];
                     }
 
-                    try {
-                        const fileBuffer = Buffer.from(base64Payload, 'base64');
-                        if (!fileBuffer || fileBuffer.length === 0) {
-                            return { success: false, error: 'Invalid skin image data' };
+                    if (/^[A-Za-z0-9+/=]+$/.test(base64Payload) && base64Payload.length > 100) {
+                        try {
+                            const fileBuffer = Buffer.from(base64Payload, 'base64');
+                            if (fileBuffer && fileBuffer.length > 0) {
+                                const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
+                                const extraData = model ? { model } : {};
+                                return await saveSkinBuffer(fileBuffer, filePath.name || 'Skin', extraData, { outputPath: filePath.outputPath });
+                            }
+                        } catch (e) {
+                            console.error('[Skin] Base64 parse error:', e.message);
                         }
-
-                        const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
-                        const extraData = model ? { model } : {};
-                        return await saveSkinBuffer(fileBuffer, filePath.name || 'Dropped Skin', extraData, { outputPath: filePath.outputPath });
-                    } catch (bufferError) {
-                        return { success: false, error: 'Failed to decode skin data: ' + bufferError.message };
                     }
                 }
 
-                if (value && (value.startsWith('data:') || /^[A-Za-z0-9+/=]+$/.test(value) && value.length > 100)) {
-                    let base64Payload = value;
-                    const dataUrlMatch = value.match(/^data:image\/png;base64,(.+)$/i);
-                    if (dataUrlMatch && dataUrlMatch[1]) {
-                        base64Payload = dataUrlMatch[1];
-                    }
-
-                    try {
-                        const fileBuffer = Buffer.from(base64Payload, 'base64');
-                        if (fileBuffer && fileBuffer.length > 0) {
-                            const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
-                            const extraData = model ? { model } : {};
-                            return await saveSkinBuffer(fileBuffer, filePath.name || 'Skin', extraData, { outputPath: filePath.outputPath });
-                        }
-                    } catch (e) {
-                        console.error('[Skin] Auto-detect data URL parse error:', e.message);
-                    }
-                }
-
-                if (source) {
-                    return { success: false, error: `Unsupported skin source: ${source}` };
-                }
-
-                return { success: false, error: 'Invalid skin import payload' };
+                return { success: false, error: 'Invalid skin data. Please try again.' };
             }
 
             if (filePath && typeof filePath !== 'string') {

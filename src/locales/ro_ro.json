@@ -128,7 +128,12 @@
         "browse": "Răsfoiește",
         "no_targets": "Nicio țintă disponibilă",
         "image": "Imagine",
-        "add": "Adaugă"
+        "add": "Adaugă",
+        "remove": "Elimină",
+        "add_to_actionbar": "Adaugă la bara de acțiuni",
+        "added": "Adăugat la bara de acțiuni",
+        "remove_from_actionbar": "Elimină din bara de acțiuni",
+        "removed": "Eliminat din bara de acțiuni"
     },
     "home": {
         "welcome_back": "Bine ai revenit!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Trage și plasează pentru a aplica skin-ul",
+        "drop_success": "Skin nou aplicat"
     },
     "styling": {
         "title": "Aspect",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Minimizare în bara de sistem",
             "minimize_to_tray_desc": "Ascunde lansatorul în bara de sistem la închidere sau minimizare.",
             "smart_log_analytics": "Analiză inteligentă a log-urilor",
-            "smart_log_analytics_desc": "Analizează automat erorile și sugerează remedieri."
+            "smart_log_analytics_desc": "Analizează automat erorile și sugerează remedieri.",
+            "modrinth_support": "Modpack-uri Modrinth",
+            "modrinth_support_desc": "Activează căutarea și instalarea modpack-urilor Modrinth.",
+            "curseforge_support": "Modpack-uri CurseForge",
+            "curseforge_support_desc": "Activează căutarea și instalarea modpack-urilor CurseForge."
         },
         "cloud": {
             "title": "Setări Copie de Rezervă în Cloud",
@@ -548,7 +559,11 @@
             "add_success": "Mod adăugat la Instalare Automată",
             "remove_success": "Mod eliminat din Instalare Automată",
             "search_failed": "Eșec la căutarea pe Modrinth"
-        }
+        },
+        "storage_format": "Format de stocare setări",
+        "storage_format_desc": "YAML este recomandat pentru o mai bună lizibilitate și control al versiunii. JSON este implicit.",
+        "storage_format_migrated": "Setări migrate la {{format}} cu succes",
+        "storage_format_failed": "Eșec la migrarea setărilor: {{error}}"
     },
     "extensions": {
         "title": "Extensii",
@@ -851,13 +866,31 @@
             "new_folder": "Folder nou",
             "folder_name": "Nume folder",
             "delete_title": "Ștergeți?",
-            "delete_confirm": "Sunteți sigur că doriți să ștergeți acest fișier?"
+            "delete_confirm": "Sunteți sigur că doriți să ștergeți acest fișier?",
+            "upload": "Încarcă",
+            "upload_title": "Încarcă Fișiere",
+            "drag_or_click": "Trage fișiere/folderuri aici sau click pentru a răsfoi",
+            "drop_here": "Plasează fișierele/folderurile aici!",
+            "upload_hint": "Suportă fișiere și folderuri",
+            "uploading": "Se încarcă...",
+            "upload_success": "Fișier încărcat cu succes",
+            "upload_results": "Rezultatele încărcării",
+            "files_uploaded": "fișiere încărcate"
         }
     },
     "setup": {
         "chooseLanguage": "Alegeți limba",
         "chooseLanguageDesc": "Selectați limba preferată pentru a continua configurarea.",
-        "skipSelection": "Omite selecția (Implicit: Engleză)"
+        "skipSelection": "Omite selecția (Implicit: Engleză)",
+        "chooseFormat": "Alege Formatul Setărilor",
+        "chooseFormatDesc": "Selectați cum trebuie stocate setările dvs. Le puteți modifica mai târziu în Setări.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Implicit și cel mai compatibil format.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Format de date lizibil. Recomandat pentru editare mai ușoară și control al versiunii.",
+        "recommended": "Recomandat",
+        "default": "Implicit",
+        "useFormat": "Folosește Formatul"
     },
     "agreement": {
         "title": "Bun venit la Lux",

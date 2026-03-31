@@ -496,6 +496,8 @@
             "discord_rpc_desc": "Show what you're playing on Discord",
             "modrinth_support": "Modrinth Modpacks",
             "modrinth_support_desc": "Enable searching and installing Modrinth modpacks.",
+            "curseforge_support": "CurseForge Modpacks",
+            "curseforge_support_desc": "Enable searching and installing CurseForge modpacks.",
             "auto_logs": "Auto-upload logs on crash",
             "auto_logs_desc": "Upload logs to mclo.gs if the game crashes",
             "disabled_features": "Show Disabled Features",
@@ -882,7 +884,16 @@
             "new_folder": "New Folder",
             "folder_name": "Folder name",
             "delete_title": "Delete Item",
-            "delete_confirm": "Are you sure you want to delete \"{{name}}\"?"
+            "delete_confirm": "Are you sure you want to delete \"{{name}}\"?",
+            "upload": "Upload",
+            "upload_title": "Upload Files",
+            "drag_or_click": "Drag files/folders here or click to browse",
+            "drop_here": "Drop files/folders here!",
+            "upload_hint": "Supports files and folders",
+            "uploading": "Uploading...",
+            "upload_success": "File uploaded successfully",
+            "upload_results": "Upload Results",
+            "files_uploaded": "files uploaded"
         }
     },
     "setup": {

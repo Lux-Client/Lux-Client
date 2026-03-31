@@ -223,6 +223,7 @@ const electronAPI = {
     listServerFiles: (serverName, relativePath) => ipcRenderer.invoke('server:list-files', serverName, relativePath),
     readServerFile: (serverName, relativePath) => ipcRenderer.invoke('server:read-file', serverName, relativePath),
     writeServerFile: (serverName, relativePath, content) => ipcRenderer.invoke('server:write-file', serverName, relativePath, content),
+    uploadServerFile: (serverName, relativePath, sourcePath) => ipcRenderer.invoke('server:upload-file', serverName, relativePath, sourcePath),
     deleteServerFile: (serverName, relativePath) => ipcRenderer.invoke('server:delete-file', serverName, relativePath),
     createServerDirectory: (serverName, relativePath) => ipcRenderer.invoke('server:create-directory', serverName, relativePath),
     renameServerFile: (serverName, oldPath, newPath) => ipcRenderer.invoke('server:rename-file', serverName, oldPath, newPath),

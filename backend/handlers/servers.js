@@ -839,32 +839,81 @@ log_pings: true
 `;
                 await fs.writeFile(path.join(serverDir, 'config.yml'), bungeecordConfig);
             } else if (software === 'velocity') {
-                const velocityConfig = `
-# Config version. Do not change this.
+                const velocityConfig = `# Config version. Do not change this.
 config-version = "1.0"
 
+[server]
 # What port should the proxy be bound to? By default, we'll use 25577.
 bind = "0.0.0.0:${port || 25577}"
 
-# What should be the display name for this proxy?
-motd = "&bA Velocity Proxy"
+# What should be display name for this proxy?
+motd = "&bA Velocity Server"
 
 # What is the maximum number of players the proxy can hold?
-show-max-players = ${maxPlayers || 20}
+show-max-players = ${maxPlayers || new Date().getFullYear()}
 
-# Should we promote the player to the default server?
-# If this is enabled, the player will be sent to the first server in the priority list.
+# Should we authenticate players with Mojang?
+online-mode = true
+
+# Should we forward the player's IP address and UUID to the backend server?
+# IMPORTANT: This requires the backend server to be configured for Velocity's forwarding protocol!
+# See https://docs.papermc.io/velocity/security for more information.
 force-key-authentication = true
+
+# If a server has an issue, can players retry?
+retry-attempts = 3
+retry-delay = "2s"
+
+# Enable the messages defined in messages.toml
+enable-messages = false
+
+# The fallback server that players will be connected to if no server in the player's priority list is available.
+# If this is not specified, the player will be disconnected if no servers are available.
+fallback-server = "lobby"
+
+# How large the player list can be at any time.
+# max-players is used for the initial handshake, so players beyond this limit will still be able to join if Mojang is down.
+# However, if the server is full and Mojang is also down, players will be disconnected.
+# Set this to the number of players you want on the proxy at any time.
+# Setting this to 0 will display the player's player count as the player's online count (default Velocity behavior).
+# By setting this to a non-zero value, Velocity will show this as the proxy's player count.
+player-info-forwarding-mode = "LEGACY"
+# Supports "NONE", "LEGACY", "BUNGEEGUARD", "MODERN", "VELOCITY_1_19_4" and "HYBRID"
+# See https://docs.papermc.io/velocity/security for more information.
+
+# What should we do with Minecraft protocol compatible clients?
+# Supports "LIMIT", "LOG", "KICK"
+minecraft-forwarding-mode = "NONE"
+
+# Enable the built-in commands
+commands {
+    enabled = true
+}
 
 [servers]
 # Configure your servers here.
+# You MUST define at least one server here.
+# Format: server_name = ip:port
 lobby = "127.0.0.1:25565"
 
 [forced-hosts]
-# Forced hosts.
+# Configure forced hosts here.
+# Format: domain = server_name
+# Example: pvp.example.com = "pvp"
 
 [advanced]
-# Advanced settings.
+# How large the player list can be at any time.
+compression = "automatic"
+# How the compression threshold should be applied.
+read-timeout = "30s"
+# The read timeout for connections.
+write-timeout = "30s"
+# The write timeout for connections.
+# The connection timeout for connections.
+# Specify a custom Java runtime path here.
+# jvm-path = "java"
+# Additional JVM arguments to pass to the proxy.
+# jvm-args = "-Xmx4G -Xms4G"
 
 [query]
 # Whether to enable Gamedig-compatible query.
@@ -1953,6 +2002,36 @@ eula=false
             return { success: true };
         } catch (error) {
             console.error(`[Servers] Error writing file for ${serverName}:`, error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('server:upload-file', async (event, serverName, relativePath, sourcePath) => {
+        try {
+            const serversDir = path.join(app.getPath('userData'), 'servers');
+            const safeName = sanitizeFileName(serverName);
+            const serverDir = path.join(serversDir, safeName);
+            const destPath = path.normalize(path.join(serverDir, relativePath));
+
+            if (!destPath.startsWith(serverDir)) {
+                return { success: false, error: 'Access denied' };
+            }
+
+            if (sourcePath && typeof sourcePath === 'object' && sourcePath.path) {
+                await fs.copy(sourcePath.path, destPath);
+            } else if (typeof sourcePath === 'string') {
+                const sourceExists = await fs.pathExists(sourcePath);
+                if (!sourceExists) {
+                    return { success: false, error: 'Source file not found' };
+                }
+                await fs.copy(sourcePath, destPath);
+            } else {
+                return { success: false, error: 'Invalid source path' };
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error(`[Servers] Error uploading file for ${serverName}:`, error);
             return { success: false, error: error.message };
         }
     });

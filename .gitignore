@@ -34,12 +34,6 @@ release/
 release/**
 news-admin/
 news-admin/**
-MCLC-Mod/
-MCLC-Mod-Sources/
-MCLC-Client/MCLC Website/launcher/mclc-launcher.jar
-MCLC Website/launcher/mclc-launcher.jar
-MCLC-Client/MCLC Website/launcher/
-MCLC Website/launcher/
 *.tsbuildinfo
 *.blockmap
 *.exe
@@ -69,7 +63,6 @@ Thumbs.db
 
 # Other
 COMMIT.md
-/MCLC-Mod-Source
 flutter/
 coverage/
 *.lcov
@@ -78,8 +71,6 @@ coverage/
 neoforge_profile.json
 run/
 *.minecraft/
-web/
-
 bun.lock
 debug_forge_profile.js
 check_syntax.js

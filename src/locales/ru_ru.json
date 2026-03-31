@@ -128,7 +128,12 @@
         "browse": "Обзор",
         "no_targets": "Нет доступных целей",
         "image": "Изображение",
-        "add": "Добавить"
+        "add": "Добавить",
+        "remove": "Удалить",
+        "add_to_actionbar": "Добавить на панель",
+        "added": "Добавлено на панель",
+        "remove_from_actionbar": "Удалить с панели",
+        "removed": "Удалено с панели"
     },
     "home": {
         "welcome_back": "С возвращением!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Перетащите, чтобы применить скин",
+        "drop_success": "Новый скин применён"
     },
     "styling": {
         "title": "Внешний вид",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Сворачивать в трей",
             "minimize_to_tray_desc": "Скрывать лаунчер в системный трей при закрытии или сворачивании.",
             "smart_log_analytics": "Умная аналитика логов",
-            "smart_log_analytics_desc": "Автоматический анализ сбоев и предложение исправлений."
+            "smart_log_analytics_desc": "Автоматический анализ сбоев и предложение исправлений.",
+            "modrinth_support": "Модпаки Modrinth",
+            "modrinth_support_desc": "Включить поиск и установку модпаков с Modrinth.",
+            "curseforge_support": "Модпаки CurseForge",
+            "curseforge_support_desc": "Включить поиск и установку модпаков с CurseForge."
         },
         "cloud": {
             "title": "Настройки облачных сохранений",
@@ -548,7 +559,11 @@
             "add_success": "Мод добавлен в автоустановку",
             "remove_success": "Мод удален из автоустановки",
             "search_failed": "Не удалось выполнить поиск на Modrinth"
-        }
+        },
+        "storage_format": "Формат хранения настроек",
+        "storage_format_desc": "YAML рекомендуется для лучшей читаемости и контроля версий. JSON используется по умолчанию.",
+        "storage_format_migrated": "Настройки успешно перенесены в {{format}}",
+        "storage_format_failed": "Не удалось перенести настройки: {{error}}"
     },
     "extensions": {
         "title": "Расширения",
@@ -851,13 +866,31 @@
             "new_folder": "Новая папка",
             "folder_name": "Имя папки",
             "delete_title": "Удалить?",
-            "delete_confirm": "Вы уверены, что хотите удалить этот файл?"
+            "delete_confirm": "Вы уверены, что хотите удалить этот файл?",
+            "upload": "Загрузить",
+            "upload_title": "Загрузить файлы",
+            "drag_or_click": "Перетащите файлы/папки сюда или нажмите для просмотра",
+            "drop_here": "Отпустите файлы/папки здесь!",
+            "upload_hint": "Поддерживаются файлы и папки",
+            "uploading": "Загрузка...",
+            "upload_success": "Файл успешно загружен",
+            "upload_results": "Результаты загрузки",
+            "files_uploaded": "файлов загружено"
         }
     },
     "setup": {
         "chooseLanguage": "Выберите язык",
         "chooseLanguageDesc": "Выберите предпочитаемый язык для продолжения настройки.",
-        "skipSelection": "Пропустить выбор (По умолчанию: Английский)"
+        "skipSelection": "Пропустить выбор (По умолчанию: Английский)",
+        "chooseFormat": "Выберите формат настроек",
+        "chooseFormatDesc": "Выберите, как следует хранить ваши настройки. Это можно изменить позже в Настройках.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Формат по умолчанию и наиболее совместимый.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Человекочитаемый формат данных. Рекомендуется для более удобного редактирования и контроля версий.",
+        "recommended": "Рекомендуется",
+        "default": "По умолчанию",
+        "useFormat": "Использовать формат"
     },
     "agreement": {
         "title": "Добро пожаловать в Lux",

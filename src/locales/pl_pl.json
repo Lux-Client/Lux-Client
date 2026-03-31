@@ -128,7 +128,12 @@
         "browse": "Przeglądaj",
         "no_targets": "Brak dostępnych celów",
         "image": "Obraz",
-        "add": "Dodaj"
+        "add": "Dodaj",
+        "remove": "Usuń",
+        "add_to_actionbar": "Dodaj do paska akcji",
+        "added": "Dodano do paska akcji",
+        "remove_from_actionbar": "Usuń z paska akcji",
+        "removed": "Usunięto z paska akcji"
     },
     "home": {
         "welcome_back": "Witaj ponownie!",
@@ -349,7 +354,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Przeciągnij i upuść, aby zastosować skórkę",
+        "drop_success": "Nowa skórka zastosowana"
     },
     "styling": {
         "title": "Wygląd",
@@ -483,7 +490,11 @@
             "minimize_to_tray": "Minimalizuj do zasobnika",
             "minimize_to_tray_desc": "Ukryj program w zasobniku systemowym po zamknięciu lub minimalizacji.",
             "smart_log_analytics": "Inteligentna analiza logów",
-            "smart_log_analytics_desc": "Automatycznie analizuj awarie i sugeruj poprawki."
+            "smart_log_analytics_desc": "Automatycznie analizuj awarie i sugeruj poprawki.",
+            "modrinth_support": "Paczki Modów Modrinth",
+            "modrinth_support_desc": "Włącz wyszukiwanie i instalowanie paczek modów z Modrinth.",
+            "curseforge_support": "Paczki Modów CurseForge",
+            "curseforge_support_desc": "Włącz wyszukiwanie i instalowanie paczek modów z CurseForge."
         },
         "cloud": {
             "title": "Ustawienia Kopii w Chmurze",
@@ -548,7 +559,11 @@
             "add_success": "Mod dodany do auto-instalacji",
             "remove_success": "Mod usunięty z auto-instalacji",
             "search_failed": "Wyszukiwanie w Modrinth nie powiodło się"
-        }
+        },
+        "storage_format": "Format przechowywania ustawień",
+        "storage_format_desc": "YAML jest zalecany dla lepszej czytelności i kontroli wersji. JSON jest ustawieniem domyślnym.",
+        "storage_format_migrated": "Ustawienia pomyślnie przeniesione do {{format}}",
+        "storage_format_failed": "Nie udało się przenieść ustawień: {{error}}"
     },
     "extensions": {
         "title": "Rozszerzenia",
@@ -851,13 +866,31 @@
             "new_folder": "Nowy folder",
             "folder_name": "Nazwa folderu",
             "delete_title": "Usunąć?",
-            "delete_confirm": "Czy na pewno chcesz usunąć ten plik?"
+            "delete_confirm": "Czy na pewno chcesz usunąć ten plik?",
+            "upload": "Prześlij",
+            "upload_title": "Prześlij pliki",
+            "drag_or_click": "Przeciągnij pliki/foldery tutaj lub kliknij, aby przeglądać",
+            "drop_here": "Upuść pliki/foldery tutaj!",
+            "upload_hint": "Obsługuje pliki i foldery",
+            "uploading": "Przesyłanie...",
+            "upload_success": "Plik pomyślnie przesłany",
+            "upload_results": "Wyniki przesyłania",
+            "files_uploaded": "plików przesłano"
         }
     },
     "setup": {
         "chooseLanguage": "Wybierz swój język",
         "chooseLanguageDesc": "Wybierz preferowany język, aby kontynuować konfigurację.",
-        "skipSelection": "Pomiń wybór (Domyślnie: Angielski)"
+        "skipSelection": "Pomiń wybór (Domyślnie: Angielski)",
+        "chooseFormat": "Wybierz format ustawień",
+        "chooseFormatDesc": "Wybierz, jak mają być przechowywane Twoje ustawienia. Możesz to później zmienić w Ustawieniach.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. Domyślny i najbardziej kompatybilny format.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Czytelny format danych. Zalecany dla łatwiejszej edycji i kontroli wersji.",
+        "recommended": "Zalecane",
+        "default": "Domyślny",
+        "useFormat": "Użyj formatu"
     },
     "agreement": {
         "title": "Witamy w Lux",

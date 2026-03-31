@@ -129,7 +129,12 @@
         "browse": "Browse",
         "no_targets": "No targets available",
         "image": "Image",
-        "add": "Add"
+        "add": "Add",
+        "remove": "Remove",
+        "add_to_actionbar": "Add to Actionbar",
+        "added": "Added to Actionbar",
+        "remove_from_actionbar": "Remove from Actionbar",
+        "removed": "Removed from Actionbar"
     },
     "home": {
         "welcome_back": "Welcome back!",
@@ -350,7 +355,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Drag and drop to apply skin",
+        "drop_success": "New skin applied"
     },
     "styling": {
         "title": "Appearance",
@@ -484,7 +491,11 @@
             "minimize_to_tray": "Minimise to Tray",
             "minimize_to_tray_desc": "Hide the launcher to the system tray when closing or minimising.",
             "smart_log_analytics": "Smart Log Analytics",
-            "smart_log_analytics_desc": "Automatically analyze crashes and suggest fixes."
+            "smart_log_analytics_desc": "Automatically analyze crashes and suggest fixes.",
+            "modrinth_support": "Modrinth Modpacks",
+            "modrinth_support_desc": "Enable searching and installing Modrinth modpacks.",
+            "curseforge_support": "CurseForge Modpacks",
+            "curseforge_support_desc": "Enable searching and installing CurseForge modpacks."
         },
         "cloud": {
             "title": "Cloud Backup",
@@ -549,7 +560,11 @@
             "add_success": "Added to auto-install mods",
             "remove_success": "Removed from auto-install mods",
             "search_failed": "Couldn't search Modrinth"
-        }
+        },
+        "storage_format": "Settings Storage Format",
+        "storage_format_desc": "YAML is recommended for better readability and version control. JSON is the default.",
+        "storage_format_migrated": "Settings migrated to {{format}} successfully",
+        "storage_format_failed": "Failed to migrate settings: {{error}}"
     },
     "extensions": {
         "title": "Extensions",
@@ -852,13 +867,31 @@
             "new_folder": "New Folder",
             "folder_name": "Folder name",
             "delete_title": "Delete Item",
-            "delete_confirm": "Are you sure you want to delete \"{{name}}\"?"
+            "delete_confirm": "Are you sure you want to delete \"{{name}}\"?",
+            "upload": "Upload",
+            "upload_title": "Upload Files",
+            "drag_or_click": "Drag files/folders here or click to browse",
+            "drop_here": "Drop files/folders here!",
+            "upload_hint": "Supports files and folders",
+            "uploading": "Uploading...",
+            "upload_success": "File uploaded successfully",
+            "upload_results": "Upload Results",
+            "files_uploaded": "files uploaded"
         }
     },
     "setup": {
         "chooseLanguage": "Choose Your Language",
         "chooseLanguageDesc": "Select your preferred language to continue setup.",
-        "skipSelection": "Skip Selection (Default: English)"
+        "skipSelection": "Skip Selection (Default: English)",
+        "chooseFormat": "Choose Settings Format",
+        "chooseFormatDesc": "Select how your settings should be stored. You can change this later in Settings.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. The default and most widely compatible format.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Human-readable data format. Recommended for easier editing and version control.",
+        "recommended": "Recommended",
+        "default": "Default",
+        "useFormat": "Use Format"
     },
     "agreement": {
         "title": "Welcome to Lux",

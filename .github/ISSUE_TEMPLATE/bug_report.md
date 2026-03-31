@@ -4,7 +4,6 @@ about: Create a report to help us improve
 title: ''
 labels: ''
 assignees: fernsehheft
-
 ---
 
 **Describe the bug**
@@ -24,10 +23,10 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
+**Environment (please complete the following information):**
 
-- OS: [e.g. Windos, MacOS, Linux (+ Linux Distro)]
-- Launcher Version [e.g. 1.6.6]
+- OS: [e.g. Windows, MacOS, Linux (+ Linux Distro)]
+- Launcher Version: [e.g. 1.6.6]
 
 **Additional context**
 Add any other context about the problem here.
