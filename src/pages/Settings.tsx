@@ -64,6 +64,7 @@ function Settings({ mode = 'default' }) {
         enableDiscordRPC: true,
         autoUploadLogs: true,
         showDisabledFeatures: false,
+        enableModrinthPackSupport: true,
         optimization: false,
         focusMode: false,
         minimalMode: false,
@@ -870,6 +871,13 @@ function Settings({ mode = 'default' }) {
                                 onChange={(val) => handleChange('enableDiscordRPC', val)}
                                 label={t('settings.integration.discord_rpc')}
                                 description={t('settings.integration.discord_rpc_desc')}
+                            />
+                            <ToggleBox
+                                className="mt-4 pt-4 border-t border-border"
+                                checked={settings.enableModrinthPackSupport !== false}
+                                onChange={(val) => handleChange('enableModrinthPackSupport', val)}
+                                label={t('settings.integration.modrinth_support')}
+                                description={t('settings.integration.modrinth_support_desc')}
                             />
                             <ToggleBox
                                 className="mt-4 pt-4 border-t border-border"

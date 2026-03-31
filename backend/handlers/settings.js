@@ -14,6 +14,7 @@ module.exports = (ipcMain) => {
         resolutionHeight: 480,
         enableDiscordRPC: true,
         showDisabledFeatures: false,
+        enableModrinthPackSupport: true,
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
         optimization: true,

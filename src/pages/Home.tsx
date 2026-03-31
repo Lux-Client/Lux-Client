@@ -73,6 +73,7 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
   const [instances, setInstances] = useState([]);
   const [modpacks, setModpacks] = useState([]);
   const [loadingModpacks, setLoadingModpacks] = useState(false);
+  const [settings, setSettings] = useState({ enableModrinthPackSupport: true });
   const [pendingLaunches, setPendingLaunches] = useState({});
   const [selectedModpack, setSelectedModpack] = useState(null);
   const [recentWorlds, setRecentWorlds] = useState([]);
@@ -106,8 +107,19 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
       }
     });
 
+    const cleanupSettings = window.electronAPI.onSettingsUpdated?.((s) => {
+      setSettings(s);
+        if (s.enableModrinthPackSupport === false) {
+        setModpacks([]);
+        setModOfTheDay(null);
+      } else {
+        loadModpacks();
+      }
+    });
+
     return () => {
       if (removeListener) removeListener();
+      if (cleanupSettings) cleanupSettings();
     };
   }, []);
 
@@ -115,6 +127,7 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
     try {
       const res = await window.electronAPI.getSettings();
       if (res.success) {
+        setSettings(res.settings);
         let settings = res.settings.dashboard || {};
         const animationsExaggerated = res.settings.animationsExaggerated || false;
         const focusMode = res.settings.focusMode || false;
@@ -249,6 +262,10 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
   };
 
   const loadModpacks = async () => {
+    if (settings.enableModrinthPackSupport === false) {
+      setModpacks([]);
+      return;
+    }
     setLoadingModpacks(true);
     try {
       const res = await window.electronAPI.searchModrinth('', [], {
@@ -268,6 +285,11 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
   };
 
   const loadModOfTheDay = async (projectId) => {
+    if (settings.enableModrinthPackSupport === false) {
+      setModOfTheDay(null);
+      setLoadingModOfTheDay(false);
+      return;
+    }
     setLoadingModOfTheDay(true);
     try {
       const res = await window.electronAPI.getModrinthProject(projectId);
