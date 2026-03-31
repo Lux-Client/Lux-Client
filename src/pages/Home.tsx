@@ -85,7 +85,7 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
   const [modIds, setModIds] = useState([]);
   const [currentModId, setCurrentModId] = useState(null);
   const [dashSettings, setDashSettings] = useState({
-    welcomeMessage: t('home.welcome_back'),
+    welcomeMessage: 'Welcome back, %player_name%!',
     layout: [
       { id: 'recent-instances', visible: true, width: 12 },
       { id: 'recent-worlds', visible: true, width: 12 },
@@ -823,17 +823,26 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
     );
   };
 
+  const parseWelcomeMessage = (message: string, profile: any) => {
+    if (!message) return t('home.welcome_back');
+    return message
+      .replace(/%player_name%/gi, profile?.name || 'Player')
+      .replace(/%player%/gi, profile?.name || 'Player');
+  };
+
+  const welcomeTitle = dashSettings.welcomeMessage
+    ? parseWelcomeMessage(dashSettings.welcomeMessage, userProfile)
+    : (userProfile?.name
+      ? t('home.welcome_back_name', {
+        name: userProfile.name,
+        defaultValue: `Welcome back, ${userProfile.name}!`,
+      })
+      : t('home.welcome_back'));
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title={
-          userProfile?.name
-            ? t('home.welcome_back_name', {
-              name: userProfile.name,
-              defaultValue: `Welcome back, ${userProfile.name}!`,
-            })
-            : t('home.welcome_back')
-        }
+        title={welcomeTitle}
         description={t('home.everything_place')}
       >
         <div className="flex items-center gap-2">

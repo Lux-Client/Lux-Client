@@ -136,6 +136,7 @@
     "fs-extra": "^11.3.3",
     "i18next": "^25.8.13",
     "ipc-event-emitter": "^2.0.2",
+    "js-yaml": "^4.1.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.577.0",
     "mc-curseforge-api": "^2.2.3",
@@ -159,6 +160,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.3.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

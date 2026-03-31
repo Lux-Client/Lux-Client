@@ -1596,7 +1596,7 @@ export const AdvancedSkinEditorDialog = ({
                                     >
                                         <div className="text-xs font-medium">{t('skins.texture_view')}</div>
                                         {flatPreview ? (
-                                            <img src={flatPreview} alt="texture preview" className="w-full h-16 object-contain image-pixelated mt-1 rounded bg-muted/30" />
+                                            <img src={flatPreview} alt="texture preview" draggable="false" className="w-full h-16 object-contain image-pixelated mt-1 rounded bg-muted/30" />
                                         ) : (
                                             <div className="text-[11px] text-muted-foreground">{t('common.loading')}</div>
                                         )}
@@ -1880,6 +1880,7 @@ function Skins({ onLogout, onProfileUpdate }) {
     const [skinUsernameInput, setSkinUsernameInput] = useState('');
     const [isImportingSkin, setIsImportingSkin] = useState(false);
     const [webglError, setWebglError] = useState(false);
+    const [isDraggingSkin, setIsDraggingSkin] = useState(false);
 
     const isWebGLSupported = () => {
         try {
@@ -2161,6 +2162,87 @@ function Skins({ onLogout, onProfileUpdate }) {
         await updateSkinInViewer(getDefaultSkinUrl(skin, skin.defaultModel), skin.defaultModel);
     };
 
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer.types.includes('Files')) {
+            setIsDraggingSkin(true);
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.currentTarget.contains(e.relatedTarget)) {
+            return;
+        }
+        setIsDraggingSkin(false);
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingSkin(false);
+
+        const files = Array.from(e.dataTransfer.files) as File[];
+        const imageFile = files.find(file => file.type.startsWith('image/'));
+
+        if (!imageFile) {
+            return;
+        }
+
+        if (!window.electronAPI?.saveLocalSkin) {
+            addNotification(t('skins.import_failed', { error: 'API not available' }), 'error');
+            return;
+        }
+
+        try {
+            setIsImportingSkin(true);
+
+            const reader = new FileReader();
+            const imageDataUrl = await new Promise<string>((resolve, reject) => {
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(imageFile);
+            });
+
+            const fileName = imageFile.name.replace(/\.[^/.]+$/, '');
+            const res = await window.electronAPI.saveLocalSkin({
+                source: 'data-url',
+                value: imageDataUrl,
+                name: fileName || 'Dropped Skin',
+                model: 'auto',
+                outputPath: null
+            });
+
+            if (res.success && res.skin) {
+                const skin = res.skin as { id?: string; name?: string; path?: string; model?: string; data?: string };
+                addNotification(t('skins.drop_success', 'New skin applied'), 'success');
+                setPendingSkin({ type: 'local', ...skin });
+                const nextVariant = skin.model || 'classic';
+                if (skin.model) {
+                    setVariant(skin.model);
+                }
+                if (skin.data) {
+                    await updateSkinInViewer(skin.data, nextVariant);
+                }
+                await loadLocalSkins();
+            } else if (res.error !== 'Cancelled') {
+                addNotification(t('skins.import_failed', { error: res.error }), 'error');
+            }
+        } catch (e) {
+            console.error('Failed to import dropped skin:', e);
+            addNotification(t('skins.import_failed', { error: e.message }), 'error');
+        } finally {
+            setIsImportingSkin(false);
+        }
+    };
+
     const handleApplySkin = async () => {
         if (!pendingSkin && variant === originalVariant) return;
         if (!userProfile) {
@@ -2273,7 +2355,21 @@ function Skins({ onLogout, onProfileUpdate }) {
 
     return (
         <TooltipProvider>
-            <div className="h-full flex overflow-hidden relative">
+            <div 
+                className="h-full flex overflow-hidden relative"
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            >
+                {isDraggingSkin && (
+                    <div className="fixed inset-0 z-[9999] bg-background/80 backdrop-blur-sm flex items-center justify-center">
+                        <div className="text-center">
+                            <User className="h-16 w-16 text-primary mx-auto mb-4" />
+                            <p className="text-xl font-semibold text-foreground">{t('skins.drop_skin', 'Drag and drop to apply skin')}</p>
+                        </div>
+                    </div>
+                )}
                 <Dialog open={showCapeModal} onOpenChange={setShowCapeModal}>
                     <DialogContent className="max-w-2xl">
                         <DialogHeader>

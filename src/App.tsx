@@ -30,6 +30,7 @@ import AgreementModal from './components/AgreementModal';
 import LanguageSelectionModal from './components/LanguageSelectionModal';
 import ThemeModeSelectionModal from './components/ThemeModeSelectionModal';
 import StartupModeSelectionModal from './components/StartupDefaultModeModal';
+import SettingsFormatModal from './components/SettingsFormatModal';
 import LoadingOverlay from './components/LoadingOverlay';
 import WindowControls from './components/WindowControls';
 import CrashModal from './components/CrashModal';
@@ -567,18 +568,36 @@ function App() {
         const newSettings = {
             ...appSettings,
             startPage,
-            hasSelectedStartupMode: true
+            hasSelectedStartupMode: true,
+            hasSelectedSettingsFormat: false
         };
         const res = await window.electronAPI.saveSettings(newSettings);
         if (res.success) {
-            const startupDestination = resolveStartupDestination(startPage);
             setAppSettings(newSettings);
-            setSelectedInstance(null);
-            setSelectedServer(null);
-            startTransition(() => {
-                setCurrentMode(startupDestination.mode);
-                setCurrentView(startupDestination.view);
-            });
+        }
+    };
+
+    const handleSettingsFormatSelect = async (format) => {
+        try {
+            await window.electronAPI.migrateSettings(format);
+            const newSettings = {
+                ...appSettings,
+                settingsStorageFormat: format,
+                hasSelectedSettingsFormat: true
+            };
+            const res = await window.electronAPI.saveSettings(newSettings);
+            if (res.success) {
+                const startupDestination = resolveStartupDestination(appSettings.startPage || 'dashboard');
+                setAppSettings(newSettings);
+                setSelectedInstance(null);
+                setSelectedServer(null);
+                startTransition(() => {
+                    setCurrentMode(startupDestination.mode);
+                    setCurrentView(startupDestination.view);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to save settings format:', error);
         }
     };
 
@@ -813,6 +832,13 @@ function App() {
         appSettings.hasAcceptedToS === true &&
         appSettings.hasSelectedThemeMode === true &&
         appSettings.hasSelectedStartupMode === false;
+    const isSettingsFormatSelectionOpen =
+        !isInitialLoading &&
+        appSettings.hasSelectedLanguage === true &&
+        appSettings.hasAcceptedToS === true &&
+        appSettings.hasSelectedThemeMode === true &&
+        appSettings.hasSelectedStartupMode === true &&
+        appSettings.hasSelectedSettingsFormat === false;
     const canAccessSkins = Boolean(userProfile) && !isGuest;
     const guideSteps = React.useMemo(() => getGuideSteps(guideMode, { canAccessSkins }), [guideMode, canAccessSkins]);
     const isGuidePromptBlockedBySetup =
@@ -821,7 +847,8 @@ function App() {
         isLanguageSelectionOpen ||
         isAgreementModalOpen ||
         isThemeModeSelectionOpen ||
-        isStartupModeSelectionOpen;
+        isStartupModeSelectionOpen ||
+        isSettingsFormatSelectionOpen;
     const isCommandPaletteAvailable =
         !isGuidePromptBlockedBySetup &&
         !isGuideRunning &&
@@ -1084,6 +1111,10 @@ function App() {
 
             {isStartupModeSelectionOpen && (
                 <StartupModeSelectionModal onSelect={handleStartupModeSelect} />
+            )}
+
+            {isSettingsFormatSelectionOpen && (
+                <SettingsFormatModal onSelect={handleSettingsFormatSelect} />
             )}
 
             {guidePromptMode && (

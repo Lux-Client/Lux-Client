@@ -369,7 +369,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Drag and drop to apply skin",
+        "drop_success": "New skin applied"
     },
     "styling": {
         "title": "Appearance",
@@ -568,7 +570,11 @@
             "add_success": "Mod added to Auto Install",
             "remove_success": "Mod removed from Auto Install",
             "search_failed": "Couldn't search Modrinth"
-        }
+        },
+        "storage_format": "Settings Storage Format",
+        "storage_format_desc": "YAML is recommended for better readability and version control. JSON is the default.",
+        "storage_format_migrated": "Settings migrated to {{format}} successfully",
+        "storage_format_failed": "Failed to migrate settings: {{error}}"
     },
     "extensions": {
         "title": "Extensions",
@@ -888,7 +894,16 @@
         "lightMode": "Light Mode",
         "lightModeDesc": "Use Light Lux as your default theme.",
         "useDarkMode": "Use Dark Mode",
-        "useLightMode": "Use Light Mode"
+        "useLightMode": "Use Light Mode",
+        "chooseFormat": "Choose Settings Format",
+        "chooseFormatDesc": "Select how your settings should be stored. You can change this later in Settings.",
+        "formatJson": "JSON",
+        "formatJsonDesc": "JavaScript Object Notation. The default and most widely compatible format.",
+        "formatYaml": "YAML",
+        "formatYamlDesc": "Human-readable data format. Recommended for easier editing and version control.",
+        "recommended": "Recommended",
+        "default": "Default",
+        "useFormat": "Use Format"
     },
     "agreement": {
         "title": "Welcome to Lux",

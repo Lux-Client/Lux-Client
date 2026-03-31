@@ -15,6 +15,8 @@ interface ElectronAPI {
   showSaveDialog: (options?: any) => Promise<any>;
   getSettings: () => Promise<any>;
   saveSettings: (settings: any) => Promise<any>;
+  migrateSettings: (format: 'json' | 'yaml') => Promise<any>;
+  getSettingsFormat: () => Promise<any>;
   login: () => Promise<any>;
   logout: () => Promise<any>;
   validateSession: () => Promise<any>;

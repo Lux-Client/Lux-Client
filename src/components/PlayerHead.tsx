@@ -60,6 +60,7 @@ const PlayerHead = ({ src, uuid, name, size = 40, className = "" }: { src?: stri
                 <img
                     src={getHeadUrl()}
                     alt="Head"
+                    draggable="false"
                     style={{
                         width: '100%',
                         height: '100%',

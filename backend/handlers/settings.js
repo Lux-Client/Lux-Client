@@ -1,10 +1,12 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
+const { readYaml, writeYaml, getSettingsPaths, detectSettingsFormat, migrateSettings } = require('../utils/yaml');
 
 module.exports = (ipcMain) => {
-    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
-    const fontsDir = path.join(app.getPath('userData'), 'fonts');
+    const userDataPath = app.getPath('userData');
+    const { json: jsonPath, yaml: yamlPath } = getSettingsPaths(userDataPath);
+    const fontsDir = path.join(userDataPath, 'fonts');
 
     const defaultSettings = {
         javaPath: '',
@@ -14,6 +16,7 @@ module.exports = (ipcMain) => {
         resolutionHeight: 480,
         enableDiscordRPC: true,
         showDisabledFeatures: false,
+        settingsStorageFormat: 'json',
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
         instancesPath: '',
@@ -101,9 +104,14 @@ module.exports = (ipcMain) => {
         app.emit('settings-updated', settings);
     };
 
-    const readSettingsFile = async () => {
+    const getSettingsPath = (format) => format === 'yaml' ? yamlPath : jsonPath;
+
+    const readSettingsFile = async (format = 'json') => {
+        const settingsPath = getSettingsPath(format);
         if (await fs.pathExists(settingsPath)) {
-            const settings = await fs.readJson(settingsPath);
+            const settings = format === 'yaml' 
+                ? await readYaml(settingsPath) 
+                : await fs.readJson(settingsPath);
             return buildSettings(settings);
         }
         return buildSettings();
@@ -114,13 +122,32 @@ module.exports = (ipcMain) => {
         return (baseName || 'Custom Font').replace(/[_-]+/g, ' ');
     };
 
+    const getSettings = async () => {
+        const format = await detectSettingsFormat(userDataPath);
+        const settingsPath = getSettingsPath(format);
+        if (await fs.pathExists(settingsPath)) {
+            const settings = format === 'yaml'
+                ? await readYaml(settingsPath)
+                : await fs.readJson(settingsPath);
+            return buildSettings(settings);
+        }
+        return buildSettings();
+    };
+
+    const saveSettings = async (settings) => {
+        const format = settings.settingsStorageFormat || 'json';
+        const settingsPath = getSettingsPath(format);
+        if (format === 'yaml') {
+            await writeYaml(settingsPath, settings);
+        } else {
+            await fs.writeJson(settingsPath, settings, { spaces: 4 });
+        }
+    };
+
     ipcMain.handle('settings:get', async () => {
         try {
-            if (await fs.pathExists(settingsPath)) {
-                const settings = await fs.readJson(settingsPath);
-                return { success: true, settings: buildSettings(settings) };
-            }
-            return { success: true, settings: buildSettings() };
+            const settings = await getSettings();
+            return { success: true, settings };
         } catch (error) {
             console.error('Failed to get settings:', error);
             return { success: false, error: error.message };
@@ -130,11 +157,49 @@ module.exports = (ipcMain) => {
     ipcMain.handle('settings:save', async (_, newSettings) => {
         try {
             const mergedSettings = buildSettings(newSettings);
-            await fs.writeJson(settingsPath, mergedSettings, { spaces: 4 });
+            await saveSettings(mergedSettings);
             emitSettings(mergedSettings);
             return { success: true };
         } catch (error) {
             console.error('Failed to save settings:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('settings:migrate', async (_, targetFormat) => {
+        try {
+            if (targetFormat !== 'json' && targetFormat !== 'yaml') {
+                return { success: false, error: 'Invalid format. Use "json" or "yaml".' };
+            }
+            
+            const currentFormat = await detectSettingsFormat(userDataPath);
+            if (currentFormat === targetFormat) {
+                return { success: true, message: 'Already using ' + targetFormat };
+            }
+
+            const currentPath = getSettingsPath(currentFormat);
+            const targetPath = getSettingsPath(targetFormat);
+
+            const result = await migrateSettings(currentPath, targetPath, currentFormat, targetFormat);
+            
+            if (result.success) {
+                const updatedSettings = await getSettings();
+                updatedSettings.settingsStorageFormat = targetFormat;
+                await saveSettings(updatedSettings);
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Failed to migrate settings:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('settings:getFormat', async () => {
+        try {
+            const format = await detectSettingsFormat(userDataPath);
+            return { success: true, format };
+        } catch (error) {
             return { success: false, error: error.message };
         }
     });
@@ -241,7 +306,7 @@ module.exports = (ipcMain) => {
                 }
             };
 
-            await fs.writeJson(settingsPath, nextSettings, { spaces: 4 });
+            await saveSettings(nextSettings);
             emitSettings(nextSettings);
 
             return { success: true, font, settings: nextSettings };
@@ -253,7 +318,7 @@ module.exports = (ipcMain) => {
 
     ipcMain.handle('settings:delete-font', async (_, fontId) => {
         try {
-            const settings = await readSettingsFile();
+            const settings = await getSettings();
             const customFonts = settings.theme.customFonts || [];
             const targetFont = customFonts.find(font => font.id === fontId);
 
@@ -274,7 +339,7 @@ module.exports = (ipcMain) => {
                 }
             };
 
-            await fs.writeJson(settingsPath, nextSettings, { spaces: 4 });
+            await saveSettings(nextSettings);
             emitSettings(nextSettings);
 
             return { success: true, settings: nextSettings };

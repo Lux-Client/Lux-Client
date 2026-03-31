@@ -68,6 +68,7 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
         enableDiscordRPC: true,
         autoUploadLogs: true,
         showDisabledFeatures: false,
+        settingsStorageFormat: 'json',
         optimization: false,
         focusMode: false,
         minimalMode: false,
@@ -1360,6 +1361,56 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                                                 <FlaskConical className="h-3.5 w-3.5" />
                                                 {t('settings.maintenance.title')}
                                             </h3>
+
+                                            <ToggleBox
+                                                checked={settings.settingsStorageFormat === 'yaml'}
+                                                onChange={(isYaml) => {
+                                                    const newFormat = isYaml ? 'yaml' : 'json';
+                                                    handleChange('settingsStorageFormat', newFormat);
+                                                    window.electronAPI.migrateSettings(newFormat).then((res) => {
+                                                        if (res.success) {
+                                                            addNotification(t('settings.storage_format_migrated', { format: newFormat.toUpperCase() }), 'success');
+                                                        } else {
+                                                            addNotification(t('settings.storage_format_failed', { error: res.error }), 'error');
+                                                        }
+                                                    });
+                                                }}
+                                                label={t('settings.storage_format', 'Settings Storage Format')}
+                                                description={t('settings.storage_format_desc', 'YAML is recommended for better readability and version control. JSON is the default.')}
+                                            />
+
+                                            <div className="mt-3 mb-4 flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleChange('settingsStorageFormat', 'json')}
+                                                    className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                                                        settings.settingsStorageFormat === 'json'
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border hover:border-primary/50 text-muted-foreground hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    JSON {settings.settingsStorageFormat === 'json' && '(Default)'}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        handleChange('settingsStorageFormat', 'yaml');
+                                                        window.electronAPI.migrateSettings('yaml').then((res) => {
+                                                            if (res.success) {
+                                                                addNotification(t('settings.storage_format_migrated', { format: 'YAML' }), 'success');
+                                                            } else {
+                                                                addNotification(t('settings.storage_format_failed', { error: res.error }), 'error');
+                                                            }
+                                                        });
+                                                    }}
+                                                    className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1.5 ${
+                                                        settings.settingsStorageFormat === 'yaml'
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border hover:border-primary/50 text-muted-foreground hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    YAML
+                                                    <span className="px-1.5 py-0.5 text-[10px] bg-primary/20 text-primary rounded">Recommended</span>
+                                                </button>
+                                            </div>
 
                                             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 mb-4">
                                                 <div className="flex items-start gap-2">
