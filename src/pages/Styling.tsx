@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "../context/NotificationContext";
-import ColorPicker from "../components/ColorPicker";
 import SliderControl from "../components/SliderControl";
 import ThemeCard from "../components/ThemeCard";
 import MiniPreview from "../components/MiniPreview";
@@ -35,84 +34,126 @@ const PRESETS = [
     primary: "#e26602",
     bg: "#111111",
     surface: "#1c1c1c",
+    textOnBackground: "#f5f5f5",
+    textOnSurface: "#f5f5f5",
+    textOnPrimary: "#1a1208",
   },
   {
     name: "Light Lux",
     primary: "#d24e01",
     bg: "#f9ddb1",
     surface: "#f5c77e",
+    textOnBackground: "#2a1a0e",
+    textOnSurface: "#2c1b0f",
+    textOnPrimary: "#fff4ea",
   },
   {
     name: "Emerald",
     primary: "#1bd96a",
     bg: "#111111",
     surface: "#1c1c1c",
+    textOnBackground: "#ecfff5",
+    textOnSurface: "#e8fff3",
+    textOnPrimary: "#062012",
   },
   {
     name: "Ruby",
     primary: "#ff5c6c",
     bg: "#140a0c",
     surface: "#1f1114",
+    textOnBackground: "#ffecef",
+    textOnSurface: "#ffe8ec",
+    textOnPrimary: "#2a0b11",
   },
   {
     name: "Sapphire",
     primary: "#3da9fc",
     bg: "#0b1220",
     surface: "#121a2b",
+    textOnBackground: "#eaf3ff",
+    textOnSurface: "#e5f0ff",
+    textOnPrimary: "#081a2b",
   },
   {
     name: "Amethyst",
     primary: "#b388ff",
     bg: "#14121c",
     surface: "#1c1826",
+    textOnBackground: "#f2eaff",
+    textOnSurface: "#eee4ff",
+    textOnPrimary: "#1f1433",
   },
   {
     name: "Ocean",
     primary: "#00e0c6",
     bg: "#071418",
     surface: "#0f1f24",
+    textOnBackground: "#dcfffa",
+    textOnSurface: "#d7fff9",
+    textOnPrimary: "#04221e",
   },
   {
     name: "Sunset",
     primary: "#ff8a5b",
     bg: "#1a0f0a",
     surface: "#241611",
+    textOnBackground: "#fff0e9",
+    textOnSurface: "#ffebe3",
+    textOnPrimary: "#311204",
   },
   {
     name: "Cyberpunk",
     primary: "#f3e600",
     bg: "#1a0033",
     surface: "#2d004d",
+    textOnBackground: "#f7eeff",
+    textOnSurface: "#f3e7ff",
+    textOnPrimary: "#1d1a00",
   },
   {
     name: "Frost",
     primary: "#a5f3fc",
     bg: "#0f172a",
     surface: "#1e293b",
+    textOnBackground: "#e8f4ff",
+    textOnSurface: "#e4f0ff",
+    textOnPrimary: "#082027",
   },
   {
     name: "Autumn",
     primary: "#fb923c",
     bg: "#1c1917",
     surface: "#292524",
+    textOnBackground: "#fff3eb",
+    textOnSurface: "#ffefe7",
+    textOnPrimary: "#2f1503",
   },
   {
     name: "Midnight",
     primary: "#3b82f6",
     bg: "#000000",
     surface: "#111111",
+    textOnBackground: "#eaf2ff",
+    textOnSurface: "#edf3ff",
+    textOnPrimary: "#081a38",
   },
   {
     name: "Candy",
     primary: "#f472b6",
     bg: "#1e1b4b",
     surface: "#312e81",
+    textOnBackground: "#f8f1ff",
+    textOnSurface: "#f6eeff",
+    textOnPrimary: "#2f0b23",
   },
   {
     name: "Gold",
     primary: "#fbbf24",
     bg: "#171717",
     surface: "#262626",
+    textOnBackground: "#fff7e6",
+    textOnSurface: "#fff4e0",
+    textOnPrimary: "#2e2100",
   },
 ];
 
@@ -133,6 +174,10 @@ const DEFAULT_THEME = {
   primaryColor: "#e26602",
   backgroundColor: "#111111",
   surfaceColor: "#1c1c1c",
+  textOnBackground: "#fafafa",
+  textOnSurface: "#fafafa",
+  textOnPrimary: "#0d0d0d",
+  sidebarColor: "",
   glassBlur: 10,
   glassOpacity: 0.8,
   consoleOpacity: 0.8,
@@ -146,6 +191,23 @@ const DEFAULT_THEME = {
   fontFamily: "Poppins",
   customFonts: [],
 };
+
+const normalizePresetShape = (preset = {}) => ({
+  ...preset,
+  name: preset.name || preset.handle || 'Preset',
+  primary: preset.primary || preset.primaryColor || DEFAULT_THEME.primaryColor,
+  bg: preset.bg || preset.background || preset.backgroundColor || DEFAULT_THEME.backgroundColor,
+  surface: preset.surface || preset.surfaceColor || DEFAULT_THEME.surfaceColor,
+  textOnBackground: preset.textOnBackground || preset.foreground || DEFAULT_THEME.textOnBackground,
+  textOnSurface: preset.textOnSurface || preset.text || DEFAULT_THEME.textOnSurface,
+  textOnPrimary: preset.textOnPrimary || DEFAULT_THEME.textOnPrimary,
+  sidebarColor: preset.sidebarColor || preset.sidebar || '',
+  sidebarGlow: typeof preset.sidebarGlow === 'number' ? preset.sidebarGlow : DEFAULT_THEME.sidebarGlow,
+  globalGlow: typeof preset.globalGlow === 'number' ? preset.globalGlow : DEFAULT_THEME.globalGlow,
+  panelOpacity: typeof preset.panelOpacity === 'number' ? preset.panelOpacity : DEFAULT_THEME.panelOpacity,
+  bgOverlay: typeof preset.bgOverlay === 'number' ? preset.bgOverlay : DEFAULT_THEME.bgOverlay,
+  fontFamily: preset.fontFamily || DEFAULT_THEME.fontFamily,
+});
 
 const sanitizeTheme = (nextTheme) => {
   const availableFonts = new Set([
@@ -204,6 +266,9 @@ function Styling() {
           root.style.setProperty("--primary-color", t.primaryColor);
           root.style.setProperty("--background-color", t.backgroundColor);
           root.style.setProperty("--surface-color", t.surfaceColor);
+          root.style.setProperty("--text-on-background", t.textOnBackground ?? "#fafafa");
+          root.style.setProperty("--text-on-surface", t.textOnSurface ?? "#fafafa");
+          root.style.setProperty("--text-on-primary", t.textOnPrimary ?? "#0d0d0d");
           root.style.setProperty("--glass-blur", `${t.glassBlur}px`);
           root.style.setProperty("--glass-opacity", t.glassOpacity);
           root.style.setProperty("--console-opacity", t.consoleOpacity ?? 0.8);
@@ -297,6 +362,10 @@ function Styling() {
       primary: theme.primaryColor,
       bg: theme.backgroundColor,
       surface: theme.surfaceColor,
+      sidebarColor: theme.sidebarColor || '',
+      textOnBackground: theme.textOnBackground,
+      textOnSurface: theme.textOnSurface,
+      textOnPrimary: theme.textOnPrimary,
       sidebarGlow: theme.sidebarGlow,
       globalGlow: theme.globalGlow,
       panelOpacity: theme.panelOpacity,
@@ -324,16 +393,21 @@ function Styling() {
   };
 
   const applyPreset = (p) => {
+    const normalizedPreset = normalizePresetShape(p);
     const nt = sanitizeTheme({
       ...theme,
-      primaryColor: p.primary,
-      backgroundColor: p.bg,
-      surfaceColor: p.surface,
-      sidebarGlow: p.sidebarGlow ?? theme.sidebarGlow,
-      globalGlow: p.globalGlow ?? theme.globalGlow,
-      panelOpacity: p.panelOpacity ?? theme.panelOpacity,
-      bgOverlay: p.bgOverlay ?? theme.bgOverlay,
-      fontFamily: p.fontFamily ?? theme.fontFamily,
+      primaryColor: normalizedPreset.primary,
+      backgroundColor: normalizedPreset.bg,
+      surfaceColor: normalizedPreset.surface,
+      textOnBackground: normalizedPreset.textOnBackground,
+      textOnSurface: normalizedPreset.textOnSurface,
+      textOnPrimary: normalizedPreset.textOnPrimary,
+      sidebarColor: normalizedPreset.sidebarColor,
+      sidebarGlow: normalizedPreset.sidebarGlow,
+      globalGlow: normalizedPreset.globalGlow,
+      panelOpacity: normalizedPreset.panelOpacity,
+      bgOverlay: normalizedPreset.bgOverlay,
+      fontFamily: normalizedPreset.fontFamily,
     });
     setTheme(nt);
     applyTheme(nt, true);
@@ -378,6 +452,9 @@ function Styling() {
     root.style.setProperty("--primary-color", t.primaryColor);
     root.style.setProperty("--background-color", t.backgroundColor);
     root.style.setProperty("--surface-color", t.surfaceColor);
+    root.style.setProperty("--text-on-background", t.textOnBackground ?? "#fafafa");
+    root.style.setProperty("--text-on-surface", t.textOnSurface ?? "#fafafa");
+    root.style.setProperty("--text-on-primary", t.textOnPrimary ?? "#0d0d0d");
     root.style.setProperty("--glass-blur", `${t.glassBlur}px`);
     root.style.setProperty("--glass-opacity", t.glassOpacity);
     root.style.setProperty("--console-opacity", t.consoleOpacity ?? 0.8);
@@ -439,6 +516,8 @@ function Styling() {
         root.style.setProperty("--bg-type", "none");
       }
     }
+
+    updateShadcnVars(t);
   };
 
   const handleUpdate = (key, value) => {
@@ -559,25 +638,72 @@ function Styling() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {t('styling.accent_base')}
+                      {t('styling.accent_base_text_color')}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-5">
-                    <ColorPicker
-                      label={t('styling.accent_color')}
-                      value={theme.primaryColor}
-                      onChange={(val) => handleUpdate("primaryColor", val)}
-                    />
-                    <ColorPicker
-                      label={t('styling.background')}
-                      value={theme.backgroundColor}
-                      onChange={(val) => handleUpdate("backgroundColor", val)}
-                    />
-                    <ColorPicker
-                      label={t('styling.panels')}
-                      value={theme.surfaceColor}
-                      onChange={(val) => handleUpdate("surfaceColor", val)}
-                    />
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-3">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {t('styling.color')}
+                      </span>
+                      <span className="w-10 justify-self-center text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {t('styling.base')}
+                      </span>
+                      <span className="w-10 justify-self-center text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {t('styling.text')}
+                      </span>
+
+                      {[
+                        {
+                          id: 'accent',
+                          label: t('styling.accent_color'),
+                          baseKey: 'primaryColor',
+                          textKey: 'textOnPrimary',
+                        },
+                        {
+                          id: 'background',
+                          label: t('styling.background'),
+                          baseKey: 'backgroundColor',
+                          textKey: 'textOnBackground',
+                        },
+                        {
+                          id: 'panels',
+                          label: t('styling.panels'),
+                          baseKey: 'surfaceColor',
+                          textKey: 'textOnSurface',
+                        },
+                      ].map((row) => (
+                        <React.Fragment key={row.id}>
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            {row.label}
+                          </Label>
+                          <input
+                            type="color"
+                            value={theme[row.baseKey]}
+                            onChange={(e) => handleUpdate(row.baseKey, e.target.value)}
+                            className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
+                            style={{
+                              background: theme[row.baseKey],
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'none',
+                              appearance: 'none',
+                            }}
+                          />
+                          <input
+                            type="color"
+                            value={theme[row.textKey]}
+                            onChange={(e) => handleUpdate(row.textKey, e.target.value)}
+                            className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
+                            style={{
+                              background: theme[row.textKey],
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'none',
+                              appearance: 'none',
+                            }}
+                          />
+                        </React.Fragment>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
 

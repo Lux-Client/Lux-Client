@@ -36,7 +36,7 @@ const ExtensionSlot = ({ name, className, context }: { name: string; className?:
                 const Component = view.component;
                 return (
                     <ExtensionErrorBoundary key={view.id}>
-                        <Component context={context} />
+                        <Component context={context} api={view.api} />
                     </ExtensionErrorBoundary>
                 );
             })}

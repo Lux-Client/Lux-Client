@@ -1,6 +1,10 @@
 import React from 'react';
 
 function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any; onApply: any; onDelete?: any; isCustom?: boolean }) {
+    const primary = theme?.primary || theme?.primaryColor || '#22e07a';
+    const bg = theme?.bg || theme?.background || theme?.backgroundColor || '#0d1117';
+    const surface = theme?.surface || theme?.surfaceColor || '#161b22';
+
     const hexToRgb = (hex) => {
         const normalized = hex?.replace('#', '');
         if (!normalized || normalized.length !== 6) return '34, 224, 122';
@@ -10,7 +14,7 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any;
         return `${r}, ${g}, ${b}`;
     };
 
-    const primaryRgb = hexToRgb(theme.primary);
+    const primaryRgb = hexToRgb(primary);
 
     return (
         <button
@@ -21,7 +25,7 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any;
             <div className="h-20 relative overflow-hidden">
                 <div
                     className="absolute inset-0 opacity-40"
-                    style={{ background: theme.bg }}
+                    style={{ background: bg }}
                 />
                 <div
                     className="absolute inset-0"
@@ -32,13 +36,13 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any;
                 <div
                     className="absolute bottom-2 left-2 w-8 h-8 rounded-lg shadow-lg border-2 border-border"
                     style={{
-                        background: theme.primary,
+                        background: primary,
                         boxShadow: `0 0 calc(20px * var(--global-glow-intensity, 0)) rgba(${primaryRgb}, calc(0.375 * var(--global-glow-intensity, 0)))`
                     }}
                 />
                 <div
                     className="absolute bottom-2 right-2 w-6 h-6 rounded-md opacity-60"
-                    style={{ background: theme.surface }}
+                    style={{ background: surface }}
                 />
             </div>
 
@@ -46,7 +50,7 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any;
             <div className="bg-card backdrop-blur-sm p-3 border-t border-border">
                 <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors truncate pr-2">
-                        {theme.name}
+                        {theme.name || theme.handle || 'Theme'}
                     </span>
                     {isCustom && onDelete && (
                         <div

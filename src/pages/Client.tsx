@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import { resolveClientAutoInstallModIds } from '../config/clientDefaults';
+import { filterInstancesForMode, getOpenClientCreateOptions } from '../utils/instanceTypes';
 
 function Client() {
     const { t } = useTranslation();
@@ -74,7 +75,7 @@ function Client() {
     const loadInstances = async () => {
         try {
             const list = await window.electronAPI.getInstances();
-            setInstances(Array.isArray(list) ? list : []);
+            setInstances(filterInstancesForMode(list, 'client'));
         } catch (error) {
             console.error('[Client] Failed to load instances:', error);
         }
@@ -256,7 +257,8 @@ function Client() {
                 selectedVersion,
                 'fabric',
                 null,
-                loaderVersion
+                loaderVersion,
+                getOpenClientCreateOptions()
             );
 
             if (result?.success) {

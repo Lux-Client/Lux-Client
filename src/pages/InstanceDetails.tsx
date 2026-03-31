@@ -25,6 +25,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [searching, setSearching] = useState(false);
     const [searchTimeout, setSearchTimeout] = useState(null);
     const [sortMethod, setSortMethod] = useState('relevance');
+    const [provider, setProvider] = useState('modrinth');
     const [searchOffset, setSearchOffset] = useState(0);
     const [totalHits, setTotalHits] = useState(0);
     const limit = 10;
@@ -43,6 +44,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         debug: false
     });
     const [autoScroll, setAutoScroll] = useState(true);
+    const [isUploadingLog, setIsUploadingLog] = useState(false);
     const logContainerRef = useRef(null);
     const status = runningInstances[instance.name];
     const isRunning = status === 'running';
@@ -155,7 +157,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         if (activeTab === 'content' && contentView === 'search') {
             handleSearch();
         }
-    }, [sortMethod, searchOffset, activeTab]);
+    }, [sortMethod, searchOffset, activeTab, provider]);
     useEffect(() => {
         if (autoScroll && logContainerRef.current) {
             logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
@@ -172,7 +174,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
         setSearchTimeout(timeout);
         return () => clearTimeout(timeout);
-    }, [searchQuery, contentView, searchCategory]);
+    }, [searchQuery, contentView, searchCategory, provider]);
 
     const loadMods = async () => {
         const res = await window.electronAPI.getMods(instance.name);
@@ -320,6 +322,31 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             addNotification("Failed to copy log", 'error');
         });
     };
+
+    const handleUploadLog = async () => {
+        if (isUploadingLog) return;
+
+        setIsUploadingLog(true);
+        try {
+            const result = await window.electronAPI.uploadInstanceLog(instance.name, selectedLog);
+            if (!result?.success || !result?.url) {
+                addNotification(`Upload failed: ${result?.error || 'Unknown error'}`, 'error');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(result.url);
+                addNotification(`Log uploaded: ${result.url} (copied)`, 'success');
+            } catch (_) {
+                addNotification(`Log uploaded: ${result.url}`, 'success');
+            }
+        } catch (e) {
+            console.error('Failed to upload log:', e);
+            addNotification(`Upload failed: ${e.message}`, 'error');
+        } finally {
+            setIsUploadingLog(false);
+        }
+    };
     const handleToggleMod = async (fileName) => {
         await window.electronAPI.toggleMod(instance.name, fileName);
         loadMods();
@@ -453,7 +480,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             offset: searchOffset,
             limit,
             projectType: searchCategory,
-            includeCurseforge: ['mod', 'resourcepack', 'shader'].includes(searchCategory)
+            provider
         });
         if (res.success) {
             setSearchResults(res.results);
@@ -719,12 +746,20 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         return fileName.replace('.jar', '').replace('.disabled', '').split('-')[0].replace(/_/g, ' ');
     };
 
+    const hasImageIcon = typeof instance?.icon === 'string' && (
+        instance.icon.startsWith('data:') ||
+        instance.icon.startsWith('app-media://') ||
+        instance.icon.startsWith('http://') ||
+        instance.icon.startsWith('https://') ||
+        instance.icon.startsWith('file://')
+    );
+
     return (
         <div className="h-full flex flex-col bg-transparent">
             { }
             <div className="p-8 pb-0 flex items-center gap-6">
                 <div className="w-32 h-32 bg-card rounded-xl flex items-center justify-center text-6xl shadow-2xl border border-border overflow-hidden">
-                    {instance.icon && (instance.icon.startsWith('data:') || instance.icon.startsWith('app-media://')) ? (
+                    {hasImageIcon ? (
                         <img src={instance.icon} alt="" className="w-full h-full object-cover" />
                     ) : (
                         <span className="text-6xl">{instance.icon || '📦'}</span>
@@ -1251,17 +1286,33 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     <div className="text-sm text-muted-foreground">
                                         {t('instance_details.search.showing_results', { count: searchResults.length })}
                                     </div>
-                                    <div className="w-48">
-                                        <Dropdown
-                                            options={[
-                                                { value: 'relevance', label: t('instance_details.search.relevance') },
-                                                { value: 'downloads', label: t('instance_details.search.downloads') },
-                                                { value: 'newest', label: t('instance_details.search.newest') },
-                                                { value: 'updated', label: t('instance_details.search.updated') }
-                                            ]}
-                                            value={sortMethod}
-                                            onChange={setSortMethod}
-                                        />
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex bg-muted p-1 rounded-xl border border-border">
+                                            <button
+                                                onClick={() => setProvider('modrinth')}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'modrinth' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                            >
+                                                Modrinth
+                                            </button>
+                                            <button
+                                                onClick={() => setProvider('curseforge')}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'curseforge' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                            >
+                                                CurseForge
+                                            </button>
+                                        </div>
+                                        <div className="w-48">
+                                            <Dropdown
+                                                options={[
+                                                    { value: 'relevance', label: t('instance_details.search.relevance') },
+                                                    { value: 'downloads', label: t('instance_details.search.downloads') },
+                                                    { value: 'newest', label: t('instance_details.search.newest') },
+                                                    { value: 'updated', label: t('instance_details.search.updated') }
+                                                ]}
+                                                value={sortMethod}
+                                                onChange={setSortMethod}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1525,6 +1576,13 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     <span className={`text-xs font-bold uppercase ${autoScroll ? 'text-foreground' : 'text-muted-foreground group-hover:text-accent-foreground'}`}>{t('instance_details.logs.auto_scroll')}</span>
                                 </label>
                                 <button onClick={() => { loadLogFiles(); loadLog(); }} className="px-3 py-1 bg-muted hover:bg-accent rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors">{t('instance_details.logs.refresh')}</button>
+                                <button
+                                    onClick={handleUploadLog}
+                                    disabled={isUploadingLog}
+                                    className="px-3 py-1 bg-muted hover:bg-accent disabled:opacity-60 disabled:cursor-not-allowed rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors"
+                                >
+                                    {isUploadingLog ? t('common.loading', 'Loading...') : t('instance_details.logs.upload', 'Upload')}
+                                </button>
                                 <button onClick={handleCopyLog} className="px-3 py-1 bg-muted hover:bg-accent rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors">{t('instance_details.logs.copy')}</button>
                                 <button onClick={() => setLog('')} className="px-3 py-1 bg-muted hover:bg-red-500/20 hover:text-red-400 rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors">{t('instance_details.logs.clear')}</button>
                             </div>

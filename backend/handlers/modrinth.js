@@ -10,7 +10,7 @@ const CURSEFORGE_VERSION_PREFIX = 'cf-file:';
 const MODRINTH_PROJECT_PREFIX = 'modrinth:';
 const USER_AGENT = 'LuxAGENT/MinecraftLauncher/1.0 (fernsehheft@pluginhub.de)';
 const appData = app.getPath('userData');
-const instancesDir = path.join(appData, 'instances');
+const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
 const modrinthToCurseForgeProjectMap = new Map();
 
 const CURSEFORGE_CLASS_BY_PROJECT_TYPE = {
@@ -791,7 +791,8 @@ const resolveInstallContext = async (data) => {
             version = serverConfig.version;
         }
     } else {
-        const instanceJsonPath = path.join(instancesDir, data.instanceName, 'instance.json');
+        const instanceDir = resolveInstanceDirByName(data.instanceName) || path.join(resolvePrimaryInstancesDir(), data.instanceName);
+        const instanceJsonPath = path.join(instanceDir, 'instance.json');
         if (await fs.pathExists(instanceJsonPath)) {
             const instance = await fs.readJson(instanceJsonPath);
             loader = instance.loader ? instance.loader.toLowerCase() : 'vanilla';
@@ -932,12 +933,12 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
         let folder = getFolderForProjectType(projectType);
         let resolvedServerSoftware = '';
 
-        const baseDir = isServer ? path.join(appData, 'servers') : instancesDir;
-        const resolvedName = isServer
-            ? await resolveServerSafeName(instanceName, serverSafeName)
-            : instanceName;
+        let resolvedName = instanceName;
+        let contentDir;
 
         if (isServer) {
+            const baseDir = path.join(appData, 'servers');
+            resolvedName = await resolveServerSafeName(instanceName, serverSafeName);
             const serverJsonPath = path.join(baseDir, resolvedName, 'server.json');
             if (await fs.pathExists(serverJsonPath)) {
                 try {
@@ -948,8 +949,12 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
                     console.warn('[Modrinth:Install] Could not read server config for folder resolution:', readError.message);
                 }
             }
+
+            contentDir = path.join(baseDir, resolvedName, folder);
+        } else {
+            const instanceDir = resolveInstanceDirByName(instanceName) || path.join(resolvePrimaryInstancesDir(), instanceName);
+            contentDir = path.join(instanceDir, folder);
         }
-        const contentDir = path.join(baseDir, resolvedName, folder);
 
         console.log(`[Modrinth:Install] Starting install for ${instanceName} (${projectType})`);
         console.log(`[Modrinth:Install] isServer=${!!isServer}, resolvedName=${resolvedName}, software=${resolvedServerSoftware || 'n/a'}, folder=${folder}`);
@@ -1064,7 +1069,8 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
         }
         if (projectType === 'shader') {
             try {
-                const instanceJsonPath = path.join(instancesDir, instanceName, 'instance.json');
+                const instanceDir = resolveInstanceDirByName(instanceName) || path.join(resolvePrimaryInstancesDir(), instanceName);
+                const instanceJsonPath = path.join(instanceDir, 'instance.json');
                 if (await fs.pathExists(instanceJsonPath)) {
                     const instance = await fs.readJson(instanceJsonPath);
                     const loader = instance.loader ? instance.loader.toLowerCase() : 'vanilla';
@@ -1081,7 +1087,7 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
 
                     for (const sw of softwares) {
                         try {
-                            const modsDir = path.join(instancesDir, instanceName, 'mods');
+                            const modsDir = path.join(instanceDir, 'mods');
                             await fs.ensureDir(modsDir);
                             const currentFiles = await fs.readdir(modsDir);
 
@@ -1215,58 +1221,67 @@ const resolveDependenciesInternal = async (versionId, loaders = [], gameVersions
 module.exports = (ipcMain, win) => {
     ipcMain.handle('modrinth:search', async (_, query, facets = [], options = {}) => {
         try {
-            const { limit = 20, offset = 0, index, projectType = 'mod', includeCurseforge = false } = options;
+            const { limit = 20, offset = 0, index, projectType = 'mod', provider = 'modrinth' } = options;
+            const includeCurseforge = provider === 'curseforge' || provider === 'both';
+            const includeModrinth = provider === 'modrinth' || provider === 'both';
+
             const normalizedLimit = Math.max(1, Number(limit) || 20);
             const normalizedOffset = Math.max(0, Number(offset) || 0);
             const normalizedIndex = getNormalizedSearchIndex(index);
-            const baseFetchLimit = includeCurseforge
+
+            const baseFetchLimit = (includeCurseforge && includeModrinth)
                 ? Math.min(Math.max(normalizedLimit + normalizedOffset, normalizedLimit), 100)
                 : normalizedLimit;
             const mergeFetchBuffer = 30;
             const mergeCandidateTarget = normalizedOffset + normalizedLimit + mergeFetchBuffer;
-            const modrinthFetchLimit = includeCurseforge
+
+            const modrinthFetchLimit = (includeCurseforge && includeModrinth)
                 ? Math.min(Math.max(baseFetchLimit, mergeCandidateTarget), 100)
                 : baseFetchLimit;
-            const curseforgeFetchLimit = includeCurseforge
+            const curseforgeFetchLimit = (includeCurseforge && includeModrinth)
                 ? Math.min(Math.max(baseFetchLimit, mergeCandidateTarget), 250)
                 : baseFetchLimit;
+
             const facetStr = JSON.stringify([[`project_type:${projectType}`], ...facets]);
 
-            const params = {
-                query,
-                facets: facetStr,
-                limit: modrinthFetchLimit,
-                offset: includeCurseforge ? 0 : normalizedOffset
-            };
-            if (normalizedIndex) params.index = normalizedIndex;
+            let modrinthResults = [];
+            let modrinthTotalHits = 0;
+            let modrinthOffset = normalizedOffset;
+            let modrinthLimit = normalizedLimit;
 
-            let modrinthResponseData = {
-                hits: [],
-                total_hits: 0,
-                offset: includeCurseforge ? 0 : normalizedOffset,
-                limit: modrinthFetchLimit
-            };
+            if (includeModrinth) {
+                const params = {
+                    query,
+                    facets: facetStr,
+                    limit: modrinthFetchLimit,
+                    offset: (includeCurseforge && includeModrinth) ? 0 : normalizedOffset
+                };
+                if (normalizedIndex) params.index = normalizedIndex;
 
-            try {
-                const response = await axios.get(`${MODRINTH_API}/search`, {
-                    params,
-                    headers: { 'User-Agent': USER_AGENT }
-                });
-                modrinthResponseData = response.data;
-            } catch (modrinthError) {
-                if (!includeCurseforge) {
-                    throw modrinthError;
+                try {
+                    const response = await axios.get(`${MODRINTH_API}/search`, {
+                        params,
+                        headers: { 'User-Agent': USER_AGENT }
+                    });
+                    const data = response.data;
+                    modrinthResults = (data.hits || []).map((hit, rank) => ({
+                        ...hit,
+                        source: 'modrinth',
+                        __providerRank: rank
+                    }));
+                    modrinthTotalHits = Number(data.total_hits || 0);
+                    modrinthOffset = Number(data.offset ?? normalizedOffset);
+                    modrinthLimit = Number(data.limit ?? normalizedLimit);
+                } catch (modrinthError) {
+                    if (provider === 'modrinth') {
+                        throw modrinthError;
+                    }
+                    console.warn('[Modrinth:Search] Modrinth API unavailable:', modrinthError.message);
                 }
-                console.warn('[Modrinth:Search] Modrinth API unavailable, trying CurseForge fallback:', modrinthError.message);
             }
 
-            const modrinthResults = (modrinthResponseData.hits || []).map((hit, rank) => ({
-                ...hit,
-                source: 'modrinth',
-                __providerRank: rank
-            }));
             let results = modrinthResults;
-            let totalHits = Number(modrinthResponseData.total_hits || 0);
+            let totalHits = modrinthTotalHits;
 
             if (includeCurseforge) {
                 try {
@@ -1274,7 +1289,7 @@ module.exports = (ipcMain, win) => {
                         query,
                         projectType,
                         limit: curseforgeFetchLimit,
-                        offset: 0,
+                        offset: (includeCurseforge && includeModrinth) ? 0 : normalizedOffset,
                         index: normalizedIndex
                     });
 
@@ -1283,15 +1298,25 @@ module.exports = (ipcMain, win) => {
                         __providerRank: rank
                     }));
 
-                    totalHits += Number(curseforgeResult.total_hits || 0);
-                    const deduplicated = mergeDuplicateSearchEntries([...modrinthResults, ...curseforgeResults]);
-                    totalHits = deduplicated.length;
-                    const merged = sortMergedSearchResults(deduplicated, normalizedIndex);
-
-                    results = merged.slice(normalizedOffset, normalizedOffset + normalizedLimit);
+                    if (includeModrinth) {
+                        // Merging mode
+                        const deduplicated = mergeDuplicateSearchEntries([...modrinthResults, ...curseforgeResults]);
+                        totalHits = deduplicated.length; // This is a limitation of merging, we can't easily know the true global total
+                        const merged = sortMergedSearchResults(deduplicated, normalizedIndex);
+                        results = merged.slice(normalizedOffset, normalizedOffset + normalizedLimit);
+                    } else {
+                        // CurseForge only mode
+                        results = curseforgeResults;
+                        totalHits = Number(curseforgeResult.total_hits || 0);
+                    }
                 } catch (curseforgeError) {
-                    console.warn('[CurseForge:Search] Failed to enrich search results:', curseforgeError.message);
-                    results = results.slice(normalizedOffset, normalizedOffset + normalizedLimit);
+                    if (provider === 'curseforge') {
+                        throw curseforgeError;
+                    }
+                    console.warn('[CurseForge:Search] Failed to fetch CurseForge results:', curseforgeError.message);
+                    if (includeModrinth) {
+                        results = modrinthResults.slice(normalizedOffset, normalizedOffset + normalizedLimit);
+                    }
                 }
             }
 
@@ -1299,12 +1324,8 @@ module.exports = (ipcMain, win) => {
                 success: true,
                 results: results.map(stripSearchInternalFields),
                 total_hits: totalHits,
-                offset: includeCurseforge
-                    ? normalizedOffset
-                    : Number(modrinthResponseData.offset || normalizedOffset),
-                limit: includeCurseforge
-                    ? normalizedLimit
-                    : Number(modrinthResponseData.limit || normalizedLimit)
+                offset: (includeCurseforge && includeModrinth) ? normalizedOffset : modrinthOffset,
+                limit: (includeCurseforge && includeModrinth) ? normalizedLimit : modrinthLimit
             };
         } catch (e) {
             console.error("Modrinth Search Error:", e.response ? e.response.data : e.message);
@@ -1496,9 +1517,16 @@ module.exports = (ipcMain, win) => {
         try {
             const folder = getFolderForProjectType(projectType);
 
-            const baseDir = isServer ? path.join(appData, 'servers') : instancesDir;
-            const resolvedName = isServer ? sanitizeFileName(instanceName) : instanceName;
-            const contentDir = path.join(baseDir, resolvedName, folder);
+            let contentDir;
+            if (isServer) {
+                const baseDir = path.join(appData, 'servers');
+                const resolvedName = sanitizeFileName(instanceName);
+                contentDir = path.join(baseDir, resolvedName, folder);
+            } else {
+                const instanceDir = resolveInstanceDirByName(instanceName) || path.join(resolvePrimaryInstancesDir(), instanceName);
+                contentDir = path.join(instanceDir, folder);
+            }
+
             const oldPath = path.join(contentDir, oldFileName);
             const newPath = path.join(contentDir, newFileName);
 

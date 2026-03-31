@@ -96,13 +96,15 @@ module.exports = (ipcMain, mainWindow) => {
                 throw new Error("Missing required auth fields");
             }
             const refreshToken = xboxManager.save();
+            const xuid = token.xuid || '';
 
             const profile = {
                 name,
                 uuid,
                 access_token: accessToken,
                 refresh_token: refreshToken,
-                exp: token.exp
+                exp: token.exp,
+                xuid
             };
             let accounts = store.get('accounts') || [];
             const existingIndex = accounts.findIndex(a => a.uuid === uuid);
@@ -159,7 +161,8 @@ module.exports = (ipcMain, mainWindow) => {
                     ...profile,
                     access_token: newAccessToken,
                     refresh_token: newRefreshToken,
-                    exp: token.exp
+                    exp: token.exp,
+                    xuid: token.xuid || profile.xuid || ''
                 };
                 let accounts = store.get('accounts') || [];
                 const idx = accounts.findIndex(a => a.uuid === profile.uuid);

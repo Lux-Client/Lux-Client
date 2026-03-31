@@ -5,8 +5,6 @@ const store = new Store();
 const path = require('path');
 const os = require('os');
 const { app, ipcMain, shell, dialog } = require('electron');
-console.log('Loaded instances handler. Dialog available:', !!dialog);
-console.log('[DEBUG] CANARY: INSTANCES_JS_V2_LOADED');
 const axios = require('axios');
 const zlib = require('zlib');
 const { promisify } = require('util');
@@ -16,9 +14,720 @@ const AdmZip = require('adm-zip');
 const archiver = require('archiver');
 const { spawn } = require('child_process');
 const nbt = require('prismarine-nbt');
+const {
+    resolvePrimaryInstancesDir,
+    getAllInstanceDirsSync,
+    migrateLegacyInstancesToPrimarySync
+} = require('../utils/instances-path');
 let appData;
 let instancesDir;
 let globalBackupsDir;
+
+function normalizeFolderPathValue(value = '') {
+    const segments = String(value)
+        .split(/[\\/]+/)
+        .map(segment => segment.trim())
+        .filter(segment => segment && segment !== '.' && segment !== '..');
+    return segments.join('/');
+}
+
+function getInstanceFolderMetaPath() {
+    const base = appData || app.getPath('userData');
+    return path.join(base, 'instance_folder_meta.json');
+}
+
+async function readInstanceFolderMeta() {
+    try {
+        const metaPath = getInstanceFolderMetaPath();
+        if (!await fs.pathExists(metaPath)) return {};
+        const data = await fs.readJson(metaPath);
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return {};
+        return data;
+    } catch (e) {
+        console.warn('[Instances] Failed to read folder metadata:', e.message);
+        return {};
+    }
+}
+
+async function writeInstanceFolderMeta(meta) {
+    const metaPath = getInstanceFolderMetaPath();
+    await fs.writeJson(metaPath, meta, { spaces: 2 });
+}
+
+function buildInstanceFolderMetaKey(instance) {
+    const instanceType = String(instance?.instanceType || '').trim().toLowerCase();
+    const name = String(instance?.name || '').trim().toLowerCase();
+    const source = String(instance?.externalSource || 'external').trim().toLowerCase();
+    const externalPath = String(instance?.externalPath || '').trim().toLowerCase();
+
+    if (instanceType === 'external') {
+        return `external:${source}:${externalPath || name}`;
+    }
+
+    return `local:${name}`;
+}
+
+async function resolveInstanceBaseDir(instanceName) {
+    const normalizedName = String(instanceName || '').trim().toLowerCase();
+    let externalInstance = null;
+
+    try {
+        const mergedInstances = await getMergedInstances();
+        externalInstance = mergedInstances.find((entry) => {
+            const entryName = String(entry?.name || '').trim().toLowerCase();
+            return entryName === normalizedName && String(entry?.instanceType || '').toLowerCase() === 'external';
+        }) || null;
+    } catch (e) {
+        // If merged instance lookup fails we still fall back to local path lookup.
+    }
+
+    const externalPath = String(externalInstance?.externalPath || '').trim();
+    if (externalPath) {
+        return {
+            baseDir: externalPath,
+            externalInstance,
+            isExternal: true
+        };
+    }
+
+    return {
+        baseDir: path.join(instancesDir, instanceName),
+        externalInstance: null,
+        isExternal: false
+    };
+}
+
+function normalizeLoaderFromString(value) {
+    let candidate = value;
+
+    if (candidate && typeof candidate === 'object') {
+        candidate = candidate.name || candidate.id || candidate.loader || candidate.type || '';
+    }
+
+    const raw = String(candidate || '').trim().toLowerCase();
+
+    if (!raw) return '';
+    if (raw.includes('fabric')) return 'fabric';
+    if (raw.includes('quilt')) return 'quilt';
+    if (raw.includes('neoforge') || raw.startsWith('neo')) return 'neoforge';
+    if (raw.includes('forge')) return 'forge';
+    return raw;
+}
+
+function inferLoaderFromName(name) {
+    const raw = String(name || '').trim().toLowerCase();
+    if (!raw) return '';
+    if (raw.includes('neoforge') || raw.includes('neo forge')) return 'neoforge';
+    if (raw.includes('forge')) return 'forge';
+    if (raw.includes('fabric')) return 'fabric';
+    if (raw.includes('quilt')) return 'quilt';
+    return '';
+}
+
+function inferVersionFromName(name) {
+    const raw = String(name || '');
+    const match = raw.match(/\b\d+\.\d+(?:\.\d+)?\b/);
+    return match ? match[0] : '';
+}
+
+async function inferVersionFromProfileDirectory(profileDir) {
+    const versionRoots = [
+        path.join(profileDir, '.minecraft', 'versions'),
+        path.join(profileDir, 'versions')
+    ];
+
+    for (const versionRoot of versionRoots) {
+        try {
+            if (!await fs.pathExists(versionRoot)) continue;
+            const entries = await fs.readdir(versionRoot, { withFileTypes: true });
+            const versionNames = entries
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => String(entry.name || '').trim())
+                .filter(Boolean)
+                .sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+
+            for (const candidate of versionNames) {
+                const inferred = inferVersionFromName(candidate);
+                if (inferred) {
+                    return inferred;
+                }
+            }
+        } catch (e) {
+            // Ignore scan errors and continue to next candidate root.
+        }
+    }
+
+    return '';
+}
+
+async function inferVersionFromProfileLogs(profileDir) {
+    const logCandidates = [
+        path.join(profileDir, 'logs', 'launcher_log.txt'),
+        path.join(profileDir, 'logs', 'latest.log')
+    ];
+
+    const versionPatterns = [
+        /--fml\.mcVersion,\s*([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i,
+        /--version,\s*([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i,
+        /minecraft server version\s+([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i,
+        /minecraft\s+([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i
+    ];
+
+    for (const logPath of logCandidates) {
+        try {
+            if (!await fs.pathExists(logPath)) continue;
+            const content = await fs.readFile(logPath, 'utf8');
+
+            for (const pattern of versionPatterns) {
+                const match = content.match(pattern);
+                if (match && match[1]) {
+                    return String(match[1]).trim();
+                }
+            }
+        } catch (e) {
+            // Ignore log parsing failures and continue.
+        }
+    }
+
+    return '';
+}
+
+async function inferPlaytimeFromWorldStats(profileDir) {
+    const savesDir = path.join(profileDir, 'saves');
+    if (!await fs.pathExists(savesDir)) return 0;
+
+    let totalTicks = 0;
+    let worldEntries = [];
+
+    try {
+        worldEntries = await fs.readdir(savesDir, { withFileTypes: true });
+    } catch (e) {
+        return 0;
+    }
+
+    for (const worldEntry of worldEntries) {
+        if (!worldEntry.isDirectory()) continue;
+
+        const statsDir = path.join(savesDir, worldEntry.name, 'stats');
+        if (!await fs.pathExists(statsDir)) continue;
+
+        let statFiles = [];
+        try {
+            statFiles = await fs.readdir(statsDir, { withFileTypes: true });
+        } catch (e) {
+            continue;
+        }
+
+        let worldMaxTicks = 0;
+        for (const statFile of statFiles) {
+            if (!statFile.isFile() || !String(statFile.name).toLowerCase().endsWith('.json')) continue;
+
+            try {
+                const statPath = path.join(statsDir, statFile.name);
+                const statData = await fs.readJson(statPath);
+                const customStats = statData?.stats?.['minecraft:custom'] || {};
+
+                const ticks = parseFiniteNumber(
+                    customStats['minecraft:play_time'] ||
+                    customStats['minecraft:play_one_minute'] ||
+                    0
+                ) || 0;
+
+                if (ticks > worldMaxTicks) {
+                    worldMaxTicks = ticks;
+                }
+            } catch (e) {
+                // Ignore invalid stat JSON entries.
+            }
+        }
+
+        totalTicks += worldMaxTicks;
+    }
+
+    // Minecraft stat ticks are 20 ticks per second.
+    return Math.max(0, Math.round(totalTicks * 50));
+}
+
+async function inferLastPlayedFromProfileActivity(profileDir) {
+    const candidates = [
+        path.join(profileDir, 'logs', 'latest.log'),
+        path.join(profileDir, 'logs', 'launcher_log.txt'),
+        path.join(profileDir, 'saves')
+    ];
+
+    let latest = 0;
+    for (const candidatePath of candidates) {
+        try {
+            if (!await fs.pathExists(candidatePath)) continue;
+            const stats = await fs.stat(candidatePath);
+            if (stats.mtimeMs > latest) {
+                latest = stats.mtimeMs;
+            }
+        } catch (e) {
+            // Ignore and continue.
+        }
+    }
+
+    return latest > 0 ? latest : null;
+}
+
+function parseFiniteNumber(value) {
+    if (value === null || value === undefined) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeTimestampMs(value) {
+    const parsed = parseFiniteNumber(value);
+    if (parsed !== null && parsed > 0) {
+        // If this looks like seconds, convert to milliseconds.
+        if (parsed < 1e12) return parsed * 1000;
+        return parsed;
+    }
+
+    const dateParsed = Date.parse(String(value || ''));
+    if (Number.isFinite(dateParsed) && dateParsed > 0) {
+        return dateParsed;
+    }
+
+    return null;
+}
+
+function getMimeTypeFromImagePath(filePath) {
+    const ext = path.extname(String(filePath || '')).toLowerCase();
+    if (ext === '.png') return 'image/png';
+    if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+    if (ext === '.webp') return 'image/webp';
+    if (ext === '.gif') return 'image/gif';
+    if (ext === '.svg') return 'image/svg+xml';
+    return '';
+}
+
+async function readImageAsDataUrl(imagePath) {
+    if (!imagePath) return '';
+    const exists = await fs.pathExists(imagePath);
+    if (!exists) return '';
+
+    const stat = await fs.stat(imagePath);
+    if (!stat.isFile()) return '';
+
+    const mimeType = getMimeTypeFromImagePath(imagePath);
+    if (!mimeType) return '';
+
+    const fileBuffer = await fs.readFile(imagePath);
+    return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+}
+
+function normalizeExternalIconCandidate(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    if (raw.startsWith('data:')) return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    const cleaned = raw
+        .replace(/^file:\/\//i, '')
+        .replace(/^\\?\/+/, '')
+        .replace(/^\.\//, '');
+
+    return cleaned;
+}
+
+async function resolveExternalProfileIcon(source, profileDir, profile) {
+    const normalizedSource = String(source || '').toLowerCase();
+    const candidates = [];
+    const addCandidate = (value) => {
+        const candidate = normalizeExternalIconCandidate(value);
+        if (candidate) candidates.push(candidate);
+    };
+
+    if (normalizedSource === 'modrinth') {
+        addCandidate(profile?.icon_path);
+        addCandidate(profile?.iconPath);
+        addCandidate(profile?.icon_url);
+        addCandidate(profile?.iconUrl);
+        addCandidate(profile?.icon);
+    }
+
+    if (normalizedSource === 'curseforge') {
+        addCandidate(profile?.profileImagePath);
+        addCandidate(profile?.installedModpack?.thumbnailUrl);
+        addCandidate(profile?.manifest?.thumbnailUrl);
+        addCandidate(profile?.thumbnailUrl);
+    }
+
+    const localIconNames = [
+        'icon.png',
+        'icon.jpg',
+        'icon.jpeg',
+        'icon.webp',
+        'pack.png',
+        'pack.jpg',
+        'pack.jpeg',
+        'pack.webp',
+        'logo.png',
+        'logo.jpg',
+        'logo.jpeg',
+        'logo.webp'
+    ];
+
+    for (const fileName of localIconNames) {
+        candidates.push(path.join(profileDir, fileName));
+    }
+
+    for (const candidate of candidates) {
+        if (candidate.startsWith('data:') || /^https?:\/\//i.test(candidate)) {
+            return candidate;
+        }
+
+        const candidatePath = path.isAbsolute(candidate)
+            ? candidate
+            : path.join(profileDir, candidate);
+
+        try {
+            const dataUrl = await readImageAsDataUrl(candidatePath);
+            if (dataUrl) {
+                return dataUrl;
+            }
+        } catch (e) {
+            // Ignore icon read errors and continue with next candidate.
+        }
+    }
+
+    return '';
+}
+
+function getExternalLauncherRoots() {
+    if (process.platform !== 'win32') {
+        return [];
+    }
+
+    const homeDir = os.homedir();
+    const roamingDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+
+    const roots = [
+        {
+            source: 'modrinth',
+            baseDir: path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'profiles')
+        },
+        {
+            source: 'modrinth',
+            baseDir: path.join(roamingDir, 'com.modrinth.theseus', 'profiles')
+        },
+        {
+            source: 'curseforge',
+            baseDir: path.join(homeDir, 'curseforge', 'minecraft', 'Instances')
+        }
+    ];
+
+    return roots;
+}
+
+async function readExternalProfileConfig(source, profileDir, fallbackName) {
+    const fallbackConfig = {
+        name: fallbackName,
+        version: '',
+        loader: '',
+        instanceType: 'external',
+        externalSource: source,
+        externalManaged: true,
+        externalPath: profileDir
+    };
+
+    if (source === 'modrinth') {
+        const profilePath = path.join(profileDir, 'profile.json');
+        let profile = null;
+
+        const profileExists = await fs.pathExists(profilePath);
+
+        if (profileExists) {
+            try {
+                profile = await fs.readJson(profilePath);
+            } catch (e) {
+                console.error(`[readExternalProfileConfig:modrinth] Error reading profile.json:`, e.message);
+            }
+        }
+
+        const hasFabricMarker = await fs.pathExists(path.join(profileDir, '.fabric'));
+        const hasQuiltMarker = await fs.pathExists(path.join(profileDir, '.quilt'));
+        const metadata = profile && typeof profile.metadata === 'object' ? profile.metadata : {};
+
+        const inferredLoaderFromName = inferLoaderFromName(fallbackName);
+        const loaderFromProfile = normalizeLoaderFromString(
+            profile?.loader ||
+            profile?.loader_id ||
+            profile?.loaderId ||
+            metadata?.loader ||
+            metadata?.loader_id ||
+            metadata?.loaderId ||
+            metadata?.loader_version?.id ||
+            metadata?.loaderVersion?.id ||
+            metadata?.loader_version ||
+            metadata?.loaderVersion ||
+            ''
+        );
+
+        let detectedLoader = '';
+        if (hasFabricMarker) {
+            detectedLoader = 'fabric';
+        } else if (hasQuiltMarker) {
+            detectedLoader = 'quilt';
+        } else if (loaderFromProfile) {
+            detectedLoader = loaderFromProfile;
+        } else if (inferredLoaderFromName) {
+            detectedLoader = inferredLoaderFromName;
+        } else {
+            // If absolutely nothing found, assume vanilla
+            detectedLoader = 'vanilla';
+        }
+
+        let version = String(
+            profile?.game_version ||
+            profile?.gameVersion ||
+            profile?.minecraft_version ||
+            profile?.minecraftVersion ||
+            metadata?.game_version ||
+            metadata?.gameVersion ||
+            metadata?.minecraft_version ||
+            metadata?.minecraftVersion ||
+            inferVersionFromName(fallbackName) ||
+            ''
+        ).trim();
+
+        if (!version) {
+            version = await inferVersionFromProfileDirectory(profileDir);
+        }
+
+        if (!version) {
+            version = await inferVersionFromProfileLogs(profileDir);
+        }
+
+        const playtime = parseFiniteNumber(
+            profile?.playtime ||
+            profile?.time_played ||
+            profile?.timePlayed ||
+            profile?.submitted_time_played ||
+            profile?.submittedTimePlayed ||
+            metadata?.playtime ||
+            metadata?.time_played ||
+            metadata?.timePlayed ||
+            profile?.recent_time_played ||
+            profile?.recentTimePlayed ||
+            0
+        ) || 0;
+
+        const lastPlayed = normalizeTimestampMs(
+            profile?.last_played ||
+            profile?.lastPlayed ||
+            profile?.last_played_at ||
+            profile?.lastPlayedAt ||
+            profile?.date_modified ||
+            profile?.dateModified ||
+            metadata?.last_played ||
+            metadata?.lastPlayed ||
+            metadata?.last_played_at ||
+            metadata?.lastPlayedAt ||
+            metadata?.date_modified ||
+            metadata?.dateModified ||
+            null
+        );
+
+        let resolvedPlaytime = playtime;
+        if (resolvedPlaytime <= 0) {
+            resolvedPlaytime = await inferPlaytimeFromWorldStats(profileDir);
+        }
+
+        let resolvedLastPlayed = lastPlayed;
+        if (!resolvedLastPlayed) {
+            resolvedLastPlayed = await inferLastPlayedFromProfileActivity(profileDir);
+        }
+
+        const name = String(profile?.name || fallbackName || '').trim() || fallbackName;
+        const icon = await resolveExternalProfileIcon(source, profileDir, profile);
+
+        // IMPORTANT: Return config even if profile.json doesn't exist
+        return {
+            ...fallbackConfig,
+            name: name,
+            version: version,
+            loader: detectedLoader,
+            playtime: resolvedPlaytime,
+            lastPlayed: resolvedLastPlayed,
+            icon: icon || null
+        };
+    }
+
+    if (source === 'curseforge') {
+        const instancePath = path.join(profileDir, 'minecraftinstance.json');
+
+        const exists = await fs.pathExists(instancePath);
+
+        if (!exists) {
+            return null;
+        }
+
+        let profile;
+        try {
+            profile = await fs.readJson(instancePath);
+        } catch (e) {
+            console.error(`[readExternalProfileConfig:curseforge] Error reading JSON:`, e.message);
+            return null;
+        }
+
+        // Extract loader - safely handle baseModLoader as object
+        let loaderValue = '';
+        if (profile?.baseModLoader) {
+            // Try .name first - most reliable
+            if (profile.baseModLoader.name) {
+                loaderValue = profile.baseModLoader.name;
+            }
+            // Try .forgeVersion for forge
+            else if (profile.baseModLoader.forgeVersion) {
+                loaderValue = `forge-${profile.baseModLoader.forgeVersion}`;
+            }
+            // Try .id as fallback
+            else if (profile.baseModLoader.id) {
+                loaderValue = profile.baseModLoader.id;
+            }
+        }
+
+        // Fallback to other fields
+        if (!loaderValue) {
+            loaderValue = profile?.modLoader?.name || profile?.modLoader || profile?.modloader || '';
+        }
+
+        const minecraftVersion = String(profile?.minecraftVersion || profile?.gameVersion || profile?.baseModLoader?.minecraftVersion || '').trim();
+
+        const normalizedLoader = normalizeLoaderFromString(loaderValue);
+        const icon = await resolveExternalProfileIcon(source, profileDir, profile);
+
+        return {
+            ...fallbackConfig,
+            name: String(profile?.name || fallbackName || '').trim() || fallbackName,
+            version: minecraftVersion,
+            loader: String(normalizedLoader || '').trim(),  // Force to string
+            icon: icon || null
+        };
+    }
+
+    return null;
+}
+
+async function discoverExternalProfiles() {
+    const results = [];
+
+    const launcherRoots = getExternalLauncherRoots();
+
+    for (const launcherRoot of launcherRoots) {
+        const { source, baseDir } = launcherRoot;
+
+        const dirExists = await fs.pathExists(baseDir);
+
+        if (!dirExists) {
+            continue;
+        }
+
+        let entries = [];
+        try {
+            entries = await fs.readdir(baseDir, { withFileTypes: true });
+        } catch (err) {
+            console.error(`[discoverExternalProfiles] Error reading directory:`, err.message);
+            continue;
+        }
+
+        let dirCount = 0;
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            dirCount++;
+
+            const profileDir = path.join(baseDir, entry.name);
+
+            try {
+                const externalConfig = await readExternalProfileConfig(source, profileDir, entry.name);
+                if (externalConfig) {
+                    results.push(externalConfig);
+                }
+            } catch (error) {
+                console.error(`[discoverExternalProfiles] Error reading ${source} profile ${entry.name}:`, error.message);
+            }
+        }
+    }
+    return results;
+}
+
+async function getMergedInstances() {
+    instancesDir = resolvePrimaryInstancesDir();
+    const baseDirs = getAllInstanceDirsSync();
+    const instancesByName = new Map();
+    const folderMeta = await readInstanceFolderMeta();
+
+    for (const baseDir of baseDirs) {
+        if (!await fs.pathExists(baseDir)) continue;
+
+        const dirs = await fs.readdir(baseDir);
+        for (const dir of dirs) {
+            const configPath = path.join(baseDir, dir, 'instance.json');
+            if (!await fs.pathExists(configPath)) continue;
+
+            try {
+                const config = await fs.readJson(configPath);
+                const instanceType = typeof config?.instanceType === 'string' ? config.instanceType.trim().toLowerCase() : '';
+                const loader = String(config?.loader || '').trim().toLowerCase();
+                const instanceName = String(config?.name || dir).trim().toLowerCase();
+                if (!instanceType && loader === 'fabric' && instanceName.startsWith('client ')) {
+                    config.instanceType = 'open-client';
+                }
+
+                const key = config?.name || dir;
+                const folderMetaKey = buildInstanceFolderMetaKey(config);
+                const metaFolderPath = normalizeFolderPathValue(folderMeta[folderMetaKey]);
+                const configFolderPath = normalizeFolderPathValue(config?.folderPath);
+                if (configFolderPath) {
+                    config.folderPath = configFolderPath;
+                } else if (metaFolderPath) {
+                    config.folderPath = metaFolderPath;
+                }
+                if (!instancesByName.has(key)) {
+                    instancesByName.set(key, config);
+                }
+            } catch (e) {
+                console.error(`Failed to read instance config for ${dir}:`, e);
+            }
+        }
+    }
+
+    const externalProfiles = await discoverExternalProfiles();
+    for (const profile of externalProfiles) {
+        const baseName = String(profile?.name || '').trim();
+        if (!baseName) continue;
+
+        const source = String(profile?.externalSource || 'external').toLowerCase();
+        const sourceLabel = source === 'modrinth'
+            ? 'Modrinth'
+            : source === 'curseforge'
+                ? 'CurseForge'
+                : 'External';
+
+        let displayName = baseName;
+        let suffixIndex = 1;
+        while (instancesByName.has(displayName)) {
+            const suffix = suffixIndex === 1 ? ` (${sourceLabel})` : ` (${sourceLabel} ${suffixIndex})`;
+            displayName = `${baseName}${suffix}`;
+            suffixIndex += 1;
+        }
+
+        instancesByName.set(displayName, {
+            ...profile,
+            name: displayName,
+            folderPath: normalizeFolderPathValue(folderMeta[buildInstanceFolderMetaKey({
+                ...profile,
+                name: displayName
+            })])
+        });
+    }
+
+    return Array.from(instancesByName.values());
+}
 
 async function calculateSha1(filePath) {
     return new Promise((resolve, reject) => {
@@ -86,15 +795,42 @@ const isCurseForgeAutoInstallLoaderCompatible = (file, loader) => {
     return aliases.some(alias => gameVersions.includes(alias));
 };
 
-const isCurseForgeAutoInstallVersionCompatible = (file, mcVersion) => {
-    const normalizedVersion = String(mcVersion || '').toLowerCase();
-    if (!normalizedVersion) return true;
+const buildGameVersionAliases = (mcVersion) => {
+    const value = String(mcVersion || '').trim();
+    if (!value) return [];
+
+    const aliases = [];
+    const addAlias = (entry) => {
+        const normalized = String(entry || '').trim();
+        if (!normalized) return;
+        if (!aliases.includes(normalized)) aliases.push(normalized);
+    };
+
+    addAlias(value);
+
+    if (/^\d+\.\d+(?:\.\d+)?$/.test(value)) {
+        if (value.startsWith('1.')) {
+            addAlias(value.slice(2));
+        } else {
+            addAlias(`1.${value}`);
+        }
+    }
+
+    return aliases;
+};
+
+const isCurseForgeAutoInstallVersionCompatible = (file, mcVersionOrVersions) => {
+    const expectedVersions = Array.isArray(mcVersionOrVersions)
+        ? mcVersionOrVersions.map((entry) => String(entry || '').toLowerCase()).filter(Boolean)
+        : buildGameVersionAliases(mcVersionOrVersions).map((entry) => entry.toLowerCase()).filter(Boolean);
+
+    if (expectedVersions.length === 0) return true;
 
     const gameVersions = Array.isArray(file?.gameVersions)
         ? file.gameVersions.map((entry) => String(entry || '').toLowerCase())
         : [];
 
-    return gameVersions.includes(normalizedVersion);
+    return expectedVersions.some((entry) => gameVersions.includes(entry));
 };
 async function downloadFile(url, destPath, signal = null, retries = 1) {
     let lastError;
@@ -110,6 +846,152 @@ async function downloadFile(url, destPath, signal = null, retries = 1) {
         }
     }
     throw lastError;
+}
+
+async function resolveAssetIndexMetadata(instanceDir, versionId, fallbackVersion = '') {
+    const queue = [];
+    const visited = new Set();
+
+    if (versionId) queue.push(String(versionId).trim());
+    if (fallbackVersion && fallbackVersion !== versionId) queue.push(String(fallbackVersion).trim());
+
+    while (queue.length > 0) {
+        const current = String(queue.shift() || '').trim();
+        if (!current || visited.has(current)) continue;
+        visited.add(current);
+
+        const currentJsonPath = path.join(instanceDir, 'versions', current, `${current}.json`);
+        if (!await fs.pathExists(currentJsonPath)) continue;
+
+        let versionJson;
+        try {
+            versionJson = await fs.readJson(currentJsonPath);
+        } catch {
+            continue;
+        }
+
+        if (versionJson?.assetIndex) {
+            const assetIndex = versionJson.assetIndex;
+            const id = String(assetIndex.id || versionJson.assets || '').trim();
+            const url = String(assetIndex.url || '').trim();
+            const sha1 = String(assetIndex.sha1 || '').trim();
+            const size = Number(assetIndex.size || 0);
+
+            if (id) {
+                return { id, url, sha1, size };
+            }
+        }
+
+        const assetsId = String(versionJson?.assets || '').trim();
+        if (assetsId) {
+            return { id: assetsId, url: '', sha1: '', size: 0 };
+        }
+
+        const inherited = String(versionJson?.inheritsFrom || '').trim();
+        if (inherited && !visited.has(inherited)) {
+            queue.push(inherited);
+        }
+    }
+
+    return null;
+}
+
+async function syncMinecraftAssets(instanceDir, assetRoot, versionId, fallbackVersion, onProgress, logCallback, isAborted) {
+    const log = (message) => {
+        if (typeof logCallback === 'function') {
+            logCallback(message);
+        }
+    };
+
+    const progress = (value, status) => {
+        if (typeof onProgress === 'function') {
+            onProgress(value, status);
+        }
+    };
+
+    const assetMeta = await resolveAssetIndexMetadata(instanceDir, versionId, fallbackVersion);
+    if (!assetMeta?.id) {
+        log('Asset sync skipped: no asset index metadata found.');
+        return;
+    }
+
+    const indexesDir = path.join(assetRoot, 'indexes');
+    const objectsDir = path.join(assetRoot, 'objects');
+    await fs.ensureDir(indexesDir);
+    await fs.ensureDir(objectsDir);
+
+    const indexPath = path.join(indexesDir, `${assetMeta.id}.json`);
+    const indexUrl = assetMeta.url || `https://resources.download.minecraft.net/indexes/${assetMeta.id}.json`;
+    let hasValidIndex = await fs.pathExists(indexPath);
+
+    if (hasValidIndex && assetMeta.sha1) {
+        const currentSha1 = await calculateSha1(indexPath).catch(() => '');
+        if (!currentSha1 || currentSha1.toLowerCase() !== assetMeta.sha1.toLowerCase()) {
+            hasValidIndex = false;
+        }
+    }
+
+    if (!hasValidIndex) {
+        log(`Downloading asset index ${assetMeta.id}...`);
+        await downloadFile(indexUrl, indexPath);
+    }
+
+    let indexJson;
+    try {
+        indexJson = await fs.readJson(indexPath);
+    } catch {
+        throw new Error(`Failed to read asset index ${assetMeta.id}`);
+    }
+
+    const objects = Object.values(indexJson?.objects || {});
+    if (objects.length === 0) {
+        log(`Asset index ${assetMeta.id} contains no downloadable objects.`);
+        return;
+    }
+
+    let completed = 0;
+    let downloaded = 0;
+    const total = objects.length;
+
+    for (const entry of objects) {
+        if (typeof isAborted === 'function' && isAborted()) break;
+
+        const hash = String(entry?.hash || '').trim();
+        const size = Number(entry?.size || 0);
+        if (!hash || hash.length < 2) {
+            completed += 1;
+            continue;
+        }
+
+        const prefix = hash.slice(0, 2);
+        const objectPath = path.join(objectsDir, prefix, hash);
+        let exists = await fs.pathExists(objectPath);
+
+        if (exists && size > 0) {
+            try {
+                const stat = await fs.stat(objectPath);
+                if (!stat.isFile() || stat.size !== size) {
+                    exists = false;
+                }
+            } catch {
+                exists = false;
+            }
+        }
+
+        if (!exists) {
+            await fs.ensureDir(path.dirname(objectPath));
+            await downloadFile(`https://resources.download.minecraft.net/${prefix}/${hash}`, objectPath);
+            downloaded += 1;
+        }
+
+        completed += 1;
+        if (completed % 100 === 0 || completed === total) {
+            const percentage = 70 + Math.round((completed / total) * 10);
+            progress(percentage, `Syncing game assets (${completed}/${total})...`);
+        }
+    }
+
+    log(`Asset sync finished: ${downloaded} downloaded, ${total - downloaded} already present.`);
 }
 
 async function getFolderSize(directory) {
@@ -421,7 +1303,8 @@ function sanitizeInstanceConfig(config) {
     const allowedKeys = [
         'name', 'version', 'loader', 'loaderVersion', 'versionId', 'icon',
         'created', 'playtime', 'lastPlayed', 'status', 'imported',
-        'javaPath', 'minMemory', 'maxMemory', 'resolutionWidth', 'resolutionHeight'
+        'javaPath', 'minMemory', 'maxMemory', 'resolutionWidth', 'resolutionHeight',
+        'folderPath'
     ];
     const cleanConfig = {};
     for (const key of allowedKeys) {
@@ -437,8 +1320,19 @@ module.exports = (ipcMain, win) => {
 
         if (!appData) {
             appData = app.getPath('userData');
-            instancesDir = path.join(appData, 'instances');
+            instancesDir = resolvePrimaryInstancesDir();
             globalBackupsDir = path.join(appData, 'backups');
+
+            const migration = migrateLegacyInstancesToPrimarySync();
+            instancesDir = migration.primaryDir;
+
+            if (migration.migrated.length > 0) {
+                console.log('[Instances] Migrated legacy instances:', migration.migrated);
+            }
+            if (migration.skipped.length > 0) {
+                console.log('[Instances] Skipped legacy instance migrations:', migration.skipped);
+            }
+
             console.log('[Instances] Initialized paths:', { appData, instancesDir, globalBackupsDir });
         }
 
@@ -536,7 +1430,7 @@ module.exports = (ipcMain, win) => {
                                         const currentVersion = res.data;
                                         const projectId = currentVersion.project_id;
                                         const loaders = [loader.toLowerCase()];
-                                        const gameVersions = [version];
+                                        const gameVersions = buildGameVersionAliases(version);
 
                                         const searchUrl = `https://api.modrinth.com/v2/project/${projectId}/version?loaders=["${loaders.join('","')}"]&game_versions=["${gameVersions.join('","')}"]`;
                                         const versionsRes = await axios.get(searchUrl);
@@ -571,26 +1465,44 @@ module.exports = (ipcMain, win) => {
 
                     let result = { success: true };
                     const loaderType = (loader || 'vanilla').toLowerCase();
+                    let resolvedMcVersion = String(version || '').trim();
                     sendProgress(10, `Downloading Minecraft ${version} base files (Phase 1/3)...`);
                     try {
                         const versionManifestUrl = 'https://piston-meta.mojang.com/mc/game/version_manifest.json';
                         const manifestPath = path.join(dir, 'version_manifest.json');
                         await downloadFile(versionManifestUrl, manifestPath);
                         const manifest = await fs.readJson(manifestPath);
-                        const versionData = manifest.versions.find(v => v.id === version);
+                        const requestedAliases = buildGameVersionAliases(resolvedMcVersion);
+                        const manifestVersions = Array.isArray(manifest?.versions) ? manifest.versions : [];
+                        let versionData = manifestVersions.find((entry) => requestedAliases.includes(String(entry?.id || '').trim()));
 
                         if (!versionData) throw new Error(`Version ${version} not found in manifest`);
 
+                        resolvedMcVersion = String(versionData.id || resolvedMcVersion || version).trim();
+                        if (resolvedMcVersion !== String(version || '').trim()) {
+                            appendLog(`Resolved Minecraft version alias ${version} -> ${resolvedMcVersion}`);
+                        }
+
+                        const resolvedVersionAliases = buildGameVersionAliases(resolvedMcVersion);
+
                         const versionJsonUrl = versionData.url;
-                        const versionDir = path.join(dir, 'versions', version);
+                        const versionDir = path.join(dir, 'versions', resolvedMcVersion);
                         await fs.ensureDir(versionDir);
-                        const versionJsonPath = path.join(versionDir, `${version}.json`);
+                        const versionJsonPath = path.join(versionDir, `${resolvedMcVersion}.json`);
 
                         await downloadFile(versionJsonUrl, versionJsonPath);
-                        const clientJarPath = path.join(versionDir, `${version}.jar`);
+                        const clientJarPath = path.join(versionDir, `${resolvedMcVersion}.jar`);
                         const versionJson = await fs.readJson(versionJsonPath);
                         await downloadFile(versionJson.downloads.client.url, clientJarPath);
                         await fs.remove(manifestPath);
+
+                        const configPath = path.join(dir, 'instance.json');
+                        const updatedConfig = await fs.readJson(configPath);
+                        updatedConfig.version = resolvedMcVersion;
+                        if (!updatedConfig.versionId || updatedConfig.versionId === version) {
+                            updatedConfig.versionId = resolvedMcVersion;
+                        }
+                        await fs.writeJson(configPath, updatedConfig, { spaces: 4 });
                     } catch (e) {
                         const criticalError = "The instance cannot be started because critical software components could not be downloaded.";
                         appendLog(`CRITICAL ERROR: ${criticalError} Details: ${e.message}`);
@@ -599,10 +1511,10 @@ module.exports = (ipcMain, win) => {
                     if (loaderType !== 'vanilla') {
                         sendProgress(20, `Installing ${loader} loader (Phase 2/3)...`);
                         let targetLoaderVer = existingLoaderVer;
-                        if (loaderType === 'fabric') result = await installFabricLoader(dir, version, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
-                        else if (loaderType === 'quilt') result = await installQuiltLoader(dir, version, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
-                        else if (loaderType === 'forge') result = await installForgeLoader(dir, version, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
-                        else if (loaderType === 'neoforge') result = await installNeoForgeLoader(dir, version, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
+                        if (loaderType === 'fabric') result = await installFabricLoader(dir, resolvedMcVersion, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
+                        else if (loaderType === 'quilt') result = await installQuiltLoader(dir, resolvedMcVersion, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
+                        else if (loaderType === 'forge') result = await installForgeLoader(dir, resolvedMcVersion, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
+                        else if (loaderType === 'neoforge') result = await installNeoForgeLoader(dir, resolvedMcVersion, targetLoaderVer, (p, s) => sendProgress(Math.round(p * 0.1) + 20, s), appendLog);
 
                         if (!result || !result.success) throw new Error(result?.error || `${loader} installation failed`);
                         if (loaderType === 'fabric') {
@@ -612,7 +1524,7 @@ module.exports = (ipcMain, win) => {
                                 const fapiRes = await axios.get(`https://api.modrinth.com/v2/project/${fabricApiId}/version`, {
                                     params: {
                                         loaders: JSON.stringify(['fabric']),
-                                        game_versions: JSON.stringify([version])
+                                        game_versions: JSON.stringify(resolvedVersionAliases)
                                     }
                                 });
 
@@ -624,7 +1536,7 @@ module.exports = (ipcMain, win) => {
                                     const dest = path.join(modsDir, file.filename);
 
                                     if (!await fs.pathExists(dest)) {
-                                        appendLog(`Downloading Fabric API compatible with ${version}...`);
+                                        appendLog(`Downloading Fabric API compatible with ${resolvedMcVersion}...`);
                                         await downloadFile(file.url, dest);
                                         appendLog(`Fabric API installed: ${file.filename}`);
                                     }
@@ -649,7 +1561,7 @@ module.exports = (ipcMain, win) => {
                         await fs.ensureDir(assetRoot); await fs.ensureDir(librariesRoot);
 
                         const currentConfig = await fs.readJson(path.join(dir, 'instance.json'));
-                        const vId = currentConfig.versionId || version;
+                        const vId = currentConfig.versionId || resolvedMcVersion;
                         const vJsonPath = path.join(dir, 'versions', vId, `${vId}.json`);
                         const vJson = await fs.readJson(vJsonPath);
 
@@ -668,6 +1580,18 @@ module.exports = (ipcMain, win) => {
                             }
                             downloaded++;
                             sendProgress(Math.round(baseProgressStart + (downloaded / libraries.length) * 30), `Syncing libraries...`);
+                        }
+
+                        if (!task.aborted) {
+                            await syncMinecraftAssets(
+                                dir,
+                                assetRoot,
+                                vId,
+                                resolvedMcVersion,
+                                (p, s) => sendProgress(p, s),
+                                appendLog,
+                                () => task.aborted
+                            );
                         }
                     } catch (e) { appendLog(`Library sync warning: ${e.message}`); }
                     if (modsToInstall.length > 0) {
@@ -741,7 +1665,7 @@ module.exports = (ipcMain, win) => {
                                         {
                                             params: {
                                                 loaders: JSON.stringify([loaderName]),
-                                                game_versions: JSON.stringify([version])
+                                                game_versions: JSON.stringify(resolvedVersionAliases)
                                             }
                                         }
                                     );
@@ -774,7 +1698,7 @@ module.exports = (ipcMain, win) => {
                                                     {
                                                         params: {
                                                             loaders: JSON.stringify([loaderName]),
-                                                            game_versions: JSON.stringify([version])
+                                                            game_versions: JSON.stringify(resolvedVersionAliases)
                                                         }
                                                     }
                                                 );
@@ -809,7 +1733,7 @@ module.exports = (ipcMain, win) => {
                                                     {
                                                         params: {
                                                             loaders: JSON.stringify([loaderName]),
-                                                            game_versions: JSON.stringify([version])
+                                                            game_versions: JSON.stringify(resolvedVersionAliases)
                                                         }
                                                     }
                                                 );
@@ -927,14 +1851,14 @@ module.exports = (ipcMain, win) => {
                                         const allFiles = Array.isArray(filesRes?.data?.data) ? filesRes.data.data : [];
                                         const compatibleFiles = allFiles
                                             .filter(file => isCurseForgeAutoInstallLoaderCompatible(file, loaderName))
-                                            .filter(file => isCurseForgeAutoInstallVersionCompatible(file, version))
+                                            .filter(file => isCurseForgeAutoInstallVersionCompatible(file, resolvedVersionAliases))
                                             .sort((left, right) => new Date(right?.fileDate || 0).getTime() - new Date(left?.fileDate || 0).getTime());
 
                                         const selectedFile = compatibleFiles[0] || allFiles
                                             .sort((left, right) => new Date(right?.fileDate || 0).getTime() - new Date(left?.fileDate || 0).getTime())[0];
 
                                         if (!selectedFile || !selectedFile.downloadUrl) {
-                                            appendLog(`CurseForge auto install mod ${projectId} not available for ${loaderName} ${version} - skipping`);
+                                            appendLog(`CurseForge auto install mod ${projectId} not available for ${loaderName} ${resolvedMcVersion} - skipping`);
                                             skippedCount++;
                                             continue;
                                         }
@@ -975,7 +1899,7 @@ module.exports = (ipcMain, win) => {
                                         {
                                             params: {
                                                 loaders: JSON.stringify([loaderName]),
-                                                game_versions: JSON.stringify([version])
+                                                game_versions: JSON.stringify(resolvedVersionAliases)
                                             }
                                         }
                                     );
@@ -1000,7 +1924,7 @@ module.exports = (ipcMain, win) => {
                                             installedCount++;
                                         }
                                     } else {
-                                        appendLog(`Auto install mod ${projectId} not available for ${loaderName} ${version} - skipping`);
+                                        appendLog(`Auto install mod ${projectId} not available for ${loaderName} ${resolvedMcVersion} - skipping`);
                                         skippedCount++;
                                     }
                                 } catch (e) {
@@ -1404,8 +2328,15 @@ module.exports = (ipcMain, win) => {
         ipcMain.handle('instance:get-resourcepacks', async (_, instanceName) => {
             console.log(`[Instances:RP] Getting resource packs for: ${instanceName}`);
             try {
-                const rpDir = path.join(instancesDir, instanceName, 'resourcepacks');
-                await fs.ensureDir(rpDir);
+                const { baseDir } = await resolveInstanceBaseDir(instanceName);
+                if (!baseDir || !await fs.pathExists(baseDir)) {
+                    return { success: true, packs: [] };
+                }
+
+                const rpDir = path.join(baseDir, 'resourcepacks');
+                if (!await fs.pathExists(rpDir)) {
+                    return { success: true, packs: [] };
+                }
 
                 const modCachePath = path.join(appData, 'mod_cache.json');
                 let modCache = {};
@@ -1500,8 +2431,15 @@ module.exports = (ipcMain, win) => {
         ipcMain.handle('instance:get-shaders', async (_, instanceName) => {
             console.log(`[Instances:Shaders] Getting shaders for: ${instanceName}`);
             try {
-                const shaderDir = path.join(instancesDir, instanceName, 'shaderpacks');
-                await fs.ensureDir(shaderDir);
+                const { baseDir } = await resolveInstanceBaseDir(instanceName);
+                if (!baseDir || !await fs.pathExists(baseDir)) {
+                    return { success: true, shaders: [] };
+                }
+
+                const shaderDir = path.join(baseDir, 'shaderpacks');
+                if (!await fs.pathExists(shaderDir)) {
+                    return { success: true, shaders: [] };
+                }
 
                 const modCachePath = path.join(appData, 'mod_cache.json');
                 let modCache = {};
@@ -1591,25 +2529,9 @@ module.exports = (ipcMain, win) => {
                 return { success: false, error: e.message };
             }
         });
-        console.log('[Instances] Checkpoint 3: About to register instance:get-all');
-
         ipcMain.handle('instance:get-all', async () => {
             try {
-                if (!await fs.pathExists(instancesDir)) return [];
-                const dirs = await fs.readdir(instancesDir);
-                const instances = [];
-                for (const dir of dirs) {
-                    const configPath = path.join(instancesDir, dir, 'instance.json');
-                    if (await fs.pathExists(configPath)) {
-                        try {
-                            const config = await fs.readJson(configPath);
-                            instances.push(config);
-                        } catch (e) {
-                            console.error(`Failed to read instance config for ${dir}:`, e);
-                        }
-                    }
-                }
-                return instances;
+                return await getMergedInstances();
             } catch (e) {
                 console.error('Failed to list instances:', e);
                 return [];
@@ -1945,8 +2867,57 @@ module.exports = (ipcMain, win) => {
             }
         });
 
-        ipcMain.handle('instance:create', async (_, { name, version, loader, loaderVersion, icon }) => {
+        ipcMain.handle('instance:upload-log', async (_, instanceName, filename = 'latest.log') => {
             try {
+                const instanceDir = path.join(instancesDir, instanceName);
+                const logPath = filename === 'install.log'
+                    ? path.join(instanceDir, filename)
+                    : path.join(instanceDir, 'logs', filename);
+
+                if (!await fs.pathExists(logPath)) {
+                    return { success: false, error: 'Log file not found' };
+                }
+
+                let content = '';
+                if (filename.endsWith('.gz')) {
+                    const buffer = await fs.readFile(logPath);
+                    const decompressed = await gunzip(buffer);
+                    content = decompressed.toString('utf8');
+                } else {
+                    content = await fs.readFile(logPath, 'utf8');
+                }
+
+                if (!content || !content.trim()) {
+                    return { success: false, error: 'Log file is empty' };
+                }
+
+                const form = new URLSearchParams();
+                form.append('content', content);
+
+                const response = await axios.post('https://api.mclo.gs/1/log', form.toString(), {
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    timeout: 15000
+                });
+
+                if (response?.data?.success && response?.data?.url) {
+                    return { success: true, url: response.data.url };
+                }
+
+                return {
+                    success: false,
+                    error: response?.data?.error || 'Upload to mclo.gs failed'
+                };
+            } catch (e) {
+                console.error('Error uploading log to mclo.gs:', e);
+                return { success: false, error: e.message };
+            }
+        });
+
+        ipcMain.handle('instance:create', async (_, { name, version, loader, loaderVersion, icon, options }) => {
+            try {
+                instancesDir = resolvePrimaryInstancesDir();
+                await fs.ensureDir(instancesDir);
+
                 let finalName = name;
                 let dir = path.join(instancesDir, finalName);
                 let counter = 1;
@@ -1978,6 +2949,8 @@ module.exports = (ipcMain, win) => {
                 } catch (e) {
                     console.error('Failed to copy settings:', e);
                 }
+                const instanceType = typeof options?.instanceType === 'string' ? options.instanceType.trim() : '';
+                const folderPath = typeof options?.folderPath === 'string' ? options.folderPath.trim() : '';
                 const config = {
                     name: finalName,
                     version,
@@ -1990,6 +2963,13 @@ module.exports = (ipcMain, win) => {
                     lastPlayed: null,
                     status: 'installing'
                 };
+
+                if (instanceType) {
+                    config.instanceType = instanceType;
+                }
+                if (folderPath) {
+                    config.folderPath = folderPath;
+                }
 
                 await fs.writeJson(path.join(dir, 'instance.json'), config, { spaces: 4 });
                 await fs.writeFile(path.join(dir, 'playtime.txt'), '0');
@@ -2189,16 +3169,64 @@ module.exports = (ipcMain, win) => {
             }
         });
 
+        ipcMain.handle('instance:set-folder-path', async (_, instanceRef, folderPath) => {
+            try {
+                const normalizedFolderPath = normalizeFolderPathValue(folderPath);
+                const safeRef = instanceRef && typeof instanceRef === 'object'
+                    ? instanceRef
+                    : { name: String(instanceRef || '') };
+                const localConfigPath = path.join(instancesDir, String(safeRef?.name || ''), 'instance.json');
+
+                if (await fs.pathExists(localConfigPath)) {
+                    const current = await fs.readJson(localConfigPath);
+                    if (normalizedFolderPath) {
+                        current.folderPath = normalizedFolderPath;
+                    } else {
+                        delete current.folderPath;
+                    }
+                    await fs.writeJson(localConfigPath, current, { spaces: 4 });
+                    return { success: true, mode: 'local-config' };
+                }
+
+                const meta = await readInstanceFolderMeta();
+                const metaKey = buildInstanceFolderMetaKey(safeRef);
+                if (!metaKey || metaKey.endsWith(':')) {
+                    return { success: false, error: 'Invalid instance reference' };
+                }
+
+                if (normalizedFolderPath) {
+                    meta[metaKey] = normalizedFolderPath;
+                } else {
+                    delete meta[metaKey];
+                }
+
+                await writeInstanceFolderMeta(meta);
+                return { success: true, mode: 'dashboard-meta' };
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        });
+
         ipcMain.handle('instance:rename', async (_, oldName, newName) => {
             try {
                 console.log(`Renaming instance: "${oldName}" -> "${newName}"`);
                 console.log(`Instances dir: ${instancesDir}`);
 
-                if (!newName || newName.trim() === '') {
+                const trimmedNewName = String(newName || '').trim();
+                if (!trimmedNewName) {
                     return { success: false, error: 'New name cannot be empty' };
                 }
+
+                if (/[\\/]/.test(trimmedNewName) || trimmedNewName === '.' || trimmedNewName === '..') {
+                    return { success: false, error: 'Invalid instance name' };
+                }
+
+                if (String(oldName || '') === trimmedNewName) {
+                    return { success: true };
+                }
+
                 const oldPath = path.join(instancesDir, oldName);
-                const newPath = path.join(instancesDir, newName);
+                const newPath = path.join(instancesDir, trimmedNewName);
 
                 console.log(`Old path: ${oldPath}`);
                 console.log(`Exists: ${await fs.pathExists(oldPath)}`);
@@ -2209,11 +3237,27 @@ module.exports = (ipcMain, win) => {
                 if (await fs.pathExists(newPath)) {
                     return { success: false, error: 'An instance with that name already exists' };
                 }
+
                 await fs.rename(oldPath, newPath);
-                const configPath = path.join(newPath, 'instance.json');
-                const config = await fs.readJson(configPath);
-                config.name = newName;
-                await fs.writeJson(configPath, config, { spaces: 4 });
+
+                let configPath = path.join(newPath, 'instance.json');
+                if (!await fs.pathExists(configPath)) {
+                    // Some packs may contain a differently-cased filename (works on Windows, fails on Linux).
+                    const dirEntries = await fs.readdir(newPath, { withFileTypes: true });
+                    const matched = dirEntries.find((entry) => {
+                        return entry.isFile() && String(entry.name || '').toLowerCase() === 'instance.json';
+                    });
+                    if (matched) {
+                        configPath = path.join(newPath, matched.name);
+                    }
+                }
+
+                if (await fs.pathExists(configPath)) {
+                    const rawConfig = await fs.readJson(configPath);
+                    const config = sanitizeInstanceConfig(rawConfig);
+                    config.name = trimmedNewName;
+                    await fs.writeJson(configPath, config, { spaces: 4 });
+                }
 
                 return { success: true };
             } catch (e) {
@@ -2222,20 +3266,49 @@ module.exports = (ipcMain, win) => {
         });
 
         ipcMain.handle('instance:duplicate', async (_, instanceName) => {
+            let newName = `${instanceName} (Copy)`;
             try {
                 const sourcePath = path.join(instancesDir, instanceName);
                 if (!await fs.pathExists(sourcePath)) {
                     return { success: false, error: 'Instance not found' };
                 }
-                let newName = `${instanceName} (Copy)`;
                 let counter = 2;
                 while (await fs.pathExists(path.join(instancesDir, newName))) {
                     newName = `${instanceName} (Copy ${counter})`;
                     counter++;
                 }
 
+                // Count total items for progress tracking
+                let totalItems = 0;
+                let copiedItems = 0;
+                const countEntries = async (dir) => {
+                    const entries = await fs.readdir(dir, { withFileTypes: true });
+                    for (const entry of entries) {
+                        totalItems++;
+                        if (entry.isDirectory()) {
+                            await countEntries(path.join(dir, entry.name));
+                        }
+                    }
+                };
+                await countEntries(sourcePath);
+                if (totalItems === 0) totalItems = 1;
+
+                if (win && win.webContents) {
+                    win.webContents.send('install:progress', { instanceName: newName, progress: 1, status: 'Duplicating...', type: 'duplicate' });
+                }
+
                 const destPath = path.join(instancesDir, newName);
-                await fs.copy(sourcePath, destPath);
+                await fs.copy(sourcePath, destPath, {
+                    filter: (src) => {
+                        copiedItems++;
+                        const progress = Math.min(99, Math.floor((copiedItems / totalItems) * 99));
+                        if (win && win.webContents) {
+                            win.webContents.send('install:progress', { instanceName: newName, progress, status: 'Duplicating...', type: 'duplicate' });
+                        }
+                        return true;
+                    }
+                });
+
                 const configPath = path.join(destPath, 'instance.json');
                 if (await fs.pathExists(configPath)) {
                     const rawConfig = await fs.readJson(configPath);
@@ -2247,8 +3320,15 @@ module.exports = (ipcMain, win) => {
                     await fs.writeJson(configPath, config, { spaces: 4 });
                 }
 
+                if (win && win.webContents) {
+                    win.webContents.send('install:progress', { instanceName: newName, progress: 100, status: 'Done', type: 'duplicate' });
+                }
+
                 return { success: true, newName };
             } catch (e) {
+                if (win && win.webContents) {
+                    win.webContents.send('install:progress', { instanceName: newName, progress: 100, status: 'Error', type: 'duplicate' });
+                }
                 return { success: false, error: e.message };
             }
         });
@@ -2263,12 +3343,30 @@ module.exports = (ipcMain, win) => {
         });
 
         ipcMain.handle('instance:open-folder', async (_, instanceName) => {
-            const instancePath = path.join(instancesDir, instanceName);
-            if (await fs.pathExists(instancePath)) {
-                await shell.openPath(instancePath);
-                return { success: true };
+            try {
+                const mergedInstances = await getMergedInstances();
+                const normalizedName = String(instanceName || '').trim().toLowerCase();
+                const externalInstance = mergedInstances.find((entry) => {
+                    const entryName = String(entry?.name || '').trim().toLowerCase();
+                    return entryName === normalizedName && String(entry?.instanceType || '').toLowerCase() === 'external';
+                });
+
+                const externalPath = String(externalInstance?.externalPath || '').trim();
+                if (externalPath && await fs.pathExists(externalPath)) {
+                    await shell.openPath(externalPath);
+                    return { success: true };
+                }
+
+                const localInstancePath = path.join(instancesDir, instanceName);
+                if (await fs.pathExists(localInstancePath)) {
+                    await shell.openPath(localInstancePath);
+                    return { success: true };
+                }
+
+                return { success: false, error: 'Instance folder not found' };
+            } catch (e) {
+                return { success: false, error: e.message };
             }
-            return { success: false, error: 'Instance folder not found' };
         });
         ipcMain.handle('instance:delete', async (_, name) => {
             try {
@@ -2307,7 +3405,20 @@ module.exports = (ipcMain, win) => {
         });
         ipcMain.handle('instance:get-mods', async (_, instanceName) => {
             try {
-                const modsDir = path.join(instancesDir, instanceName, 'mods');
+                const mergedInstances = await getMergedInstances();
+                const normalizedName = String(instanceName || '').trim().toLowerCase();
+                const externalInstance = mergedInstances.find((entry) => {
+                    const entryName = String(entry?.name || '').trim().toLowerCase();
+                    return entryName === normalizedName && String(entry?.instanceType || '').toLowerCase() === 'external';
+                });
+
+                const resolvedBaseDir = (() => {
+                    const externalPath = String(externalInstance?.externalPath || '').trim();
+                    if (externalPath) return externalPath;
+                    return path.join(instancesDir, instanceName);
+                })();
+
+                const modsDir = path.join(resolvedBaseDir, 'mods');
                 await fs.ensureDir(modsDir);
                 const modCachePath = path.join(appData, 'mod_cache.json');
                 let modCache = {};
@@ -2477,6 +3588,7 @@ module.exports = (ipcMain, win) => {
                 const configPath = path.join(instancesDir, instanceName, 'instance.json');
                 const config = await fs.readJson(configPath);
                 const mcVersion = config.version;
+                const mcVersionAliases = buildGameVersionAliases(mcVersion);
                 const loader = config.loader ? config.loader.toLowerCase() : 'vanilla';
 
                 const results = await Promise.all(contentList.map(async (item) => {
@@ -2505,7 +3617,7 @@ module.exports = (ipcMain, win) => {
                             const targetLoader = (item.type === 'resourcepack' || item.type === 'shader') ? 'vanilla' : loader;
                             const compatibleFiles = allFiles
                                 .filter(file => isCurseForgeAutoInstallLoaderCompatible(file, targetLoader))
-                                .filter(file => isCurseForgeAutoInstallVersionCompatible(file, mcVersion))
+                                .filter(file => isCurseForgeAutoInstallVersionCompatible(file, mcVersionAliases))
                                 .sort((left, right) => new Date(right?.fileDate || 0).getTime() - new Date(left?.fileDate || 0).getTime());
 
                             const latest = compatibleFiles[0] || allFiles
@@ -2536,7 +3648,7 @@ module.exports = (ipcMain, win) => {
                             : item.projectId;
                         const params = {
                             loaders: JSON.stringify(loaders),
-                            game_versions: JSON.stringify([mcVersion])
+                            game_versions: JSON.stringify(mcVersionAliases)
                         };
 
                         const response = await axios.get(`https://api.modrinth.com/v2/project/${normalizedProjectId}/version`, {
@@ -2572,8 +3684,8 @@ module.exports = (ipcMain, win) => {
         });
         ipcMain.handle('instance:export', async (_, instanceName) => {
             try {
-                const instancePath = path.join(instancesDir, instanceName);
-                if (!await fs.pathExists(instancePath)) {
+                const { baseDir: instancePath, externalInstance } = await resolveInstanceBaseDir(instanceName);
+                if (!instancePath || !await fs.pathExists(instancePath)) {
                     return { success: false, error: 'Instance not found' };
                 }
                 const { filePath } = await dialog.showSaveDialog({
@@ -2587,7 +3699,26 @@ module.exports = (ipcMain, win) => {
                 const archive = archiver('zip', { zlib: { level: 9 } });
 
                 archive.pipe(output);
-                archive.file(path.join(instancePath, 'instance.json'), { name: 'instance.json' });
+                const instanceConfigPath = path.join(instancePath, 'instance.json');
+                if (await fs.pathExists(instanceConfigPath)) {
+                    archive.file(instanceConfigPath, { name: 'instance.json' });
+                } else {
+                    const fallbackConfig = sanitizeInstanceConfig({
+                        name: externalInstance?.name || instanceName,
+                        version: externalInstance?.version,
+                        loader: externalInstance?.loader,
+                        icon: externalInstance?.icon,
+                        loaderVersion: externalInstance?.loaderVersion,
+                        created: externalInstance?.created || Date.now(),
+                        playtime: externalInstance?.playtime || 0,
+                        lastPlayed: externalInstance?.lastPlayed || null,
+                        folderPath: externalInstance?.folderPath || '',
+                        instanceType: externalInstance?.instanceType,
+                        externalSource: externalInstance?.externalSource,
+                        externalPath: externalInstance?.externalPath
+                    });
+                    archive.append(JSON.stringify(fallbackConfig, null, 4), { name: 'instance.json' });
+                }
                 const modsPath = path.join(instancePath, 'mods');
                 if (await fs.pathExists(modsPath)) {
                     archive.directory(modsPath, 'mods');

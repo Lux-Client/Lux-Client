@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardCustomizer from '../components/DashboardCustomizer';
 import modOfTheDayData from '../data/modOfTheDay.json';
+import ExtensionSlot from '../components/Extensions/ExtensionSlot';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import PageHeader from '../components/layout/PageHeader';
@@ -11,6 +12,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
+import { filterInstancesForMode } from '../utils/instanceTypes';
 import {
   Dialog,
   DialogContent,
@@ -84,7 +86,7 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
   const [modIds, setModIds] = useState([]);
   const [currentModId, setCurrentModId] = useState(null);
   const [dashSettings, setDashSettings] = useState({
-    welcomeMessage: t('home.welcome_back'),
+    welcomeMessage: 'Welcome back, %player_name%!',
     layout: [
       { id: 'recent-instances', visible: true, width: 12 },
       { id: 'recent-worlds', visible: true, width: 12 },
@@ -231,9 +233,10 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
 
   const loadInstances = async () => {
     const list = await window.electronAPI.getInstances();
-    setInstances(list || []);
-    if (list && list.length > 0) {
-      const recentInsts = [...list]
+    const launcherInstances = filterInstancesForMode(list, 'launcher');
+    setInstances(launcherInstances);
+    if (launcherInstances.length > 0) {
+      const recentInsts = [...launcherInstances]
         .filter(inst => inst.lastPlayed || inst.playtime > 0)
         .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
         .slice(0, 5);
@@ -253,11 +256,13 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
               });
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       allWorlds.sort((a: any, b: any) => new Date(b.lastPlayed).getTime() - new Date(a.lastPlayed).getTime());
       setRecentWorlds(allWorlds.slice(0, 3));
+    } else {
+      setRecentWorlds([]);
     }
   };
 
@@ -328,6 +333,40 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
       addNotification('To do that you have to be logged in', 'error');
       return;
     }
+
+    const liveStatus = runningInstances[instance.name];
+    const status = liveStatus;
+    const isRunning = status === 'running';
+
+    if (isRunning) {
+      window.electronAPI.killGame(instance.name);
+      return;
+    }
+
+    const installStateKey = Object.keys(activeDownloads).find(
+      k => k.toLowerCase() === instance.name.toLowerCase()
+    );
+    const installState = installStateKey ? activeDownloads[installStateKey] : null;
+    const isInstalling = !!installState;
+    const isLaunching = status === 'launching';
+    const isPending = pendingLaunches[instance.name];
+
+    if (isInstalling || isLaunching || isPending) return;
+
+    setPendingLaunches(prev => ({ ...prev, [instance.name]: true }));
+    window.electronAPI
+      .launchGame(instance.name)
+      .then(r => {
+        if (!r.success) console.error(r.error);
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        setPendingLaunches(prev => {
+          const n = { ...prev };
+          delete n[instance.name];
+          return n;
+        });
+      });
   };
 
   const handleDragStart = (e, index) => {
@@ -377,13 +416,11 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
 
     const sectionIndex = dashSettings.layout.findIndex(s => s.id === section.id);
 
-    const sectionClass = `transition-all duration-200 ${
-      isEditing
+    const sectionClass = `transition-all duration-200 ${isEditing
         ? 'relative ring-1 ring-primary/20 bg-primary/5 rounded-lg p-3 cursor-move group/section'
         : ''
-    } ${section.width === 6 ? 'col-span-6' : 'col-span-12'} ${
-      !section.visible ? 'opacity-30' : ''
-    }`;
+      } ${section.width === 6 ? 'col-span-6' : 'col-span-12'} ${!section.visible ? 'opacity-30' : ''
+      }`;
 
     return (
       <div
@@ -442,7 +479,7 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
                   >
                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
                       {instance.icon &&
-                      (instance.icon.startsWith('data:') || instance.icon.startsWith('app-media://')) ? (
+                        (instance.icon.startsWith('data:') || instance.icon.startsWith('app-media://')) ? (
                         <img src={instance.icon} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <Box className="w-5 h-5 text-muted-foreground" />
@@ -543,8 +580,8 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
                       <div className="flex items-center gap-2.5 mb-2.5">
                         <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
                           {world.instanceIcon &&
-                          (world.instanceIcon.startsWith('data:') ||
-                            world.instanceIcon.startsWith('app-media://')) ? (
+                            (world.instanceIcon.startsWith('data:') ||
+                              world.instanceIcon.startsWith('app-media://')) ? (
                             <img src={world.instanceIcon} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <Box className="w-3.5 h-3.5 text-muted-foreground" />
@@ -591,8 +628,8 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
                           {isRunning
                             ? t('common.stop')
                             : isInstalling || isLaunching || isPending
-                            ? t('common.starting')
-                            : t('common.play')}
+                              ? t('common.starting')
+                              : t('common.play')}
                         </Button>
                       </div>
                     </CardContent>
@@ -808,17 +845,26 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
     );
   };
 
+  const parseWelcomeMessage = (message: string, profile: any) => {
+    if (!message) return t('home.welcome_back');
+    return message
+      .replace(/%player_name%/gi, profile?.name || 'Player')
+      .replace(/%player%/gi, profile?.name || 'Player');
+  };
+
+  const welcomeTitle = dashSettings.welcomeMessage
+    ? parseWelcomeMessage(dashSettings.welcomeMessage, userProfile)
+    : (userProfile?.name
+      ? t('home.welcome_back_name', {
+        name: userProfile.name,
+        defaultValue: `Welcome back, ${userProfile.name}!`,
+      })
+      : t('home.welcome_back'));
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title={
-          userProfile?.name
-            ? t('home.welcome_back_name', {
-                name: userProfile.name,
-                defaultValue: `Welcome back, ${userProfile.name}!`,
-              })
-            : t('home.welcome_back')
-        }
+        title={welcomeTitle}
         description={t('home.everything_place')}
       >
         <div className="flex items-center gap-2">
@@ -841,6 +887,8 @@ function Home({ onInstanceClick, runningInstances = {}, activeDownloads = {}, on
       </PageHeader>
 
       <PageContent>
+        <ExtensionSlot name="home.top" className="mb-6" />
+
         {isEditing && (
           <div className="mb-4 p-3 bg-primary/10 border border-dashed border-primary/30 rounded-lg text-center">
             <p className="text-sm font-medium text-primary">Advanced Editor Mode</p>

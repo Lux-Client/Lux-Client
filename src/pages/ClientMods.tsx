@@ -5,6 +5,7 @@ import {
     DEFAULT_OPEN_CLIENT_MOD_IDS,
     sanitizeClientCustomAutoInstallModIds
 } from '../config/clientDefaults';
+import { filterInstancesForMode } from '../utils/instanceTypes';
 import { getSourceTags } from '../utils/sourceTags';
 
 function ClientMods() {
@@ -129,14 +130,7 @@ function ClientMods() {
     const loadClientInstances = async () => {
         try {
             const list = await window.electronAPI.getInstances();
-            const allInstances = Array.isArray(list) ? list : [];
-
-            const filteredInstances = allInstances
-                .filter((instance) => {
-                    const loader = String(instance?.loader || '').toLowerCase();
-                    const name = String(instance?.name || '').toLowerCase();
-                    return loader === 'fabric' && name.startsWith('client ');
-                })
+            const filteredInstances = filterInstancesForMode(list, 'client')
                 .sort((left, right) => {
                     const leftVersion = String(left?.version || '');
                     const rightVersion = String(right?.version || '');

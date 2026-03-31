@@ -44,20 +44,9 @@ i18n
         }
     });
 
-const languageMap = {
+export const languageMap = {
     'en': 'en_us',
     'de': 'de_de'
 };
-
-window.electronAPI?.getSettings().then(res => {
-    if (res.success && res.settings.language) {
-        let lang = res.settings.language;
-        if (languageMap[lang]) {
-            lang = languageMap[lang];
-            window.electronAPI.saveSettings({ ...res.settings, language: lang });
-        }
-        i18n.changeLanguage(lang);
-    }
-});
 
 export default i18n;

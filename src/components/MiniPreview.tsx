@@ -44,7 +44,7 @@ function MiniPreview({ theme }) {
                 className="absolute left-2 top-2 bottom-2 w-8 rounded-xl flex flex-col items-center py-3 gap-1"
                 style={{
                     background: `rgba(${theme.surfaceColor ? hexToRgb(theme.surfaceColor) : '28, 28, 28'}, ${theme.panelOpacity ?? 0.85})`,
-                    backdropFilter: `blur(${theme.glassBlur || 10}px)`,
+                    backdropFilter: `blur(${theme.glassBlur ?? 10}px)`,
                     border: '1px solid rgba(255, 255, 255, 0.05)'
                 }}
             >
@@ -55,7 +55,7 @@ function MiniPreview({ theme }) {
                         style={{
                             background: i === 1 ? theme.primaryColor : 'transparent',
                             boxShadow: i === 1 ? `0 0 ${(theme.sidebarGlow ?? 0) * 20}px ${theme.primaryColor}` : 'none',
-                            color: i === 1 ? '#000' : '#666'
+                            color: i === 1 ? (theme.textOnPrimary ?? '#0d0d0d') : (theme.textOnSurface ?? '#666666')
                         }}
                     >
                         <div className="w-3 h-3 rounded-sm bg-current opacity-50" />
@@ -70,7 +70,7 @@ function MiniPreview({ theme }) {
                     className="flex-1 rounded-xl p-3"
                     style={{
                         background: `rgba(${theme.surfaceColor ? hexToRgb(theme.surfaceColor) : '28, 28, 28'}, ${theme.panelOpacity ?? 0.85})`,
-                        backdropFilter: `blur(${theme.glassBlur || 10}px)`,
+                        backdropFilter: `blur(${theme.glassBlur ?? 10}px)`,
                         border: '1px solid rgba(255, 255, 255, 0.05)',
                         borderRadius: `${theme.borderRadius ?? 12}px`
                     }}
@@ -96,7 +96,7 @@ function MiniPreview({ theme }) {
                     className="h-8 rounded-lg flex items-center justify-center text-[8px] font-bold"
                     style={{
                         background: theme.primaryColor,
-                        color: '#000',
+                        color: theme.textOnPrimary ?? '#0d0d0d',
                         borderRadius: `${theme.borderRadius ?? 12}px`,
                         boxShadow: `0 0 ${(theme.sidebarGlow ?? 0) * 20}px ${theme.primaryColor}40`
                     }}

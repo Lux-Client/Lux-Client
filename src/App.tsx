@@ -16,6 +16,7 @@ const ServerLibrary = React.lazy(() => import('./pages/ServerLibrary'));
 const InstanceDetails = React.lazy(() => import('./pages/InstanceDetails'));
 const Client = React.lazy(() => import('./pages/Client'));
 const ClientMods = React.lazy(() => import('./pages/ClientMods'));
+const ToolsDashboard = React.lazy(() => import('./pages/ToolsDashboard'));
 const Extensions = React.lazy(() => import('./pages/Extensions'));
 const Login = React.lazy(() => import('./pages/Login'));
 const News = React.lazy(() => import('./pages/News'));
@@ -27,12 +28,19 @@ import CommandPalette from './components/CommandPalette';
 import UpdateNotification from './components/UpdateNotification';
 import AgreementModal from './components/AgreementModal';
 import LanguageSelectionModal from './components/LanguageSelectionModal';
+import ThemeModeSelectionModal from './components/ThemeModeSelectionModal';
+import StartupModeSelectionModal from './components/StartupDefaultModeModal';
+import SettingsFormatModal from './components/SettingsFormatModal';
 import LoadingOverlay from './components/LoadingOverlay';
 import WindowControls from './components/WindowControls';
 import CrashModal from './components/CrashModal';
+import GuidePromptModal from './components/GuidePromptModal';
+import GuideOverlay from './components/GuideOverlay';
 import { syncCustomFonts } from './services/fontManager';
 import { updateShadcnVars } from './lib/utils';
+import { getGuideDefaultView, getGuideSteps, GuideMode, isGuideMode } from './lib/guideSteps';
 import { useTranslation } from 'react-i18next';
+import i18n, { languageMap } from './i18n';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
     constructor(props: { children: React.ReactNode }) {
@@ -69,6 +77,95 @@ function ErrorFallback() {
     );
 }
 
+const LUX_FOREST_THEME_PRESET = {
+    primaryColor: '#e26602',
+    backgroundColor: '#111111',
+    surfaceColor: '#1c1c1c',
+    textOnBackground: '#f5f5f5',
+    textOnSurface: '#f5f5f5',
+    textOnPrimary: '#1a1208'
+};
+
+const LIGHT_LUX_THEME_PRESET = {
+    primaryColor: '#d24e01',
+    backgroundColor: '#f9ddb1',
+    surfaceColor: '#f5c77e',
+    textOnBackground: '#2a1a0e',
+    textOnSurface: '#2c1b0f',
+    textOnPrimary: '#fff4ea'
+};
+
+const DEFAULT_THEME = {
+    primaryColor: '#e26602',
+    backgroundColor: '#111111',
+    surfaceColor: '#1c1c1c',
+    sidebarColor: '',
+    textOnBackground: '#fafafa',
+    textOnSurface: '#fafafa',
+    textOnPrimary: '#0d0d0d',
+    glassBlur: 10,
+    glassOpacity: 0.8,
+    consoleOpacity: 0.8,
+    borderRadius: 12,
+    sidebarGlow: 0,
+    globalGlow: 0,
+    panelOpacity: 0.85,
+    bgOverlay: 0.4,
+    autoAdaptColor: false,
+    fontFamily: 'Poppins',
+    customFonts: [],
+    bgMedia: { url: '', type: 'none' }
+};
+
+const normalizeThemeSchema = (theme: any = {}) => ({
+    ...DEFAULT_THEME,
+    ...theme,
+    primaryColor: theme.primaryColor || theme.primary || DEFAULT_THEME.primaryColor,
+    backgroundColor: theme.backgroundColor || theme.bg || theme.background || DEFAULT_THEME.backgroundColor,
+    surfaceColor: theme.surfaceColor || theme.surface || DEFAULT_THEME.surfaceColor,
+    sidebarColor: typeof theme.sidebarColor === 'string'
+        ? theme.sidebarColor
+        : (typeof theme.sidebar === 'string' ? theme.sidebar : ''),
+    textOnBackground: theme.textOnBackground || theme.foreground || DEFAULT_THEME.textOnBackground,
+    textOnSurface: theme.textOnSurface || theme.text || DEFAULT_THEME.textOnSurface,
+    textOnPrimary: theme.textOnPrimary || DEFAULT_THEME.textOnPrimary,
+});
+
+const GUIDE_PROMPT_DEFAULTS: Record<GuideMode, boolean> = {
+    launcher: true,
+    server: true,
+    client: true,
+    tools: true
+};
+
+const GUIDE_PROMPT_SESSION_DEFAULTS: Record<GuideMode, boolean> = {
+    launcher: false,
+    server: false,
+    client: false,
+    tools: false
+};
+
+const resolveStartupDestination = (startPageSetting) => {
+    const requestedView = typeof startPageSetting === 'string' ? startPageSetting : 'dashboard';
+
+    switch (requestedView) {
+        case 'server-dashboard':
+            return { mode: 'server', view: 'server-dashboard' };
+        case 'tools-dashboard':
+            return { mode: 'tools', view: 'tools-dashboard' };
+        case 'open-client':
+            if (isFeatureEnabled('openClientPage')) {
+                return { mode: 'client', view: 'open-client' };
+            }
+            return { mode: 'launcher', view: 'dashboard' };
+        case 'library':
+            return { mode: 'launcher', view: 'library' };
+        case 'dashboard':
+        default:
+            return { mode: 'launcher', view: 'dashboard' };
+    }
+};
+
 function App() {
     const { t, i18n } = useTranslation();
     const [currentView, setCurrentView] = useState('dashboard');
@@ -76,23 +173,7 @@ function App() {
     const [currentMode, setCurrentMode] = useState('launcher');
     const [userProfile, setUserProfile] = useState(null);
     const [isGuest, setIsGuest] = useState(false);
-    const [theme, setTheme] = useState({
-        primaryColor: '#e26602',
-        backgroundColor: '#111111',
-        surfaceColor: '#1c1c1c',
-        glassBlur: 10,
-        glassOpacity: 0.8,
-        consoleOpacity: 0.8,
-        borderRadius: 12,
-        sidebarGlow: 0,
-        globalGlow: 0,
-        panelOpacity: 0.85,
-        bgOverlay: 0.4,
-        autoAdaptColor: false,
-        fontFamily: 'Poppins',
-        customFonts: [],
-        bgMedia: { url: '', type: 'none' }
-    });
+    const [theme, setTheme] = useState(DEFAULT_THEME);
     const [selectedInstance, setSelectedInstance] = useState(null);
     const [selectedServer, setSelectedServer] = useState(null);
     const [runningInstances, setRunningInstances] = useState({});
@@ -107,14 +188,62 @@ function App() {
     const [crashData, setCrashData] = useState(null);
     const [isCrashModalOpen, setIsCrashModalOpen] = useState(false);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+    const [guidePromptMode, setGuidePromptMode] = useState<GuideMode | null>(null);
+    const [guidePromptDoNotShowAgain, setGuidePromptDoNotShowAgain] = useState(false);
+    const [guideMode, setGuideMode] = useState<GuideMode>('launcher');
+    const [guideStepIndex, setGuideStepIndex] = useState(0);
+    const [isGuideRunning, setIsGuideRunning] = useState(false);
+    const [canNavigateBack, setCanNavigateBack] = useState(false);
+    const [canNavigateForward, setCanNavigateForward] = useState(false);
 
     const lastClientView = useRef('dashboard');
     const lastServerView = useRef('server-dashboard');
+    const lastToolsView = useRef('tools-dashboard');
     const appSettingsRef = useRef<any>({});
+    const guidePromptShownThisSessionRef = useRef<Record<GuideMode, boolean>>({ ...GUIDE_PROMPT_SESSION_DEFAULTS });
+    const navigationHistoryRef = useRef([{ mode: 'launcher', view: 'dashboard' }]);
+    const navigationIndexRef = useRef(0);
+    const isHistoryNavigationRef = useRef(false);
+    const hasInitializedHistoryRef = useRef(false);
 
     useEffect(() => {
         appSettingsRef.current = appSettings;
     }, [appSettings]);
+
+    const syncNavigationButtons = React.useCallback(() => {
+        const canGoBack = navigationIndexRef.current > 0;
+        const canGoForward = navigationIndexRef.current < navigationHistoryRef.current.length - 1;
+        setCanNavigateBack(canGoBack);
+        setCanNavigateForward(canGoForward);
+    }, []);
+
+    useEffect(() => {
+        if (!hasInitializedHistoryRef.current) {
+            navigationHistoryRef.current = [{ mode: currentMode, view: currentView }];
+            navigationIndexRef.current = 0;
+            hasInitializedHistoryRef.current = true;
+            syncNavigationButtons();
+            return;
+        }
+
+        if (isHistoryNavigationRef.current) {
+            isHistoryNavigationRef.current = false;
+            syncNavigationButtons();
+            return;
+        }
+
+        const activeEntry = navigationHistoryRef.current[navigationIndexRef.current];
+        if (activeEntry?.mode === currentMode && activeEntry?.view === currentView) {
+            syncNavigationButtons();
+            return;
+        }
+
+        const truncatedHistory = navigationHistoryRef.current.slice(0, navigationIndexRef.current + 1);
+        truncatedHistory.push({ mode: currentMode, view: currentView });
+        navigationHistoryRef.current = truncatedHistory;
+        navigationIndexRef.current = truncatedHistory.length - 1;
+        syncNavigationButtons();
+    }, [currentMode, currentView, syncNavigationButtons]);
 
     const resolveFontFamily = (nextTheme) => {
         const builtInFonts = new Set([
@@ -126,22 +255,110 @@ function App() {
         return availableFonts.has(nextTheme.fontFamily) ? nextTheme.fontFamily : 'Poppins';
     };
 
+    const getGuidePromptPreferences = (settings = appSettingsRef.current) => {
+        const persisted = settings?.guidePrompts || {};
+        return {
+            ...GUIDE_PROMPT_DEFAULTS,
+            ...persisted
+        };
+    };
+
+    const saveGuidePromptPreference = async (mode: GuideMode, enabled: boolean) => {
+        const baseSettings = appSettingsRef.current || {};
+        const nextSettings = {
+            ...baseSettings,
+            guidePrompts: {
+                ...GUIDE_PROMPT_DEFAULTS,
+                ...(baseSettings.guidePrompts || {}),
+                [mode]: enabled
+            }
+        };
+        const res = await window.electronAPI.saveSettings(nextSettings);
+        if (res.success) {
+            setAppSettings(nextSettings);
+            appSettingsRef.current = nextSettings;
+            return true;
+        }
+        return false;
+    };
+
+    const finishGuide = () => {
+        setIsGuideRunning(false);
+        setGuideStepIndex(0);
+    };
+
+    const startGuide = async (mode: GuideMode, disablePromptForMode = false) => {
+        if (disablePromptForMode) {
+            await saveGuidePromptPreference(mode, false);
+        } else {
+            const prefs = getGuidePromptPreferences();
+            if (prefs[mode] !== false) {
+                await saveGuidePromptPreference(mode, false);
+            }
+        }
+
+        guidePromptShownThisSessionRef.current[mode] = true;
+        setGuidePromptMode(null);
+        setGuidePromptDoNotShowAgain(false);
+        setIsCommandPaletteOpen(false);
+
+        const defaultView = getGuideDefaultView(mode);
+        if (currentMode !== mode) {
+            setCurrentMode(mode);
+        }
+
+        startTransition(() => {
+            setCurrentView(defaultView);
+        });
+
+        setSelectedInstance(null);
+        setSelectedServer(null);
+        setGuideMode(mode);
+        setGuideStepIndex(0);
+        setIsGuideRunning(true);
+    };
+
+    const handleGuidePromptStart = async () => {
+        if (!guidePromptMode) {
+            return;
+        }
+        await startGuide(guidePromptMode, guidePromptDoNotShowAgain);
+    };
+
+    const handleGuidePromptSkip = async () => {
+        if (!guidePromptMode) {
+            return;
+        }
+
+        if (guidePromptDoNotShowAgain) {
+            await saveGuidePromptPreference(guidePromptMode, false);
+        }
+
+        setGuidePromptMode(null);
+        setGuidePromptDoNotShowAgain(false);
+    };
+
+    const handleRestartGuide = (mode: GuideMode) => {
+        void startGuide(mode);
+    };
+
     useEffect(() => {
         if (currentMode === 'launcher') lastClientView.current = currentView;
         if (currentMode === 'server') lastServerView.current = currentView;
+        if (currentMode === 'tools') lastToolsView.current = currentView;
     }, [currentView, currentMode]);
 
     useEffect(() => {
         Analytics.init();
 
         const checkSession = async () => {
-            let startPage = 'dashboard';
+            let startupDestination = resolveStartupDestination('dashboard');
             try {
                 const settingsRes = await window.electronAPI?.getSettings();
                 if (settingsRes.success && settingsRes.settings.startPage) {
-                    startPage = settingsRes.settings.startPage;
+                    startupDestination = resolveStartupDestination(settingsRes.settings.startPage);
                 }
-            } catch (e) {}
+            } catch (e) { }
 
             if (window.electronAPI?.validateSession) {
                 const res = await window.electronAPI.validateSession();
@@ -171,15 +388,26 @@ function App() {
                     Analytics.setProfile(profile);
                 }
             }
-            setCurrentView(startPage);
+            setCurrentMode(startupDestination.mode);
+            setCurrentView(startupDestination.view);
         };
 
         const loadTheme = async () => {
             const res = await window.electronAPI?.getSettings();
             if (res.success) {
                 setAppSettings(res.settings);
+
+                if (res.settings.language) {
+                    let lang = res.settings.language;
+                    if (languageMap[lang as keyof typeof languageMap]) {
+                        lang = languageMap[lang as keyof typeof languageMap];
+                        window.electronAPI.saveSettings({ ...res.settings, language: lang });
+                    }
+                    i18n.changeLanguage(lang);
+                }
+
                 if (res.settings.theme) {
-                    const t = res.settings.theme;
+                    const t = normalizeThemeSchema(res.settings.theme);
                     setTheme(t);
                     applyTheme(t);
                 }
@@ -191,7 +419,7 @@ function App() {
                 try {
                     const v = await window.electronAPI.getVersion();
                     setAppVersion(v);
-                } catch (e) {}
+                } catch (e) { }
             }
         };
 
@@ -203,8 +431,9 @@ function App() {
         init();
 
         const removeThemeListener = window.electronAPI?.onThemeUpdated((newTheme) => {
-            setTheme(newTheme);
-            applyTheme(newTheme);
+            const normalizedTheme = normalizeThemeSchema(newTheme || {});
+            setTheme(normalizedTheme);
+            applyTheme(normalizedTheme);
         });
 
         const removeSettingsListener = window.electronAPI.onSettingsUpdated?.((newSettings) => {
@@ -252,19 +481,19 @@ function App() {
             });
         });
 
-        const removeInstallListener = window.electronAPI?.onInstallProgress(({ instanceName, progress, status }) => {
+        const removeInstallListener = window.electronAPI?.onInstallProgress(({ instanceName, progress, status, type }) => {
             setActiveDownloads(prev => {
                 const next = { ...prev };
                 if (progress >= 100) {
                     delete next[instanceName];
                 } else {
-                    next[instanceName] = { progress: progress || prev[instanceName]?.progress || 0, status, type: 'install' };
+                    next[instanceName] = { progress: progress || prev[instanceName]?.progress || 0, status, type: type || 'install' };
                 }
                 return next;
             });
         });
 
-        const removeLaunchProgressListener = window.electronAPI?.onLaunchProgress((e) => {});
+        const removeLaunchProgressListener = window.electronAPI?.onLaunchProgress((e) => { });
 
         const removeWindowStateListener = window.electronAPI?.onWindowStateChange((maximized) => {
             setIsMaximized(maximized);
@@ -293,7 +522,7 @@ function App() {
     }, []);
 
     const handleAcceptAgreement = async () => {
-        const newSettings = { ...appSettings, hasAcceptedToS: true };
+        const newSettings = { ...appSettings, hasAcceptedToS: true, hasSelectedThemeMode: false };
         const res = await window.electronAPI.saveSettings(newSettings);
         if (res.success) {
             setAppSettings(newSettings);
@@ -314,6 +543,64 @@ function App() {
         }
     };
 
+    const handleThemeModeSelect = async (mode) => {
+        const selectedThemePreset = mode === 'light' ? LIGHT_LUX_THEME_PRESET : LUX_FOREST_THEME_PRESET;
+        const nextTheme = {
+            ...(appSettings.theme || {}),
+            ...selectedThemePreset
+        };
+        const newSettings = {
+            ...appSettings,
+            hasSelectedThemeMode: true,
+            hasSelectedStartupMode: false,
+            theme: nextTheme
+        };
+
+        const res = await window.electronAPI.saveSettings(newSettings);
+        if (res.success) {
+            setAppSettings(newSettings);
+            setTheme(nextTheme);
+            applyTheme(nextTheme);
+        }
+    };
+
+    const handleStartupModeSelect = async (startPage) => {
+        const newSettings = {
+            ...appSettings,
+            startPage,
+            hasSelectedStartupMode: true,
+            hasSelectedSettingsFormat: false
+        };
+        const res = await window.electronAPI.saveSettings(newSettings);
+        if (res.success) {
+            setAppSettings(newSettings);
+        }
+    };
+
+    const handleSettingsFormatSelect = async (format) => {
+        try {
+            await window.electronAPI.migrateSettings(format);
+            const newSettings = {
+                ...appSettings,
+                settingsStorageFormat: format,
+                hasSelectedSettingsFormat: true
+            };
+            const res = await window.electronAPI.saveSettings(newSettings);
+            if (res.success) {
+                const startupDestination = resolveStartupDestination(appSettings.startPage || 'dashboard');
+                setAppSettings(newSettings);
+                setSelectedInstance(null);
+                setSelectedServer(null);
+                startTransition(() => {
+                    setCurrentMode(startupDestination.mode);
+                    setCurrentView(startupDestination.view);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to save settings format:', error);
+        }
+    };
+
     const applyTheme = (t) => {
         const root = document.documentElement;
         const fontFamily = resolveFontFamily(t);
@@ -321,6 +608,9 @@ function App() {
         root.style.setProperty('--primary-color', t.primaryColor);
         root.style.setProperty('--background-color', t.backgroundColor);
         root.style.setProperty('--surface-color', t.surfaceColor);
+        root.style.setProperty('--text-on-background', t.textOnBackground ?? '#fafafa');
+        root.style.setProperty('--text-on-surface', t.textOnSurface ?? '#fafafa');
+        root.style.setProperty('--text-on-primary', t.textOnPrimary ?? '#0d0d0d');
         root.style.setProperty('--glass-blur', `${t.glassBlur}px`);
         root.style.setProperty('--glass-opacity', t.glassOpacity);
         root.style.setProperty('--console-opacity', t.consoleOpacity ?? 0.8);
@@ -390,19 +680,19 @@ function App() {
                 console.error("Failed to prefetch skin", e);
             }
         }
-        let startPage = 'dashboard';
+        let startupDestination = resolveStartupDestination('dashboard');
         try {
             const settingsRes = await window.electronAPI.getSettings();
             if (settingsRes.success && settingsRes.settings.startPage) {
-                startPage = settingsRes.settings.startPage;
+                startupDestination = resolveStartupDestination(settingsRes.settings.startPage);
             }
-        } catch (e) {}
+        } catch (e) { }
 
         startTransition(() => {
             setUserProfile(profile);
             Analytics.setProfile(profile);
-            setCurrentView(startPage);
-            setCurrentMode('launcher');
+            setCurrentMode(startupDestination.mode);
+            setCurrentView(startupDestination.view);
         });
     };
 
@@ -457,6 +747,8 @@ function App() {
             setCurrentView(lastServerView.current || 'server-dashboard');
         } else if (mode === 'client') {
             setCurrentView('open-client');
+        } else if (mode === 'tools') {
+            setCurrentView(lastToolsView.current || 'tools-dashboard');
         }
         setSelectedInstance(null);
         setSelectedServer(null);
@@ -468,11 +760,151 @@ function App() {
         });
     };
 
+    const handleHistoryNavigate = (direction: 'back' | 'forward') => {
+        const nextIndex = direction === 'back'
+            ? navigationIndexRef.current - 1
+            : navigationIndexRef.current + 1;
+
+        if (nextIndex < 0 || nextIndex >= navigationHistoryRef.current.length) {
+            return;
+        }
+
+        const target = navigationHistoryRef.current[nextIndex];
+        if (!target) {
+            return;
+        }
+
+        navigationIndexRef.current = nextIndex;
+        isHistoryNavigationRef.current = true;
+        syncNavigationButtons();
+
+        startTransition(() => {
+            if (target.mode !== currentMode) {
+                setCurrentMode(target.mode);
+            }
+            setCurrentView(target.view);
+        });
+    };
+
+    const handleNavigateBack = () => {
+        handleHistoryNavigate('back');
+    };
+
+    const handleNavigateForward = () => {
+        handleHistoryNavigate('forward');
+    };
+
+    const topBarHistoryProps: any = {
+        canNavigateBack,
+        canNavigateForward,
+        onNavigateBack: handleNavigateBack,
+        onNavigateForward: handleNavigateForward
+    };
+
+    const handleGuidePrevious = () => {
+        setGuideStepIndex((prev) => Math.max(0, prev - 1));
+    };
+
+    const handleGuideNext = () => {
+        const nextIndex = guideStepIndex + 1;
+        if (nextIndex >= guideSteps.length) {
+            finishGuide();
+            return;
+        }
+        setGuideStepIndex(nextIndex);
+    };
+
+    const handleGuideFinish = () => {
+        finishGuide();
+    };
+
     const isLoginView = !userProfile && !isGuest;
     const isLanguageSelectionOpen = !isInitialLoading && appSettings.hasSelectedLanguage === false;
     const isAgreementModalOpen = !isInitialLoading && appSettings.hasSelectedLanguage === true && appSettings.hasAcceptedToS === false;
-    const isCommandPaletteAvailable = !isLoginView && !isLanguageSelectionOpen && !isAgreementModalOpen;
+    const isThemeModeSelectionOpen =
+        !isInitialLoading &&
+        appSettings.hasSelectedLanguage === true &&
+        appSettings.hasAcceptedToS === true &&
+        appSettings.hasSelectedThemeMode === false;
+    const isStartupModeSelectionOpen =
+        !isInitialLoading &&
+        appSettings.hasSelectedLanguage === true &&
+        appSettings.hasAcceptedToS === true &&
+        appSettings.hasSelectedThemeMode === true &&
+        appSettings.hasSelectedStartupMode === false;
+    const isSettingsFormatSelectionOpen =
+        !isInitialLoading &&
+        appSettings.hasSelectedLanguage === true &&
+        appSettings.hasAcceptedToS === true &&
+        appSettings.hasSelectedThemeMode === true &&
+        appSettings.hasSelectedStartupMode === true &&
+        appSettings.hasSelectedSettingsFormat === false;
     const canAccessSkins = Boolean(userProfile) && !isGuest;
+    const guideSteps = React.useMemo(() => getGuideSteps(guideMode, { canAccessSkins }), [guideMode, canAccessSkins]);
+    const isGuidePromptBlockedBySetup =
+        isInitialLoading ||
+        isLoginView ||
+        isLanguageSelectionOpen ||
+        isAgreementModalOpen ||
+        isThemeModeSelectionOpen ||
+        isStartupModeSelectionOpen ||
+        isSettingsFormatSelectionOpen;
+    const isCommandPaletteAvailable =
+        !isGuidePromptBlockedBySetup &&
+        !isGuideRunning &&
+        guidePromptMode === null;
+
+    useEffect(() => {
+        if (!isGuideRunning) {
+            return;
+        }
+
+        const step = guideSteps[guideStepIndex];
+        if (!step) {
+            finishGuide();
+            return;
+        }
+
+        if (step.mode && step.mode !== currentMode) {
+            setCurrentMode(step.mode);
+        }
+
+        if (step.view && step.view !== currentView) {
+            startTransition(() => {
+                setCurrentView(step.view);
+            });
+        }
+    }, [isGuideRunning, guideStepIndex, guideSteps, currentMode, currentView]);
+
+    useEffect(() => {
+        if (isGuidePromptBlockedBySetup || isGuideRunning || guidePromptMode !== null) {
+            return;
+        }
+
+        if (!isGuideMode(currentMode)) {
+            return;
+        }
+
+        const mode = currentMode;
+        if (guidePromptShownThisSessionRef.current[mode]) {
+            return;
+        }
+
+        const guidePromptPreferences = getGuidePromptPreferences();
+        if (guidePromptPreferences[mode] === false) {
+            return;
+        }
+
+        guidePromptShownThisSessionRef.current[mode] = true;
+        setGuidePromptMode(mode);
+        setGuidePromptDoNotShowAgain(false);
+    }, [
+        currentMode,
+        isGuidePromptBlockedBySetup,
+        isGuideRunning,
+        guidePromptMode,
+        appSettings
+    ]);
 
     return (
         <ExtensionProvider>
@@ -522,6 +954,7 @@ function App() {
                     <TopBar
                         currentMode={currentMode}
                         onModeSelect={handleModeSelect}
+                        {...topBarHistoryProps}
                         userProfile={userProfile}
                         onProfileUpdate={setUserProfile}
                         isGuest={isGuest}
@@ -566,7 +999,9 @@ function App() {
                                         {currentView === 'search' && <Search initialCategory={searchCategory} onCategoryConsumed={() => setSearchCategory(null)} />}
                                         {currentView === 'skins' && !isGuest && <Skins onLogout={handleLogout} onProfileUpdate={setUserProfile} />}
                                         {currentView === 'styling' && <Styling />}
-                                        {currentView === 'settings' && <Settings />}
+                                        {currentView === 'settings' && (
+                                            <Settings mode="launcher" onRestartGuide={() => handleRestartGuide('launcher')} />
+                                        )}
                                         {currentView === 'instance-details' && selectedInstance && (
                                             <InstanceDetails instance={selectedInstance} onBack={handleBackToDashboard} runningInstances={runningInstances} onInstanceUpdate={handleInstanceUpdate} isGuest={isGuest} />
                                         )}
@@ -589,7 +1024,9 @@ function App() {
                                         {currentView === 'search' && <ServerSearch />}
                                         {currentView === 'styling' && <Styling />}
                                         {currentView === 'server-library' && <ServerLibrary />}
-                                        {currentView === 'server-settings' && <ServerSettings />}
+                                        {currentView === 'server-settings' && (
+                                            <ServerSettings onRestartGuide={() => handleRestartGuide('server')} />
+                                        )}
                                     </>
                                 )}
 
@@ -600,7 +1037,18 @@ function App() {
                                         {currentView === 'extensions' && <Extensions />}
                                         {currentView === 'styling' && <Styling />}
                                         {currentView === 'mods' && <ClientMods />}
-                                        {currentView === 'settings' && <Settings mode="client" />}
+                                        {currentView === 'settings' && (
+                                            <Settings mode="client" onRestartGuide={() => handleRestartGuide('client')} />
+                                        )}
+                                    </>
+                                )}
+
+                                {currentMode === 'tools' && (
+                                    <>
+                                        {currentView === 'tools-dashboard' && <ToolsDashboard />}
+                                        {currentView === 'settings' && (
+                                            <Settings mode="tools" onRestartGuide={() => handleRestartGuide('tools')} />
+                                        )}
                                     </>
                                 )}
 
@@ -654,6 +1102,39 @@ function App() {
                 <AgreementModal
                     onAccept={handleAcceptAgreement}
                     onDecline={handleDeclineAgreement}
+                />
+            )}
+
+            {isThemeModeSelectionOpen && (
+                <ThemeModeSelectionModal onSelect={handleThemeModeSelect} />
+            )}
+
+            {isStartupModeSelectionOpen && (
+                <StartupModeSelectionModal onSelect={handleStartupModeSelect} />
+            )}
+
+            {isSettingsFormatSelectionOpen && (
+                <SettingsFormatModal onSelect={handleSettingsFormatSelect} />
+            )}
+
+            {guidePromptMode && (
+                <GuidePromptModal
+                    mode={guidePromptMode}
+                    doNotShowAgain={guidePromptDoNotShowAgain}
+                    onDoNotShowAgainChange={setGuidePromptDoNotShowAgain}
+                    onStart={handleGuidePromptStart}
+                    onSkip={handleGuidePromptSkip}
+                />
+            )}
+
+            {isGuideRunning && guideSteps.length > 0 && (
+                <GuideOverlay
+                    steps={guideSteps}
+                    stepIndex={guideStepIndex}
+                    onPrevious={handleGuidePrevious}
+                    onNext={handleGuideNext}
+                    onFinish={handleGuideFinish}
+                    onSkip={handleGuideFinish}
                 />
             )}
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
+import ExtensionSlot from '../components/Extensions/ExtensionSlot';
 import { isFeatureEnabled } from '../config/featureFlags';
 import ToggleBox from '../components/ToggleBox';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -17,6 +18,7 @@ import { Slider } from '../components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { getSourceTags } from '../utils/sourceTags';
+import { filterInstancesForMode } from '../utils/instanceTypes';
 import {
     Save,
     FolderOpen,
@@ -40,10 +42,11 @@ import {
     Play,
     Shield,
     Settings2,
-    RotateCcw
+    RotateCcw,
+    Compass
 } from 'lucide-react';
 
-function Settings({ mode = 'default' }) {
+function Settings({ mode = 'default', onRestartGuide = null }) {
     const { t, i18n } = useTranslation();
     const { addNotification } = useNotification();
     const isClientSettings = mode === 'client';
@@ -57,6 +60,7 @@ function Settings({ mode = 'default' }) {
         animationsExaggerated: false,
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
+        instancesPath: '',
         minMemory: 1024,
         maxMemory: 4096,
         resolutionWidth: 854,
@@ -64,13 +68,13 @@ function Settings({ mode = 'default' }) {
         enableDiscordRPC: true,
         autoUploadLogs: true,
         showDisabledFeatures: false,
+        settingsStorageFormat: 'json',
         enableModrinthPackSupport: true,
         optimization: false,
         focusMode: false,
         minimalMode: false,
         enableAutoInstallMods: false,
         autoInstallMods: [],
-        showQuickSwitchButton: true,
         enableSmartLogAnalytics: true,
         language: 'en_us',
         startPage: 'dashboard',
@@ -171,7 +175,8 @@ function Settings({ mode = 'default' }) {
 
     const loadInstances = async () => {
         const list = await window.electronAPI.getInstances();
-        setInstances(list || []);
+        const instanceMode = mode === 'client' ? 'client' : 'launcher';
+        setInstances(filterInstancesForMode(list, instanceMode));
     };
 
     const loadJavaRuntimes = async () => {
@@ -211,10 +216,20 @@ function Settings({ mode = 'default' }) {
                     ...(res.settings.cloudBackupSettings || {})
                 }
             };
+            delete loadedSettings.showQuickSwitchButton;
             const languageMap = { 'en': 'en_us', 'de': 'de_de' };
             if (languageMap[loadedSettings.language]) {
                 loadedSettings.language = languageMap[loadedSettings.language];
             }
+
+            const validStartupPages = ['dashboard', 'open-client', 'server-dashboard', 'tools-dashboard'];
+            if (!validStartupPages.includes(loadedSettings.startPage)) {
+                loadedSettings.startPage = 'dashboard';
+            }
+            if (!isFeatureEnabled('openClientPage') && loadedSettings.startPage === 'open-client') {
+                loadedSettings.startPage = 'dashboard';
+            }
+
             setSettings(loadedSettings);
             initialSettingsRef.current = loadedSettings;
         }
@@ -333,8 +348,24 @@ function Settings({ mode = 'default' }) {
             addNotification(t('settings.java.select_valid'), 'error');
         }
     };
+
+    const handleSelectInstancesPath = async () => {
+        const result = await window.electronAPI.selectFolder();
+        if (result && !result.canceled && result.filePaths && result.filePaths[0]) {
+            handleChange('instancesPath', result.filePaths[0]);
+        }
+    };
+
     const handleManualSave = () => {
         saveSettings(settings, false);
+    };
+
+    const handleRestartGuideNow = () => {
+        if (typeof onRestartGuide !== 'function') {
+            return;
+        }
+        onRestartGuide();
+        addNotification(t('guide.restart_guide_started', 'Guide started.'), 'info');
     };
 
     const addAutoInstallMod = async () => {
@@ -532,8 +563,12 @@ function Settings({ mode = 'default' }) {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="dashboard">{t('common.dashboard')}</SelectItem>
-                                            <SelectItem value="library">{t('common.library')}</SelectItem>
+                                            <SelectItem value="dashboard">{t('common.launcher', 'Launcher')}</SelectItem>
+                                            {isFeatureEnabled('openClientPage') && (
+                                                <SelectItem value="open-client">{t('common.client', 'Client')}</SelectItem>
+                                            )}
+                                            <SelectItem value="server-dashboard">{t('common.server', 'Server')}</SelectItem>
+                                            <SelectItem value="tools-dashboard">{t('common.useful_tools', 'Useful Tools')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -576,17 +611,23 @@ function Settings({ mode = 'default' }) {
                                 </Select>
                             </div>
 
-                            {!isClientSettings && (
-                                <>
-                                    <Separator />
-                                    <ToggleBox
-                                        checked={settings.showQuickSwitchButton || false}
-                                        onChange={(val) => handleChange('showQuickSwitchButton', val)}
-                                        label={t('settings.general.quick_switch_button')}
-                                        description={t('settings.general.quick_switch_button_desc')}
-                                    />
-                                </>
-                            )}
+                            <Separator />
+
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div className="flex-1 min-w-[200px]">
+                                    <Label className="text-foreground">{t('guide.restart_guide')}</Label>
+                                    <p className="text-xs text-muted-foreground mt-1">{t('guide.restart_guide_desc')}</p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleRestartGuideNow}
+                                    className="border-primary/30 text-foreground hover:bg-primary/10"
+                                >
+                                    <Compass className="h-3.5 w-3.5" />
+                                    {t('guide.restart_guide')}
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -597,7 +638,7 @@ function Settings({ mode = 'default' }) {
                             </DialogHeader>
                             <p className="text-sm text-muted-foreground">{t('settings.java.install_desc')}</p>
                             <div className="space-y-2">
-                                {[8, 17, 21].map(v => (
+                                {[8, 17, 21, 25].map(v => (
                                     <Button
                                         key={v}
                                         variant="outline"
@@ -829,6 +870,36 @@ function Settings({ mode = 'default' }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                <div>
+                                    <Label className="mb-2 block">{t('settings.instance.storage_path', 'Instance Folder')}</Label>
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        <Input
+                                            value={settings.instancesPath || ''}
+                                            onChange={(e) => handleChange('instancesPath', e.target.value)}
+                                            placeholder={t('settings.instance.storage_path_placeholder', 'Default: %appdata%\\Lux\\instances')}
+                                            className="flex-1 font-mono text-xs"
+                                        />
+                                        <Button variant="outline" size="sm" onClick={handleSelectInstancesPath}>
+                                            <FolderOpen />
+                                            {t('settings.java.browse', 'Browse')}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleChange('instancesPath', '')}
+                                            disabled={!settings.instancesPath}
+                                        >
+                                            <RotateCcw />
+                                            {t('settings.instance.storage_path_reset', 'Default')}
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                        {t('settings.instance.storage_path_desc', 'Leave empty to use the default folder. Restart the launcher after changing this path.')}
+                                    </p>
+                                </div>
+
+                                <Separator />
+
                                 <ToggleBox
                                     checked={settings.copySettingsEnabled || false}
                                     onChange={(val) => handleChange('copySettingsEnabled', val)}
@@ -1177,11 +1248,11 @@ function Settings({ mode = 'default' }) {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-foreground">{t('settings.update.current_version', 'Current Version')}</p>
-                                    <p className="text-sm text-muted-foreground mt-0.5">
+                                    <div className="text-sm text-muted-foreground mt-0.5">
                                         {updateInfo?.currentVersion ? (
                                             <Badge variant="secondary">{updateInfo.currentVersion}</Badge>
                                         ) : '...'}
-                                    </p>
+                                    </div>
                                 </div>
                                 <Button
                                     onClick={handleCheckUpdate}
@@ -1299,6 +1370,56 @@ function Settings({ mode = 'default' }) {
                                                 {t('settings.maintenance.title')}
                                             </h3>
 
+                                            <ToggleBox
+                                                checked={settings.settingsStorageFormat === 'yaml'}
+                                                onChange={(isYaml) => {
+                                                    const newFormat = isYaml ? 'yaml' : 'json';
+                                                    handleChange('settingsStorageFormat', newFormat);
+                                                    window.electronAPI.migrateSettings(newFormat).then((res) => {
+                                                        if (res.success) {
+                                                            addNotification(t('settings.storage_format_migrated', { format: newFormat.toUpperCase() }), 'success');
+                                                        } else {
+                                                            addNotification(t('settings.storage_format_failed', { error: res.error }), 'error');
+                                                        }
+                                                    });
+                                                }}
+                                                label={t('settings.storage_format', 'Settings Storage Format')}
+                                                description={t('settings.storage_format_desc', 'YAML is recommended for better readability and version control. JSON is the default.')}
+                                            />
+
+                                            <div className="mt-3 mb-4 flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleChange('settingsStorageFormat', 'json')}
+                                                    className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                                                        settings.settingsStorageFormat === 'json'
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border hover:border-primary/50 text-muted-foreground hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    JSON {settings.settingsStorageFormat === 'json' && '(Default)'}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        handleChange('settingsStorageFormat', 'yaml');
+                                                        window.electronAPI.migrateSettings('yaml').then((res) => {
+                                                            if (res.success) {
+                                                                addNotification(t('settings.storage_format_migrated', { format: 'YAML' }), 'success');
+                                                            } else {
+                                                                addNotification(t('settings.storage_format_failed', { error: res.error }), 'error');
+                                                            }
+                                                        });
+                                                    }}
+                                                    className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1.5 ${
+                                                        settings.settingsStorageFormat === 'yaml'
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border hover:border-primary/50 text-muted-foreground hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    YAML
+                                                    <span className="px-1.5 py-0.5 text-[10px] bg-primary/20 text-primary rounded">Recommended</span>
+                                                </button>
+                                            </div>
+
                                             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 mb-4">
                                                 <div className="flex items-start gap-2">
                                                     <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -1360,9 +1481,9 @@ function Settings({ mode = 'default' }) {
                             </AccordionItem>
                         </Accordion>
                     </Card>
-
+                    <ExtensionSlot name="settings.bottom" className="mt-4" />
                 </div>
-            </PageContent>
+            </PageContent >
 
             {showSoftResetModal && (
                 <ConfirmationModal
@@ -1373,31 +1494,36 @@ function Settings({ mode = 'default' }) {
                     onConfirm={handleSoftReset}
                     onCancel={() => setShowSoftResetModal(false)}
                 />
-            )}
+            )
+            }
 
-            {showFactoryResetModal && (
-                <ConfirmationModal
-                    title={t('settings.maintenance.factory_reset_modal_title')}
-                    message={t('settings.maintenance.factory_reset_modal_msg')}
-                    confirmText={t('settings.maintenance.factory_reset_confirm_btn')}
-                    isDangerous={true}
-                    onConfirm={handleFactoryReset}
-                    onCancel={() => setShowFactoryResetModal(false)}
-                />
-            )}
+            {
+                showFactoryResetModal && (
+                    <ConfirmationModal
+                        title={t('settings.maintenance.factory_reset_modal_title')}
+                        message={t('settings.maintenance.factory_reset_modal_msg')}
+                        confirmText={t('settings.maintenance.factory_reset_confirm_btn')}
+                        isDangerous={true}
+                        onConfirm={handleFactoryReset}
+                        onCancel={() => setShowFactoryResetModal(false)}
+                    />
+                )
+            }
 
-            {showRestartModal && (
-                <ConfirmationModal
-                    title={t('settings.compatibility.restart_title', 'Restart Required')}
-                    message={t('settings.compatibility.restart_msg', 'Enabling Legacy GPU Support requires an application restart to apply changes to the graphics engine. Would you like to restart now?')}
-                    confirmText={t('settings.compatibility.restart_confirm', 'Restart Now')}
-                    cancelText={t('settings.compatibility.restart_cancel', 'Not Now')}
-                    isDangerous={false}
-                    onConfirm={handleConfirmRestart}
-                    onCancel={() => setShowRestartModal(false)}
-                />
-            )}
-        </div>
+            {
+                showRestartModal && (
+                    <ConfirmationModal
+                        title={t('settings.compatibility.restart_title', 'Restart Required')}
+                        message={t('settings.compatibility.restart_msg', 'Enabling Legacy GPU Support requires an application restart to apply changes to the graphics engine. Would you like to restart now?')}
+                        confirmText={t('settings.compatibility.restart_confirm', 'Restart Now')}
+                        cancelText={t('settings.compatibility.restart_cancel', 'Not Now')}
+                        isDangerous={false}
+                        onConfirm={handleConfirmRestart}
+                        onCancel={() => setShowRestartModal(false)}
+                    />
+                )
+            }
+        </div >
     );
 }
 

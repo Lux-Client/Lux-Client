@@ -32,6 +32,7 @@ const Extensions = () => {
     const [activeTab, setActiveTab] = useState('installed');
     const [onlineExtensions, setOnlineExtensions] = useState([]);
     const [loadingOnline, setLoadingOnline] = useState(false);
+    const [onlineStatus, setOnlineStatus] = useState<'ok' | 'maintenance' | 'error'>('ok');
     const [installing, setInstalling] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -43,17 +44,27 @@ const Extensions = () => {
 
     const fetchOnlineExtensions = async () => {
         setLoadingOnline(true);
+        setOnlineStatus('ok');
         try {
             const response = await fetch('https://lux.pluginhub.de/api/extensions');
             if (response.ok) {
                 const data = await response.json();
                 const extsOnly = data.filter(ext => ext.type !== 'theme');
                 setOnlineExtensions(extsOnly);
+                setOnlineStatus('ok');
             } else {
                 console.error('Failed to fetch extensions', response.status);
+                setOnlineExtensions([]);
+                if (response.status === 503) {
+                    setOnlineStatus('maintenance');
+                } else {
+                    setOnlineStatus('error');
+                }
             }
         } catch (error) {
             console.error('Error fetching extensions:', error);
+            setOnlineExtensions([]);
+            setOnlineStatus('error');
         } finally {
             setLoadingOnline(false);
         }
@@ -255,6 +266,12 @@ const Extensions = () => {
                                     </div>
                                 ))}
                             </div>
+                        ) : onlineStatus === 'maintenance' ? (
+                            <EmptyState
+                                icon={Globe}
+                                title="Marketplace is under maintenance."
+                                description="Please try again in a few minutes."
+                            />
                         ) : onlineExtensions.length === 0 ? (
                             <EmptyState
                                 icon={Globe}

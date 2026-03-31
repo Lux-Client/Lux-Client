@@ -1,10 +1,12 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
+const { readYaml, writeYaml, getSettingsPaths, detectSettingsFormat, migrateSettings } = require('../utils/yaml');
 
 module.exports = (ipcMain) => {
-    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
-    const fontsDir = path.join(app.getPath('userData'), 'fonts');
+    const userDataPath = app.getPath('userData');
+    const { json: jsonPath, yaml: yamlPath } = getSettingsPaths(userDataPath);
+    const fontsDir = path.join(userDataPath, 'fonts');
 
     const defaultSettings = {
         javaPath: '',
@@ -14,9 +16,11 @@ module.exports = (ipcMain) => {
         resolutionHeight: 480,
         enableDiscordRPC: true,
         showDisabledFeatures: false,
+        settingsStorageFormat: 'json',
         enableModrinthPackSupport: true,
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
+        instancesPath: '',
         optimization: true,
         focusMode: false,
         minimalMode: true,
@@ -25,6 +29,10 @@ module.exports = (ipcMain) => {
             primaryColor: '#22e07a',
             backgroundColor: '#0d1117',
             surfaceColor: '#161b22',
+            sidebarColor: '',
+            textOnBackground: '#fafafa',
+            textOnSurface: '#fafafa',
+            textOnPrimary: '#0d0d0d',
             glassBlur: 10,
             glassOpacity: 0.8,
             consoleOpacity: 0.8,
@@ -45,21 +53,47 @@ module.exports = (ipcMain) => {
             interval: 60,
             maxBackups: 10
         },
+        startPage: 'dashboard',
         language: 'en',
         hasAcceptedToS: false,
-        hasSelectedLanguage: false
+        hasSelectedLanguage: false,
+        hasSelectedThemeMode: true,
+        hasSelectedStartupMode: true,
+        guidePrompts: {
+            launcher: true,
+            server: true,
+            client: true,
+            tools: true
+        }
     };
+
+    const normalizeThemeSchema = (theme = {}) => ({
+        ...theme,
+        primaryColor: theme.primaryColor || theme.primary || defaultSettings.theme.primaryColor,
+        backgroundColor: theme.backgroundColor || theme.bg || theme.background || defaultSettings.theme.backgroundColor,
+        surfaceColor: theme.surfaceColor || theme.surface || defaultSettings.theme.surfaceColor,
+        sidebarColor: typeof theme.sidebarColor === 'string'
+            ? theme.sidebarColor
+            : (typeof theme.sidebar === 'string' ? theme.sidebar : ''),
+        textOnBackground: theme.textOnBackground || theme.foreground || defaultSettings.theme.textOnBackground,
+        textOnSurface: theme.textOnSurface || theme.text || defaultSettings.theme.textOnSurface,
+        textOnPrimary: theme.textOnPrimary || defaultSettings.theme.textOnPrimary,
+    });
 
     const buildSettings = (settings = {}) => ({
         ...defaultSettings,
         ...settings,
         theme: {
             ...defaultSettings.theme,
-            ...(settings.theme || {})
+            ...normalizeThemeSchema(settings.theme || {})
         },
         backupSettings: {
             ...defaultSettings.backupSettings,
             ...(settings.backupSettings || {})
+        },
+        guidePrompts: {
+            ...defaultSettings.guidePrompts,
+            ...(settings.guidePrompts || {})
         }
     });
 
@@ -71,9 +105,14 @@ module.exports = (ipcMain) => {
         app.emit('settings-updated', settings);
     };
 
-    const readSettingsFile = async () => {
+    const getSettingsPath = (format) => format === 'yaml' ? yamlPath : jsonPath;
+
+    const readSettingsFile = async (format = 'json') => {
+        const settingsPath = getSettingsPath(format);
         if (await fs.pathExists(settingsPath)) {
-            const settings = await fs.readJson(settingsPath);
+            const settings = format === 'yaml' 
+                ? await readYaml(settingsPath) 
+                : await fs.readJson(settingsPath);
             return buildSettings(settings);
         }
         return buildSettings();
@@ -84,13 +123,32 @@ module.exports = (ipcMain) => {
         return (baseName || 'Custom Font').replace(/[_-]+/g, ' ');
     };
 
+    const getSettings = async () => {
+        const format = await detectSettingsFormat(userDataPath);
+        const settingsPath = getSettingsPath(format);
+        if (await fs.pathExists(settingsPath)) {
+            const settings = format === 'yaml'
+                ? await readYaml(settingsPath)
+                : await fs.readJson(settingsPath);
+            return buildSettings(settings);
+        }
+        return buildSettings();
+    };
+
+    const saveSettings = async (settings) => {
+        const format = settings.settingsStorageFormat || 'json';
+        const settingsPath = getSettingsPath(format);
+        if (format === 'yaml') {
+            await writeYaml(settingsPath, settings);
+        } else {
+            await fs.writeJson(settingsPath, settings, { spaces: 4 });
+        }
+    };
+
     ipcMain.handle('settings:get', async () => {
         try {
-            if (await fs.pathExists(settingsPath)) {
-                const settings = await fs.readJson(settingsPath);
-                return { success: true, settings: buildSettings(settings) };
-            }
-            return { success: true, settings: buildSettings() };
+            const settings = await getSettings();
+            return { success: true, settings };
         } catch (error) {
             console.error('Failed to get settings:', error);
             return { success: false, error: error.message };
@@ -100,11 +158,49 @@ module.exports = (ipcMain) => {
     ipcMain.handle('settings:save', async (_, newSettings) => {
         try {
             const mergedSettings = buildSettings(newSettings);
-            await fs.writeJson(settingsPath, mergedSettings, { spaces: 4 });
+            await saveSettings(mergedSettings);
             emitSettings(mergedSettings);
             return { success: true };
         } catch (error) {
             console.error('Failed to save settings:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('settings:migrate', async (_, targetFormat) => {
+        try {
+            if (targetFormat !== 'json' && targetFormat !== 'yaml') {
+                return { success: false, error: 'Invalid format. Use "json" or "yaml".' };
+            }
+            
+            const currentFormat = await detectSettingsFormat(userDataPath);
+            if (currentFormat === targetFormat) {
+                return { success: true, message: 'Already using ' + targetFormat };
+            }
+
+            const currentPath = getSettingsPath(currentFormat);
+            const targetPath = getSettingsPath(targetFormat);
+
+            const result = await migrateSettings(currentPath, targetPath, currentFormat, targetFormat);
+            
+            if (result.success) {
+                const updatedSettings = await getSettings();
+                updatedSettings.settingsStorageFormat = targetFormat;
+                await saveSettings(updatedSettings);
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Failed to migrate settings:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('settings:getFormat', async () => {
+        try {
+            const format = await detectSettingsFormat(userDataPath);
+            return { success: true, format };
+        } catch (error) {
             return { success: false, error: error.message };
         }
     });
@@ -211,7 +307,7 @@ module.exports = (ipcMain) => {
                 }
             };
 
-            await fs.writeJson(settingsPath, nextSettings, { spaces: 4 });
+            await saveSettings(nextSettings);
             emitSettings(nextSettings);
 
             return { success: true, font, settings: nextSettings };
@@ -223,7 +319,7 @@ module.exports = (ipcMain) => {
 
     ipcMain.handle('settings:delete-font', async (_, fontId) => {
         try {
-            const settings = await readSettingsFile();
+            const settings = await getSettings();
             const customFonts = settings.theme.customFonts || [];
             const targetFont = customFonts.find(font => font.id === fontId);
 
@@ -244,7 +340,7 @@ module.exports = (ipcMain) => {
                 }
             };
 
-            await fs.writeJson(settingsPath, nextSettings, { spaces: 4 });
+            await saveSettings(nextSettings);
             emitSettings(nextSettings);
 
             return { success: true, settings: nextSettings };

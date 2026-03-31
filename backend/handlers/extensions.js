@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const axios = require('axios');
 const JSZip = require('jszip');
 const { transform } = require('sucrase');
+const { getAllInstanceDirsSync } = require('../utils/instances-path');
 
 module.exports = (ipcMain, mainWindow) => {
     const extensionsDir = path.join(app.getPath('userData'), 'extensions');
@@ -25,16 +26,54 @@ module.exports = (ipcMain, mainWindow) => {
                 ipcMain.on(fullChannel, (event, ...args) => listener(event, ...args));
             },
             send: (channel, ...args) => {
-                mainWindow.webContents.send(`ext:${id}:${channel}`, ...args);
+                const win = mainWindow || require('electron').BrowserWindow.getAllWindows()[0];
+                if (win) {
+                    win.webContents.send(`ext:${id}:${channel}`, ...args);
+                }
+            }
+        },
+        events: {
+            emit: (event, ...args) => {
+                ipcMain.emit(`ext-event:${event}`, ...args);
+                const win = mainWindow || require('electron').BrowserWindow.getAllWindows()[0];
+                if (win) {
+                    win.webContents.send(`ext-event:${event}`, ...args);
+                }
+            },
+            on: (event, listener) => {
+                ipcMain.on(`ext-event:${event}`, listener);
             }
         },
         launcher: {
+            getInstances: () => {
+                const names = new Set();
+                const baseDirs = getAllInstanceDirsSync();
 
+                for (const instDir of baseDirs) {
+                    if (!fs.existsSync(instDir)) continue;
+
+                    const dirs = fs.readdirSync(instDir);
+                    for (const dirName of dirs) {
+                        const instancePath = path.join(instDir, dirName);
+                        const configPath = path.join(instancePath, 'instance.json');
+
+                        try {
+                            if (fs.statSync(instancePath).isDirectory() && fs.existsSync(configPath)) {
+                                names.add(dirName);
+                            }
+                        } catch (_) {
+                        }
+                    }
+                }
+
+                return Array.from(names);
+            }
         },
         app,
         id,
         axios,
-        fs
+        fs,
+        path
     });
 
     const loadBackend = async (id, extensionPath) => {

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNotification } from '../context/NotificationContext';
+import { Dialog, DialogContent, DialogTitle, DialogHeader } from './ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 function ModpackCodeModal({
     isOpen,
@@ -119,25 +121,15 @@ function ModpackCodeModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-popover w-full max-w-lg rounded-xl border border-border shadow-2xl animate-scale-in flex flex-col max-h-[90vh]">
-                
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh] sm:max-w-lg border-border shadow-2xl">
+                <DialogPrimitive.Title className="sr-only">Modpack Code Modal</DialogPrimitive.Title>
                 <div className="p-6 border-b border-border flex flex-col gap-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold text-foreground">
+                        <h2 className="text-2xl font-bold text-foreground pr-8">
                             {mode === 'export' ? 'Modpack Sharing' : 'Import from Code'}
                         </h2>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-accent rounded-lg transition-colors"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
                     </div>
 
                     {mode === 'export' && (
@@ -158,8 +150,7 @@ function ModpackCodeModal({
                     )}
                 </div>
 
-                
-                <div className="p-6 overflow-y-auto">
+                <div className="p-6 overflow-y-auto custom-scrollbar">
                     {mode === 'export' ? (
                         <>
                             {exportedCode ? (
@@ -353,8 +344,8 @@ function ModpackCodeModal({
                         </>
                     )}
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }
 

@@ -9,6 +9,7 @@ const ThemeMarketplace = () => {
     const [activeTab, setActiveTab] = useState('online');
     const [onlineThemes, setOnlineThemes] = useState([]);
     const [loadingOnline, setLoadingOnline] = useState(false);
+    const [onlineStatus, setOnlineStatus] = useState('ok');
     const [installing, setInstalling] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -29,17 +30,27 @@ const ThemeMarketplace = () => {
 
     const fetchOnlineThemes = async () => {
         setLoadingOnline(true);
+        setOnlineStatus('ok');
         try {
             const response = await fetch('https://lux.pluginhub.de/api/extensions?type=theme');
             if (response.ok) {
                 const data = await response.json();
                 const themesOnly = data.filter(ext => ext.type === 'theme');
                 setOnlineThemes(themesOnly);
+                setOnlineStatus('ok');
             } else {
                 console.error('Failed to fetch themes', response.status);
+                setOnlineThemes([]);
+                if (response.status === 503) {
+                    setOnlineStatus('maintenance');
+                } else {
+                    setOnlineStatus('error');
+                }
             }
         } catch (error) {
             console.error('Error fetching themes:', error);
+            setOnlineThemes([]);
+            setOnlineStatus('error');
         } finally {
             setLoadingOnline(false);
         }
@@ -177,6 +188,10 @@ const ThemeMarketplace = () => {
                         <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-border border-dashed">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
                             <p className="text-muted-foreground font-medium text-lg">Loading themes...</p>
+                        </div>
+                    ) : onlineStatus === 'maintenance' ? (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-border border-dashed">
+                            <p className="text-muted-foreground font-medium text-lg">Marketplace is under maintenance. Please try again later.</p>
                         </div>
                     ) : onlineThemes.length === 0 ? (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-border border-dashed">

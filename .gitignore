@@ -2,6 +2,7 @@
 node_modules/
 
 # Log files and folders
+docs/
 logs/
 *.log
 npm-debug.log*
@@ -83,3 +84,4 @@ bun.lock
 debug_forge_profile.js
 check_syntax.js
 updateLocales.js
+/extensions

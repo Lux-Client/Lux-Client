@@ -59,17 +59,25 @@ const initRPC = async () => {
 
 const stopRPC = async () => {
     isReady = false;
+
     if (rpc) {
         try {
-            await rpc.destroy();
+            rpc.clearActivity();
+        } catch (e) {
+            console.error('Failed to clear activity', e);
+        }
+
+        try {
+            const currentRpc = rpc;
+            rpc = null;
+            await currentRpc.destroy();
         } catch (e) {
             console.error('Failed to destroy RPC launcher', e);
         }
-        rpc = null;
     }
 };
 
-const setActivity = (details, state, largeImageKey = 'lux_icon', largeImageText = 'Lux', startTimestamp = null) => {
+const setActivity = (details, state, largeImageKey = 'lux_icon', largeImageText = 'Lux Client', startTimestamp = null) => {
     if (!isEnabled || !rpc || !isReady) return;
 
     try {

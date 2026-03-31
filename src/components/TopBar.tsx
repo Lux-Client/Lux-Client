@@ -16,13 +16,36 @@ import {
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup
 } from './ui/dropdown-menu';
 import {
-  Search, ChevronDown, Newspaper, Rocket,
-  Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap
+  Search, ChevronDown, ChevronLeft, ChevronRight, Newspaper, Rocket,
+  Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap, Wrench
 } from 'lucide-react';
+
+type TopBarProps = {
+  currentMode: any;
+  onModeSelect: any;
+  canNavigateBack: boolean;
+  canNavigateForward: boolean;
+  onNavigateBack: () => void;
+  onNavigateForward: () => void;
+  userProfile: any;
+  onProfileUpdate: any;
+  isGuest: any;
+  isMaximized: any;
+  onOpenCommandPalette: any;
+  onNavigate: any;
+  runningInstances: any;
+  activeDownloads: any;
+  appSettings: any;
+  isCommandPaletteAvailable: boolean;
+};
 
 function TopBar({
   currentMode,
   onModeSelect,
+  canNavigateBack,
+  canNavigateForward,
+  onNavigateBack,
+  onNavigateForward,
   userProfile,
   onProfileUpdate,
   isGuest,
@@ -33,7 +56,7 @@ function TopBar({
   activeDownloads,
   appSettings,
   isCommandPaletteAvailable
-}) {
+}: TopBarProps) {
   const { t } = useTranslation();
   const [accounts, setAccounts] = useState([]);
   const [liveSkin, setLiveSkin] = useState(null);
@@ -123,19 +146,64 @@ function TopBar({
       value: 'client',
       label: t('common.client', 'Client'),
       icon: Gamepad2
-    }] : [])
+    }] : []),
+    {
+      value: 'tools',
+      label: t('common.useful_tools', 'Useful Tools'),
+      icon: Wrench
+    }
   ];
 
   return (
-    <div className="h-16 w-full titlebar flex items-center justify-between px-5 border-b border-border bg-background/80 backdrop-blur-md flex-none relative z-[60]">
-      <div className="flex items-center gap-2.5 no-drag">
+    <div className="h-16 w-full titlebar flex items-center justify-between px-3 lg:px-5 border-b border-border bg-background/80 backdrop-blur-md flex-none relative z-[60]">
+      <div className="flex items-center gap-1.5 lg:gap-2.5 no-drag shrink-0">
         <div className="w-10 h-10 bg-primary/15 rounded-xl flex items-center justify-center text-primary font-bold text-base border border-primary/20">
           M
         </div>
 
-        {appSettings?.showQuickSwitchButton !== false && (
-          <>
-            <TooltipProvider>
+        <>
+          <TooltipProvider>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg"
+                    aria-label={t('common.back', 'Back')}
+                    onClick={onNavigateBack}
+                    disabled={!canNavigateBack}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>{t('common.back', 'Back')}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg"
+                    aria-label={t('common.forward', 'Forward')}
+                    onClick={onNavigateForward}
+                    disabled={!canNavigateForward}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>{t('common.forward', 'Forward')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <div data-guide-id="mode-switcher">
               <ToggleGroup
                 type="single"
                 value={currentMode}
@@ -148,6 +216,7 @@ function TopBar({
                       <ToggleGroupItem
                         value={value}
                         aria-label={label}
+                        data-guide-id={`mode-switch-${value}`}
                         className={cn(
                           "h-8 w-8 rounded-lg px-0",
                           currentMode === value
@@ -164,40 +233,42 @@ function TopBar({
                   </Tooltip>
                 ))}
               </ToggleGroup>
-            </TooltipProvider>
+            </div>
+          </TooltipProvider>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 gap-2.5 rounded-xl px-3.5 text-sm font-semibold text-muted-foreground"
-              onClick={() => onNavigate('news')}
-            >
-              <Newspaper className="h-4 w-4" />
-              {t('common.news', 'News')}
-            </Button>
-          </>
-        )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-10 gap-2.5 rounded-xl px-2 lg:px-3.5 text-sm font-semibold text-muted-foreground hidden sm:flex"
+            onClick={() => onNavigate('news')}
+          >
+            <Newspaper className="h-4 w-4" />
+            <span className="hidden lg:inline">{t('common.news', 'News')}</span>
+          </Button>
+        </>
       </div>
 
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 no-drag">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-10 min-w-[280px] gap-2.5 rounded-xl border-border/50 bg-background/50 px-4 text-sm text-muted-foreground justify-start"
-          onClick={onOpenCommandPalette}
-          disabled={!isCommandPaletteAvailable}
-        >
-          <Search className="h-4 w-4" />
-          <span>{t('dashboard.search_placeholder', 'Search...')}</span>
-          <kbd className="ml-auto pointer-events-none inline-flex h-6 select-none items-center gap-1 rounded-md border border-border bg-muted px-2 font-mono text-[11px] font-medium text-muted-foreground">
-            Ctrl+K
-          </kbd>
-        </Button>
-        <ExtensionSlot name="header.center" className="flex items-center gap-2" />
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 no-drag pointer-events-none" style={{ maxWidth: 'calc(100% - 480px)' }}>
+        <div className="pointer-events-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 w-full max-w-[280px] gap-2 rounded-xl border-border/50 bg-background/50 px-2 lg:px-4 text-sm text-muted-foreground justify-start"
+            onClick={onOpenCommandPalette}
+            disabled={!isCommandPaletteAvailable}
+          >
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="hidden md:inline truncate">{t('dashboard.search_placeholder', 'Search...')}</span>
+            <kbd className="hidden lg:inline-flex ml-auto pointer-events-none h-6 select-none items-center gap-1 rounded-md border border-border bg-muted px-2 font-mono text-[11px] font-medium text-muted-foreground">
+              Ctrl+K
+            </kbd>
+          </Button>
+          <ExtensionSlot name="header.center" className="flex items-center gap-2" />
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 no-drag">
-        <ExtensionSlot name="header.right" className="flex items-center gap-2" />
+      <div className="flex items-center justify-end gap-1.5 lg:gap-2 no-drag shrink-0">
+        <ExtensionSlot name="header.right" className="hidden sm:flex items-center gap-2" />
 
         {activeDownloadCount > 0 && (
           <DropdownMenu>
@@ -233,10 +304,10 @@ function TopBar({
         <Button
           variant="ghost"
           size="sm"
-          className="h-10 gap-2 rounded-xl px-3 text-sm"
+          className="h-10 gap-2 rounded-xl px-2 lg:px-3 text-sm hidden sm:flex"
         >
-          <div className={cn('w-1.5 h-1.5 rounded-full', runningCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/50')} />
-          <span className="text-muted-foreground">
+          <div className={cn('w-1.5 h-1.5 rounded-full shrink-0', runningCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/50')} />
+          <span className="text-muted-foreground hidden lg:inline">
             {runningCount === 0 ? t('common.idle') : `${runningCount} ${t('common.running')}`}
           </span>
         </Button>
@@ -263,7 +334,7 @@ function TopBar({
 
         <DropdownMenu onOpenChange={(open) => open && loadAccounts()}>
           <DropdownMenuTrigger asChild>
-            <button className="flex h-10 items-center gap-2 rounded-xl px-2.5 py-1.5 hover:bg-accent transition-colors">
+            <button className="flex h-10 items-center gap-1.5 lg:gap-2 rounded-xl px-1.5 lg:px-2.5 py-1.5 hover:bg-accent transition-colors">
               {userProfile ? (
                 <>
                   <PlayerHead
@@ -271,18 +342,18 @@ function TopBar({
                     uuid={userProfile?.uuid}
                     name={userProfile?.name}
                     size={28}
-                    className="rounded-md"
+                    className="rounded-md shrink-0"
                   />
-                  <span className="hidden max-w-[96px] truncate text-sm font-medium text-foreground sm:inline">
+                  <span className="hidden max-w-[96px] truncate text-sm font-medium text-foreground lg:inline">
                     {userProfile?.name}
                   </span>
                 </>
               ) : (
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted shrink-0">
                   <UserPlus className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 hidden sm:block" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

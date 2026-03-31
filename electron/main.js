@@ -7,9 +7,9 @@ if (process.platform === 'linux' && process.env.XDG_CURRENT_DESKTOP === 'COSMIC'
     process.env.XDG_CURRENT_DESKTOP = 'Unity';
 }
 
-app.setName(pkg.productName || 'Lux');
+app.setName(pkg.productName || 'Lux Client');
 app.setAboutPanelOptions({
-    applicationName: pkg.productName || 'Lux',
+    applicationName: pkg.productName || 'Lux Client',
     applicationVersion: pkg.version
 });
 
@@ -39,10 +39,31 @@ try {
     console.error('[Main] Failed to read settings for legacy GPU check:', e);
 }
 
-console.log('NUCLEAR STARTUP CHECK: main.js is running!');
-console.log('[DEBUG] CWD:', process.cwd());
-console.log('[DEBUG] __dirname:', __dirname);
-console.log('[DEBUG] Preload Path:', path.join(__dirname, '../backend/preload.js'));
+const logPath = path.join(app.getPath('userData'), 'startup.log');
+function logToFile(msg) {
+    const time = new Date().toISOString();
+    try {
+        fs.appendFileSync(logPath, `[${time}] ${msg}\n`);
+    } catch (e) {
+        console.error('Failed to write to log file:', e);
+    }
+}
+
+process.on('uncaughtException', (error) => {
+    logToFile(`CRITICAL: Uncaught Exception: ${error.message}\nStack: ${error.stack}`);
+    console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logToFile(`CRITICAL: Unhandled Rejection at: ${promise}\nReason: ${reason}`);
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+logToFile('NUCLEAR STARTUP CHECK: main.js is running!');
+logToFile(`[DEBUG] CWD: ${process.cwd()}`);
+logToFile(`[DEBUG] __dirname: ${__dirname}`);
+logToFile(`[DEBUG] Preload Path: ${path.join(__dirname, '../backend/preload.js')}`);
+logToFile(`[DEBUG] userData: ${app.getPath('userData')}`);
 
 ipcMain.handle('ping', () => {
     console.log('Ping received!');
@@ -78,6 +99,35 @@ let splashWindow;
 let tray = null;
 let isQuiting = false;
 const isDeveloperMode = process.env.NODE_ENV === 'development';
+const updateAttemptStatePath = path.join(app.getPath('userData'), 'update-attempt-state.json');
+
+async function readUpdateAttemptState() {
+    try {
+        if (!await fs.pathExists(updateAttemptStatePath)) return {};
+        const data = await fs.readJson(updateAttemptStatePath);
+        return data && typeof data === 'object' ? data : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+async function writeUpdateAttemptState(nextState = {}) {
+    try {
+        await fs.writeJson(updateAttemptStatePath, nextState, { spaces: 2 });
+    } catch (e) {
+        // Non-fatal.
+    }
+}
+
+async function clearUpdateAttemptState() {
+    try {
+        if (await fs.pathExists(updateAttemptStatePath)) {
+            await fs.remove(updateAttemptStatePath);
+        }
+    } catch (e) {
+        // Non-fatal.
+    }
+}
 
 function createSplashWindow() {
     splashWindow = new BrowserWindow({
@@ -131,7 +181,7 @@ async function checkAndLaunch() {
             const { compareVersions } = require('../backend/utils/version-utils');
             const pkg = require('../package.json');
 
-            const REPO = 'LuxClient/LuxClient';
+            const REPO = 'Lux-Client/LuxClient';
             const GITHUB_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 
             const response = await axios.get(GITHUB_API, {
@@ -144,6 +194,19 @@ async function checkAndLaunch() {
             const needsUpdate = compareVersions(currentVersion, latestVersion) === 1;
 
             if (needsUpdate) {
+                const lastAttempt = await readUpdateAttemptState();
+                const sameVersion = String(lastAttempt?.version || '') === String(latestVersion || '');
+                const recentFailureWindowMs = 15 * 60 * 1000;
+                const wasInstallingRecently = sameVersion
+                    && String(lastAttempt?.status || '') === 'installing'
+                    && Date.now() - Number(lastAttempt?.ts || 0) < recentFailureWindowMs;
+
+                if (wasInstallingRecently) {
+                    splashWindow.webContents.send('updater:status', { status: 'Starting' });
+                    setTimeout(launchMain, 1500);
+                    return;
+                }
+
                 const platform = process.platform;
                 let asset = null;
                 if (platform === 'win32') {
@@ -163,6 +226,14 @@ async function checkAndLaunch() {
                     if (!safeAssetName || safeAssetName.startsWith('.')) {
                         throw new Error('Invalid update asset filename');
                     }
+
+                    await writeUpdateAttemptState({
+                        status: 'installing',
+                        version: latestVersion,
+                        ts: Date.now(),
+                        assetName: safeAssetName
+                    });
+
                     const targetPath = path.join(downloadDir, safeAssetName);
 
                     const downloadRes = await axios({
@@ -238,6 +309,7 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
 }
 
 function launchMain() {
+    clearUpdateAttemptState();
     createWindow();
 }
 
@@ -273,65 +345,42 @@ function createWindow() {
     });
 
     console.log('[Main] Preload script configured.');
-    console.log('[Main] Registering handlers...');
-    console.log('[Main] Registering auth handler...');
-    require('../backend/handlers/auth')(ipcMain, mainWindow);
-    console.log('[Main] Registering instances handler...');
-    try {
-        require('../backend/handlers/instances')(ipcMain, mainWindow);
-        console.log('[Main] ✅ Instances handler registered successfully.');
-    } catch (e) {
-        console.error('[Main] ❌ CRITICAL: Failed to register instances handler:');
-        console.error('Message:', e.message);
-        console.error('Stack:', e.stack);
-        if (process.env.NODE_ENV === 'development') {
-            process.exit(1);
+    const handlers = [
+        { name: 'auth', path: '../backend/handlers/auth' },
+        { name: 'instances', path: '../backend/handlers/instances' },
+        { name: 'launcher', path: '../backend/handlers/launcher' },
+        { name: 'servers', path: '../backend/handlers/servers' },
+        { name: 'modrinth', path: '../backend/handlers/modrinth' },
+        { name: 'data', path: '../backend/handlers/data' },
+        { name: 'settings', path: '../backend/handlers/settings' },
+        { name: 'skins', path: '../backend/handlers/skins' },
+        { name: 'modpackCode', path: '../backend/handlers/modpackCode' },
+        { name: 'extensions', path: '../backend/handlers/extensions' },
+        { name: 'cloudBackup', path: '../backend/handlers/cloudBackup' },
+        { name: 'java', path: '../backend/handlers/java' },
+        { name: 'external', path: '../backend/handlers/external' },
+        { name: 'updater', path: '../backend/handlers/updater' }
+    ];
+
+    for (const h of handlers) {
+        logToFile(`[Main] Registering ${h.name} handler...`);
+        try {
+            const handler = require(h.path);
+            if (typeof handler === 'function') {
+                if (h.name === 'data' || h.name === 'settings' || h.name === 'java' || h.name === 'external') {
+                    handler(ipcMain);
+                } else {
+                    handler(ipcMain, mainWindow);
+                }
+                logToFile(`[Main] ✅ ${h.name} handler registered.`);
+            } else {
+                logToFile(`[Main] ⚠️ ${h.name} handler is not a function.`);
+            }
+        } catch (e) {
+            logToFile(`[Main] ❌ CRITICAL: Failed to register ${h.name} handler: ${e.message}\n${e.stack}`);
+            console.error(`[Main] Failed to register ${h.name} handler:`, e);
         }
     }
-    console.log('[Main] Registering launcher handler...');
-    require('../backend/handlers/launcher')(ipcMain, mainWindow);
-    require('../backend/handlers/servers')(ipcMain, mainWindow);
-    console.log('[Main] Registering Modrinth handler...');
-    require('../backend/handlers/modrinth')(ipcMain, mainWindow);
-    console.log('[Main] Registering data handler...');
-    require('../backend/handlers/data')(ipcMain);
-    console.log('[Main] Registering settings handler...');
-    require('../backend/handlers/settings')(ipcMain);
-    console.log('[Main] Registering skins handler...');
-    try {
-        require('../backend/handlers/skins')(ipcMain, mainWindow);
-        console.log('[Main] Skins handler registered successfully.');
-    } catch (e) {
-        console.error('[Main] Failed to register skins handler:', e);
-    }
-    console.log('[Main] Registering modpack code handler...');
-    try {
-        require('../backend/handlers/modpackCode')(ipcMain, mainWindow);
-        console.log('[Main] Modpack code handler registered successfully.');
-    } catch (e) {
-        console.error('[Main] Failed to register modpack code handler:', e);
-    }
-
-    console.log('[Main] Registering extensions handler...');
-    try {
-        require('../backend/handlers/extensions')(ipcMain, mainWindow);
-        console.log('[Main] Extensions handler registered successfully.');
-    } catch (e) {
-        console.error('[Main] Failed to register extensions handler:', e);
-    }
-
-    console.log('[Main] Registering cloud backup handler...');
-    try {
-        require('../backend/handlers/cloudBackup')(ipcMain, mainWindow);
-        console.log('[Main] Cloud backup handler registered successfully.');
-    } catch (e) {
-        console.error('[Main] Failed to register cloud backup handler:', e);
-    }
-
-    require('../backend/handlers/java')(ipcMain);
-    require('../backend/handlers/external')(ipcMain);
-    const updater = require('../backend/handlers/updater');
-    updater(ipcMain, mainWindow);
 
     ipcMain.on('app:is-packaged', (event) => {
         event.returnValue = app.isPackaged;
@@ -350,23 +399,38 @@ function createWindow() {
         }
     });
 
-    const discord = require('../backend/handlers/discord');
-    discord.initRPC();
-    const backupManager = require('../backend/backupManager');
-    backupManager.init(ipcMain);
+    try {
+        logToFile('[Main] Initializing Discord RPC...');
+        const discord = require('../backend/handlers/discord');
+        discord.initRPC();
+        logToFile('[Main] ✅ Discord RPC initialized.');
+    } catch (e) {
+        logToFile(`[Main] ❌ Failed to initialize Discord RPC: ${e.message}`);
+    }
+
+    try {
+        logToFile('[Main] Initializing Backup Manager...');
+        const backupManager = require('../backend/backupManager');
+        backupManager.init(ipcMain);
+        logToFile('[Main] ✅ Backup Manager initialized.');
+    } catch (e) {
+        logToFile(`[Main] ❌ Failed to initialize Backup Manager: ${e.message}`);
+    }
     if (isDeveloperMode) {
-        console.log('[Main] Loading development URL...');
+        logToFile('[Main] Loading development URL...');
         mainWindow.loadURL('http://localhost:3000');
         mainWindow.webContents.openDevTools();
     } else {
         const indexPath = path.join(__dirname, '../dist/index.html');
-        console.log(`[Main] Loading production file: ${indexPath}`);
+        logToFile(`[Main] Loading production file: ${indexPath}`);
 
         if (!fs.existsSync(indexPath)) {
+            logToFile(`[Main] CRITICAL ERROR: Production index.html not found at ${indexPath}`);
             console.error(`[Main] CRITICAL ERROR: Production index.html not found at ${indexPath}`);
         }
 
         mainWindow.loadFile(indexPath).catch(err => {
+            logToFile(`[Main] Failed to load production file: ${err.message}\n${err.stack}`);
             console.error('[Main] Failed to load production file:', err);
         });
     }

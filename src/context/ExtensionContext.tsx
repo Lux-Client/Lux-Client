@@ -11,62 +11,100 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
     const [installedExtensions, setInstalledExtensions] = useState([]);
     const [activeExtensions, setActiveExtensions] = useState<Record<string, any>>({});
     const [views, setViews] = useState<Record<string, any[]>>({});
+    const [hooks, setHooks] = useState<Record<string, any[]>>({});
+    const [injectedStyles, setInjectedStyles] = useState<Record<string, HTMLStyleElement>>({});
     const [loading, setLoading] = useState(true);
     const { addNotification } = useNotification();
-    const createExtensionApi = (extensionId, localPath) => ({
+    const createExtensionApi = (extensionId, localPath) => {
+        const api = {
+            ui: {
+                registerView: (slotName, component) => {
+                    setViews(prev => {
+                        const slotViews = prev[slotName] || [];
 
-        ui: {
-            registerView: (slotName, component) => {
-                setViews(prev => {
-                    const slotViews = prev[slotName] || [];
-
-                    const filteredViews = slotViews.filter(v => v.extensionId !== extensionId);
-                    return {
-                        ...prev,
-                        [slotName]: [...filteredViews, { id: generateId(), extensionId, component }]
-                    };
-                });
-            },
-            toast: (message, type = 'info') => {
-                console.log(`[Extension:${extensionId}] Toast: ${message} (${type})`);
-                if (addNotification) {
-                    addNotification(`[${extensionId}] ${message}`, type);
+                        const filteredViews = slotViews.filter(v => v.extensionId !== extensionId);
+                        return {
+                            ...prev,
+                            [slotName]: [...filteredViews, { id: generateId(), extensionId, component, api }]
+                        };
+                    });
+                },
+                toast: (message, type = 'info') => {
+                    console.log(`[Extension:${extensionId}] Toast: ${message} (${type})`);
+                    if (addNotification) {
+                        addNotification(`[${extensionId}] ${message}`, type);
+                    }
+                },
+                injectStyle: (css: string) => {
+                    const styleId = `ext-style-${extensionId}`;
+                    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+                    if (!styleEl) {
+                        styleEl = document.createElement('style');
+                        styleEl.id = styleId;
+                        document.head.appendChild(styleEl);
+                    }
+                    styleEl.textContent = css;
+                    setInjectedStyles(prev => ({ ...prev, [extensionId]: styleEl }));
                 }
-            }
-
-        },
-
-        ipc: {
-            invoke: (channel, ...args) => {
-
-                const coreMethod = channel.replace(/:/g, '_');
-                if (window.electronAPI[channel]) return window.electronAPI[channel](...args);
-                return window.electronAPI.invokeExtension(extensionId, channel, ...args);
             },
-            on: (channel, callback) => {
-                return window.electronAPI.onExtensionMessage(extensionId, channel, callback);
-            }
-        },
 
-        launcher: {
-            getActiveProcesses: () => window.electronAPI.getActiveProcesses(),
-            getProcessStats: (pid) => window.electronAPI.getProcessStats(pid),
-        },
-
-        storage: {
-            get: (key) => {
-                try {
-                    const data = localStorage.getItem(`ext:${extensionId}:${key}`);
-                    return data ? JSON.parse(data) : null;
-                } catch (e) { return null; }
+            hooks: {
+                register: (point: string, handler: Function) => {
+                    setHooks(prev => {
+                        const pointHooks = prev[point] || [];
+                        return {
+                            ...prev,
+                            [point]: [...pointHooks, { extensionId, handler }]
+                        };
+                    });
+                },
+                run: async (point: string, data: any) => {
+                    const pointHooks = hooks[point] || [];
+                    let currentData = data;
+                    for (const hook of pointHooks) {
+                        try {
+                            const result = await hook.handler(currentData);
+                            if (result !== undefined) currentData = result;
+                        } catch (e) {
+                            console.error(`[Extension:${hook.extensionId}] Hook error in ${point}:`, e);
+                        }
+                    }
+                    return currentData;
+                }
             },
-            set: (key, value) => {
-                localStorage.setItem(`ext:${extensionId}:${key}`, JSON.stringify(value));
-            }
-        },
 
-        meta: { id: extensionId, localPath: localPath }
-    });
+            ipc: {
+                invoke: (channel, ...args) => {
+                    const coreMethod = channel.replace(/:/g, '_');
+                    if (window.electronAPI[channel]) return window.electronAPI[channel](...args);
+                    return window.electronAPI.invokeExtension(extensionId, channel, ...args);
+                },
+                on: (channel, callback) => {
+                    return window.electronAPI.onExtensionMessage(extensionId, channel, callback);
+                }
+            },
+
+            launcher: {
+                getActiveProcesses: () => window.electronAPI.getActiveProcesses(),
+                getProcessStats: (pid) => window.electronAPI.getProcessStats(pid),
+            },
+
+            storage: {
+                get: (key) => {
+                    try {
+                        const data = localStorage.getItem(`ext:${extensionId}:${key}`);
+                        return data ? JSON.parse(data) : null;
+                    } catch (e) { return null; }
+                },
+                set: (key, value) => {
+                    localStorage.setItem(`ext:${extensionId}:${key}`, JSON.stringify(value));
+                }
+            },
+
+            meta: { id: extensionId, localPath: localPath }
+        };
+        return api;
+    };
     const unloadExtension = async (extensionId) => {
         const active = activeExtensions[extensionId];
         if (!active) return;
@@ -79,10 +117,30 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
                 console.error(`[Extension] Error during deactivate for ${extensionId}:`, e);
             }
         }
+
+        // Remove style
+        const styleEl = injectedStyles[extensionId];
+        if (styleEl) {
+            styleEl.remove();
+            setInjectedStyles(prev => {
+                const next = { ...prev };
+                delete next[extensionId];
+                return next;
+            });
+        }
+
         setViews(prev => {
             const next: Record<string, any[]> = {};
             for (const [slot, items] of Object.entries(prev)) {
                 next[slot] = items.filter(item => item.extensionId !== extensionId);
+            }
+            return next;
+        });
+
+        setHooks(prev => {
+            const next: Record<string, any[]> = {};
+            for (const [point, items] of Object.entries(prev)) {
+                next[point] = items.filter(item => item.extensionId !== extensionId);
             }
             return next;
         });

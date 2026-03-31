@@ -40,6 +40,23 @@ module.exports = (ipcMain, mainWindow) => {
         return sanitized || fallback;
     }
 
+    function normalizeOptionalOutputPath(outputPath) {
+        if (typeof outputPath !== 'string') {
+            return null;
+        }
+
+        const trimmed = outputPath.trim();
+        if (!trimmed) {
+            return null;
+        }
+
+        if (path.extname(trimmed).toLowerCase() !== '.png') {
+            return `${trimmed}.png`;
+        }
+
+        return trimmed;
+    }
+
     function getSkinNameFromUrl(skinUrl) {
         try {
             const parsedUrl = new URL(skinUrl);
@@ -61,7 +78,7 @@ module.exports = (ipcMain, mainWindow) => {
         }
     }
 
-    async function saveSkinBuffer(fileBuffer, name, extraData = {}) {
+    async function saveSkinBuffer(fileBuffer, name, extraData = {}, options = {}) {
         await validateSkinBuffer(fileBuffer);
 
         const hash = crypto.createHash('sha1').update(fileBuffer).digest('hex');
@@ -102,12 +119,19 @@ module.exports = (ipcMain, mainWindow) => {
             await saveSkinManifest(manifest);
         }
 
+        const outputPath = normalizeOptionalOutputPath(options.outputPath);
+        if (outputPath) {
+            await fs.ensureDir(path.dirname(outputPath));
+            await fs.writeFile(outputPath, fileBuffer);
+        }
+
         return {
             success: true,
             skin: {
                 ...skin,
                 data: `data:image/png;base64,${fileBuffer.toString('base64')}`
-            }
+            },
+            savedToPath: outputPath || undefined
         };
     }
 
@@ -277,17 +301,66 @@ module.exports = (ipcMain, mainWindow) => {
                 const source = `${filePath.source || ''}`.trim();
                 const value = `${filePath.value || ''}`.trim();
 
+                console.log('[Skin:save-local] Received payload:', { source, valueLength: value.length, valuePreview: value.substring(0, 100) });
+
                 if (source === 'url') {
                     if (!value) return { success: false, error: 'No URL provided' };
                     const fileBuffer = await fetchSkinBuffer(value);
-                    return await saveSkinBuffer(fileBuffer, getSkinNameFromUrl(value));
+                    return await saveSkinBuffer(fileBuffer, getSkinNameFromUrl(value), {}, { outputPath: filePath.outputPath });
                 }
 
                 if (source === 'username') {
                     if (!value) return { success: false, error: 'No username provided' };
                     const resolvedSkin = await resolveSkinFromUsername(value);
                     const fileBuffer = await fetchSkinBuffer(resolvedSkin.skinUrl);
-                    return await saveSkinBuffer(fileBuffer, resolvedSkin.name, { model: resolvedSkin.model });
+                    return await saveSkinBuffer(
+                        fileBuffer,
+                        resolvedSkin.name,
+                        { model: resolvedSkin.model },
+                        { outputPath: filePath.outputPath }
+                    );
+                }
+
+                if (source === 'data-url' || source === 'data') {
+                    if (!value) return { success: false, error: 'No skin data provided' };
+
+                    let base64Payload = value;
+                    const dataUrlMatch = value.match(/^data:image\/png;base64,(.+)$/i);
+                    if (dataUrlMatch && dataUrlMatch[1]) {
+                        base64Payload = dataUrlMatch[1];
+                    }
+
+                    try {
+                        const fileBuffer = Buffer.from(base64Payload, 'base64');
+                        if (!fileBuffer || fileBuffer.length === 0) {
+                            return { success: false, error: 'Invalid skin image data' };
+                        }
+
+                        const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
+                        const extraData = model ? { model } : {};
+                        return await saveSkinBuffer(fileBuffer, filePath.name || 'Dropped Skin', extraData, { outputPath: filePath.outputPath });
+                    } catch (bufferError) {
+                        return { success: false, error: 'Failed to decode skin data: ' + bufferError.message };
+                    }
+                }
+
+                if (value && (value.startsWith('data:') || /^[A-Za-z0-9+/=]+$/.test(value) && value.length > 100)) {
+                    let base64Payload = value;
+                    const dataUrlMatch = value.match(/^data:image\/png;base64,(.+)$/i);
+                    if (dataUrlMatch && dataUrlMatch[1]) {
+                        base64Payload = dataUrlMatch[1];
+                    }
+
+                    try {
+                        const fileBuffer = Buffer.from(base64Payload, 'base64');
+                        if (fileBuffer && fileBuffer.length > 0) {
+                            const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
+                            const extraData = model ? { model } : {};
+                            return await saveSkinBuffer(fileBuffer, filePath.name || 'Skin', extraData, { outputPath: filePath.outputPath });
+                        }
+                    } catch (e) {
+                        console.error('[Skin] Auto-detect data URL parse error:', e.message);
+                    }
                 }
 
                 if (source) {

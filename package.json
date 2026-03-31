@@ -3,7 +3,7 @@
   "name": "lux",
   "description": "Lux Client",
   "author": "Lux Team <lux@pluginhub.de>",
-  "version": "1.6.12",
+  "version": "1.6.16.1",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "start": "electron .",
     "dist-clean": "rimraf dist && rimraf release",
-    "dist": "npm run dist-clean && npm run build && electron-builder --win",
+    "dist": "npm run dist-clean && npm run build && electron-builder --win --x64",
+    "dist-win-all-arch": "npm run dist-clean && npm run build && electron-builder --win",
     "dist-mac": "npm run dist-clean && npm run build && electron-builder --mac",
     "dist-all": "npm run dist-clean && npm run build && electron-builder -wl"
   },
@@ -54,8 +55,7 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "arm64"
+            "x64"
           ]
         }
       ],
@@ -67,9 +67,7 @@
       "createDesktopShortcut": true,
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
-      "installerHeaderIcon": "resources/icon.ico",
-      "installerSidebar": "resources/header.bmp",
-      "uninstallerSidebar": "resources/sidebar.bmp"
+      "installerHeaderIcon": "resources/icon.ico"
     },
     "mac": {
       "target": [
@@ -138,6 +136,7 @@
     "fs-extra": "^11.3.3",
     "i18next": "^25.8.13",
     "ipc-event-emitter": "^2.0.2",
+    "js-yaml": "^4.1.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.577.0",
     "mc-curseforge-api": "^2.2.3",
@@ -161,6 +160,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.3.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

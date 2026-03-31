@@ -249,6 +249,9 @@
     --background-dark-color-rgb: 11, 11, 11;
     --surface-color: #1c1c1c;
     --surface-color-rgb: 28, 28, 28;
+    --text-on-background: #fafafa;
+    --text-on-surface: #fafafa;
+    --text-on-primary: #0d0d0d;
     --glass-blur: 10px;
     --glass-opacity: 0.8;
     --console-opacity: 0.8;
@@ -277,7 +280,7 @@
     --border: 0 0% 14%;
     --input: 0 0% 14%;
     --ring: 27 98% 45%;
-    --radius: 8px;
+    --radius: var(--border-radius, 12px);
     --sidebar-width: 64px;
     --sidebar-width-expanded: 248px;
     --sidebar: 0 0% 7%;
@@ -527,5 +530,23 @@ input[type="color"]::-moz-color-swatch {
 @layer utilities {
   .global-primary-glow {
     box-shadow: 0 0 calc(20px * var(--global-glow-intensity, 0)) rgba(var(--primary-color-rgb), calc(0.3 * var(--global-glow-intensity, 0)));
+  }
+}
+
+@layer components {
+  .bg-card {
+    background-color: rgba(var(--surface-color-rgb, 28, 28, 28), var(--panel-opacity, 0.85)) !important;
+    backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+  }
+
+  .bg-popover {
+    background-color: rgba(var(--background-dark-color-rgb, 11, 11, 11), var(--panel-opacity, 0.85)) !important;
+    backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+  }
+
+  .bg-sidebar {
+    background-color: rgba(var(--background-dark-color-rgb, 11, 11, 11), var(--panel-opacity, 0.85)) !important;
+    backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+    box-shadow: 2px 0 calc(20px * var(--sidebar-glow-intensity, 0)) rgba(var(--primary-color-rgb), calc(0.4 * var(--sidebar-glow-intensity, 0))) !important;
   }
 }

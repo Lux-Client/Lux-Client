@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import LoadingOverlay from '../components/LoadingOverlay';
+import { Compass } from 'lucide-react';
 
-function ServerSettings() {
+function ServerSettings({ onRestartGuide = null }) {
     const { t } = useTranslation();
     const { addNotification } = useNotification();
     const [settings, setSettings] = useState({
@@ -56,6 +57,14 @@ function ServerSettings() {
 
     const handleChange = (key, value) => {
         setSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleRestartGuideNow = () => {
+        if (typeof onRestartGuide !== 'function') {
+            return;
+        }
+        onRestartGuide();
+        addNotification(t('guide.restart_guide_started', 'Guide started.'), 'info');
     };
 
     const selectFolder = async (key) => {
@@ -235,6 +244,22 @@ function ServerSettings() {
                                 {t('server.settings.autoop_label')}
                             </label>
                         </div>
+                    </div>
+                </div>
+
+                <div className="bg-card/40 backdrop-blur-sm border border-primary/20 rounded-xl p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-lg font-bold text-foreground">{t('guide.restart_guide')}</h2>
+                            <p className="text-muted-foreground text-sm mt-1">{t('guide.restart_guide_desc')}</p>
+                        </div>
+                        <button
+                            onClick={handleRestartGuideNow}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-accent rounded-xl text-foreground transition-colors"
+                        >
+                            <Compass className="h-4 w-4" />
+                            {t('guide.restart_guide')}
+                        </button>
                     </div>
                 </div>
 

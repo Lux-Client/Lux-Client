@@ -16,7 +16,7 @@ function createWindow() {
         height: 720,
         minWidth: 900,
         minHeight: 600,
-        title: 'Minecraft Launcher',
+        title: 'Lux Client',
         frame: false,
         backgroundColor: '#121212',
         webPreferences: {
@@ -91,6 +91,10 @@ function createWindow() {
         require('./handlers/extensions')(ipcMain, mainWindow);
         console.log('[Main] Registering cloud backup handler...');
         require('./handlers/cloudBackup')(ipcMain, mainWindow);
+        console.log('[Main] Registering texturepacks handler...');
+        require('./handlers/texturepacks')(ipcMain, mainWindow);
+        console.log('[Main] Registering remote control handler...');
+        require('./handlers/remoteControl')(ipcMain, mainWindow);
         console.log('[Main] Registering discord handler...');
         try {
             const discord = require('./handlers/discord');

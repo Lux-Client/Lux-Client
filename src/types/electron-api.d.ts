@@ -15,6 +15,8 @@ interface ElectronAPI {
   showSaveDialog: (options?: any) => Promise<any>;
   getSettings: () => Promise<any>;
   saveSettings: (settings: any) => Promise<any>;
+  migrateSettings: (format: 'json' | 'yaml') => Promise<any>;
+  getSettingsFormat: () => Promise<any>;
   login: () => Promise<any>;
   logout: () => Promise<any>;
   validateSession: () => Promise<any>;
@@ -49,13 +51,15 @@ interface ElectronAPI {
   exportWorld: (instanceName: string, folderName: string) => Promise<any>;
   getLogFiles: (instanceName: string) => Promise<any>;
   getLog: (instanceName: string, filename: string) => Promise<any>;
+  uploadInstanceLog: (instanceName: string, filename: string) => Promise<any>;
   launchGame: (instanceName: string, quickPlay?: any) => Promise<any>;
   getLiveLogs: (instanceName: string) => Promise<any>;
   killGame: (instanceName: string) => Promise<any>;
   abortLaunch: (instanceName: string) => Promise<any>;
-  createInstance: (name: string, version: string, loader: string, icon: string, loaderVersion?: string) => Promise<any>;
+  createInstance: (name: string, version: string, loader: string, icon: string | null, loaderVersion?: string | null, options?: any) => Promise<any>;
   updateInstance: (name: string, config: any) => Promise<any>;
   updateInstanceConfig: (name: string, config: any) => Promise<any>;
+  setInstanceFolderPath: (instanceRef: any, folderPath: string) => Promise<any>;
   migrateInstance: (name: string, config: any) => Promise<any>;
   reinstallInstance: (name: string, type?: string) => Promise<any>;
   deleteInstance: (name: string) => Promise<any>;
@@ -101,7 +105,7 @@ interface ElectronAPI {
   uploadSkin: (token: string, skinPath: string, variant: string) => Promise<any>;
   uploadSkinFromUrl: (token: string, skinUrl: string, variant: string) => Promise<any>;
   setCape: (token: string, capeId: string) => Promise<any>;
-  saveLocalSkin: (filePath?: string | { source: string; value: string }) => Promise<any>;
+  saveLocalSkin: (filePath?: string | { source: string; value: string; name?: string; model?: string; outputPath?: string }) => Promise<any>;
   saveLocalSkinFromUrl: (skinUrl: string) => Promise<any>;
   saveLocalSkinFromUsername: (username: string) => Promise<any>;
   getLocalSkins: () => Promise<any>;

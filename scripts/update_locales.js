@@ -6,6 +6,16 @@ const files = fs.readdirSync(localesDir).filter(f => f.endsWith('.json'));
 
 const translationsMap = {
     en: {
+        dashboard: {
+            export_choice: {
+                title: "Export Instance",
+                description: "Choose how you want to export this instance.",
+                code: "Export as Code",
+                file: "Export as .mcpack file",
+                partial_load_warning: "Some content could not be read and will be skipped.",
+                target_prefix: "Instance:"
+            }
+        },
         settings: {
             integration: {
                 smart_log_analytics: "Smart Log Analytics",
@@ -21,6 +31,16 @@ const translationsMap = {
         }
     },
     de: {
+        dashboard: {
+            export_choice: {
+                title: "Instanz exportieren",
+                description: "Wähle, wie du diese Instanz exportieren möchtest.",
+                code: "Als Code exportieren",
+                file: "Als .mcpack-Datei exportieren",
+                partial_load_warning: "Einige Inhalte konnten nicht gelesen werden und werden übersprungen.",
+                target_prefix: "Instanz:"
+            }
+        },
         settings: {
             integration: {
                 smart_log_analytics: "Smart Log Analytics",
@@ -186,6 +206,16 @@ const translationsMap = {
         }
     },
     de_ch: {
+        dashboard: {
+            export_choice: {
+                title: "Instanz exportiere",
+                description: "Wähl, wie du die Instanz exportiere wotsch.",
+                code: "Als Code exportiere",
+                file: "Als .mcpack-Datei exportiere",
+                partial_load_warning: "Es hät Inhält, wo nöd gläse worde sind und übersprunge wärde.",
+                target_prefix: "Instanz:"
+            }
+        },
         settings: {
             integration: {
                 smart_log_analytics: "Smart Log Analytics",
@@ -213,9 +243,21 @@ files.forEach(file => {
 
     if (!data.settings) data.settings = {};
     if (!data.settings.integration) data.settings.integration = {};
+    if (!data.dashboard) data.dashboard = {};
+    if (!data.dashboard.export_choice) data.dashboard.export_choice = {};
+
+    const exportChoice = (source.dashboard && source.dashboard.export_choice)
+        ? source.dashboard.export_choice
+        : translationsMap.en.dashboard.export_choice;
 
     data.settings.integration.smart_log_analytics = source.settings.integration.smart_log_analytics;
     data.settings.integration.smart_log_analytics_desc = source.settings.integration.smart_log_analytics_desc;
+
+    data.dashboard.export_choice.title = exportChoice.title;
+    data.dashboard.export_choice.description = exportChoice.description;
+    data.dashboard.export_choice.code = exportChoice.code;
+    data.dashboard.export_choice.file = exportChoice.file;
+    data.dashboard.export_choice.partial_load_warning = exportChoice.partial_load_warning;
 
     data.crash = source.crash;
 

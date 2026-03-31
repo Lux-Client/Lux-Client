@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isFeatureEnabled } from '../config/featureFlags';
+import { filterInstancesForMode } from '../utils/instanceTypes';
 import ExtensionSlot from './Extensions/ExtensionSlot';
 import { cn } from '../lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip';
@@ -46,12 +47,15 @@ function AppSidebar({
   const loadRecentInstances = async () => {
     try {
       const list = await window.electronAPI.getInstances();
-      if (list) {
-        const recent = [...list]
+      const launcherInstances = filterInstancesForMode(list, 'launcher');
+      if (launcherInstances.length > 0) {
+        const recent = [...launcherInstances]
           .filter(inst => inst.lastPlayed || inst.playtime > 0)
           .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
           .slice(0, 3);
         setRecentInstances(recent);
+      } else {
+        setRecentInstances([]);
       }
     } catch (e) { }
   };
@@ -80,9 +84,14 @@ function AppSidebar({
     { id: 'mods', label: t('instance_details.content.mods', 'Mods'), icon: List },
   ];
 
+  const toolsItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
+    { id: 'tools-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutGrid },
+  ];
+
   const getMenuItems = () => {
     if (currentMode === 'server') return serverItems;
     if (currentMode === 'client' && isFeatureEnabled('openClientPage')) return clientItems;
+    if (currentMode === 'tools') return toolsItems;
     return launcherItems;
   };
 
@@ -135,6 +144,7 @@ function AppSidebar({
     const button = (
       <button
         onClick={() => !item.disabled && setView(item.id)}
+        data-guide-id={`sidebar-nav-${item.id}`}
         className={cn(
           'group relative flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold outline-none focus:outline-none focus-visible:outline-none',
           layoutTransitionClass,
@@ -170,7 +180,7 @@ function AppSidebar({
           layoutTransitionClass,
           isCollapsed ? 'px-2.5' : 'px-4',
           destructive
-            ? 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+            ? 'hover:text-destructive hover:bg-destructive/10 text-destructive/30 '
             : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
         )}
       >
@@ -213,6 +223,7 @@ function AppSidebar({
         <ScrollArea className="flex-1">
           <div className="flex flex-col w-full h-full">
             <div className={cn('flex flex-col gap-1.5 py-3', isCollapsed ? 'px-2.5' : 'px-3')}>
+              <ExtensionSlot name="sidebar.top" className="flex flex-col gap-1" />
               {menuItems.map((item) => (
                 <NavItem key={item.id} item={item} />
               ))}
