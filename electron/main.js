@@ -181,11 +181,12 @@ async function checkAndLaunch() {
             const { compareVersions } = require('../backend/utils/version-utils');
             const pkg = require('../package.json');
 
-            const REPO = 'Lux-Client/LuxClient';
+            const REPO = 'Lux-Client/Lux-Client';
             const GITHUB_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 
             const response = await axios.get(GITHUB_API, {
-                headers: { 'User-Agent': 'Lux-AutoUpdater' }
+                headers: { 'User-Agent': 'Lux-AutoUpdater' },
+                timeout: 10000
             });
             const release = response.data;
             const latestVersion = release.tag_name;
@@ -276,13 +277,21 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
                                 fs.renameSync(targetPath, safeUpdatePath);
                                 fs.chmodSync(safeUpdatePath, 0o755);
                                 spawn(safeUpdatePath, [], { detached: true, stdio: 'ignore' }).unref();
+                                app.quit();
+                            } else if (safeAssetName.endsWith('.deb')) {
+                                spawn('pkexec', ['apt-get', 'install', '-y', targetPath], { detached: true, stdio: 'ignore' }).unref();
+                                app.quit();
+                            } else if (safeAssetName.endsWith('.rpm')) {
+                                spawn('pkexec', ['dnf', 'install', '-y', targetPath], { detached: true, stdio: 'ignore' }).unref();
+                                app.quit();
                             } else {
                                 require('electron').shell.openPath(path.dirname(targetPath));
+                                app.quit();
                             }
                         } else {
                             require('electron').shell.openPath(targetPath);
+                            app.quit();
                         }
-                        app.quit();
                     }, 1000);
                     return;
                 }
@@ -516,6 +525,9 @@ function setupAppMediaProtocol() {
                 }
             } else {
                 decodedPath = decodeURIComponent(url.host + url.pathname);
+                if (!decodedPath.startsWith('/')) {
+                    decodedPath = '/' + decodedPath;
+                }
             }
 
             console.log(`[Main] app-media request: ${request.url} -> decodedPath: ${decodedPath}`);

@@ -6,7 +6,7 @@ const { spawn } = require('child_process');
 const { compareVersions } = require('../utils/version-utils');
 const pkg = require('../../package.json');
 
-const REPO = 'Lux-Client/LuxClient';
+const REPO = 'Lux-Client/Lux-Client';
 const GITHUB_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 
 module.exports = (ipcMain, mainWindow) => {

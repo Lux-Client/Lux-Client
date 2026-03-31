@@ -19,6 +19,7 @@ const {
     getAllInstanceDirsSync,
     migrateLegacyInstancesToPrimarySync
 } = require('../utils/instances-path');
+const { downloadAndCacheIcon } = require('../utils/icon-cache');
 let appData;
 let instancesDir;
 let globalBackupsDir;
@@ -66,6 +67,7 @@ function buildInstanceFolderMetaKey(instance) {
 
     return `local:${name}`;
 }
+
 
 async function resolveInstanceBaseDir(instanceName) {
     const normalizedName = String(instanceName || '').trim().toLowerCase();
@@ -1364,7 +1366,7 @@ module.exports = (ipcMain, win) => {
                     }
                 }
             });
-            (async () => {
+            return (async () => {
                 const task = activeTasks.get(finalName);
                 if (!task) return;
                 let sendCompletion = async () => { };
@@ -1995,13 +1997,10 @@ module.exports = (ipcMain, win) => {
                 };
 
                 if (iconUrl) {
-                    try {
-                        const iconPath = path.join(targetDir, 'icon.png');
-                        await downloadFile(iconUrl, iconPath);
-                        instanceConfig.icon = `app-media:///${iconPath.replace(/\\/g, '/')}`;
-                        console.log(`[Import:MrPack] Icon downloaded and set: ${iconPath}`);
-                    } catch (err) {
-                        console.error('[Import:MrPack] Failed to download icon:', err);
+                    const cachedIcon = await downloadAndCacheIcon(iconUrl);
+                    if (cachedIcon) {
+                        instanceConfig.icon = cachedIcon;
+                        console.log(`[Import:MrPack] Icon cached and set: ${cachedIcon}`);
                     }
                 }
 
@@ -2016,7 +2015,7 @@ module.exports = (ipcMain, win) => {
                 });
 
                 await fs.writeJson(path.join(targetDir, 'instance.json'), instanceConfig, { spaces: 4 });
-                (async () => {
+                await (async () => {
                     try {
                         const sendProgress = (progress, status) => {
                             if (win && win.webContents) {
@@ -2093,6 +2092,7 @@ module.exports = (ipcMain, win) => {
                             if (win && win.webContents) {
                                 win.webContents.send('instance:status', { instanceName, status: 'error', error: err.message });
                             }
+                            throw err;
                         }
                     } finally {
                         if (activeTasks.get(instanceName)?.abort === controller.abort) {
@@ -2169,7 +2169,7 @@ module.exports = (ipcMain, win) => {
 
                 await fs.writeJson(path.join(targetDir, 'instance.json'), instanceConfig, { spaces: 4 });
 
-                (async () => {
+                await (async () => {
                     try {
                         const sendProgress = (progress, status) => {
                             if (win && win.webContents) {
@@ -2255,6 +2255,7 @@ module.exports = (ipcMain, win) => {
                             if (win && win.webContents) {
                                 win.webContents.send('instance:status', { instanceName, status: 'error', error: err.message });
                             }
+                            throw err;
                         }
                     } finally {
                         if (activeTasks.get(instanceName)?.abort === controller.abort) {
@@ -3486,11 +3487,11 @@ module.exports = (ipcMain, win) => {
                                         const projectData = projectRes.data;
 
                                         title = projectData.title;
-                                        icon = projectData.icon_url;
+                                        icon = await downloadAndCacheIcon(projectData.icon_url);
                                         version = versionData.version_number;
                                         const projectId = projectData.id;
                                         const versionId = versionData.id;
-                                        const entry = { title, icon, version, hash, projectId, versionId, source: 'modrinth' };
+                                        const entry = { title, icon: icon || projectData.icon_url, version, hash, projectId, versionId, source: 'modrinth' };
                                         modCache[cacheKey] = entry;
                                         cacheUpdates[cacheKey] = entry;
                                     }
@@ -3774,7 +3775,7 @@ module.exports = (ipcMain, win) => {
                 const safeNewConfig = sanitizeInstanceConfig(newConfig);
                 const finalConfig = { ...currentConfig, ...safeNewConfig, status: 'installing' };
                 await fs.writeJson(configPath, finalConfig, { spaces: 4 });
-                startBackgroundInstall(instanceName, finalConfig, false, true);
+                await startBackgroundInstall(instanceName, finalConfig, false, true);
 
                 return { success: true };
             } catch (e) {

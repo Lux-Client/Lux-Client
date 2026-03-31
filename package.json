@@ -15,7 +15,8 @@
     "dist": "npm run dist-clean && npm run build && electron-builder --win --x64",
     "dist-win-all-arch": "npm run dist-clean && npm run build && electron-builder --win",
     "dist-mac": "npm run dist-clean && npm run build && electron-builder --mac",
-    "dist-all": "npm run dist-clean && npm run build && electron-builder -wl"
+    "dist-all": "npm run dist-clean && npm run build && electron-builder -wl",
+    "dist-linux-deb": "npm run dist-clean && npm run build && electron-builder --linux deb"
   },
   "build": {
     "appId": "de.pluginhub.lux",
@@ -130,7 +131,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.8.3",
-    "express-rate-limit": "^8.2.1",
+    "express-rate-limit": "^8.2.2",
     "form-data": "^4.0.5",
     "framer-motion": "^12.35.0",
     "fs-extra": "^11.3.3",

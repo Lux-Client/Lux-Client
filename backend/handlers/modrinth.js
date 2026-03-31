@@ -2,6 +2,7 @@ const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
 const { app } = require('electron');
+const { downloadAndCacheIcon } = require('../utils/icon-cache');
 
 const MODRINTH_API = 'https://api.modrinth.com/v2';
 const CURSEFORGE_API = 'https://api.curse.tools/v1/cf';
@@ -816,9 +817,10 @@ const updateModCacheForInstall = async ({ destination, projectId, versionId, sou
             cache = await fs.readJson(cachePath).catch(() => ({}));
         }
 
+        const cachedIcon = await downloadAndCacheIcon(icon);
         cache[cacheKey] = {
             title: title || path.basename(destination),
-            icon: icon || null,
+            icon: cachedIcon || icon || null,
             version: version || null,
             projectId,
             versionId,
