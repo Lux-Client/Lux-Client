@@ -945,6 +945,13 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                             />
                             <ToggleBox
                                 className="mt-4 pt-4 border-t border-border"
+                                checked={settings.enableModrinthPackSupport !== false}
+                                onChange={(val) => handleChange('enableModrinthPackSupport', val)}
+                                label={t('settings.integration.modrinth_support')}
+                                description={t('settings.integration.modrinth_support_desc')}
+                            />
+                            <ToggleBox
+                                className="mt-4 pt-4 border-t border-border"
                                 checked={settings.autoUploadLogs || false}
                                 onChange={(val) => handleChange('autoUploadLogs', val)}
                                 label={t('settings.integration.auto_logs')}

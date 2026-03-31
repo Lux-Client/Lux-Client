@@ -50,6 +50,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [settings, setSettings] = useState({ enableModrinthPackSupport: true });
     const [projectType, setProjectType] = useState(initialCategory || 'mod');
     const [offset, setOffset] = useState(0);
     const limit = 21;
@@ -105,6 +106,27 @@ function Search({ initialCategory, onCategoryConsumed }) {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [lightboxIndex, previewProject]);
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const res = await window.electronAPI.getSettings();
+                if (res.success) {
+                    setSettings(res.settings);
+                }
+            } catch (e) { }
+        };
+        loadSettings();
+        const cleanup = window.electronAPI.onSettingsUpdated?.((s) => setSettings(s));
+        return () => cleanup?.();
+    }, []);
+
+    useEffect(() => {
+        if (!settings.enableModrinthPackSupport && projectType === 'modpack') {
+            setProjectType('mod');
+            setOffset(0);
+        }
+    }, [settings.enableModrinthPackSupport]);
 
     const handlePreview = async (mod) => {
         try {
@@ -481,10 +503,12 @@ function Search({ initialCategory, onCategoryConsumed }) {
                             <Paintbrush className="h-3.5 w-3.5 mr-1.5" />
                             {t('instance_details.content.resourcepacks')}
                         </TabsTrigger>
-                        <TabsTrigger value="modpack">
-                            <Package className="h-3.5 w-3.5 mr-1.5" />
-                            {t('home.discover_modpack')}
-                        </TabsTrigger>
+                        {settings.enableModrinthPackSupport !== false && (
+                            <TabsTrigger value="modpack">
+                                <Package className="h-3.5 w-3.5 mr-1.5" />
+                                {t('home.discover_modpack')}
+                            </TabsTrigger>
+                        )}
                         <TabsTrigger value="shader">
                             <Paintbrush className="h-3.5 w-3.5 mr-1.5" />
                             {t('instance_details.content.shaders')}

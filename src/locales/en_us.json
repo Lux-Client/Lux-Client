@@ -493,7 +493,9 @@
         "integration": {
             "title": "Launcher Integration",
             "discord_rpc": "Discord Rich Presence",
-            "discord_rpc_desc": "Show what you’re playing on Discord",
+            "discord_rpc_desc": "Show what you're playing on Discord",
+            "modrinth_support": "Modrinth Modpacks",
+            "modrinth_support_desc": "Enable searching and installing Modrinth modpacks.",
             "auto_logs": "Auto-upload logs on crash",
             "auto_logs_desc": "Upload logs to mclo.gs if the game crashes",
             "disabled_features": "Show Disabled Features",
