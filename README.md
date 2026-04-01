@@ -81,6 +81,8 @@ iwr https://lux.pluginhub.de/install.ps1 | iex
 
 ### For Developers
 
+Ideas and feature suggestions can be found in [TODO.md](TODO.md).
+
 #### Prerequisites
 
 - [Node.js](https://nodejs.org/) (latest LTS)
