@@ -70,7 +70,7 @@ function getLegacyInstanceDirs() {
     const appData = app.getPath('appData');
 
     return [
-        path.join(appData, 'Lux', 'instances'), //Previously was MCLC, i might have broke something
+        path.join(appData, 'Lux', 'instances'), //Previously was MCLC, i might have broke something for old MCLC clients
         path.join(appData, 'Minecraft Launcher', 'instances'),
         path.join(appData, 'LuxClient', 'instances'),
         path.join(appData, 'luxclient', 'instances'),
