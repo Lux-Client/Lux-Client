@@ -205,6 +205,8 @@
         "actions": {
             "export_mcpack": "Exportă ca .mcpack",
             "export_code": "Exportă ca Cod",
+            "export_config": "Exportă configurația",
+            "import_config": "Importă configurația",
             "backup_manager": "Manager Copii Rezervă",
             "reinstall": "Reinstalează Instanța",
             "check_updates": "Caută Actualizări",

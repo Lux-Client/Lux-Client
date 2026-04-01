@@ -205,6 +205,8 @@
         "actions": {
             "export_mcpack": "Exportera som .mcpack",
             "export_code": "Exportera som kod",
+            "export_config": "Exportera konfiguration",
+            "import_config": "Importera konfiguration",
             "backup_manager": "Hanterare av säkerhetskopior",
             "reinstall": "Ominstallera instans",
             "check_updates": "Sök efter uppdateringar",

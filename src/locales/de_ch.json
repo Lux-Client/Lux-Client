@@ -205,6 +205,8 @@
         "actions": {
             "export_mcpack": "As .mcpack exportiere",
             "export_code": "As Code exportiere",
+            "export_config": "Konfiguration exportiere",
+            "import_config": "Konfiguration importiere",
             "backup_manager": "Backup-Manager",
             "reinstall": "Instanz neu installiere",
             "check_updates": "Nach Updates luege",

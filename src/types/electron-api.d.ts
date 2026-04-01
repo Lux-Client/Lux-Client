@@ -64,6 +64,8 @@ interface ElectronAPI {
   renameInstance: (oldName: string, newName: string) => Promise<any>;
   duplicateInstance: (name: string) => Promise<any>;
   exportInstance: (name: string) => Promise<any>;
+  exportInstanceConfig: (name: string, format?: 'json' | 'yaml') => Promise<any>;
+  importInstanceConfig: (forceName?: string) => Promise<any>;
   importInstance: () => Promise<any>;
   importMrPack: () => Promise<any>;
   importFile: () => Promise<any>;

@@ -205,6 +205,8 @@
         "actions": {
             "export_mcpack": "Экспорт в .mcpack",
             "export_code": "Экспорт как Код",
+            "export_config": "Экспорт конфигурации",
+            "import_config": "Импорт конфигурации",
             "backup_manager": "Управление резервными копиями",
             "reinstall": "Переустановить сборку",
             "check_updates": "Проверить обновления",

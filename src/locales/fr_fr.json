@@ -206,6 +206,8 @@
         "actions": {
             "export_mcpack": "Exporter en .mcpack",
             "export_code": "Exporter en code",
+            "export_config": "Exporter la configuration",
+            "import_config": "Importer la configuration",
             "backup_manager": "Gestionnaire de sauvegardes",
             "reinstall": "Réinstaller l'instance",
             "check_updates": "Vérifier les mises à jour",

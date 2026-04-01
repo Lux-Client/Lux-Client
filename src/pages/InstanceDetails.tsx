@@ -895,6 +895,48 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     {t('instance_details.actions.export_code')}
                                 </button>
                                 <button
+                                    onClick={async () => {
+                                        setShowMenu(false);
+                                        addNotification('Exporting configuration...', 'info');
+                                        try {
+                                            const res = await window.electronAPI.exportInstanceConfig(instance.name, 'json');
+                                            if (res.success) addNotification(`Configuration exported to ${res.path}`, 'success');
+                                            else if (res.error !== 'Cancelled') addNotification(`Export failed: ${res.error}`, 'error');
+                                        } catch (e) {
+                                            addNotification(`Export failed: ${e.message}`, 'error');
+                                        }
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-accent flex items-center gap-3 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    {t('instance_details.actions.export_config')}
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        setShowMenu(false);
+                                        addNotification('Importing configuration...', 'info');
+                                        try {
+                                            const res = await window.electronAPI.importInstanceConfig();
+                                            if (res.success) {
+                                                addNotification(`Configuration imported successfully! Instance "${res.instanceName}" created.`, 'success');
+                                                if (onInstanceUpdate) onInstanceUpdate();
+                                            } else if (res.error !== 'Cancelled') {
+                                                addNotification(`Import failed: ${res.error}`, 'error');
+                                            }
+                                        } catch (e) {
+                                            addNotification(`Import failed: ${e.message}`, 'error');
+                                        }
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-accent flex items-center gap-3 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    {t('instance_details.actions.import_config')}
+                                </button>
+                                <button
                                     onClick={() => {
                                         setShowMenu(false);
                                         setShowBackupManager(true);

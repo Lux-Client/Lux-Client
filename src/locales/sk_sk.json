@@ -205,6 +205,8 @@
         "actions": {
             "export_mcpack": "Exportovať ako .mcpack",
             "export_code": "Exportovať ako kód",
+            "export_config": "Exportovať konfiguráciu",
+            "import_config": "Importovať konfiguráciu",
             "backup_manager": "Správca záloh",
             "reinstall": "Preinštalovať inštanciu",
             "check_updates": "Skontrolovať aktualizácie",

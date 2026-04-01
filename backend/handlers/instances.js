@@ -3740,6 +3740,201 @@ module.exports = (ipcMain, win) => {
             }
         });
 
+        ipcMain.handle('instance:export-config', async (_, instanceName, format = 'json') => {
+            try {
+                const { baseDir: instancePath, externalInstance } = await resolveInstanceBaseDir(instanceName);
+                if (!instancePath) {
+                    return { success: false, error: 'Instance not found' };
+                }
+
+                const instanceConfigPath = path.join(instancePath, 'instance.json');
+                let config = null;
+
+                if (await fs.pathExists(instanceConfigPath)) {
+                    config = await fs.readJson(instanceConfigPath);
+                } else if (externalInstance) {
+                    config = sanitizeInstanceConfig({
+                        name: externalInstance.name || instanceName,
+                        version: externalInstance.version,
+                        loader: externalInstance.loader,
+                        icon: externalInstance.icon,
+                        loaderVersion: externalInstance.loaderVersion,
+                        created: externalInstance.created || Date.now(),
+                        playtime: externalInstance.playtime || 0,
+                        lastPlayed: externalInstance.lastPlayed || null,
+                        folderPath: externalInstance.folderPath || '',
+                        instanceType: externalInstance.instanceType,
+                        externalSource: externalInstance.externalSource,
+                        externalPath: externalInstance.externalPath
+                    });
+                } else {
+                    return { success: false, error: 'Instance configuration not found' };
+                }
+
+                const safeConfig = sanitizeInstanceConfig(config);
+
+                safeConfig.exportedAt = Date.now();
+                safeConfig.exportedBy = 'Lux';
+                safeConfig.formatVersion = '1.0';
+
+                const exportData = {
+                    type: 'lux-instance-config',
+                    version: '1.0',
+                    instance: safeConfig,
+                    mods: [],
+                    resourcePacks: [],
+                    shaderPacks: []
+                };
+
+                console.log('[Instance:ExportConfig] instancePath:', instancePath);
+
+                const modsDir = path.join(instancePath, 'mods');
+                const modsExists = await fs.pathExists(modsDir);
+                console.log('[Instance:ExportConfig] modsDir:', modsDir, 'exists:', modsExists);
+                if (modsExists) {
+                    const modFiles = await fs.readdir(modsDir);
+                    console.log('[Instance:ExportConfig] modFiles found:', modFiles);
+                    exportData.mods = modFiles.filter(f => f.endsWith('.jar') && !f.endsWith('.disabled'));
+                    console.log('[Instance:ExportConfig] filtered mods:', exportData.mods);
+                }
+
+                const rpDir = path.join(instancePath, 'resourcepacks');
+                const rpExists = await fs.pathExists(rpDir);
+                console.log('[Instance:ExportConfig] resourcepacksDir:', rpDir, 'exists:', rpExists);
+                if (rpExists) {
+                    const rpFiles = await fs.readdir(rpDir);
+                    exportData.resourcePacks = rpFiles.filter(f => 
+                        f.endsWith('.zip') || f.endsWith('.rar') || f.endsWith('.enabled')
+                    );
+                }
+
+                const shaderDir = path.join(instancePath, 'shaderpacks');
+                const shaderExists = await fs.pathExists(shaderDir);
+                console.log('[Instance:ExportConfig] shaderpacksDir:', shaderDir, 'exists:', shaderExists);
+                if (shaderExists) {
+                    const shaderFiles = await fs.readdir(shaderDir);
+                    exportData.shaderPacks = shaderFiles.filter(f => 
+                        f.endsWith('.zip') || f.endsWith('.enabled')
+                    );
+                }
+
+                const { filePath } = await dialog.showSaveDialog({
+                    title: 'Export Instance Configuration',
+                    defaultPath: `${instanceName}.json`,
+                    filters: [
+                        { name: 'JSON', extensions: ['json'] },
+                        { name: 'YAML', extensions: ['yaml', 'yml'] }
+                    ]
+                });
+
+                if (!filePath) return { success: false, error: 'Cancelled' };
+
+                const ext = path.extname(filePath).toLowerCase();
+                let content;
+
+                if (ext === '.yaml' || ext === '.yml') {
+                    const yaml = require('yaml');
+                    content = yaml.stringify(exportData);
+                } else {
+                    content = JSON.stringify(exportData, null, 2);
+                }
+
+                await fs.writeFile(filePath, content, 'utf8');
+
+                return { success: true, path: filePath };
+            } catch (e) {
+                console.error('[Instance:ExportConfig] Error:', e);
+                return { success: false, error: e.message };
+            }
+        });
+
+        ipcMain.handle('instance:import-config', async (_, forceName) => {
+            try {
+                const { filePaths } = await dialog.showOpenDialog({
+                    title: 'Import Instance Configuration',
+                    filters: [
+                        { name: 'Instance Config', extensions: ['json', 'yaml', 'yml'] }
+                    ],
+                    properties: ['openFile']
+                });
+
+                if (!filePaths || filePaths.length === 0) {
+                    return { success: false, error: 'Cancelled' };
+                }
+
+                const filePath = filePaths[0];
+                const ext = path.extname(filePath).toLowerCase();
+
+                let content;
+
+                try {
+                    content = await fs.readFile(filePath, 'utf8');
+                } catch (e) {
+                    return { success: false, error: 'Failed to read file: ' + e.message };
+                }
+
+                let exportData;
+
+                if (ext === '.yaml' || ext === '.yml') {
+                    const yaml = require('yaml');
+                    exportData = yaml.parse(content);
+                } else {
+                    try {
+                        exportData = JSON.parse(content);
+                    } catch (e) {
+                        return { success: false, error: 'Invalid JSON/YAML file' };
+                    }
+                }
+
+                if (!exportData.instance || !exportData.instance.name) {
+                    return { success: false, error: 'Invalid instance configuration file' };
+                }
+
+                const instanceConfig = sanitizeInstanceConfig(exportData.instance);
+
+                let instanceName = forceName || instanceConfig.name;
+                let targetDir = path.join(instancesDir, instanceName);
+                let counter = 1;
+
+                while (await fs.pathExists(targetDir)) {
+                    counter++;
+                    instanceName = `${instanceConfig.name} (${counter})`;
+                    targetDir = path.join(instancesDir, instanceName);
+                }
+
+                await fs.ensureDir(targetDir);
+                await fs.ensureDir(path.join(targetDir, 'mods'));
+                await fs.ensureDir(path.join(targetDir, 'resourcepacks'));
+                await fs.ensureDir(path.join(targetDir, 'shaderpacks'));
+
+                const finalConfig = {
+                    ...instanceConfig,
+                    name: instanceName,
+                    imported: Date.now(),
+                    importedFrom: filePath
+                };
+
+                delete finalConfig.exportedAt;
+                delete finalConfig.exportedBy;
+                delete finalConfig.formatVersion;
+                delete finalConfig.importedFrom;
+
+                await fs.writeJson(path.join(targetDir, 'instance.json'), finalConfig, { spaces: 4 });
+
+                return {
+                    success: true,
+                    instanceName,
+                    config: finalConfig,
+                    hasMods: Array.isArray(exportData.mods) && exportData.mods.length > 0,
+                    hasResourcePacks: Array.isArray(exportData.resourcePacks) && exportData.resourcePacks.length > 0,
+                    hasShaderPacks: Array.isArray(exportData.shaderPacks) && exportData.shaderPacks.length > 0
+                };
+            } catch (e) {
+                console.error('[Instance:ImportConfig] Error:', e);
+                return { success: false, error: e.message };
+            }
+        });
+
         ipcMain.handle('instance:install-modpack', async (_, url, name, iconUrl) => {
             console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
             console.log(`[Modpack:Install] TRIGGERED for ${name}`);

@@ -205,6 +205,8 @@
         "actions": {
             "export_mcpack": "Izvozi kot .mcpack",
             "export_code": "Izvozi kot kodo",
+            "export_config": "Izvozi nastavitve",
+            "import_config": "Uvozi nastavitve",
             "backup_manager": "Upravitelj varnostnih kopij",
             "reinstall": "Znova namesti instanco",
             "check_updates": "Preveri posodobitve",
