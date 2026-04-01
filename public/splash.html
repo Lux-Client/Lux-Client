@@ -130,7 +130,6 @@
     </div>
 
     <script>
-        const { ipcRenderer } = require('electron');
         const statusEl = document.getElementById('status');
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress-bar');
@@ -146,7 +145,11 @@
             }
         }, 500);
 
-        ipcRenderer.on('updater:status', (event, { status, progress, retryCount }) => {
+        if (!window.splashAPI || typeof window.splashAPI.onUpdaterStatus !== 'function') {
+            statusEl.innerText = 'Startup bridge missing';
+        }
+
+        window.splashAPI.onUpdaterStatus(({ status, progress, retryCount }) => {
             currentStatus = status;
 
             if (progress !== undefined) {

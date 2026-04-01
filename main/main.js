@@ -26,7 +26,7 @@ function createWindow() {
             preload: path.join(__dirname, '../backend/preload.js'),
             nodeIntegration: false,
             contextIsolation: true,
-            sandbox: false
+            sandbox: true
         },
     });
     require('../backend/handlers/auth')(ipcMain, mainWindow);
