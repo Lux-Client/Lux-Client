@@ -405,13 +405,14 @@ async function checkAndLaunch() {
                     });
 
                     const expectedSha256 = await resolveExpectedReleaseSha256(axios, release, asset.name);
-                    if (!expectedSha256) {
-                        throw new Error('Update verification failed: checksum metadata missing');
-                    }
-
-                    const actualSha256 = await calculateFileSha256(targetPath);
-                    if (actualSha256 !== expectedSha256) {
-                        throw new Error('Update verification failed: checksum mismatch');
+                    if (expectedSha256) {
+                        const actualSha256 = await calculateFileSha256(targetPath);
+                        if (actualSha256 !== expectedSha256) {
+                            await fs.remove(targetPath);
+                            throw new Error('Update verification failed: checksum mismatch');
+                        }
+                    } else {
+                        console.warn('[Updater] No checksum file found for this release – skipping SHA256 verification.');
                     }
 
                     sendSplashStatus({ status: 'Update downloaded, installing...', detail: 'Starting installer...' });
@@ -426,6 +427,7 @@ objShell.Run """" & WScript.Arguments(0) & """ /S", 1, True
 objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
                             fs.writeFileSync(updateScript, vbsContent);
                             spawn('wscript.exe', [updateScript, targetPath, exeTarget], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+                            app.quit();
                         } else if (process.platform === 'linux') {
                             if (safeAssetName.endsWith('.AppImage')) {
                                 const safeUpdatePath = path.join(downloadDir, 'lux-setup.AppImage');
