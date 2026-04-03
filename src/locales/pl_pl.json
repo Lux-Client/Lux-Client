@@ -466,7 +466,18 @@
             "title": "Tworzenie instancji",
             "copy_settings": "Skopiuj ustawienia z instancji",
             "copy_settings_desc": "Automatycznie kopiuje skróty klawiszowe i opcje z wybranej instancji podczas tworzenia nowej.",
-            "source_instance": "Instancja źródłowa"
+            "source_instance": "Instancja źródłowa",
+            "show_modrinth_instances": "Pokaz instancje Modrinth w bibliotece",
+            "show_modrinth_instances_desc": "Jesli wylaczone, zaimportowane zewnetrzne instancje Modrinth beda ukryte w zakladce Biblioteka.",
+            "show_curseforge_instances": "Pokaz instancje CurseForge w bibliotece",
+            "show_curseforge_instances_desc": "Jesli wylaczone, zaimportowane zewnetrzne instancje CurseForge beda ukryte w zakladce Biblioteka.",
+            "uninstall_title": "Odinstaluj launcher",
+            "uninstall_desc": "Uruchamia systemowy deinstalator Lux i zamyka launcher.",
+            "uninstall_btn": "Odinstaluj launcher",
+            "uninstall_modal_title": "Odinstaluj launcher",
+            "uninstall_modal_msg": "Czy na pewno chcesz teraz uruchomic deinstalator Lux? Launcher zostanie zamkniety.",
+            "uninstall_confirm_btn": "Rozpocznij odinstalowanie",
+            "uninstall_failed": "Nie udalo sie uruchomic odinstalowania."
         },
         "integration": {
             "title": "Integracja Launchera",
@@ -876,6 +887,14 @@
         "no_issues": "Nie udało się automatycznie zidentyfikować przyczyny tej awarii.",
         "view_log": "Zobacz przesłany log",
         "check_manually": "Sprawdź plik latest.log ręcznie."
+    },
+    "java_required_modal": {
+        "title": "Wymagane jest Java {{version}}",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Ta wersja Minecrafta wymaga Java {{version}}. Wykryliśmy, że obecnie nie masz zainstalowanej kompatybilnej wersji.",
+        "settings_hint": "Możesz zainstalować Java {{version}} teraz. Jeśli nie zrobisz tego tym przyciskiem, możesz zrobić to później w Ustawienia > Java.",
+        "install_button": "Zainstaluj Java {{version}}",
+        "installing": "Instalowanie Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Edytor Pikseli",

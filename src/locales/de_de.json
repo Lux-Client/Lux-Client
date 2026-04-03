@@ -481,7 +481,18 @@
             "title": "Instanz-Erstellung",
             "copy_settings": "Einstellungen von Instanz übernehmen",
             "copy_settings_desc": "Kopiert automatisch Tastenbelegungen und Optionen der gewählten Instanz, wenn du eine neue erstellst.",
-            "source_instance": "Quellinstanz"
+            "source_instance": "Quellinstanz",
+            "show_modrinth_instances": "Modrinth-Instanzen in der Bibliothek anzeigen",
+            "show_modrinth_instances_desc": "Wenn deaktiviert, werden importierte externe Modrinth-Instanzen in der Bibliothek ausgeblendet.",
+            "show_curseforge_instances": "CurseForge-Instanzen in der Bibliothek anzeigen",
+            "show_curseforge_instances_desc": "Wenn deaktiviert, werden importierte externe CurseForge-Instanzen in der Bibliothek ausgeblendet.",
+            "uninstall_title": "Launcher deinstallieren",
+            "uninstall_desc": "Startet die System-Deinstallation von Lux und schließt den Launcher.",
+            "uninstall_btn": "Launcher deinstallieren",
+            "uninstall_modal_title": "Launcher deinstallieren",
+            "uninstall_modal_msg": "Möchtest du die Deinstallation von Lux jetzt wirklich starten? Der Launcher wird geschlossen.",
+            "uninstall_confirm_btn": "Deinstallation starten",
+            "uninstall_failed": "Die Deinstallation konnte nicht gestartet werden."
         },
         "integration": {
             "title": "Launcher-Integration",
@@ -899,6 +910,14 @@
         "no_issues": "Wir konnten die Ursache dieses Absturzes nicht automatisch identifizieren.",
         "view_log": "Hochgeladenes Protokoll ansehen",
         "check_manually": "Bitte überprüfe die Datei latest.log manuell."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} wird benötigt",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Diese Minecraft-Version benötigt Java {{version}}. Wir haben erkannt, dass aktuell kein kompatibles Java installiert ist.",
+        "settings_hint": "Du kannst Java {{version}} jetzt direkt installieren. Wenn du es nicht über den Button installierst, kannst du es später über Einstellungen > Java installieren.",
+        "install_button": "Installiere Java {{version}}",
+        "installing": "Installiere Java {{version}}..."
     },
     "guide": {
         "prompt_title": "Willkommen bei Lux!",

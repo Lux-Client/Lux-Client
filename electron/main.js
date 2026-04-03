@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, net, Menu, Tray, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, Menu, Tray, nativeImage, screen, shell } = require('electron');
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
@@ -76,6 +76,77 @@ ipcMain.handle('app:restart', () => {
     app.exit(0);
 });
 
+ipcMain.handle('app:uninstall', async () => {
+    try {
+        if (!app.isPackaged) {
+            return { success: false, error: 'Uninstall is only available in packaged builds.' };
+        }
+
+        if (process.platform === 'win32') {
+            const { spawn } = require('child_process');
+            const installDir = path.dirname(process.execPath);
+            const candidates = [
+                path.join(installDir, `Uninstall ${app.getName()}.exe`),
+                path.join(installDir, 'Uninstall Lux.exe'),
+                path.join(installDir, 'uninstall.exe')
+            ];
+
+            const uninstallPath = candidates.find((candidate) => fs.existsSync(candidate));
+            if (!uninstallPath) {
+                return { success: false, error: 'Could not locate uninstaller executable.' };
+            }
+
+            spawn(uninstallPath, [], {
+                detached: true,
+                stdio: 'ignore',
+                windowsHide: false
+            }).unref();
+
+            app.quit();
+            return { success: true };
+        }
+
+        if (process.platform === 'darwin') {
+            let appBundlePath = app.getPath('exe');
+            while (appBundlePath && !appBundlePath.endsWith('.app')) {
+                const parent = path.dirname(appBundlePath);
+                if (parent === appBundlePath) break;
+                appBundlePath = parent;
+            }
+
+            if (!appBundlePath || !appBundlePath.endsWith('.app') || !fs.existsSync(appBundlePath)) {
+                return { success: false, error: 'Could not locate application bundle for uninstall.' };
+            }
+
+            await shell.trashItem(appBundlePath);
+            app.quit();
+            return { success: true };
+        }
+
+        if (process.platform === 'linux') {
+            const appImagePath = process.env.APPIMAGE;
+            if (appImagePath && fs.existsSync(appImagePath)) {
+                await shell.trashItem(appImagePath);
+                app.quit();
+                return { success: true };
+            }
+
+            const execPath = process.execPath;
+            if (execPath && fs.existsSync(execPath)) {
+                await shell.trashItem(execPath);
+                app.quit();
+                return { success: true };
+            }
+
+            return { success: false, error: 'Could not determine removable launcher binary on Linux.' };
+        }
+
+        return { success: false, error: 'Uninstall is not supported on this platform.' };
+    } catch (error) {
+        return { success: false, error: error?.message || String(error) };
+    }
+});
+
 const { pathToFileURL } = require('url');
 const dns = require('dns');
 if (dns.setDefaultResultOrder) {
@@ -101,6 +172,11 @@ let tray = null;
 let isQuiting = false;
 const isDeveloperMode = process.env.NODE_ENV === 'development';
 const updateAttemptStatePath = path.join(app.getPath('userData'), 'update-attempt-state.json');
+
+function sendSplashStatus(payload = {}) {
+    if (!splashWindow || splashWindow.isDestroyed()) return;
+    splashWindow.webContents.send('updater:status', payload);
+}
 
 async function readUpdateAttemptState() {
     try {
@@ -231,15 +307,19 @@ async function checkAndLaunch() {
     const performCheck = async () => {
         if (isDeveloperMode) {
             console.log('[Main] Skipping update check in dev mode.');
-            splashWindow.webContents.send('updater:status', { status: 'Searching for updates' });
+            sendSplashStatus({ status: 'Searching for updates', detail: 'Developer mode active. Skipping remote update check.' });
             setTimeout(() => {
-                splashWindow.webContents.send('updater:status', { status: 'Starting' });
+                sendSplashStatus({ status: 'Starting', detail: 'Initializing launcher window...' });
                 setTimeout(launchMain, 1500);
             }, 1000);
             return;
         }
 
-        splashWindow.webContents.send('updater:status', { status: 'Searching for updates', retryCount });
+        sendSplashStatus({
+            status: 'Searching for updates',
+            detail: 'Checking latest release metadata from GitHub...',
+            retryCount
+        });
 
         try {
             const axios = require('axios');
@@ -268,7 +348,7 @@ async function checkAndLaunch() {
                     && Date.now() - Number(lastAttempt?.ts || 0) < recentFailureWindowMs;
 
                 if (wasInstallingRecently) {
-                    splashWindow.webContents.send('updater:status', { status: 'Starting' });
+                    sendSplashStatus({ status: 'Starting', detail: 'Recent update attempt detected. Launching app...' });
                     setTimeout(launchMain, 1500);
                     return;
                 }
@@ -284,7 +364,7 @@ async function checkAndLaunch() {
                 }
 
                 if (asset) {
-                    splashWindow.webContents.send('updater:status', { status: 'Downloading update...', progress: 0 });
+                    sendSplashStatus({ status: 'Downloading update...', detail: `Downloading ${asset.name}...`, progress: 0 });
 
                     const downloadDir = path.join(app.getPath('userData'), 'updates');
                     await fs.ensureDir(downloadDir);
@@ -316,7 +396,7 @@ async function checkAndLaunch() {
                     downloadRes.data.on('data', (chunk) => {
                         downloadedLength += chunk.length;
                         const percent = totalLength ? Math.round((downloadedLength / totalLength) * 100) : 0;
-                        splashWindow.webContents.send('updater:status', { status: `Installing Update (${percent}%)`, progress: percent });
+                        sendSplashStatus({ status: `Installing Update (${percent}%)`, detail: 'Verifying and preparing update package...', progress: percent });
                     });
 
                     await new Promise((resolve, reject) => {
@@ -334,7 +414,7 @@ async function checkAndLaunch() {
                         throw new Error('Update verification failed: checksum mismatch');
                     }
 
-                    splashWindow.webContents.send('updater:status', { status: 'Update downloaded, installing...' });
+                    sendSplashStatus({ status: 'Update downloaded, installing...', detail: 'Starting installer...' });
                     setTimeout(() => {
                         const { spawn } = require('child_process');
                         if (process.platform === 'win32') {
@@ -372,7 +452,7 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
                 }
             }
 
-            splashWindow.webContents.send('updater:status', { status: 'Starting' });
+            sendSplashStatus({ status: 'Starting', detail: 'No update required. Launching Lux...' });
             setTimeout(launchMain, 1500);
 
         } catch (err) {
@@ -381,7 +461,7 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
             if (retryCount <= maxRetries) {
                 setTimeout(performCheck, 1000);
             } else {
-                splashWindow.webContents.send('updater:status', { status: 'Starting' });
+                sendSplashStatus({ status: 'Starting', detail: 'Update check failed after retries. Launching app...' });
                 setTimeout(launchMain, 1500);
             }
         }
@@ -394,6 +474,7 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
 
 function launchMain() {
     clearUpdateAttemptState();
+    sendSplashStatus({ status: 'Starting', detail: 'Creating main application window...' });
     createWindow();
 }
 
@@ -410,6 +491,8 @@ function getSplashDisplayWorkArea() {
 }
 
 function createWindow() {
+    sendSplashStatus({ status: 'Starting', detail: 'Configuring window options...' });
+
     const windowOptions = {
         width: 1600,
         height: 900,
@@ -442,6 +525,7 @@ function createWindow() {
     mainWindow = new BrowserWindow(windowOptions);
 
     mainWindow.once('ready-to-show', () => {
+        sendSplashStatus({ status: 'Starting', detail: 'Finalizing interface...' });
         setTimeout(() => {
             if (splashWorkArea) {
                 mainWindow.setPosition(windowOptions.x, windowOptions.y);
@@ -456,6 +540,7 @@ function createWindow() {
     });
 
     console.log('[Main] Preload script configured.');
+    sendSplashStatus({ status: 'Starting', detail: 'Registering backend handlers...' });
     const handlers = [
         { name: 'auth', path: '../backend/handlers/auth' },
         { name: 'instances', path: '../backend/handlers/instances' },
@@ -474,6 +559,7 @@ function createWindow() {
     ];
 
     for (const h of handlers) {
+        sendSplashStatus({ status: 'Starting', detail: `Loading handler: ${h.name}` });
         logToFile(`[Main] Registering ${h.name} handler...`);
         try {
             const handler = require(h.path);
@@ -520,6 +606,7 @@ function createWindow() {
     }
 
     try {
+        sendSplashStatus({ status: 'Starting', detail: 'Initializing backup manager...' });
         logToFile('[Main] Initializing Backup Manager...');
         const backupManager = require('../backend/backupManager');
         backupManager.init(ipcMain);
@@ -528,11 +615,13 @@ function createWindow() {
         logToFile(`[Main] ❌ Failed to initialize Backup Manager: ${e.message}`);
     }
     if (isDeveloperMode) {
+        sendSplashStatus({ status: 'Starting', detail: 'Loading renderer (development mode)...' });
         logToFile('[Main] Loading development URL...');
         mainWindow.loadURL('http://localhost:3000');
         mainWindow.webContents.openDevTools();
     } else {
         const indexPath = path.join(__dirname, '../dist/index.html');
+        sendSplashStatus({ status: 'Starting', detail: 'Loading launcher interface...' });
         logToFile(`[Main] Loading production file: ${indexPath}`);
 
         if (!fs.existsSync(indexPath)) {

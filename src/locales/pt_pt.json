@@ -466,7 +466,18 @@
             "title": "Criação de Instância",
             "copy_settings": "Copiar Definições da Instância",
             "copy_settings_desc": "Copiar automaticamente as opções e atalhos de uma instância selecionada ao criar uma nova.",
-            "source_instance": "Instância de Origem"
+            "source_instance": "Instância de Origem",
+            "show_modrinth_instances": "Mostrar instancias do Modrinth na biblioteca",
+            "show_modrinth_instances_desc": "Se desativado, as instancias externas importadas do Modrinth ficam ocultas no separador Biblioteca.",
+            "show_curseforge_instances": "Mostrar instancias do CurseForge na biblioteca",
+            "show_curseforge_instances_desc": "Se desativado, as instancias externas importadas do CurseForge ficam ocultas no separador Biblioteca.",
+            "uninstall_title": "Desinstalar launcher",
+            "uninstall_desc": "Inicia o desinstalador do sistema do Lux e fecha o launcher.",
+            "uninstall_btn": "Desinstalar launcher",
+            "uninstall_modal_title": "Desinstalar launcher",
+            "uninstall_modal_msg": "Pretende iniciar agora a desinstalacao do Lux? O launcher sera fechado.",
+            "uninstall_confirm_btn": "Iniciar desinstalacao",
+            "uninstall_failed": "Nao foi possivel iniciar a desinstalacao."
         },
         "integration": {
             "title": "Integração do Launcher",
@@ -876,6 +887,14 @@
         "no_issues": "Não conseguimos identificar automaticamente a causa desta falha.",
         "view_log": "Ver log enviado",
         "check_manually": "Por favor, verifique o arquivo latest.log manualmente."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} é necessário",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Esta versão do Minecraft requer Java {{version}}. Detetámos que não existe uma versão compatível instalada atualmente.",
+        "settings_hint": "Podes instalar Java {{version}} agora. Se não o instalares pelo botão, podes fazê-lo depois em Definições > Java.",
+        "install_button": "Instalar Java {{version}}",
+        "installing": "A instalar Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Editor de Pixels",

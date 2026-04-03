@@ -8,6 +8,8 @@ class AnalyticsService {
     private os: string;
     private userProfile: any;
     private machineId: string;
+    private forcePollingForSession: boolean;
+    private initializingPromise: Promise<void> | null;
 
     constructor() {
         this.socket = null;
@@ -15,7 +17,80 @@ class AnalyticsService {
         this.clientVersion = packageJson.version;
         this.os = 'win32';
         this.userProfile = null;
-        this.machineId = this.getOrCreateMachineId();
+        this.machineId = '';
+        this.forcePollingForSession = false;
+        this.initializingPromise = null;
+    }
+
+    private buildSocketOptions() {
+        if (this.forcePollingForSession) {
+            return {
+                reconnection: true,
+                reconnectionAttempts: 10,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                transports: ['polling'],
+                upgrade: false,
+                rememberUpgrade: false
+            };
+        }
+
+        return {
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            transports: ['websocket'],
+            upgrade: true,
+            rememberUpgrade: false
+        };
+    }
+
+    private destroySocket() {
+        if (!this.socket) return;
+        try {
+            this.socket.removeAllListeners();
+            this.socket.io?.removeAllListeners?.();
+            this.socket.disconnect();
+            this.socket.close?.();
+        } catch (e) {
+        }
+        this.socket = null;
+    }
+
+    private createSocket() {
+        this.destroySocket();
+        this.socket = io(this.serverUrl, this.buildSocketOptions());
+
+        this.socket.on("connect", () => {
+            console.log("[Analytics] Connected to", this.serverUrl, "using", this.socket.io.engine.transport.name);
+            this.register();
+        });
+
+        this.socket.on("connect_error", (err: any) => {
+            console.error("[Analytics] Connection error:", err.message);
+
+            const websocketFailed = String(err?.message || '').toLowerCase().includes('websocket');
+            if (websocketFailed && !this.forcePollingForSession) {
+                console.log("[Analytics] Falling back to polling permanently for this session");
+                this.forcePollingForSession = true;
+                this.createSocket();
+            }
+        });
+
+        this.socket.io.on("reconnect_attempt", () => {
+            if (this.forcePollingForSession) {
+                this.socket.io.opts.transports = ['polling'];
+                this.socket.io.opts.upgrade = false;
+            }
+        });
+
+        this.socket.on("disconnect", (reason: string) => {
+            console.log("[Analytics] Disconnected:", reason);
+            if (reason === "io server disconnect") {
+                this.socket.connect();
+            }
+        });
     }
 
     private generateMachineId() {
@@ -30,71 +105,81 @@ class AnalyticsService {
         return `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
     }
 
-    private getOrCreateMachineId() {
+    private getLegacyMachineIdFromLocalStorage() {
         const storageKey = 'lux_machine_id';
         try {
             if (typeof window === 'undefined' || !window.localStorage) {
-                return this.generateMachineId();
+                return '';
             }
-
             const existing = window.localStorage.getItem(storageKey);
             if (existing && existing.length >= 16) {
                 return existing;
             }
 
-            const created = this.generateMachineId();
-            window.localStorage.setItem(storageKey, created);
-            return created;
+            return '';
         } catch (e) {
-            return this.generateMachineId();
+            return '';
         }
     }
+
+    private saveLegacyMachineId(machineId: string) {
+        const storageKey = 'lux_machine_id';
+        try {
+            if (typeof window !== 'undefined' && window.localStorage && machineId) {
+                window.localStorage.setItem(storageKey, machineId);
+            }
+        } catch (e) {
+        }
+    }
+
+    private async getOrCreateMachineId() {
+        const legacyId = this.getLegacyMachineIdFromLocalStorage();
+        const fallbackId = legacyId || this.generateMachineId();
+
+        if (!window?.electronAPI?.getSettings || !window?.electronAPI?.saveSettings) {
+            this.saveLegacyMachineId(fallbackId);
+            return fallbackId;
+        }
+
+        try {
+            const res = await window.electronAPI.getSettings();
+            if (res?.success && res.settings) {
+                const settingsMachineId = String(res.settings.analyticsMachineId || '').trim();
+                if (settingsMachineId.length >= 16) {
+                    this.saveLegacyMachineId(settingsMachineId);
+                    return settingsMachineId;
+                }
+
+                const nextMachineId = fallbackId;
+                await window.electronAPI.saveSettings({
+                    ...res.settings,
+                    analyticsMachineId: nextMachineId
+                });
+                this.saveLegacyMachineId(nextMachineId);
+                return nextMachineId;
+            }
+        } catch (e) {
+        }
+
+        this.saveLegacyMachineId(fallbackId);
+        return fallbackId;
+    }
+
     init(serverUrl = 'https://lux.pluginhub.de') {
-        if (this.socket) return;
+        if (this.socket || this.initializingPromise) return;
 
         console.log('[Analytics] Initializing connection to', serverUrl);
         this.serverUrl = serverUrl;
 
-        this.socket = io(this.serverUrl, {
-            reconnection: true,
-            reconnectionAttempts: 10,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            transports: ['websocket'] // Start with WebSocket only
-        });
+        const connect = async () => {
+            this.machineId = await this.getOrCreateMachineId();
+            this.createSocket();
+        };
 
-        this.socket.on("connect", () => {
-            console.log("[Analytics] Connected to", this.serverUrl, "using", this.socket.io.engine.transport.name);
-            this.register();
-        });
-
-        this.socket.on("connect_error", (err: any) => {
-            console.error("[Analytics] Connection error:", err.message);
-            
-            // If we are not already using polling, fall back to it permanently for this session
-            if (!this.socket.io.opts.transports.includes('polling')) {
-                console.log("[Analytics] Falling back to polling permanently for this session");
-                this.socket.io.opts.transports = ['polling'];
-                // Force a reconnection with the new transport
-                this.socket.connect();
-            }
-        });
-
-        this.socket.io.on("reconnect_attempt", () => {
-            // Ensure we stay on polling if we've already fallen back
-            if (this.socket.io.opts.transports.includes('polling')) {
-                this.socket.io.opts.transports = ['polling'];
-            } else {
-                this.socket.io.opts.transports = ['websocket'];
-            }
-        });
-
-        this.socket.on("disconnect", (reason: string) => {
-            console.log("[Analytics] Disconnected:", reason);
-            if (reason === "io server disconnect") {
-                this.socket.connect();
-            }
-        });
+        this.initializingPromise = connect()
+            .finally(() => {
+                this.initializingPromise = null;
+            });
     }
 
     setProfile(profile: any) {
@@ -103,7 +188,7 @@ class AnalyticsService {
     }
 
     register() {
-        if (!this.socket) return;
+        if (!this.socket || !this.machineId) return;
         const data: any = {
             version: this.clientVersion,
             os: this.os,

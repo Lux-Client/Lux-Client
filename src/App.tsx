@@ -33,6 +33,7 @@ import StartupModeSelectionModal from './components/StartupDefaultModeModal';
 import LoadingOverlay from './components/LoadingOverlay';
 import WindowControls from './components/WindowControls';
 import CrashModal from './components/CrashModal';
+import JavaRequiredModal from './components/JavaRequiredModal';
 import GuidePromptModal from './components/GuidePromptModal';
 import GuideOverlay from './components/GuideOverlay';
 import { syncCustomFonts } from './services/fontManager';
@@ -165,6 +166,31 @@ const resolveStartupDestination = (startPageSetting) => {
     }
 };
 
+const resolveModeView = (mode, requestedView) => {
+    const launcherViews = new Set(['dashboard', 'library', 'search', 'skins', 'styling', 'settings', 'extensions']);
+    const serverViews = new Set(['server-dashboard', 'search', 'styling', 'server-library', 'server-settings']);
+    const clientViews = new Set(['open-client', 'skins', 'extensions', 'styling', 'mods', 'settings']);
+    const toolsViews = new Set(['tools-dashboard', 'settings']);
+
+    if (mode === 'launcher') {
+        return launcherViews.has(requestedView) ? requestedView : 'dashboard';
+    }
+
+    if (mode === 'server') {
+        return serverViews.has(requestedView) ? requestedView : 'server-dashboard';
+    }
+
+    if (mode === 'client') {
+        return clientViews.has(requestedView) ? requestedView : 'open-client';
+    }
+
+    if (mode === 'tools') {
+        return toolsViews.has(requestedView) ? requestedView : 'tools-dashboard';
+    }
+
+    return requestedView || 'dashboard';
+};
+
 function App() {
     const { t, i18n } = useTranslation();
     const [currentView, setCurrentView] = useState('dashboard');
@@ -186,6 +212,9 @@ function App() {
     const [appVersion, setAppVersion] = useState('');
     const [crashData, setCrashData] = useState(null);
     const [isCrashModalOpen, setIsCrashModalOpen] = useState(false);
+    const [javaRequirement, setJavaRequirement] = useState<any>(null);
+    const [isInstallingRequiredJava, setIsInstallingRequiredJava] = useState(false);
+    const [requiredJavaInstallError, setRequiredJavaInstallError] = useState('');
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
     const [guidePromptMode, setGuidePromptMode] = useState<GuideMode | null>(null);
     const [guidePromptDoNotShowAgain, setGuidePromptDoNotShowAgain] = useState(false);
@@ -329,9 +358,7 @@ function App() {
             return;
         }
 
-        if (guidePromptDoNotShowAgain) {
-            await saveGuidePromptPreference(guidePromptMode, false);
-        }
+        await saveGuidePromptPreference(guidePromptMode, false);
 
         setGuidePromptMode(null);
         setGuidePromptDoNotShowAgain(false);
@@ -342,9 +369,15 @@ function App() {
     };
 
     useEffect(() => {
-        if (currentMode === 'launcher') lastClientView.current = currentView;
-        if (currentMode === 'server') lastServerView.current = currentView;
-        if (currentMode === 'tools') lastToolsView.current = currentView;
+        if (currentMode === 'launcher' && currentView !== 'instance-details') {
+            lastClientView.current = resolveModeView('launcher', currentView);
+        }
+        if (currentMode === 'server' && currentView !== 'server-details') {
+            lastServerView.current = resolveModeView('server', currentView);
+        }
+        if (currentMode === 'tools') {
+            lastToolsView.current = resolveModeView('tools', currentView);
+        }
     }, [currentView, currentMode]);
 
     useEffect(() => {
@@ -508,6 +541,12 @@ function App() {
             }
         });
 
+        const removeJavaRequiredListener = window.electronAPI?.onJavaRequired((data) => {
+            setRequiredJavaInstallError('');
+            setIsInstallingRequiredJava(false);
+            setJavaRequirement(data || null);
+        });
+
         return () => {
             if (removeInstallListener) removeInstallListener();
             if (removeLaunchProgressListener) removeLaunchProgressListener();
@@ -517,8 +556,51 @@ function App() {
             if (removeSettingsListener) removeSettingsListener();
             if (removeWindowStateListener) removeWindowStateListener();
             if (removeCrashReportListener) removeCrashReportListener();
+            if (removeJavaRequiredListener) removeJavaRequiredListener();
         };
     }, []);
+
+    const handleCloseJavaRequiredModal = () => {
+        if (isInstallingRequiredJava) return;
+        setJavaRequirement(null);
+        setRequiredJavaInstallError('');
+    };
+
+    const handleInstallRequiredJava = async () => {
+        if (!javaRequirement?.requiredVersion || isInstallingRequiredJava) return;
+
+        setIsInstallingRequiredJava(true);
+        setRequiredJavaInstallError('');
+        try {
+            const version = String(javaRequirement.requiredVersion);
+            const installRes = await window.electronAPI.installJava(version);
+            if (!installRes?.success || !installRes?.path) {
+                setRequiredJavaInstallError(installRes?.error || `Java ${version} konnte nicht installiert werden.`);
+                return;
+            }
+
+            const settingsRes = await window.electronAPI.getSettings();
+            const currentSettings = settingsRes?.success ? settingsRes.settings : (appSettingsRef.current || {});
+            const saveRes = await window.electronAPI.saveSettings({
+                ...currentSettings,
+                javaPath: installRes.path
+            });
+
+            if (saveRes?.success) {
+                setAppSettings({
+                    ...currentSettings,
+                    javaPath: installRes.path
+                });
+                setJavaRequirement(null);
+            } else {
+                setRequiredJavaInstallError(saveRes?.error || 'Java wurde installiert, aber der Pfad konnte nicht gespeichert werden. Bitte in Settings setzen.');
+            }
+        } catch (e: any) {
+            setRequiredJavaInstallError(e?.message || 'Unbekannter Fehler bei der Java-Installation.');
+        } finally {
+            setIsInstallingRequiredJava(false);
+        }
+    };
 
     const handleAcceptAgreement = async () => {
         const newSettings = { ...appSettings, hasAcceptedToS: true, hasSelectedThemeMode: false };
@@ -723,13 +805,13 @@ function App() {
     const handleModeSelect = (mode) => {
         setCurrentMode(mode);
         if (mode === 'launcher') {
-            setCurrentView(lastClientView.current || 'dashboard');
+            setCurrentView(resolveModeView('launcher', lastClientView.current));
         } else if (mode === 'server') {
-            setCurrentView(lastServerView.current || 'server-dashboard');
+            setCurrentView(resolveModeView('server', lastServerView.current));
         } else if (mode === 'client') {
-            setCurrentView('open-client');
+            setCurrentView(resolveModeView('client', 'open-client'));
         } else if (mode === 'tools') {
-            setCurrentView(lastToolsView.current || 'tools-dashboard');
+            setCurrentView(resolveModeView('tools', lastToolsView.current));
         }
         setSelectedInstance(null);
         setSelectedServer(null);
@@ -1063,6 +1145,17 @@ function App() {
                 onFixApplied={() => {
                     console.log('[App] Fix applied, user may retry launch');
                 }}
+            />
+
+            <JavaRequiredModal
+                isOpen={Boolean(javaRequirement)}
+                requiredVersion={javaRequirement?.requiredVersion || 25}
+                minecraftVersion={javaRequirement?.minecraftVersion || 'unknown'}
+                instanceName={javaRequirement?.instanceName}
+                isInstalling={isInstallingRequiredJava}
+                installError={requiredJavaInstallError}
+                onInstall={handleInstallRequiredJava}
+                onClose={handleCloseJavaRequiredModal}
             />
 
             {isInitialLoading && <LoadingOverlay message="Starting..." />}

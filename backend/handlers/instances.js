@@ -1379,10 +1379,13 @@ module.exports = (ipcMain, win) => {
 
                     const appendLog = async (line) => {
                         if (task.aborted) return;
-                        const formatted = `[${new Date().toLocaleTimeString()}] ${line}\n`;
+                        const normalizedLine = String(line)
+                            .replace(/\[Debug\]\[MCLC\]/g, '[Debug][LUX]')
+                            .replace(/\[DEBUG\]\[MCLC\]/g, '[DEBUG][LUX]');
+                        const formatted = `[${new Date().toLocaleTimeString()}] ${normalizedLine}\n`;
                         await fs.appendFile(logsPath, formatted);
                         if (win && win.webContents) {
-                            win.webContents.send('launch:log', line);
+                            win.webContents.send('launch:log', normalizedLine);
                         }
                     };
 
@@ -3643,22 +3646,38 @@ module.exports = (ipcMain, win) => {
                             return { ...item, hasUpdate: false };
                         }
 
-                        const loaders = (item.type === 'resourcepack' || item.type === 'shader') ? [] : [loader];
+                        const isVisualContent = item.type === 'resourcepack' || item.type === 'shader';
+                        const loaders = isVisualContent ? [] : [loader];
                         const normalizedProjectId = String(item.projectId || '').startsWith(MODRINTH_PROJECT_PREFIX)
                             ? String(item.projectId || '').slice(MODRINTH_PROJECT_PREFIX.length)
                             : item.projectId;
-                        const params = {
-                            loaders: JSON.stringify(loaders),
-                            game_versions: JSON.stringify(mcVersionAliases)
-                        };
+                        const versionQueryCandidates = [];
 
-                        const response = await axios.get(`https://api.modrinth.com/v2/project/${normalizedProjectId}/version`, {
-                            params,
-                            headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
-                            timeout: 5000
-                        });
+                        if (isVisualContent) {
+                            versionQueryCandidates.push({
+                                game_versions: JSON.stringify(mcVersionAliases)
+                            });
+                            versionQueryCandidates.push({});
+                        } else {
+                            versionQueryCandidates.push({
+                                loaders: JSON.stringify(loaders),
+                                game_versions: JSON.stringify(mcVersionAliases)
+                            });
+                        }
 
-                        const versions = response.data;
+                        let versions = [];
+                        for (const params of versionQueryCandidates) {
+                            const response = await axios.get(`https://api.modrinth.com/v2/project/${normalizedProjectId}/version`, {
+                                params,
+                                headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
+                                timeout: 5000
+                            });
+                            versions = Array.isArray(response.data) ? response.data : [];
+                            if (versions.length > 0) {
+                                break;
+                            }
+                        }
+
                         if (versions.length > 0) {
                             const latest = versions[0];
                             if (latest.id !== item.versionId) {

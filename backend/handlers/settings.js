@@ -7,6 +7,7 @@ module.exports = (ipcMain) => {
     const fontsDir = path.join(app.getPath('userData'), 'fonts');
 
     const defaultSettings = {
+        analyticsMachineId: '',
         javaPath: '',
         minMemory: 1024,
         maxMemory: 4096,
@@ -55,6 +56,8 @@ module.exports = (ipcMain) => {
         hasSelectedLanguage: false,
         hasSelectedThemeMode: true,
         hasSelectedStartupMode: true,
+        showModrinthInstancesInLibrary: true,
+        showCurseforgeInstancesInLibrary: true,
         guidePrompts: {
             launcher: true,
             server: true,

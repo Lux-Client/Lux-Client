@@ -76,6 +76,8 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
         enableSmartLogAnalytics: true,
         language: 'en_us',
         startPage: 'dashboard',
+        showModrinthInstancesInLibrary: true,
+        showCurseforgeInstancesInLibrary: true,
         javaProfile: 'default',
         minimizeToTray: false,
         lowGraphicsMode: false,
@@ -96,6 +98,7 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
     const [showSoftResetModal, setShowSoftResetModal] = useState(false);
     const [showFactoryResetModal, setShowFactoryResetModal] = useState(false);
     const [showRestartModal, setShowRestartModal] = useState(false);
+    const [showUninstallModal, setShowUninstallModal] = useState(false);
     const [instances, setInstances] = useState([]);
     const [isInstallingJava, setIsInstallingJava] = useState(false);
     const [javaInstallProgress, setJavaInstallProgress] = useState(null);
@@ -329,6 +332,14 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
     const handleFactoryReset = async () => {
         addNotification('Initiating Factory Reset... Goodbye!', 'error');
         await window.electronAPI.factoryReset();
+    };
+
+    const handleUninstallLauncher = async () => {
+        setShowUninstallModal(false);
+        const result = await window.electronAPI.uninstallLauncher();
+        if (!result?.success) {
+            addNotification(result?.error || t('settings.instance.uninstall_failed'), 'error');
+        }
     };
 
     const handleBrowseJava = async () => {
@@ -905,6 +916,22 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                                     description={t('settings.instance.copy_settings_desc')}
                                 />
 
+                                <ToggleBox
+                                    className="pt-4 border-t border-border"
+                                    checked={settings.showModrinthInstancesInLibrary !== false}
+                                    onChange={(val) => handleChange('showModrinthInstancesInLibrary', val)}
+                                    label={t('settings.instance.show_modrinth_instances')}
+                                    description={t('settings.instance.show_modrinth_instances_desc')}
+                                />
+
+                                <ToggleBox
+                                    className="pt-4 border-t border-border"
+                                    checked={settings.showCurseforgeInstancesInLibrary !== false}
+                                    onChange={(val) => handleChange('showCurseforgeInstancesInLibrary', val)}
+                                    label={t('settings.instance.show_curseforge_instances')}
+                                    description={t('settings.instance.show_curseforge_instances_desc')}
+                                />
+
                                 {settings.copySettingsEnabled && (
                                     <div>
                                         <Label className="mb-2 block">{t('settings.instance.source_instance')}</Label>
@@ -1417,6 +1444,21 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4">
+                                            <h3 className="font-semibold text-foreground text-sm">{t('settings.instance.uninstall_title')}</h3>
+                                            <p className="text-xs text-muted-foreground mt-2 mb-3">
+                                                {t('settings.instance.uninstall_desc')}
+                                            </p>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => setShowUninstallModal(true)}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                                {t('settings.instance.uninstall_btn')}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
@@ -1461,6 +1503,20 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                         isDangerous={false}
                         onConfirm={handleConfirmRestart}
                         onCancel={() => setShowRestartModal(false)}
+                    />
+                )
+            }
+
+            {
+                showUninstallModal && (
+                    <ConfirmationModal
+                        title={t('settings.instance.uninstall_modal_title')}
+                        message={t('settings.instance.uninstall_modal_msg')}
+                        confirmText={t('settings.instance.uninstall_confirm_btn')}
+                        cancelText={t('common.cancel')}
+                        isDangerous={true}
+                        onConfirm={handleUninstallLauncher}
+                        onCancel={() => setShowUninstallModal(false)}
                     />
                 )
             }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import ReinstallModal from './ReinstallModal';
@@ -18,6 +18,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
     const [availableVersions, setAvailableVersions] = useState([]);
     const [loadingVersions, setLoadingVersions] = useState(false);
     const [showSnapshots, setShowSnapshots] = useState(false);
+    const modalRef = useRef(null);
 
     React.useEffect(() => {
         const updateVersions = async () => {
@@ -138,8 +139,8 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm">
-                <div className="bg-popover w-full max-w-4xl h-[600px] rounded-xl border border-border flex overflow-hidden shadow-2xl">
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={onClose}>
+                <div ref={modalRef} className="bg-popover w-full max-w-4xl h-[600px] rounded-xl border border-border flex overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
                     { }
                     <div className="w-64 bg-card border-r border-border p-4 flex flex-col gap-2">

@@ -406,6 +406,14 @@
         "saved_success": "Setări salvate cu succes",
         "save_failed": "Eșec la salvarea setărilor",
         "advanced_settings": "Setări avansate",
+        "java_required_modal": {
+            "title": "Java {{version}} este necesar",
+            "subtitle": "Minecraft {{minecraftVersion}}",
+            "description": "Această versiune de Minecraft necesită Java {{version}}. Am detectat că momentan nu este instalată o versiune compatibilă.",
+            "settings_hint": "Poți instala Java {{version}} acum. Dacă nu îl instalezi din buton, îl poți instala mai târziu din Setări > Java.",
+            "install_button": "Instalează Java {{version}}",
+            "installing": "Se instalează Java {{version}}..."
+        },
         "general": {
             "title": "General",
             "startup_page": "Pagină de Pornire",
@@ -466,7 +474,18 @@
             "title": "Creare Instanță",
             "copy_settings": "Copiază Setările din Instanță",
             "copy_settings_desc": "Copiază automat controalele și opțiunile dintr-o instanță selectată la crearea uneia noi.",
-            "source_instance": "Instanță Sursă"
+            "source_instance": "Instanță Sursă",
+            "show_modrinth_instances": "Afiseaza instantele Modrinth in biblioteca",
+            "show_modrinth_instances_desc": "Daca este dezactivat, instantele externe Modrinth importate sunt ascunse in fila Biblioteca.",
+            "show_curseforge_instances": "Afiseaza instantele CurseForge in biblioteca",
+            "show_curseforge_instances_desc": "Daca este dezactivat, instantele externe CurseForge importate sunt ascunse in fila Biblioteca.",
+            "uninstall_title": "Dezinstaleaza launcherul",
+            "uninstall_desc": "Porneste dezinstalatorul de sistem Lux si inchide launcherul.",
+            "uninstall_btn": "Dezinstaleaza launcherul",
+            "uninstall_modal_title": "Dezinstaleaza launcherul",
+            "uninstall_modal_msg": "Sigur vrei sa pornesti dezinstalarea Lux acum? Launcherul se va inchide.",
+            "uninstall_confirm_btn": "Porneste dezinstalarea",
+            "uninstall_failed": "Dezinstalarea nu a putut fi pornita."
         },
         "integration": {
             "title": "Integrare Launcher",

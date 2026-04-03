@@ -1178,15 +1178,33 @@ Add-Type -TypeDefinition $code -Language CSharp
 
             const { installJava } = require('../utils/java-utils');
 
-            function getRequiredJavaVersion(mcVersion) {
-                const v = mcVersion.split('.');
-                const major = parseInt(v[0]);
-                const minor = parseInt(v[1]);
-                const patch = parseInt(v[2] || 0);
+            function parseMinecraftVersionForJava(mcVersion) {
+                const raw = String(mcVersion || '').trim();
+                const match = raw.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+                if (!match) {
+                    return { major: 0, minor: 0, patch: 0 };
+                }
 
-                if (minor >= 21) return 21;
-                if (minor === 20 && patch >= 5) return 21;
-                if (minor >= 17) return 17;
+                const first = Number.parseInt(match[1] || '0', 10);
+                const second = Number.parseInt(match[2] || '0', 10);
+                const third = Number.parseInt(match[3] || '0', 10);
+
+                // Normalize both "1.20.6" and "20.6" style versioning.
+                if (first === 1 && match[2]) {
+                    return { major: second, minor: third, patch: 0 };
+                }
+
+                return { major: first, minor: second, patch: third };
+            }
+
+            function getRequiredJavaVersion(mcVersion) {
+                const parsed = parseMinecraftVersionForJava(mcVersion);
+
+                // Newer MC builds from 26.1+ require Java 25.
+                if (parsed.major > 26 || (parsed.major === 26 && parsed.minor >= 1)) return 25;
+                if (parsed.major >= 21) return 21;
+                if (parsed.major === 20 && parsed.minor >= 5) return 21;
+                if (parsed.major >= 17) return 17;
                 return 8;
             }
 
@@ -1198,24 +1216,81 @@ Add-Type -TypeDefinition $code -Language CSharp
             const { promisify } = require('util');
             const execAsync = promisify(exec);
 
-            const performJavaCheck = async (p) => {
+            const detectJavaVersion = async (javaBinaryPath) => {
                 try {
-                    const { stderr, stdout } = await execAsync(`"${p}" -version`, { encoding: 'utf8' });
-                    javaOutput = stderr || stdout;
-
-                    const versionMatch = javaOutput.match(/(?:version|jd[kj])\s*["']?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
-                    if (versionMatch) {
-                        let major = parseInt(versionMatch[1]);
-                        if (major === 1) major = parseInt(versionMatch[2] || 8);
-                        javaVersion = major;
-                        console.log(`[Launcher] Detected Java version ${javaVersion} for ${p}`);
+                    const { stderr, stdout } = await execAsync(`"${javaBinaryPath}" -version`, { encoding: 'utf8' });
+                    const output = stderr || stdout || '';
+                    const versionMatch = output.match(/(?:version|jd[kj])\s*["']?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
+                    if (!versionMatch) {
+                        return { success: false, version: 0, output };
                     }
 
-                    return true;
+                    let major = Number.parseInt(versionMatch[1], 10);
+                    if (major === 1) major = Number.parseInt(versionMatch[2] || '8', 10);
+
+                    return { success: true, version: major, output };
                 } catch (e) {
-                    console.error(`[Launcher] Java check failed for ${p}:`, e.message);
-                    return false;
+                    return { success: false, version: 0, output: '', error: e.message };
                 }
+            };
+
+            const findCompatibleJavaRuntime = async (requiredVersion, preferredPaths = []) => {
+                const javaBinName = process.platform === 'win32' ? 'java.exe' : 'java';
+                const runtimesDir = path.join(app.getPath('userData'), 'runtimes');
+                const candidates = [];
+                const seen = new Set();
+
+                const addCandidate = (candidate) => {
+                    const normalized = String(candidate || '').trim();
+                    if (!normalized) return;
+                    const dedupeKey = process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+                    if (seen.has(dedupeKey)) return;
+                    seen.add(dedupeKey);
+                    candidates.push(normalized);
+                };
+
+                for (const p of preferredPaths) addCandidate(p);
+                addCandidate('java');
+
+                try {
+                    if (await fs.pathExists(runtimesDir)) {
+                        const runtimeDirs = await fs.readdir(runtimesDir);
+                        for (const dirName of runtimeDirs) {
+                            addCandidate(path.join(runtimesDir, dirName, 'bin', javaBinName));
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Launcher] Failed to scan internal runtimes:', e.message);
+                }
+
+                for (const candidate of candidates) {
+                    if (candidate !== 'java' && !await fs.pathExists(candidate)) continue;
+
+                    const detected = await detectJavaVersion(candidate);
+                    if (detected.success && detected.version >= requiredVersion) {
+                        return {
+                            found: true,
+                            path: candidate,
+                            version: detected.version,
+                            output: detected.output
+                        };
+                    }
+                }
+
+                return { found: false };
+            };
+
+            const performJavaCheck = async (p) => {
+                const detected = await detectJavaVersion(p);
+                if (detected.success) {
+                    javaOutput = detected.output;
+                    javaVersion = detected.version;
+                    console.log(`[Launcher] Detected Java version ${javaVersion} for ${p}`);
+                    return true;
+                }
+
+                console.error(`[Launcher] Java check failed for ${p}:`, detected.error || 'unknown error');
+                return false;
             };
 
             let javaToCheck = opts.javaPath || 'java';
@@ -1229,7 +1304,35 @@ Add-Type -TypeDefinition $code -Language CSharp
             }
 
             if (!javaValid) {
-                const reqVersion = getRequiredJavaVersion(config.version);
+                const compatibleJava = await findCompatibleJavaRuntime(reqVersion, [opts.javaPath, settings.javaPath]);
+                if (compatibleJava.found) {
+                    javaToCheck = compatibleJava.path;
+                    opts.javaPath = javaToCheck;
+                    javaValid = true;
+                    javaVersion = compatibleJava.version;
+                    javaOutput = compatibleJava.output || javaOutput;
+                    console.log(`[Launcher] Switched to compatible Java ${javaVersion}: ${javaToCheck}`);
+                }
+            }
+
+            if (!javaValid) {
+                if (reqVersion >= 25) {
+                    if (mainWindow?.webContents) {
+                        mainWindow.webContents.send('java:required', {
+                            instanceName,
+                            minecraftVersion: config.version,
+                            requiredVersion: reqVersion
+                        });
+                    }
+
+                    runningInstances.delete(instanceName);
+                    activeLaunches.delete(instanceName);
+                    return {
+                        success: false,
+                        error: `This Minecraft version requires Java ${reqVersion}, but no compatible Java runtime is installed.`
+                    };
+                }
+
                 console.log(`[Launcher] Java not found or invalid. Attempting auto-install of Java ${reqVersion}...`);
 
                 mainWindow.webContents.send('install:progress', {
@@ -1412,7 +1515,14 @@ Add-Type -TypeDefinition $code -Language CSharp
                 mainWindow.webContents.send('launch:log', line);
             };
 
-            launcher.on('debug', (line) => appendLog(`[DEBUG] ${line}`));
+            launcher.on('debug', (line) => {
+                const sanitizedLine = String(line ?? '')
+                    .replace(/\[MCLC\]\s*:?\s*/gi, '')
+                    .trim();
+
+                if (!sanitizedLine) return;
+                appendLog(`[Debug] [LUX] ${sanitizedLine}`);
+            });
             launcher.on('data', (line) => appendLog(line));
             launcher.on('stderr', (line) => appendLog(`[ERROR] ${line}`));
             launcher.on('progress', (e) => {

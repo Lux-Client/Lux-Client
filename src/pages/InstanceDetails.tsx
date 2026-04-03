@@ -55,6 +55,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [projectVersions, setProjectVersions] = useState([]);
     const [loadingVersions, setLoadingVersions] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef(null);
     const [localPending, setLocalPending] = useState(false);
     const [modToDelete, setModToDelete] = useState(null);
     const [updates, setUpdates] = useState({});
@@ -66,6 +67,38 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [worldToDelete, setWorldToDelete] = useState(null);
     const [showBackupManager, setShowBackupManager] = useState(false);
     const [isBackingUp, setIsBackingUp] = useState(false);
+    const [bulkUpdateStatus, setBulkUpdateStatus] = useState<{
+        isRunning: boolean;
+        total: number;
+        completed: number;
+        currentName: string;
+        successCount: number;
+        failedCount: number;
+    } | null>(null);
+    const BULK_UPDATE_NOTIFICATION_THRESHOLD = 4;
+
+    useEffect(() => {
+        if (!showMenu) return;
+
+        const handleOutsideClick = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                setShowMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        window.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            window.removeEventListener('keydown', handleEscape);
+        };
+    }, [showMenu]);
 
     const handleNextImage = (e) => {
         e.stopPropagation();
@@ -418,7 +451,8 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         }
     }, [mods.length, resourcePacks.length, shaders.length, activeTab]);
 
-    const handleUpdateMod = async (updateData) => {
+    const handleUpdateMod = async (updateData, options: { suppressSuccessNotification?: boolean; suppressErrorNotification?: boolean } = {}) => {
+        const { suppressSuccessNotification = false, suppressErrorNotification = false } = options;
         setUpdatingMod(updateData.projectId);
         try {
             const res = await window.electronAPI.updateFile({
@@ -430,7 +464,9 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             });
 
             if (res.success) {
-                addNotification(`Updated ${updateData.filename}!`, 'success');
+                if (!suppressSuccessNotification) {
+                    addNotification(`Updated ${updateData.filename}!`, 'success');
+                }
 
                 setUpdates(prev => {
                     const next = { ...prev };
@@ -441,27 +477,90 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 if (updateData.type === 'mod') loadMods();
                 else if (updateData.type === 'shader') loadShaders();
                 else loadResourcePacks();
+                return true;
             } else {
-                addNotification(`Failed to update: ${res.error}`, 'error');
+                if (!suppressErrorNotification) {
+                    addNotification(`Failed to update: ${res.error}`, 'error');
+                }
+                return false;
             }
         } catch (e) {
             console.error(e);
-            addNotification(`Update error: ${e.message}`, 'error');
+            if (!suppressErrorNotification) {
+                addNotification(`Update error: ${e.message}`, 'error');
+            }
+            return false;
         } finally {
             setUpdatingMod(null);
         }
     };
 
     const handleUpdateAll = async () => {
-        const updateList = Object.values(updates);
+        if (bulkUpdateStatus?.isRunning) return;
+
+        const updateList = Object.values(updates) as any[];
         if (updateList.length === 0) return;
 
         addNotification(`Updating ${updateList.length} item(s)...`, 'info');
-        for (const updateData of updateList) {
-            await handleUpdateMod(updateData);
+        const useCompactNotifications = updateList.length >= BULK_UPDATE_NOTIFICATION_THRESHOLD;
+        let successCount = 0;
+        let failedCount = 0;
+
+        setBulkUpdateStatus({
+            isRunning: true,
+            total: updateList.length,
+            completed: 0,
+            currentName: '',
+            successCount: 0,
+            failedCount: 0
+        });
+
+        for (let index = 0; index < updateList.length; index++) {
+            const updateData = updateList[index];
+            setBulkUpdateStatus((prev) => prev ? {
+                ...prev,
+                currentName: updateData.filename || updateData.name || 'Unknown',
+                completed: index
+            } : prev);
+
+            const success = await handleUpdateMod(updateData, {
+                suppressSuccessNotification: useCompactNotifications,
+                suppressErrorNotification: useCompactNotifications
+            });
+            if (success) successCount++;
+            else failedCount++;
+
+            setBulkUpdateStatus((prev) => prev ? {
+                ...prev,
+                completed: index + 1,
+                successCount,
+                failedCount
+            } : prev);
         }
 
-        addNotification("All updates completed!", 'success');
+        if (useCompactNotifications) {
+            if (successCount > 0) {
+                addNotification(`${successCount} mods/resource packs/shaders were updated successfully.`, 'success');
+            }
+            if (failedCount > 0) {
+                addNotification(`${failedCount} update(s) failed.`, 'error');
+            }
+        } else {
+            addNotification("All updates completed!", 'success');
+        }
+
+        setBulkUpdateStatus((prev) => prev ? {
+            ...prev,
+            isRunning: false,
+            currentName: ''
+        } : prev);
+
+        setTimeout(() => {
+            setBulkUpdateStatus((prev) => {
+                if (!prev?.isRunning) return null;
+                return prev;
+            });
+        }, 5000);
     };
     const handleSearch = async (e?: any, isAuto = false) => {
         if (e) e.preventDefault();
@@ -825,7 +924,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     </button>
 
                     { }
-                    <div className="relative">
+                    <div className="relative" ref={menuRef}>
                         <button
                             onClick={() => setShowMenu(!showMenu)}
                             className="p-3 rounded-xl bg-card hover:bg-accent text-foreground font-bold border border-border transition-colors"
@@ -1008,12 +1107,22 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         {Object.keys(updates).length > 0 && (
                                             <button
                                                 onClick={handleUpdateAll}
-                                                className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-sm transition-all transform"
+                                                disabled={bulkUpdateStatus?.isRunning}
+                                                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-sm transition-all transform ${bulkUpdateStatus?.isRunning ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                </svg>
-                                                {t('instance_details.actions.update_all')} ({Object.keys(updates).length})
+                                                {bulkUpdateStatus?.isRunning ? (
+                                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                    </svg>
+                                                )}
+                                                {bulkUpdateStatus?.isRunning
+                                                    ? `Updating ${bulkUpdateStatus.completed}/${bulkUpdateStatus.total}`
+                                                    : `${t('instance_details.actions.update_all')} (${Object.keys(updates).length})`}
                                             </button>
                                         )}
                                         <button
@@ -1061,6 +1170,22 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 )}
                             </div>
                         </div>
+
+                        {bulkUpdateStatus && (
+                            <div className="mb-4 px-3 py-2 rounded-xl border border-border bg-card text-xs text-muted-foreground flex items-center justify-between gap-3">
+                                <span>
+                                    {bulkUpdateStatus.isRunning
+                                        ? `Updating ${bulkUpdateStatus.completed}/${bulkUpdateStatus.total}${bulkUpdateStatus.currentName ? ` • Current: ${bulkUpdateStatus.currentName}` : ''}`
+                                        : `Update finished • Success: ${bulkUpdateStatus.successCount} • Failed: ${bulkUpdateStatus.failedCount}`}
+                                </span>
+                                <div className="w-36 h-1.5 rounded-full bg-muted overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary transition-all"
+                                        style={{ width: `${bulkUpdateStatus.total > 0 ? (bulkUpdateStatus.completed / bulkUpdateStatus.total) * 100 : 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
 
                         {contentView === 'mods' ? (
                             <div
