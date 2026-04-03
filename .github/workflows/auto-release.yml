@@ -184,9 +184,18 @@ jobs:
           set -euo pipefail
 
           if gh release view "$TAG" >/dev/null 2>&1; then
+            IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
             gh release edit "$TAG" --title "Lux $TAG"
+            if [ "$IS_DRAFT" = "true" ]; then
+              gh release edit "$TAG" --draft=false
+            fi
           else
             gh release create "$TAG" --title "Lux $TAG" --generate-notes
+          fi
+
+          CURRENT_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
+          if [ "$CURRENT_DRAFT" = "true" ]; then
+            gh release edit "$TAG" --draft=false
           fi
 
           gh release upload "$TAG" \
