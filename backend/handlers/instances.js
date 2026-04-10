@@ -1619,6 +1619,7 @@ module.exports = (ipcMain, win) => {
                     const loaderType = (loader || 'vanilla').toLowerCase();
                     let resolvedMcVersion = String(version || '').trim();
                     sendProgress(10, `Downloading Minecraft ${version} base files (Phase 1/3)...`);
+                    let resolvedVersionAliases = [];
                     try {
                         const versionManifestUrl = 'https://piston-meta.mojang.com/mc/game/version_manifest.json';
                         const manifestPath = path.join(dir, 'version_manifest.json');
@@ -1635,7 +1636,7 @@ module.exports = (ipcMain, win) => {
                             appendLog(`Resolved Minecraft version alias ${version} -> ${resolvedMcVersion}`);
                         }
 
-                        const resolvedVersionAliases = buildGameVersionAliases(resolvedMcVersion);
+                        resolvedVersionAliases = buildGameVersionAliases(resolvedMcVersion);
 
                         const versionJsonUrl = versionData.url;
                         const versionDir = path.join(dir, 'versions', resolvedMcVersion);
@@ -3950,7 +3951,15 @@ module.exports = (ipcMain, win) => {
                 const safeNewConfig = sanitizeInstanceConfig(newConfig);
                 const finalConfig = { ...currentConfig, ...safeNewConfig, status: 'installing' };
                 await fs.writeJson(configPath, finalConfig, { spaces: 4 });
-                await startBackgroundInstall(instanceName, finalConfig, false, true);
+
+                if (win && win.webContents) {
+                    win.webContents.send('instance:status', { instanceName, status: 'installing' });
+                    win.webContents.send('install:progress', { instanceName, progress: 1, status: 'Starting migration...' });
+                }
+
+                startBackgroundInstall(instanceName, finalConfig, false, true).catch(e => {
+                    console.error(`[Instance:Migrate] Background migration error for ${instanceName}:`, e);
+                });
 
                 return { success: true };
             } catch (e) {

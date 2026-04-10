@@ -441,14 +441,75 @@ async function resolveSharedVersionId(versionsDir, details) {
     const loaderVersion = String(details?.loaderVersion || '').trim().toLowerCase();
     const versionAliases = buildGameVersionAliases(version).map((entry) => entry.toLowerCase());
 
+    const resolvedVersionCache = new Map();
+    const resolveBaseMinecraftVersionFromJson = async (versionName) => {
+        const cacheKey = String(versionName || '').trim().toLowerCase();
+        if (!cacheKey) return '';
+        if (resolvedVersionCache.has(cacheKey)) return resolvedVersionCache.get(cacheKey);
+
+        const visited = new Set();
+        let current = String(versionName || '').trim();
+        let resolved = '';
+
+        while (current) {
+            const currentKey = current.toLowerCase();
+            if (visited.has(currentKey)) break;
+            visited.add(currentKey);
+
+            const inferredFromCurrent = inferVersionFromName(current);
+            if (inferredFromCurrent) {
+                resolved = inferredFromCurrent;
+            }
+
+            const jsonPath = path.join(versionsDir, current, `${current}.json`);
+            const versionJson = await readJsonIfExists(jsonPath);
+            if (!versionJson) break;
+
+            const jsonId = String(versionJson?.id || '').trim();
+            const inferredFromJsonId = inferVersionFromName(jsonId);
+            if (inferredFromJsonId) {
+                resolved = inferredFromJsonId;
+            }
+
+            const inherited = String(versionJson?.inheritsFrom || '').trim();
+            if (!inherited) break;
+            current = inherited;
+        }
+
+        const normalized = String(resolved || '').trim().toLowerCase();
+        resolvedVersionCache.set(cacheKey, normalized);
+        return normalized;
+    };
+
+    const versionMatchedEntries = [];
+    for (const versionName of versionNames) {
+        const current = versionName.toLowerCase();
+        const byName = versionAliases.some((alias) => hasDelimitedToken(current, alias));
+        let byBaseVersion = false;
+
+        if (!byName && versionAliases.length > 0) {
+            const baseVersion = await resolveBaseMinecraftVersionFromJson(versionName);
+            byBaseVersion = baseVersion ? versionAliases.includes(baseVersion) : false;
+        }
+
+        if (byName || byBaseVersion) {
+            versionMatchedEntries.push(versionName);
+        }
+    }
+
+    const candidatesToScore = versionMatchedEntries.length > 0 ? versionMatchedEntries : versionNames;
+
     let bestMatch = '';
     let bestScore = -1;
 
-    for (const versionName of versionNames) {
+    for (const versionName of candidatesToScore) {
         const current = versionName.toLowerCase();
         let score = 0;
 
+        const baseVersion = await resolveBaseMinecraftVersionFromJson(versionName);
+
         if (versionAliases.some((alias) => hasDelimitedToken(current, alias))) score += 60;
+        if (baseVersion && versionAliases.includes(baseVersion)) score += 80;
         if (loaderVersion && hasDelimitedToken(current, loaderVersion)) score += 35;
         if (loader && hasDelimitedToken(current, loader)) score += 20;
         if (version && current.endsWith(`-${version}`)) score += 12;
@@ -774,6 +835,19 @@ async function readExternalLaunchDetails(externalProfile) {
 
     if (!loader) {
         loader = explicitVersionId ? normalizeLoaderFromString(explicitVersionId) : 'vanilla';
+    }
+
+    if (!loader) {
+        const hasFabricMarker = await fs.pathExists(path.join(profileDir, '.fabric'));
+        const hasQuiltMarker = await fs.pathExists(path.join(profileDir, '.quilt'));
+        if (hasFabricMarker) {
+            loader = 'fabric';
+        } else if (hasQuiltMarker) {
+            loader = 'quilt';
+        } else {
+            const inferredFromName = normalizeLoaderFromString(fallbackProfileName);
+            loader = inferredFromName || (explicitVersionId ? normalizeLoaderFromString(explicitVersionId) : 'vanilla');
+        }
     }
 
     const resolvedVersionId = await resolveSharedVersionId(versionsDir, {
@@ -1736,16 +1810,15 @@ Add-Type -TypeDefinition $code -Language CSharp
             const crashPatterns = [
                 'Failed to start Minecraft!',
                 'FormattedException',
-                'IllegalAccessException',
                 'NoClassDefFoundError',
-                'java.lang.NoSuchMethodError',
-                'Exception in thread "main"'
+                'java.lang.NoSuchMethodError'
             ];
+            let gameStarted = false;
 
             const appendLog = (data) => {
                 const line = data.toString();
 
-                if (!logCrashDetected) {
+                if (!logCrashDetected && !gameStarted) {
                     for (const pattern of crashPatterns) {
                         if (line.includes(pattern)) {
                             console.log(`[Launcher] Detected potential crash pattern in logs: ${pattern}`);
@@ -1782,6 +1855,7 @@ Add-Type -TypeDefinition $code -Language CSharp
             });
 
             launcher.on('arguments', (e) => {
+                                gameStarted = true;
                 mainWindow.webContents.send('instance:status', {
                     instanceName,
                     status: 'running',
@@ -1818,7 +1892,7 @@ Add-Type -TypeDefinition $code -Language CSharp
                         }
 
                         const normalizedExitCode = Number.isInteger(code) ? code : null;
-                        const hasErrorExitCode = normalizedExitCode !== null && normalizedExitCode !== 0;
+                        const hasErrorExitCode = normalizedExitCode !== null && normalizedExitCode > 0;
                         const isShortSession = sessionTime < 15000;
                         const shouldFlagShortSessionCrash = process.platform !== 'linux' && isShortSession;
                         const isCrash = hasErrorExitCode || logCrashDetected || shouldFlagShortSessionCrash;
