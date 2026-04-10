@@ -4,12 +4,25 @@ const { app } = require('electron');
 const fs = require('fs-extra');
 const Store = require('electron-store');
 const store = new Store();
+const { getUserProfile } = require('../utils/secureProfileStore');
 const backupManager = require('../backupManager');
 const { getProcessStats } = require('../utils/process-utils');
 const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
 
 function normalizeExternalRequestName(value) {
     return String(value || '').trim().toLowerCase();
+}
+
+function extractXuidFromToken(accessToken) {
+    try {
+        const base64Url = String(accessToken || '').split('.')[1];
+        if (!base64Url) return '';
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+        return payload.xuid || '';
+    } catch {
+        return '';
+    }
 }
 
 function stripExternalSuffix(value) {
@@ -103,6 +116,30 @@ function getExternalRuntimeRoot(externalProfile) {
     return '';
 }
 
+function buildGameVersionAliases(version) {
+    const value = String(version || '').trim();
+    if (!value) return [];
+
+    const aliases = [];
+    const addAlias = (entry) => {
+        const normalized = String(entry || '').trim();
+        if (!normalized) return;
+        if (!aliases.includes(normalized)) aliases.push(normalized);
+    };
+
+    addAlias(value);
+
+    if (/^\d+\.\d+(?:\.\d+)?$/.test(value)) {
+        if (value.startsWith('1.')) {
+            addAlias(value.slice(2));
+        } else {
+            addAlias(`1.${value}`);
+        }
+    }
+
+    return aliases;
+}
+
 function buildVersionIdCandidates({ version, loader, loaderVersion, explicitVersionId }) {
     const candidates = [];
     const addCandidate = (value) => {
@@ -112,37 +149,42 @@ function buildVersionIdCandidates({ version, loader, loaderVersion, explicitVers
     };
 
     addCandidate(explicitVersionId);
+    const versionAliases = buildGameVersionAliases(version);
 
     if (!loader || loader === 'vanilla') {
-        addCandidate(version);
+        for (const alias of versionAliases) addCandidate(alias);
         return candidates;
     }
 
-    switch (loader) {
-        case 'fabric':
-            addCandidate(`fabric-loader-${loaderVersion}-${version}`);
-            addCandidate(`fabric-${loaderVersion}-${version}`);
-            addCandidate(`${version}-${loaderVersion}`);
-            break;
-        case 'quilt':
-            addCandidate(`quilt-loader-${loaderVersion}-${version}`);
-            addCandidate(`quilt-${loaderVersion}-${version}`);
-            addCandidate(`${version}-${loaderVersion}`);
-            break;
-        case 'forge':
-            addCandidate(`forge-${loaderVersion}`);
-            addCandidate(`${version}-forge-${loaderVersion}`);
-            addCandidate(`${version}-${loaderVersion}`);
-            break;
-        case 'neoforge':
-            addCandidate(`neoforge-${loaderVersion}`);
-            addCandidate(`${version}-neoforge-${loaderVersion}`);
-            addCandidate(`${version}-${loaderVersion}`);
-            break;
-        default:
-            addCandidate(`${loader}-${loaderVersion}-${version}`);
-            addCandidate(`${version}-${loaderVersion}`);
-            break;
+    const candidateVersions = versionAliases.length ? versionAliases : [String(version || '').trim()];
+
+    for (const candidateVersion of candidateVersions) {
+        switch (loader) {
+            case 'fabric':
+                addCandidate(`fabric-loader-${loaderVersion}-${candidateVersion}`);
+                addCandidate(`fabric-${loaderVersion}-${candidateVersion}`);
+                addCandidate(`${candidateVersion}-${loaderVersion}`);
+                break;
+            case 'quilt':
+                addCandidate(`quilt-loader-${loaderVersion}-${candidateVersion}`);
+                addCandidate(`quilt-${loaderVersion}-${candidateVersion}`);
+                addCandidate(`${candidateVersion}-${loaderVersion}`);
+                break;
+            case 'forge':
+                addCandidate(`forge-${loaderVersion}`);
+                addCandidate(`${candidateVersion}-forge-${loaderVersion}`);
+                addCandidate(`${candidateVersion}-${loaderVersion}`);
+                break;
+            case 'neoforge':
+                addCandidate(`neoforge-${loaderVersion}`);
+                addCandidate(`${candidateVersion}-neoforge-${loaderVersion}`);
+                addCandidate(`${candidateVersion}-${loaderVersion}`);
+                break;
+            default:
+                addCandidate(`${loader}-${loaderVersion}-${candidateVersion}`);
+                addCandidate(`${candidateVersion}-${loaderVersion}`);
+                break;
+        }
     }
 
     return candidates;
@@ -207,6 +249,11 @@ async function resolveAssetIndex(runtimeRoot, version, versionId) {
             return assetsValue;
         }
 
+        const assetIndexId = String(versionJson?.assetIndex?.id || versionJson?.assetIndex || '').trim();
+        if (assetIndexId) {
+            return assetIndexId;
+        }
+
         const inheritedFrom = String(versionJson.inheritsFrom || '').trim();
         if (inheritedFrom && !visited.has(inheritedFrom)) {
             queue.push(inheritedFrom);
@@ -214,6 +261,121 @@ async function resolveAssetIndex(runtimeRoot, version, versionId) {
     }
 
     return '';
+}
+
+async function resolveAssetIndexMetadata(runtimeRoot, version, versionId) {
+    const visited = new Set();
+    const queue = [];
+    let fallbackAssetId = '';
+
+    if (versionId) queue.push(versionId);
+    if (version && version !== versionId) queue.push(version);
+
+    while (queue.length > 0) {
+        const current = String(queue.shift() || '').trim();
+        if (!current || visited.has(current)) continue;
+        visited.add(current);
+
+        const versionJsonPath = path.join(runtimeRoot, 'versions', current, `${current}.json`);
+        const versionJson = await readJsonIfExists(versionJsonPath);
+        if (!versionJson) continue;
+
+        const assetIndex = versionJson?.assetIndex;
+        const assetId = String(assetIndex?.id || versionJson.assets || '').trim();
+        const assetUrl = String(assetIndex?.url || '').trim();
+
+        if (!fallbackAssetId && assetId) {
+            fallbackAssetId = assetId;
+        }
+
+        if (assetId && assetUrl) {
+            return {
+                id: assetId,
+                url: assetUrl
+            };
+        }
+
+        const inheritedFrom = String(versionJson.inheritsFrom || '').trim();
+        if (inheritedFrom && !visited.has(inheritedFrom)) {
+            queue.push(inheritedFrom);
+        }
+    }
+
+    if (fallbackAssetId) {
+        return {
+            id: fallbackAssetId,
+            url: ''
+        };
+    }
+
+    return null;
+}
+
+const VERSION_MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
+
+async function fetchAssetIndexMetadataFromVersionManifest(version) {
+    const targetVersion = String(version || '').trim();
+    if (!targetVersion) return null;
+
+    try {
+        const axios = require('axios');
+        const manifestResponse = await axios.get(VERSION_MANIFEST_URL, { timeout: 30000 });
+        const versions = Array.isArray(manifestResponse?.data?.versions) ? manifestResponse.data.versions : [];
+        const matched = versions.find((entry) => String(entry?.id || '').trim() === targetVersion);
+        const versionUrl = String(matched?.url || '').trim();
+        if (!versionUrl) return null;
+
+        const versionResponse = await axios.get(versionUrl, { timeout: 30000 });
+        const assetIndex = versionResponse?.data?.assetIndex || {};
+        const assetId = String(assetIndex?.id || '').trim();
+        const assetUrl = String(assetIndex?.url || '').trim();
+
+        if (!assetId) return null;
+        return { id: assetId, url: assetUrl };
+    } catch (error) {
+        console.warn(`[Launcher] Failed to resolve asset index from version manifest for ${targetVersion}: ${error.message}`);
+        return null;
+    }
+}
+
+async function ensureAssetIndexFile(runtimeRoot, assetRoot, version, versionId, fallbackAssetIndex = '') {
+    let metadata = await resolveAssetIndexMetadata(runtimeRoot, version, versionId);
+
+    if (metadata?.id && !metadata?.url) {
+        const manifestMetadata = await fetchAssetIndexMetadataFromVersionManifest(version);
+        if (manifestMetadata && (!metadata.id || manifestMetadata.id === metadata.id)) {
+            metadata = {
+                id: metadata.id || manifestMetadata.id,
+                url: manifestMetadata.url
+            };
+        }
+    }
+
+    const assetIndexId = String(metadata?.id || fallbackAssetIndex || '').trim();
+    if (!assetIndexId || !assetRoot) return assetIndexId;
+
+    const indexPath = path.join(assetRoot, 'indexes', `${assetIndexId}.json`);
+    if (await fs.pathExists(indexPath)) {
+        return assetIndexId;
+    }
+
+    const indexUrl = String(metadata?.url || '').trim();
+    if (!indexUrl) {
+        console.warn(`[Launcher] Missing asset index file ${assetIndexId}.json and no URL available for download.`);
+        return assetIndexId;
+    }
+
+    try {
+        await fs.ensureDir(path.dirname(indexPath));
+        const axios = require('axios');
+        const response = await axios.get(indexUrl, { responseType: 'arraybuffer', timeout: 30000 });
+        await fs.writeFile(indexPath, response.data);
+        console.log(`[Launcher] Downloaded missing asset index ${assetIndexId}.json`);
+    } catch (error) {
+        console.warn(`[Launcher] Failed to download missing asset index ${assetIndexId}.json: ${error.message}`);
+    }
+
+    return assetIndexId;
 }
 
 async function readExternalLaunchDetails(externalProfile) {
@@ -418,8 +580,15 @@ async function buildExternalLaunchContext(externalProfile) {
         overrides.directory = versionDir;
     }
 
-    if (config.assetIndex) {
-        overrides.assetIndex = config.assetIndex;
+    const ensuredAssetIndex = await ensureAssetIndexFile(
+        details.runtimeRoot,
+        overrides.assetRoot,
+        config.version,
+        config.versionId,
+        config.assetIndex
+    );
+    if (ensuredAssetIndex) {
+        overrides.assetIndex = ensuredAssetIndex;
     }
 
     if (!await fs.pathExists(customJarPath) && await fs.pathExists(vanillaJarPath)) {
@@ -469,8 +638,15 @@ async function buildLocalLaunchContext(instanceName) {
     };
 
     const resolvedAssetIndex = await resolveAssetIndex(instanceDir, config.version, config.versionId);
-    if (resolvedAssetIndex) {
-        overrides.assetIndex = resolvedAssetIndex;
+    const ensuredAssetIndex = await ensureAssetIndexFile(
+        instanceDir,
+        overrides.assetRoot,
+        config.version,
+        config.versionId,
+        resolvedAssetIndex
+    );
+    if (ensuredAssetIndex) {
+        overrides.assetIndex = ensuredAssetIndex;
     }
 
     return {
@@ -564,6 +740,114 @@ async function findExternalProfileByDisplayName(instanceName) {
     }
 
     return null;
+}
+
+const CRASH_LOG_MAX_CHARS = 400000;
+
+function normalizeCompatibilityToken(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^["'\s]+|["'\s]+$/g, '');
+}
+
+function extractCompatibilityIssuesFromCrashLog(logContent) {
+    if (!logContent || typeof logContent !== 'string') return [];
+
+    const patterns = [
+        {
+            issueType: 'missing_dependency',
+            regex: /Mod\s+'([^']+)'\s+requires\s+mod\s+'([^']+)'(?:\s+any\s+version)?(?:\s+but\s+it\s+is\s+not\s+present)?/ig,
+            map: (match) => ({
+                modName: match[1],
+                dependencyName: match[2],
+                requiredVersion: null,
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'outdated_dependency',
+            regex: /mod\s+'([^']+)'\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+requires\s+version\s+([^\s]+)\s+or\s+later\s+of\s+mod\s+'([^']+)'\s+\(([^)]+)\),\s+but\s+only\s+the\s+wrong\s+version\s+is\s+present:\s*([^!\r\n]+)/ig,
+            map: (match) => ({
+                modName: match[1] || match[2],
+                dependencyName: match[5] || match[6],
+                requiredVersion: match[4] || null,
+                foundVersion: match[7] || null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'missing_dependency',
+            regex: /Could\s+not\s+find\s+required\s+mod:\s*([A-Za-z0-9_.\-]+)/ig,
+            map: (match) => ({
+                modName: null,
+                dependencyName: match[1],
+                requiredVersion: null,
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        }
+    ];
+
+    const issues = [];
+    const seen = new Set();
+
+    for (const rule of patterns) {
+        rule.regex.lastIndex = 0;
+        let match;
+        while ((match = rule.regex.exec(logContent)) !== null) {
+            const candidate = rule.map(match);
+            const key = [
+                rule.issueType,
+                normalizeCompatibilityToken(candidate.modName),
+                normalizeCompatibilityToken(candidate.dependencyName),
+                normalizeCompatibilityToken(candidate.requiredVersion),
+                normalizeCompatibilityToken(candidate.foundVersion)
+            ].join('|');
+
+            if (seen.has(key)) continue;
+            seen.add(key);
+            issues.push({
+                issueType: rule.issueType,
+                modName: candidate.modName || null,
+                dependencyName: candidate.dependencyName || null,
+                requiredVersion: candidate.requiredVersion || null,
+                foundVersion: candidate.foundVersion || null,
+                sourceLine: candidate.sourceLine || ''
+            });
+        }
+    }
+
+    return issues;
+}
+
+async function buildCrashLogContent(instanceDir, inMemoryLogs = []) {
+    const latestLogPath = path.join(instanceDir, 'logs', 'latest.log');
+    const debugLogPath = path.join(instanceDir, 'logs', 'debug.log');
+
+    const sections = [];
+
+    if (Array.isArray(inMemoryLogs) && inMemoryLogs.length > 0) {
+        sections.push(inMemoryLogs.join('\n'));
+    }
+
+    if (await fs.pathExists(latestLogPath)) {
+        sections.push(await fs.readFile(latestLogPath, 'utf8').catch(() => ''));
+    }
+
+    if (await fs.pathExists(debugLogPath)) {
+        sections.push(await fs.readFile(debugLogPath, 'utf8').catch(() => ''));
+    }
+
+    const combined = sections
+        .map((entry) => String(entry || '').trim())
+        .filter(Boolean)
+        .join('\n\n');
+
+    if (!combined) return '';
+    if (combined.length <= CRASH_LOG_MAX_CHARS) return combined;
+    return combined.slice(-CRASH_LOG_MAX_CHARS);
 }
 
 module.exports = (ipcMain, mainWindow) => {
@@ -807,7 +1091,7 @@ Add-Type -TypeDefinition $code -Language CSharp
                 backupManager.startScheduler(instanceName, backupConfig.backupSettings.interval);
             }
 
-            const userProfile = store.get('user_profile');
+            const userProfile = getUserProfile(store);
             if (!userProfile || !userProfile.access_token) {
                 return { success: false, error: 'Not logged in. Please login first.' };
             }
@@ -846,7 +1130,11 @@ Add-Type -TypeDefinition $code -Language CSharp
                     client_token: userProfile.uuid,
                     uuid: userProfile.uuid,
                     name: userProfile.name,
-                    user_properties: {}
+                    user_properties: '{}',
+                    meta: {
+                        type: 'msa',
+                        xuid: userProfile.xuid || extractXuidFromToken(userProfile.access_token)
+                    }
                 },
                 root: rootDir,
                 overrides: { ...launchOverrides },
@@ -890,15 +1178,33 @@ Add-Type -TypeDefinition $code -Language CSharp
 
             const { installJava } = require('../utils/java-utils');
 
-            function getRequiredJavaVersion(mcVersion) {
-                const v = mcVersion.split('.');
-                const major = parseInt(v[0]);
-                const minor = parseInt(v[1]);
-                const patch = parseInt(v[2] || 0);
+            function parseMinecraftVersionForJava(mcVersion) {
+                const raw = String(mcVersion || '').trim();
+                const match = raw.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+                if (!match) {
+                    return { major: 0, minor: 0, patch: 0 };
+                }
 
-                if (minor >= 21) return 21;
-                if (minor === 20 && patch >= 5) return 21;
-                if (minor >= 17) return 17;
+                const first = Number.parseInt(match[1] || '0', 10);
+                const second = Number.parseInt(match[2] || '0', 10);
+                const third = Number.parseInt(match[3] || '0', 10);
+
+                // Normalize both "1.20.6" and "20.6" style versioning.
+                if (first === 1 && match[2]) {
+                    return { major: second, minor: third, patch: 0 };
+                }
+
+                return { major: first, minor: second, patch: third };
+            }
+
+            function getRequiredJavaVersion(mcVersion) {
+                const parsed = parseMinecraftVersionForJava(mcVersion);
+
+                // Newer MC builds from 26.1+ require Java 25.
+                if (parsed.major > 26 || (parsed.major === 26 && parsed.minor >= 1)) return 25;
+                if (parsed.major >= 21) return 21;
+                if (parsed.major === 20 && parsed.minor >= 5) return 21;
+                if (parsed.major >= 17) return 17;
                 return 8;
             }
 
@@ -910,24 +1216,81 @@ Add-Type -TypeDefinition $code -Language CSharp
             const { promisify } = require('util');
             const execAsync = promisify(exec);
 
-            const performJavaCheck = async (p) => {
+            const detectJavaVersion = async (javaBinaryPath) => {
                 try {
-                    const { stderr, stdout } = await execAsync(`"${p}" -version`, { encoding: 'utf8' });
-                    javaOutput = stderr || stdout;
-
-                    const versionMatch = javaOutput.match(/(?:version|jd[kj])\s*["']?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
-                    if (versionMatch) {
-                        let major = parseInt(versionMatch[1]);
-                        if (major === 1) major = parseInt(versionMatch[2] || 8);
-                        javaVersion = major;
-                        console.log(`[Launcher] Detected Java version ${javaVersion} for ${p}`);
+                    const { stderr, stdout } = await execAsync(`"${javaBinaryPath}" -version`, { encoding: 'utf8' });
+                    const output = stderr || stdout || '';
+                    const versionMatch = output.match(/(?:version|jd[kj])\s*["']?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
+                    if (!versionMatch) {
+                        return { success: false, version: 0, output };
                     }
 
-                    return true;
+                    let major = Number.parseInt(versionMatch[1], 10);
+                    if (major === 1) major = Number.parseInt(versionMatch[2] || '8', 10);
+
+                    return { success: true, version: major, output };
                 } catch (e) {
-                    console.error(`[Launcher] Java check failed for ${p}:`, e.message);
-                    return false;
+                    return { success: false, version: 0, output: '', error: e.message };
                 }
+            };
+
+            const findCompatibleJavaRuntime = async (requiredVersion, preferredPaths = []) => {
+                const javaBinName = process.platform === 'win32' ? 'java.exe' : 'java';
+                const runtimesDir = path.join(app.getPath('userData'), 'runtimes');
+                const candidates = [];
+                const seen = new Set();
+
+                const addCandidate = (candidate) => {
+                    const normalized = String(candidate || '').trim();
+                    if (!normalized) return;
+                    const dedupeKey = process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+                    if (seen.has(dedupeKey)) return;
+                    seen.add(dedupeKey);
+                    candidates.push(normalized);
+                };
+
+                for (const p of preferredPaths) addCandidate(p);
+                addCandidate('java');
+
+                try {
+                    if (await fs.pathExists(runtimesDir)) {
+                        const runtimeDirs = await fs.readdir(runtimesDir);
+                        for (const dirName of runtimeDirs) {
+                            addCandidate(path.join(runtimesDir, dirName, 'bin', javaBinName));
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Launcher] Failed to scan internal runtimes:', e.message);
+                }
+
+                for (const candidate of candidates) {
+                    if (candidate !== 'java' && !await fs.pathExists(candidate)) continue;
+
+                    const detected = await detectJavaVersion(candidate);
+                    if (detected.success && detected.version >= requiredVersion) {
+                        return {
+                            found: true,
+                            path: candidate,
+                            version: detected.version,
+                            output: detected.output
+                        };
+                    }
+                }
+
+                return { found: false };
+            };
+
+            const performJavaCheck = async (p) => {
+                const detected = await detectJavaVersion(p);
+                if (detected.success) {
+                    javaOutput = detected.output;
+                    javaVersion = detected.version;
+                    console.log(`[Launcher] Detected Java version ${javaVersion} for ${p}`);
+                    return true;
+                }
+
+                console.error(`[Launcher] Java check failed for ${p}:`, detected.error || 'unknown error');
+                return false;
             };
 
             let javaToCheck = opts.javaPath || 'java';
@@ -941,7 +1304,35 @@ Add-Type -TypeDefinition $code -Language CSharp
             }
 
             if (!javaValid) {
-                const reqVersion = getRequiredJavaVersion(config.version);
+                const compatibleJava = await findCompatibleJavaRuntime(reqVersion, [opts.javaPath, settings.javaPath]);
+                if (compatibleJava.found) {
+                    javaToCheck = compatibleJava.path;
+                    opts.javaPath = javaToCheck;
+                    javaValid = true;
+                    javaVersion = compatibleJava.version;
+                    javaOutput = compatibleJava.output || javaOutput;
+                    console.log(`[Launcher] Switched to compatible Java ${javaVersion}: ${javaToCheck}`);
+                }
+            }
+
+            if (!javaValid) {
+                if (reqVersion >= 25) {
+                    if (mainWindow?.webContents) {
+                        mainWindow.webContents.send('java:required', {
+                            instanceName,
+                            minecraftVersion: config.version,
+                            requiredVersion: reqVersion
+                        });
+                    }
+
+                    runningInstances.delete(instanceName);
+                    activeLaunches.delete(instanceName);
+                    return {
+                        success: false,
+                        error: `This Minecraft version requires Java ${reqVersion}, but no compatible Java runtime is installed.`
+                    };
+                }
+
                 console.log(`[Launcher] Java not found or invalid. Attempting auto-install of Java ${reqVersion}...`);
 
                 mainWindow.webContents.send('install:progress', {
@@ -1124,7 +1515,14 @@ Add-Type -TypeDefinition $code -Language CSharp
                 mainWindow.webContents.send('launch:log', line);
             };
 
-            launcher.on('debug', (line) => appendLog(`[DEBUG] ${line}`));
+            launcher.on('debug', (line) => {
+                const sanitizedLine = String(line ?? '')
+                    .replace(/\[MCLC\]\s*:?\s*/gi, '')
+                    .trim();
+
+                if (!sanitizedLine) return;
+                appendLog(`[Debug] [LUX] ${sanitizedLine}`);
+            });
             launcher.on('data', (line) => appendLog(line));
             launcher.on('stderr', (line) => appendLog(`[ERROR] ${line}`));
             launcher.on('progress', (e) => {
@@ -1146,8 +1544,8 @@ Add-Type -TypeDefinition $code -Language CSharp
                 }
             });
 
-            launcher.on('close', async (code) => {
-                console.log(`[Launcher] MC Process closed with code: ${code}, logCrashDetected: ${logCrashDetected}`);
+            launcher.on('close', async (code, signal) => {
+                console.log(`[Launcher] MC Process closed with code: ${code}, signal: ${signal || 'none'}, logCrashDetected: ${logCrashDetected}`);
 
                 const startTime = runningInstances.get(instanceName);
                 if (startTime) {
@@ -1167,11 +1565,17 @@ Add-Type -TypeDefinition $code -Language CSharp
                             console.log(`[Launcher] Updated total playtime for ${instanceName}: ${currentConfig.playtime}ms`);
                         }
 
+                        const normalizedExitCode = Number.isInteger(code) ? code : null;
+                        const hasErrorExitCode = normalizedExitCode !== null && normalizedExitCode !== 0;
                         const isShortSession = sessionTime < 15000;
-                        const isCrash = (code !== 0 && code !== null) || logCrashDetected || isShortSession;
+                        const shouldFlagShortSessionCrash = process.platform !== 'linux' && isShortSession;
+                        const isCrash = hasErrorExitCode || logCrashDetected || shouldFlagShortSessionCrash;
 
                         if (isCrash) {
-                            console.log(`[Launcher] Crash/Early Exit detected for ${instanceName} (Exit code: ${code}, LogCrash: ${logCrashDetected}, Duration: ${sessionTime}ms).`);
+                            console.log(`[Launcher] Crash/Early Exit detected for ${instanceName} (Exit code: ${normalizedExitCode ?? 'unknown'}, Signal: ${signal || 'none'}, LogCrash: ${logCrashDetected}, Duration: ${sessionTime}ms, ShortSessionCrash: ${shouldFlagShortSessionCrash}).`);
+
+                            const crashLogContent = await buildCrashLogContent(instanceDir, liveLogs.get(instanceName) || []);
+                            const compatibilityIssues = extractCompatibilityIssuesFromCrashLog(crashLogContent);
 
                             let logUrl = null;
                             const settings = store.get('settings') || {};
@@ -1202,7 +1606,9 @@ Add-Type -TypeDefinition $code -Language CSharp
                             mainWindow.webContents.send('launcher:crash-report', {
                                 instanceName,
                                 exitCode: code,
-                                logUrl: logUrl
+                                logUrl: logUrl,
+                                logContent: crashLogContent,
+                                compatibilityIssues
                             });
                         }
                     } catch (err) {

@@ -50,6 +50,8 @@
             margin-bottom: 5px;
             animation: pulse 2.5s infinite ease-in-out;
             -webkit-app-region: no-drag;
+            -webkit-user-drag: none;
+            user-select: none;
             filter: drop-shadow(0 0 15px rgba(88, 101, 242, 0.3));
         }
 
@@ -71,7 +73,7 @@
         }
 
         .status-container {
-            height: 40px;
+            min-height: 58px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -84,7 +86,18 @@
             letter-spacing: 0.5px;
             text-transform: uppercase;
             color: #ccc;
+            margin-bottom: 4px;
+        }
+
+        .status-detail {
+            font-size: 11px;
+            color: #9aa0aa;
+            min-height: 14px;
             margin-bottom: 8px;
+            max-width: 230px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .progress-container {
@@ -117,9 +130,10 @@
 
 <body>
     <div class="container">
-        <img src="../resources/icon.png" alt="Lux Logo" class="logo">
+        <img src="../resources/icon.png" alt="Lux Logo" class="logo" draggable="false">
         <div class="status-container">
             <div class="status" id="status">Searching for updates</div>
+            <div class="status-detail" id="status-detail">Checking launcher updates...</div>
             <div class="progress-container" id="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
@@ -128,8 +142,8 @@
     </div>
 
     <script>
-        const { ipcRenderer } = require('electron');
         const statusEl = document.getElementById('status');
+        const detailEl = document.getElementById('status-detail');
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress-bar');
         const retryEl = document.getElementById('retry-text');
@@ -144,16 +158,31 @@
             }
         }, 500);
 
-        ipcRenderer.on('updater:status', (event, { status, progress, retryCount }) => {
+        if (!window.splashAPI || typeof window.splashAPI.onUpdaterStatus !== 'function') {
+            statusEl.innerText = 'Startup bridge missing';
+            detailEl.innerText = 'Unable to subscribe to startup events.';
+        }
+
+        window.splashAPI.onUpdaterStatus(({ status, detail, progress, retryCount }) => {
             currentStatus = status;
 
             if (progress !== undefined) {
                 progressContainer.style.display = 'block';
                 progressBar.style.width = `${progress}%`;
-                statusEl.innerText = `Installing Update (${Math.round(progress)}%)`;
+                statusEl.innerText = status || `Installing Update (${Math.round(progress)}%)`;
+                detailEl.innerText = detail || 'Downloading and validating update package...';
             } else {
                 progressContainer.style.display = 'none';
                 statusEl.innerText = status;
+                if (detail) {
+                    detailEl.innerText = detail;
+                } else if (status === 'Searching for updates') {
+                    detailEl.innerText = 'Looking for the latest available release...';
+                } else if (status === 'Starting') {
+                    detailEl.innerText = 'Preparing launcher startup...';
+                } else {
+                    detailEl.innerText = '';
+                }
             }
 
             if (retryCount !== undefined && retryCount > 0) {

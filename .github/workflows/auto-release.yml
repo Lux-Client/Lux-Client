@@ -1,0 +1,230 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "CHANGELOG.md"
+  workflow_dispatch:
+
+concurrency:
+  group: auto-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      release_id: ${{ steps.check_release.outputs.release_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read launcher version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if release already exists
+        id: check_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = `v${require('./package.json').version}`;
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag
+              });
+              core.info(`Release ${tag} exists (id: ${release.id}). Assets will be replaced.`);
+              core.setOutput('release_id', String(release.id));
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`No release for ${tag}. A new release will be created.`);
+                core.setOutput('release_id', '');
+              } else {
+                throw error;
+              }
+            }
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: win
+            os: windows-latest
+            artifact: release-win
+            package_cmd: npx electron-builder --win --publish never
+          - id: mac
+            os: macos-latest
+            artifact: release-mac
+            package_cmd: npx electron-builder --mac --publish never
+          - id: appimage
+            os: ubuntu-latest
+            artifact: release-appimage
+            package_cmd: npx electron-builder --linux AppImage --publish never
+          - id: deb
+            os: ubuntu-latest
+            artifact: release-deb
+            package_cmd: npx electron-builder --linux deb --publish never
+          - id: rpm
+            os: ubuntu-latest
+            artifact: release-rpm
+            package_cmd: npx electron-builder --linux rpm --publish never
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Create .env file for build
+        shell: bash
+        run: |
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+          echo "DROPBOX_CLIENT_ID=${{ secrets.DROPBOX_CLIENT_ID }}" >> .env
+          echo "DROPBOX_CLIENT_SECRET=${{ secrets.DROPBOX_CLIENT_SECRET }}" >> .env
+
+      - name: Build
+        run: npm run build
+
+      - name: Package
+        run: ${{ matrix.package_cmd }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-${{ needs.prepare.outputs.version }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+          if-no-files-found: error
+          compression-level: 0
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*-${{ needs.prepare.outputs.version }}
+          merge-multiple: true
+          path: release-artifacts
+
+      - name: Delete old installer assets from existing release
+        if: needs.prepare.outputs.release_id != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releaseId = parseInt('${{ needs.prepare.outputs.release_id }}');
+            const { data: assets } = await github.rest.repos.listReleaseAssets({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+              per_page: 100
+            });
+            const installerExts = ['.exe', '.dmg', '.AppImage', '.deb', '.rpm'];
+            const toDelete = assets.filter(a => installerExts.some(ext => a.name.endsWith(ext)));
+            for (const asset of toDelete) {
+              core.info(`Deleting old asset: ${asset.name}`);
+              await github.rest.repos.deleteReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                asset_id: asset.id
+              });
+            }
+            core.info(`Deleted ${toDelete.length} old installer asset(s).`);
+
+      - name: Create or update GitHub release
+        id: create_release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
+            gh release edit "$TAG" --title "Lux $TAG"
+            if [ "$IS_DRAFT" = "true" ]; then
+              gh release edit "$TAG" --draft=false
+            fi
+          else
+            gh release create "$TAG" --title "Lux $TAG" --generate-notes
+          fi
+
+          CURRENT_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
+          if [ "$CURRENT_DRAFT" = "true" ]; then
+            gh release edit "$TAG" --draft=false
+          fi
+
+          gh release upload "$TAG" \
+            release-artifacts/*.exe \
+            release-artifacts/*.dmg \
+            release-artifacts/*.AppImage \
+            release-artifacts/*.deb \
+            release-artifacts/*.rpm \
+            --clobber
+
+          RELEASE_URL=$(gh release view "$TAG" --json url --jq '.url')
+          echo "url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Discord – success
+        if: success()
+        env:
+          RELEASE_URL: ${{ steps.create_release.outputs.url }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$RELEASE_ID" ]; then ACTION="updated"; else ACTION="released"; fi
+          curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" \
+            -d "{\"embeds\":[{\"title\":\"✅ Lux ${TAG} ${ACTION}\",\"description\":\"The release has been published successfully.\\n\\n**[View Release](${RELEASE_URL})**\",\"color\":3066993}]}" \
+            "$DISCORD_WEBHOOK"
+
+      - name: Notify Discord – failure
+        if: failure()
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" \
+            -d "{\"embeds\":[{\"title\":\"❌ Release failed – Lux ${{ needs.prepare.outputs.tag }}\",\"description\":\"The release workflow failed. Check the [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\",\"color\":15158332}]}" \
+            "${{ secrets.DISCORD_WEBHOOK_URL }}"

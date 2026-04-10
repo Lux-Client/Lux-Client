@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, protocol, net, Menu, Tray, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, Menu, Tray, nativeImage, screen, shell } = require('electron');
 const fs = require('fs-extra');
 const path = require('path');
+const crypto = require('crypto');
 const pkg = require('../package.json');
 
 if (process.platform === 'linux' && process.env.XDG_CURRENT_DESKTOP === 'COSMIC') {
@@ -75,6 +76,77 @@ ipcMain.handle('app:restart', () => {
     app.exit(0);
 });
 
+ipcMain.handle('app:uninstall', async () => {
+    try {
+        if (!app.isPackaged) {
+            return { success: false, error: 'Uninstall is only available in packaged builds.' };
+        }
+
+        if (process.platform === 'win32') {
+            const { spawn } = require('child_process');
+            const installDir = path.dirname(process.execPath);
+            const candidates = [
+                path.join(installDir, `Uninstall ${app.getName()}.exe`),
+                path.join(installDir, 'Uninstall Lux.exe'),
+                path.join(installDir, 'uninstall.exe')
+            ];
+
+            const uninstallPath = candidates.find((candidate) => fs.existsSync(candidate));
+            if (!uninstallPath) {
+                return { success: false, error: 'Could not locate uninstaller executable.' };
+            }
+
+            spawn(uninstallPath, [], {
+                detached: true,
+                stdio: 'ignore',
+                windowsHide: false
+            }).unref();
+
+            app.quit();
+            return { success: true };
+        }
+
+        if (process.platform === 'darwin') {
+            let appBundlePath = app.getPath('exe');
+            while (appBundlePath && !appBundlePath.endsWith('.app')) {
+                const parent = path.dirname(appBundlePath);
+                if (parent === appBundlePath) break;
+                appBundlePath = parent;
+            }
+
+            if (!appBundlePath || !appBundlePath.endsWith('.app') || !fs.existsSync(appBundlePath)) {
+                return { success: false, error: 'Could not locate application bundle for uninstall.' };
+            }
+
+            await shell.trashItem(appBundlePath);
+            app.quit();
+            return { success: true };
+        }
+
+        if (process.platform === 'linux') {
+            const appImagePath = process.env.APPIMAGE;
+            if (appImagePath && fs.existsSync(appImagePath)) {
+                await shell.trashItem(appImagePath);
+                app.quit();
+                return { success: true };
+            }
+
+            const execPath = process.execPath;
+            if (execPath && fs.existsSync(execPath)) {
+                await shell.trashItem(execPath);
+                app.quit();
+                return { success: true };
+            }
+
+            return { success: false, error: 'Could not determine removable launcher binary on Linux.' };
+        }
+
+        return { success: false, error: 'Uninstall is not supported on this platform.' };
+    } catch (error) {
+        return { success: false, error: error?.message || String(error) };
+    }
+});
+
 const { pathToFileURL } = require('url');
 const dns = require('dns');
 if (dns.setDefaultResultOrder) {
@@ -100,6 +172,11 @@ let tray = null;
 let isQuiting = false;
 const isDeveloperMode = process.env.NODE_ENV === 'development';
 const updateAttemptStatePath = path.join(app.getPath('userData'), 'update-attempt-state.json');
+
+function sendSplashStatus(payload = {}) {
+    if (!splashWindow || splashWindow.isDestroyed()) return;
+    splashWindow.webContents.send('updater:status', payload);
+}
 
 async function readUpdateAttemptState() {
     try {
@@ -129,19 +206,94 @@ async function clearUpdateAttemptState() {
     }
 }
 
+async function calculateFileSha256(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+        stream.on('data', (chunk) => hash.update(chunk));
+        stream.on('end', () => resolve(hash.digest('hex')));
+        stream.on('error', reject);
+    });
+}
+
+function parseSha256FromText(content, targetFileName) {
+    const normalizedTarget = String(targetFileName || '').trim().toLowerCase();
+    const lines = String(content || '').split(/\r?\n/);
+
+    for (const lineRaw of lines) {
+        const line = lineRaw.trim();
+        if (!line) continue;
+
+        const directHash = line.match(/^([a-f0-9]{64})$/i);
+        if (directHash) return directHash[1].toLowerCase();
+
+        const match = line.match(/^([a-f0-9]{64})\s+\*?(.+)$/i);
+        if (!match) continue;
+
+        const fileNameInLine = path.basename(match[2].trim()).toLowerCase();
+        if (fileNameInLine === normalizedTarget) {
+            return match[1].toLowerCase();
+        }
+    }
+
+    return null;
+}
+
+async function resolveExpectedReleaseSha256(axios, release, assetName) {
+    const assets = Array.isArray(release?.assets) ? release.assets : [];
+    const targetName = String(assetName || '').trim().toLowerCase();
+
+    const sidecarAsset = assets.find((a) => {
+        const name = String(a?.name || '').toLowerCase();
+        return name === `${targetName}.sha256` || name === `${targetName}.sha256.txt`;
+    });
+
+    if (sidecarAsset?.browser_download_url) {
+        const response = await axios.get(sidecarAsset.browser_download_url, { timeout: 10000, responseType: 'text' });
+        const hash = parseSha256FromText(response.data, assetName);
+        if (hash) return hash;
+    }
+
+    const checksumsAsset = assets.find((a) => /sha256sums(\.txt)?$/i.test(String(a?.name || '')) || /checksums?(\.txt)?$/i.test(String(a?.name || '')));
+    if (checksumsAsset?.browser_download_url) {
+        const response = await axios.get(checksumsAsset.browser_download_url, { timeout: 10000, responseType: 'text' });
+        const hash = parseSha256FromText(response.data, assetName);
+        if (hash) return hash;
+    }
+
+    return null;
+}
+
 function createSplashWindow() {
+    const cursor = screen.getCursorScreenPoint();
+    const display = screen.getDisplayNearestPoint(cursor);
+    const workArea = display.workArea;
+
+    const splashWidth = 300;
+    const splashHeight = 350;
+    const splashX = Math.round(workArea.x + (workArea.width - splashWidth) / 2);
+    const splashY = Math.round(workArea.y + (workArea.height - splashHeight) / 2);
+
     splashWindow = new BrowserWindow({
-        width: 300,
-        height: 350,
+        width: splashWidth,
+        height: splashHeight,
+        x: splashX,
+        y: splashY,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
         icon: path.join(__dirname, '../resources/icon.png'),
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            sandbox: false
+            preload: path.join(__dirname, '../backend/splashPreload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true
         }
+    });
+
+    splashWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    splashWindow.webContents.on('will-navigate', (event) => {
+        event.preventDefault();
     });
 
     try {
@@ -154,7 +306,6 @@ function createSplashWindow() {
     } catch (err) {
         console.error('[Main] Failed to load splash screen:', err);
     }
-    splashWindow.center();
 }
 
 async function checkAndLaunch() {
@@ -166,26 +317,31 @@ async function checkAndLaunch() {
     const performCheck = async () => {
         if (isDeveloperMode) {
             console.log('[Main] Skipping update check in dev mode.');
-            splashWindow.webContents.send('updater:status', { status: 'Searching for updates' });
+            sendSplashStatus({ status: 'Searching for updates', detail: 'Developer mode active. Skipping remote update check.' });
             setTimeout(() => {
-                splashWindow.webContents.send('updater:status', { status: 'Starting' });
+                sendSplashStatus({ status: 'Starting', detail: 'Initializing launcher window...' });
                 setTimeout(launchMain, 1500);
             }, 1000);
             return;
         }
 
-        splashWindow.webContents.send('updater:status', { status: 'Searching for updates', retryCount });
+        sendSplashStatus({
+            status: 'Searching for updates',
+            detail: 'Checking latest release metadata from GitHub...',
+            retryCount
+        });
 
         try {
             const axios = require('axios');
             const { compareVersions } = require('../backend/utils/version-utils');
             const pkg = require('../package.json');
 
-            const REPO = 'Lux-Client/LuxClient';
+            const REPO = 'Lux-Client/Lux-Client';
             const GITHUB_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 
             const response = await axios.get(GITHUB_API, {
-                headers: { 'User-Agent': 'Lux-AutoUpdater' }
+                headers: { 'User-Agent': 'Lux-AutoUpdater' },
+                timeout: 10000
             });
             const release = response.data;
             const latestVersion = release.tag_name;
@@ -202,7 +358,7 @@ async function checkAndLaunch() {
                     && Date.now() - Number(lastAttempt?.ts || 0) < recentFailureWindowMs;
 
                 if (wasInstallingRecently) {
-                    splashWindow.webContents.send('updater:status', { status: 'Starting' });
+                    sendSplashStatus({ status: 'Starting', detail: 'Recent update attempt detected. Launching app...' });
                     setTimeout(launchMain, 1500);
                     return;
                 }
@@ -218,7 +374,7 @@ async function checkAndLaunch() {
                 }
 
                 if (asset) {
-                    splashWindow.webContents.send('updater:status', { status: 'Downloading update...', progress: 0 });
+                    sendSplashStatus({ status: 'Downloading update...', detail: `Downloading ${asset.name}...`, progress: 0 });
 
                     const downloadDir = path.join(app.getPath('userData'), 'updates');
                     await fs.ensureDir(downloadDir);
@@ -250,7 +406,7 @@ async function checkAndLaunch() {
                     downloadRes.data.on('data', (chunk) => {
                         downloadedLength += chunk.length;
                         const percent = totalLength ? Math.round((downloadedLength / totalLength) * 100) : 0;
-                        splashWindow.webContents.send('updater:status', { status: `Installing Update (${percent}%)`, progress: percent });
+                        sendSplashStatus({ status: `Installing Update (${percent}%)`, detail: 'Verifying and preparing update package...', progress: percent });
                     });
 
                     await new Promise((resolve, reject) => {
@@ -258,7 +414,18 @@ async function checkAndLaunch() {
                         writer.on('error', reject);
                     });
 
-                    splashWindow.webContents.send('updater:status', { status: 'Update downloaded, installing...' });
+                    const expectedSha256 = await resolveExpectedReleaseSha256(axios, release, asset.name);
+                    if (expectedSha256) {
+                        const actualSha256 = await calculateFileSha256(targetPath);
+                        if (actualSha256 !== expectedSha256) {
+                            await fs.remove(targetPath);
+                            throw new Error('Update verification failed: checksum mismatch');
+                        }
+                    } else {
+                        console.warn('[Updater] No checksum file found for this release – skipping SHA256 verification.');
+                    }
+
+                    sendSplashStatus({ status: 'Update downloaded, installing...', detail: 'Starting installer...' });
                     setTimeout(() => {
                         const { spawn } = require('child_process');
                         if (process.platform === 'win32') {
@@ -270,25 +437,34 @@ objShell.Run """" & WScript.Arguments(0) & """ /S", 1, True
 objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
                             fs.writeFileSync(updateScript, vbsContent);
                             spawn('wscript.exe', [updateScript, targetPath, exeTarget], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+                            app.quit();
                         } else if (process.platform === 'linux') {
                             if (safeAssetName.endsWith('.AppImage')) {
                                 const safeUpdatePath = path.join(downloadDir, 'lux-setup.AppImage');
                                 fs.renameSync(targetPath, safeUpdatePath);
                                 fs.chmodSync(safeUpdatePath, 0o755);
                                 spawn(safeUpdatePath, [], { detached: true, stdio: 'ignore' }).unref();
+                                app.quit();
+                            } else if (safeAssetName.endsWith('.deb')) {
+                                spawn('pkexec', ['apt-get', 'install', '-y', targetPath], { detached: true, stdio: 'ignore' }).unref();
+                                app.quit();
+                            } else if (safeAssetName.endsWith('.rpm')) {
+                                spawn('pkexec', ['dnf', 'install', '-y', targetPath], { detached: true, stdio: 'ignore' }).unref();
+                                app.quit();
                             } else {
                                 require('electron').shell.openPath(path.dirname(targetPath));
+                                app.quit();
                             }
                         } else {
                             require('electron').shell.openPath(targetPath);
+                            app.quit();
                         }
-                        app.quit();
                     }, 1000);
                     return;
                 }
             }
 
-            splashWindow.webContents.send('updater:status', { status: 'Starting' });
+            sendSplashStatus({ status: 'Starting', detail: 'No update required. Launching Lux...' });
             setTimeout(launchMain, 1500);
 
         } catch (err) {
@@ -297,7 +473,7 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
             if (retryCount <= maxRetries) {
                 setTimeout(performCheck, 1000);
             } else {
-                splashWindow.webContents.send('updater:status', { status: 'Starting' });
+                sendSplashStatus({ status: 'Starting', detail: 'Update check failed after retries. Launching app...' });
                 setTimeout(launchMain, 1500);
             }
         }
@@ -310,11 +486,26 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
 
 function launchMain() {
     clearUpdateAttemptState();
+    sendSplashStatus({ status: 'Starting', detail: 'Creating main application window...' });
     createWindow();
 }
 
+function getSplashDisplayWorkArea() {
+    if (!splashWindow || splashWindow.isDestroyed()) return null;
+
+    const splashBounds = splashWindow.getBounds();
+    const splashCenter = {
+        x: Math.round(splashBounds.x + (splashBounds.width / 2)),
+        y: Math.round(splashBounds.y + (splashBounds.height / 2))
+    };
+    const display = screen.getDisplayNearestPoint(splashCenter);
+    return display?.workArea || null;
+}
+
 function createWindow() {
-    mainWindow = new BrowserWindow({
+    sendSplashStatus({ status: 'Starting', detail: 'Configuring window options...' });
+
+    const windowOptions = {
         width: 1600,
         height: 900,
         minWidth: 900,
@@ -331,9 +522,51 @@ function createWindow() {
             sandbox: true,
             v8CacheOptions: 'bypassHeatCheck'
         },
-    });
+    };
+
+    const splashWorkArea = getSplashDisplayWorkArea();
+    if (splashWorkArea) {
+        let windowWidth = windowOptions.width;
+        let windowHeight = windowOptions.height;
+
+        if (windowWidth > splashWorkArea.width) windowWidth = splashWorkArea.width;
+        if (windowHeight > splashWorkArea.height) windowHeight = splashWorkArea.height;
+
+        windowOptions.width = windowWidth;
+        windowOptions.height = windowHeight;
+
+        const centeredX = Math.round(splashWorkArea.x + ((splashWorkArea.width - windowWidth) / 2));
+        const centeredY = Math.round(splashWorkArea.y + ((splashWorkArea.height - windowHeight) / 2));
+        windowOptions.x = centeredX;
+        windowOptions.y = centeredY;
+    }
+
+    mainWindow = new BrowserWindow(windowOptions);
 
     mainWindow.once('ready-to-show', () => {
+        sendSplashStatus({ status: 'Starting', detail: 'Finalizing interface...' });
+        
+        // Recalculate bounds right before showing in case the user dragged the splash screen while loading
+        if (splashWindow && !splashWindow.isDestroyed()) {
+            const currentSplashBounds = splashWindow.getBounds();
+            const splashCenter = {
+                x: Math.round(currentSplashBounds.x + (currentSplashBounds.width / 2)),
+                y: Math.round(currentSplashBounds.y + (currentSplashBounds.height / 2))
+            };
+            const display = screen.getDisplayNearestPoint(splashCenter);
+            if (display && display.workArea) {
+                const wa = display.workArea;
+                let currentBounds = mainWindow.getBounds();
+                let nw = currentBounds.width;
+                let nh = currentBounds.height;
+                if (nw > wa.width) nw = wa.width;
+                if (nh > wa.height) nh = wa.height;
+                const nx = Math.round(wa.x + (wa.width - nw) / 2);
+                const ny = Math.round(wa.y + (wa.height - nh) / 2);
+                mainWindow.setBounds({ x: nx, y: ny, width: nw, height: nh });
+            }
+        }
+
         setTimeout(() => {
             if (splashWindow) {
                 splashWindow.close();
@@ -345,6 +578,7 @@ function createWindow() {
     });
 
     console.log('[Main] Preload script configured.');
+    sendSplashStatus({ status: 'Starting', detail: 'Registering backend handlers...' });
     const handlers = [
         { name: 'auth', path: '../backend/handlers/auth' },
         { name: 'instances', path: '../backend/handlers/instances' },
@@ -363,6 +597,7 @@ function createWindow() {
     ];
 
     for (const h of handlers) {
+        sendSplashStatus({ status: 'Starting', detail: `Loading handler: ${h.name}` });
         logToFile(`[Main] Registering ${h.name} handler...`);
         try {
             const handler = require(h.path);
@@ -409,6 +644,7 @@ function createWindow() {
     }
 
     try {
+        sendSplashStatus({ status: 'Starting', detail: 'Initializing backup manager...' });
         logToFile('[Main] Initializing Backup Manager...');
         const backupManager = require('../backend/backupManager');
         backupManager.init(ipcMain);
@@ -417,11 +653,13 @@ function createWindow() {
         logToFile(`[Main] ❌ Failed to initialize Backup Manager: ${e.message}`);
     }
     if (isDeveloperMode) {
+        sendSplashStatus({ status: 'Starting', detail: 'Loading renderer (development mode)...' });
         logToFile('[Main] Loading development URL...');
         mainWindow.loadURL('http://localhost:3000');
         mainWindow.webContents.openDevTools();
     } else {
         const indexPath = path.join(__dirname, '../dist/index.html');
+        sendSplashStatus({ status: 'Starting', detail: 'Loading launcher interface...' });
         logToFile(`[Main] Loading production file: ${indexPath}`);
 
         if (!fs.existsSync(indexPath)) {
@@ -516,6 +754,9 @@ function setupAppMediaProtocol() {
                 }
             } else {
                 decodedPath = decodeURIComponent(url.host + url.pathname);
+                if (!decodedPath.startsWith('/')) {
+                    decodedPath = '/' + decodedPath;
+                }
             }
 
             console.log(`[Main] app-media request: ${request.url} -> decodedPath: ${decodedPath}`);

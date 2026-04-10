@@ -429,7 +429,25 @@
             "slovenian": "Slovenščina (SI)",
             "swedish": "Švedščina (SE)",
             "quick_switch_button": "Gumb za hitro spreminjanje",
-            "quick_switch_button_desc": "Gumb za hitro spreminjanje"
+            "quick_switch_button_desc": "Gumb za hitro spreminjanje",
+            "animations": {
+                "title": "Animacije strani",
+                "desc": "Animira preklapljanje strani in zavihkov namesto takojšnje menjave pogleda.",
+                "style_label": "Slog animacije",
+                "style_desc": "Izberi slog prehoda, ki naj se uporablja v celotnem launcherju.",
+                "presets": {
+                    "cinematic": "Kinematični",
+                    "cinematic_desc": "Nežen zamegljen učinek, subtilna globina in uglajen prehod strani.",
+                    "glide": "Drsenje",
+                    "glide_desc": "Hiter vodoravni premik za izrazitejšo menjavo zavihkov.",
+                    "fade": "Pojemanje",
+                    "fade_desc": "Minimalen prehod s skoraj nič gibanja.",
+                    "zoom": "Povečava",
+                    "zoom_desc": "Strani se prikažejo z bolj osredotočenim učinkom povečave.",
+                    "lift": "Dvigni",
+                    "lift_desc": "Vsebina pride od spodaj in izgine navzgor z več gibanja."
+                }
+            }
         },
         "java": {
             "title": "Okolje Java (Runtime)",
@@ -466,7 +484,18 @@
             "title": "Ustvarjanje instance",
             "copy_settings": "Kopiraj nastavitve iz instance",
             "copy_settings_desc": "Pri ustvarjanju nove instance samodejno kopira kontrole in možnosti iz izbrane instance.",
-            "source_instance": "Izvorna instanca"
+            "source_instance": "Izvorna instanca",
+            "show_modrinth_instances": "Prikazi instance Modrinth v knjiznici",
+            "show_modrinth_instances_desc": "Ce je onemogoceno, bodo uvozene zunanje instance Modrinth skrite v zavihku Knjiznica.",
+            "show_curseforge_instances": "Prikazi instance CurseForge v knjiznici",
+            "show_curseforge_instances_desc": "Ce je onemogoceno, bodo uvozene zunanje instance CurseForge skrite v zavihku Knjiznica.",
+            "uninstall_title": "Odstrani launcher",
+            "uninstall_desc": "Zazene sistemski odstranjevalnik Lux in zapre launcher.",
+            "uninstall_btn": "Odstrani launcher",
+            "uninstall_modal_title": "Odstrani launcher",
+            "uninstall_modal_msg": "Ali zelis zdaj zagnati odstranitev Lux? Launcher se bo zaprl.",
+            "uninstall_confirm_btn": "Zazeni odstranitev",
+            "uninstall_failed": "Odstranitve ni bilo mogoce zagnati."
         },
         "integration": {
             "title": "Integracija zaganjalnika",
@@ -876,6 +905,14 @@
         "no_issues": "Vzroka tega sesutja nismo mogli samodejno prepoznati.",
         "view_log": "Ogled naloženega dnevnika",
         "check_manually": "Ročno preverite datoteko latest.log."
+    },
+    "java_required_modal": {
+        "title": "Zahtevan je Java {{version}}",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Ta različica Minecrafta zahteva Java {{version}}. Zaznali smo, da trenutno ni nameščene združljive različice.",
+        "settings_hint": "Java {{version}} lahko namestiš zdaj. Če ga ne namestiš s tem gumbom, ga lahko pozneje namestiš v Nastavitve > Java.",
+        "install_button": "Namesti Java {{version}}",
+        "installing": "Nameščanje Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Pixel Editor",

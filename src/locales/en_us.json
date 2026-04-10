@@ -432,6 +432,24 @@
             "startup_page_desc": "Choose which page shows when you open the app",
             "language": "Language",
             "language_desc": "Pick your language.",
+            "animations": {
+                "title": "Page Animations",
+                "desc": "Animate page and tab switches instead of changing views instantly.",
+                "style_label": "Animation Style",
+                "style_desc": "Choose which transition style should be used across the launcher.",
+                "presets": {
+                    "cinematic": "Cinematic",
+                    "cinematic_desc": "Soft blur, subtle depth and a polished page swap.",
+                    "glide": "Glide",
+                    "glide_desc": "Fast horizontal movement for a sharper tab switch.",
+                    "fade": "Fade",
+                    "fade_desc": "Minimal crossfade with almost no movement.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "Pages fade in with a focused zoom effect.",
+                    "lift": "Lift",
+                    "lift_desc": "Content rises in and leaves upward with more motion."
+                }
+            },
             "select_language": "Pick Language",
             "english": "English (US)",
             "english_uk": "English (UK)",
@@ -486,7 +504,18 @@
             "title": "Instance Creation",
             "copy_settings": "Copy from Instance",
             "copy_settings_desc": "When making a new instance, automatically copy keybinds and options from another instance.",
-            "source_instance": "Copy From"
+            "source_instance": "Copy From",
+            "show_modrinth_instances": "Show Modrinth Instances in Library",
+            "show_modrinth_instances_desc": "If disabled, imported Modrinth external instances are hidden in the Library tab.",
+            "show_curseforge_instances": "Show CurseForge Instances in Library",
+            "show_curseforge_instances_desc": "If disabled, imported CurseForge external instances are hidden in the Library tab.",
+            "uninstall_title": "Uninstall Launcher",
+            "uninstall_desc": "Starts the system uninstaller for Lux and closes the launcher.",
+            "uninstall_btn": "Uninstall Launcher",
+            "uninstall_modal_title": "Uninstall Launcher",
+            "uninstall_modal_msg": "Do you really want to start the Lux uninstaller now? The launcher will close.",
+            "uninstall_confirm_btn": "Start Uninstall",
+            "uninstall_failed": "Uninstall could not be started."
         },
         "integration": {
             "title": "Launcher Integration",
@@ -907,6 +936,14 @@
         "no_issues": "We couldn't automatically identify the cause of this crash.",
         "view_log": "View Uploaded Log",
         "check_manually": "Please check the latest.log file manually."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} is required",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "This Minecraft version requires Java {{version}}. We detected that no compatible Java is currently installed.",
+        "settings_hint": "You can install Java {{version}} right now. If you don't install it with the button, you can install it later via Settings > Java.",
+        "install_button": "Install Java {{version}}",
+        "installing": "Installing Java {{version}}..."
     },
     "guide": {
         "prompt_title": "Welcome to Lux!",

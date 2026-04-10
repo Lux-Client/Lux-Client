@@ -1,11 +1,29 @@
 const { shell } = require('electron');
 const fs = require('fs-extra');
-const { spawn } = require('child_process');
+
+function isAllowedExternalProtocol(protocol) {
+    return protocol === 'https:' || protocol === 'http:' || protocol === 'mailto:';
+}
 
 module.exports = (ipcMain) => {
 
     ipcMain.handle('open-external', async (_event, url) => {
         try {
+            if (!url || typeof url !== 'string') {
+                return { success: false, error: 'Invalid URL' };
+            }
+
+            let parsed;
+            try {
+                parsed = new URL(url);
+            } catch {
+                return { success: false, error: 'Malformed URL' };
+            }
+
+            if (!isAllowedExternalProtocol(parsed.protocol)) {
+                return { success: false, error: 'Blocked URL protocol' };
+            }
+
             await shell.openExternal(url);
             return { success: true };
         } catch (error) {
@@ -30,13 +48,15 @@ module.exports = (ipcMain) => {
                 return { success: false, error: 'File does not exist' };
             }
 
-            const child = spawn(normalizedPath, [], {
-                detached: true,
-                shell: true,
-                windowsHide: false,
-                stdio: 'ignore'
-            });
-            child.unref();
+            const stat = await fs.stat(normalizedPath);
+            if (!stat.isFile()) {
+                return { success: false, error: 'Path is not a file' };
+            }
+
+            const openResult = await shell.openPath(normalizedPath);
+            if (openResult) {
+                return { success: false, error: openResult };
+            }
 
             return { success: true };
         } catch (error) {

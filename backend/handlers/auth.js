@@ -1,6 +1,7 @@
 const { Auth, mcTokenToolbox } = require('msmc');
 const Store = require('electron-store');
 const store = new Store();
+const { getUserProfile, setUserProfile, getAccounts, setAccounts } = require('../utils/secureProfileStore');
 
 const authManager = new Auth('select_account');
 
@@ -96,15 +97,17 @@ module.exports = (ipcMain, mainWindow) => {
                 throw new Error("Missing required auth fields");
             }
             const refreshToken = xboxManager.save();
+            const xuid = token.xuid || '';
 
             const profile = {
                 name,
                 uuid,
                 access_token: accessToken,
                 refresh_token: refreshToken,
-                exp: token.exp
+                exp: token.exp,
+                xuid
             };
-            let accounts = store.get('accounts') || [];
+            let accounts = getAccounts(store);
             const existingIndex = accounts.findIndex(a => a.uuid === uuid);
             if (existingIndex !== -1) {
                 accounts[existingIndex] = profile;
@@ -112,8 +115,8 @@ module.exports = (ipcMain, mainWindow) => {
                 accounts.push(profile);
             }
 
-            store.set('accounts', accounts);
-            store.set('user_profile', profile);
+            setAccounts(store, accounts);
+            setUserProfile(store, profile);
 
             mainWindow.webContents.send('auth:success', { name, uuid });
             return { success: true, profile: { name, uuid } };
@@ -124,7 +127,7 @@ module.exports = (ipcMain, mainWindow) => {
     });
 
     ipcMain.handle('auth:validate', async () => {
-        const profile = store.get('user_profile');
+        const profile = getUserProfile(store);
         if (!profile || !profile.access_token) return { success: false, error: 'Not logged in' };
 
         try {
@@ -159,15 +162,16 @@ module.exports = (ipcMain, mainWindow) => {
                     ...profile,
                     access_token: newAccessToken,
                     refresh_token: newRefreshToken,
-                    exp: token.exp
+                    exp: token.exp,
+                    xuid: token.xuid || profile.xuid || ''
                 };
-                let accounts = store.get('accounts') || [];
+                let accounts = getAccounts(store);
                 const idx = accounts.findIndex(a => a.uuid === profile.uuid);
                 if (idx !== -1) {
                     accounts[idx] = updatedProfile;
-                    store.set('accounts', accounts);
+                    setAccounts(store, accounts);
                 }
-                store.set('user_profile', updatedProfile);
+                setUserProfile(store, updatedProfile);
                 console.log("Refresh successful for", profile.name);
                 return { success: true, refreshed: true };
             }
@@ -182,30 +186,30 @@ module.exports = (ipcMain, mainWindow) => {
     });
 
     ipcMain.handle('auth:get-profile', () => {
-        return store.get('user_profile');
+        return getUserProfile(store);
     });
 
     ipcMain.handle('auth:get-accounts', () => {
-        const accounts = store.get('accounts') || [];
+        const accounts = getAccounts(store);
 
         return accounts.map(a => ({ name: a.name, uuid: a.uuid }));
     });
 
     ipcMain.handle('auth:switch-account', (_, uuid) => {
-        const accounts = store.get('accounts') || [];
+        const accounts = getAccounts(store);
         const account = accounts.find(a => a.uuid === uuid);
         if (account) {
-            store.set('user_profile', account);
+            setUserProfile(store, account);
             return { success: true, profile: { name: account.name, uuid: account.uuid } };
         }
         return { success: false, error: 'Account not found' };
     });
 
     ipcMain.handle('auth:remove-account', (_, uuid) => {
-        let accounts = store.get('accounts') || [];
+        let accounts = getAccounts(store);
         accounts = accounts.filter(a => a.uuid !== uuid);
-        store.set('accounts', accounts);
-        const current = store.get('user_profile');
+        setAccounts(store, accounts);
+        const current = getUserProfile(store);
         if (current && current.uuid === uuid) {
             store.delete('user_profile');
             return { success: true, loggedOut: true };
@@ -214,7 +218,7 @@ module.exports = (ipcMain, mainWindow) => {
     });
 
     ipcMain.handle('auth:logout', () => {
-        const profile = store.get('user_profile');
+        const profile = getUserProfile(store);
         if (profile && profile.access_token) {
             try {
                 const { clearCache } = require('../utils/profileCache');

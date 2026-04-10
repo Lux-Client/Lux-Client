@@ -80,7 +80,7 @@ const disposeSkinViewer = (
 // Browsers typically allow ~16 concurrent WebGL contexts.
 // Keep the limit conservative so the main preview and editor can always allocate a context.
 let activeWebGLContexts = 0;
-const MAX_WEBGL_CONTEXTS = 3;
+const MAX_WEBGL_CONTEXTS = 12;
 
 const SkinPreview = ({ src, className, model = 'classic' }: { src?: any; className?: string; model?: string }) => {
     const canvasRef = useRef(null);

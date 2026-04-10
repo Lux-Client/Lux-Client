@@ -75,6 +75,7 @@ const electronAPI = {
     importFile: () => ipcRenderer.invoke('instance:unified-import-v3'),
     ping: () => ipcRenderer.invoke('ping'),
     restartApp: () => ipcRenderer.invoke('app:restart'),
+    uninstallLauncher: () => ipcRenderer.invoke('app:uninstall'),
     getInstances: () => ipcRenderer.invoke('instance:get-all'),
     installModpack: (url, name, iconUrl) => ipcRenderer.invoke('instance:install-modpack', url, name, iconUrl),
     searchModrinth: (query, facets, options) => ipcRenderer.invoke('modrinth:search', query, facets, options),
@@ -196,6 +197,11 @@ const electronAPI = {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('java:progress', subscription);
         return () => ipcRenderer.removeListener('java:progress', subscription);
+    },
+    onJavaRequired: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('java:required', subscription);
+        return () => ipcRenderer.removeListener('java:required', subscription);
     },
     onWindowStateChange: (callback) => {
         const subscription = (_event, value) => callback(value);

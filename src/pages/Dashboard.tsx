@@ -359,6 +359,8 @@ function Dashboard({
   const [actionBarActions, setActionBarActions] = useState([]);
   const fileInputRef = useRef(null);
   const [showSnapshots, setShowSnapshots] = useState(false);
+  const [showModrinthInstancesInLibrary, setShowModrinthInstancesInLibrary] = useState(true);
+  const [showCurseforgeInstancesInLibrary, setShowCurseforgeInstancesInLibrary] = useState(true);
 
   const normalizeFolderPath = (value = '') => {
     const segments = String(value)
@@ -425,6 +427,9 @@ function Dashboard({
             ? settingsRes.settings.actionBarActions
             : [];
           setActionBarActions(existingActions);
+
+          setShowModrinthInstancesInLibrary(settingsRes.settings?.showModrinthInstancesInLibrary !== false);
+          setShowCurseforgeInstancesInLibrary(settingsRes.settings?.showCurseforgeInstancesInLibrary !== false);
         }
       } catch (e) { }
     };
@@ -436,6 +441,8 @@ function Dashboard({
         ? newSettings.actionBarActions
         : [];
       setActionBarActions(existingActions);
+      setShowModrinthInstancesInLibrary(newSettings?.showModrinthInstancesInLibrary !== false);
+      setShowCurseforgeInstancesInLibrary(newSettings?.showCurseforgeInstancesInLibrary !== false);
     });
 
     return () => {
@@ -920,11 +927,24 @@ function Dashboard({
     return 'LuxClient';
   };
 
-  const filteredInstances = instances.filter(
-    inst =>
-      inst.name.toLowerCase().includes(deferredSearchQuery.toLowerCase()) ||
-      inst.version.toLowerCase().includes(deferredSearchQuery.toLowerCase())
-  );
+  const filteredInstances = instances.filter((inst) => {
+    const isExternal = String(inst?.instanceType || '').toLowerCase() === 'external';
+    const source = String(inst?.externalSource || '').toLowerCase();
+
+    if (isExternal && source === 'modrinth' && !showModrinthInstancesInLibrary) {
+      return false;
+    }
+
+    if (isExternal && source === 'curseforge' && !showCurseforgeInstancesInLibrary) {
+      return false;
+    }
+
+    const name = String(inst?.name || '').toLowerCase();
+    const version = String(inst?.version || '').toLowerCase();
+    const query = deferredSearchQuery.toLowerCase();
+
+    return name.includes(query) || version.includes(query);
+  });
 
   const sortedInstances = [...filteredInstances].sort((a, b) => {
     if (sortMethod === 'name') return a.name.localeCompare(b.name);

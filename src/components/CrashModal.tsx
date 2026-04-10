@@ -9,13 +9,185 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
     const [fixStatus, setFixStatus] = useState(null);
 
     useEffect(() => {
-        if (isOpen && crashData?.logFile) {
-            const identifiedIssues = analyzeLog(crashData.logFile);
+        if (!isOpen || !crashData) return;
+
+        let cancelled = false;
+
+        const resolveCrashLogContent = async () => {
+            const directLog = typeof crashData?.logContent === 'string' ? crashData.logContent : '';
+            if (directLog.trim()) return directLog;
+
+            const inlineFallback = typeof crashData?.logFile === 'string' ? crashData.logFile : '';
+            if (inlineFallback.trim()) return inlineFallback;
+
+            const instanceName = String(crashData?.instanceName || '').trim();
+            if (!instanceName) return '';
+
+            try {
+                const logResponse = await window.electronAPI.getLog(instanceName, 'latest.log');
+                if (logResponse?.success && typeof logResponse.content === 'string') {
+                    return logResponse.content;
+                }
+            } catch (_) {
+            }
+
+            try {
+                const liveLog = await window.electronAPI.getLiveLogs(instanceName);
+                if (Array.isArray(liveLog) && liveLog.length > 0) {
+                    return liveLog.join('\n');
+                }
+            } catch (_) {
+            }
+
+            return '';
+        };
+
+        const runAnalysis = async () => {
+            const logContent = await resolveCrashLogContent();
+            if (cancelled) return;
+
+            const identifiedIssues = analyzeLog(logContent, {
+                compatibilityIssues: Array.isArray(crashData?.compatibilityIssues)
+                    ? crashData.compatibilityIssues
+                    : []
+            });
             setIssues(identifiedIssues);
-        }
+        };
+
+        runAnalysis();
+
+        return () => {
+            cancelled = true;
+        };
     }, [isOpen, crashData]);
 
     if (!isOpen || !crashData) return null;
+
+    const hasCompatibilityIssues = issues.some((issue) => issue.fixAction === 'install_compatible_mod');
+
+    const normalizeToken = (value) => String(value || '').trim().toLowerCase();
+
+    const scoreProjectMatch = (project, targetName) => {
+        const normalizedTarget = normalizeToken(targetName).replace(/[^a-z0-9]+/g, '');
+        if (!normalizedTarget) return 0;
+
+        const title = normalizeToken(project?.title || '').replace(/[^a-z0-9]+/g, '');
+        const slug = normalizeToken(project?.slug || '').replace(/[^a-z0-9]+/g, '');
+        const projectId = normalizeToken(project?.project_id || '').replace(/[^a-z0-9]+/g, '');
+
+        if (title === normalizedTarget || slug === normalizedTarget || projectId === normalizedTarget) {
+            return 100;
+        }
+
+        let score = 0;
+        if (title.includes(normalizedTarget)) score += 45;
+        if (slug.includes(normalizedTarget)) score += 35;
+        if (projectId.includes(normalizedTarget)) score += 25;
+
+        const downloads = Number(project?.downloads || 0);
+        if (Number.isFinite(downloads)) {
+            score += Math.min(20, Math.floor(Math.log10(downloads + 1) * 4));
+        }
+
+        return score;
+    };
+
+    const autoInstallCompatibleMod = async (issue) => {
+        const compatibility = issue?.compatibility || {};
+        const requestedModName = compatibility.targetMod || compatibility.dependencyName || compatibility.modName;
+        const instanceName = String(crashData?.instanceName || '').trim();
+
+        if (!instanceName) {
+            return { success: false, error: 'Missing instance name in crash context.' };
+        }
+
+        if (!requestedModName) {
+            return { success: false, error: 'No mod name found in crash analysis.' };
+        }
+
+        const instances = await window.electronAPI.getInstances();
+        const instance = Array.isArray(instances)
+            ? instances.find((entry) => normalizeToken(entry?.name) === normalizeToken(instanceName))
+            : null;
+
+        if (!instance) {
+            return { success: false, error: `Instance "${instanceName}" was not found.` };
+        }
+
+        const loader = normalizeToken(instance.loader || 'fabric') || 'fabric';
+        const gameVersion = String(instance.version || '').trim();
+
+        const facets = [];
+        if (loader && loader !== 'vanilla') {
+            facets.push([`categories:${loader}`]);
+        }
+        if (gameVersion) {
+            facets.push([`versions:${gameVersion}`]);
+        }
+
+        const searchRes = await window.electronAPI.searchModrinth(
+            requestedModName,
+            facets,
+            {
+                limit: 10,
+                index: 'downloads',
+                projectType: 'mod',
+                includeCurseforge: true
+            }
+        );
+
+        if (!searchRes?.success || !Array.isArray(searchRes.results) || searchRes.results.length === 0) {
+            return { success: false, error: `No matching mod found for "${requestedModName}".` };
+        }
+
+        const sortedCandidates = [...searchRes.results].sort(
+            (a, b) => scoreProjectMatch(b, requestedModName) - scoreProjectMatch(a, requestedModName)
+        );
+        const selectedProject = sortedCandidates[0];
+        if (!selectedProject?.project_id) {
+            return { success: false, error: 'No valid project ID returned by search.' };
+        }
+
+        const versionsRes = await window.electronAPI.getModVersions(
+            selectedProject.project_id,
+            loader && loader !== 'vanilla' ? [loader] : [],
+            gameVersion ? [gameVersion] : [],
+            selectedProject.curseforge_project_id || null
+        );
+
+        if (!versionsRes?.success || !Array.isArray(versionsRes.versions) || versionsRes.versions.length === 0) {
+            return {
+                success: false,
+                error: `No compatible version found for "${selectedProject.title || requestedModName}" (${loader} ${gameVersion}).`
+            };
+        }
+
+        const selectedVersion = versionsRes.versions[0];
+        const file = selectedVersion.files?.find((entry) => entry.primary) || selectedVersion.files?.[0];
+        if (!file?.url || !file?.filename) {
+            return { success: false, error: 'Compatible version was found but no downloadable file is available.' };
+        }
+
+        const installRes = await window.electronAPI.installMod({
+            instanceName,
+            projectId: selectedVersion.project_id || selectedProject.project_id,
+            versionId: selectedVersion.id,
+            filename: file.filename,
+            url: file.url,
+            projectType: 'mod',
+            fallbackCurseForgeProjectId: selectedProject.curseforge_project_id || null
+        });
+
+        if (!installRes?.success) {
+            return { success: false, error: installRes?.error || 'Install failed.' };
+        }
+
+        return {
+            success: true,
+            projectTitle: selectedProject.title || requestedModName,
+            fileName: file.filename
+        };
+    };
 
     const handleApplyFix = async (issue) => {
         setIsApplyingFix(true);
@@ -32,6 +204,9 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                     break;
                 case 'reinstall_instance':
                     res = await window.electronAPI.reinstallInstance(crashData.instanceName, 'full');
+                    break;
+                case 'install_compatible_mod':
+                    res = await autoInstallCompatibleMod(issue);
                     break;
                 default:
                     setFixStatus({ type: 'error', message: 'Unknown fix action.' });
@@ -64,7 +239,11 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                             </svg>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-foreground">{t('crash.title')}</h2>
+                            <h2 className="text-2xl font-bold text-foreground">
+                                {hasCompatibilityIssues
+                                    ? t('crash.incompatible_mods_found', 'Incompatible mods found')
+                                    : t('crash.title')}
+                            </h2>
                             <p className="text-muted-foreground text-sm">{crashData.instanceName} • {getExitCodeDescription(crashData.exitCode)}</p>
                         </div>
                     </div>
@@ -80,6 +259,14 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                                         <div className="space-y-2">
                                             <h4 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{issue.title}</h4>
                                             <p className="text-muted-foreground text-sm leading-relaxed">{issue.description}</p>
+                                            {issue?.compatibility?.targetMod && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Target mod: <span className="font-semibold text-foreground">{issue.compatibility.targetMod}</span>
+                                                    {issue?.compatibility?.requiredVersion ? (
+                                                        <span> • required: {issue.compatibility.requiredVersion}</span>
+                                                    ) : null}
+                                                </p>
+                                            )}
                                         </div>
                                         <button
                                             onClick={() => handleApplyFix(issue)}
@@ -94,7 +281,11 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                         </div>
                     ) : (
                         <div className="text-center py-8">
-                            <p className="text-muted-foreground mb-6">{t('crash.no_issues')}</p>
+                            <p className="text-muted-foreground mb-6">
+                                {hasCompatibilityIssues
+                                    ? t('crash.mod_issues_detected', 'Incompatible mods were detected. Use Auto Fix to install compatible versions.')
+                                    : t('crash.no_issues')}
+                            </p>
                             {crashData.logUrl ? (
                                 <a
                                     href={crashData.logUrl}

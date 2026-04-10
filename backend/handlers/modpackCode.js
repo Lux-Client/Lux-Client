@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { app } = require('electron');
 const { installModInternal } = require('./modrinth');
 const { resolvePrimaryInstancesDir } = require('../utils/instances-path');
+const { getUserProfile } = require('../utils/secureProfileStore');
 const SERVER_URL = 'https://lux.pluginhub.de';
 
 console.log('[ModpackCode-Handler] 🔧 Modul wird geladen...');
@@ -32,7 +33,7 @@ module.exports = (ipcMain, win) => {
 
             const Store = require('electron-store');
             const store = new Store();
-            const profile = store.get('user_profile');
+            const profile = getUserProfile(store);
             const ownerUuid = profile ? profile.uuid : null;
 
             let optionsContent = null;
@@ -99,7 +100,7 @@ module.exports = (ipcMain, win) => {
         try {
             const Store = require('electron-store');
             const store = new Store();
-            const profile = store.get('user_profile');
+            const profile = getUserProfile(store);
             if (!profile) return { success: false, error: 'Not logged in' };
 
             const response = await axios.get(`${SERVER_URL}/api/modpack/my-codes?uuid=${profile.uuid}`, { timeout: 10000 });
@@ -116,7 +117,7 @@ module.exports = (ipcMain, win) => {
         try {
             const Store = require('electron-store');
             const store = new Store();
-            const profile = store.get('user_profile');
+            const profile = getUserProfile(store);
             if (!profile) return { success: false, error: 'Not logged in' };
 
             const response = await axios.delete(`${SERVER_URL}/api/modpack/delete/${code}?uuid=${profile.uuid}`, { timeout: 10000 });

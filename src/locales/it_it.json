@@ -429,7 +429,25 @@
             "slovenian": "Sloveno (SI)",
             "swedish": "Svedese (SE)",
             "quick_switch_button": "Pulsante di cambio rapido",
-            "quick_switch_button_desc": "Pulsante di cambio rapido"
+            "quick_switch_button_desc": "Pulsante di cambio rapido",
+            "animations": {
+                "title": "Animazioni delle pagine",
+                "desc": "Anima i cambi di pagina e scheda invece di cambiare vista all'istante.",
+                "style_label": "Stile animazione",
+                "style_desc": "Scegli quale stile di transizione usare nel launcher.",
+                "presets": {
+                    "cinematic": "Cinematica",
+                    "cinematic_desc": "Sfocatura morbida, profondità sottile e cambio pagina rifinito.",
+                    "glide": "Scorrimento",
+                    "glide_desc": "Movimento orizzontale rapido per un cambio scheda più deciso.",
+                    "fade": "Dissolvenza",
+                    "fade_desc": "Transizione minima con quasi nessun movimento.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "Le pagine entrano con un effetto zoom più focalizzato.",
+                    "lift": "Sollevamento",
+                    "lift_desc": "Il contenuto entra dal basso ed esce verso l'alto con più movimento."
+                }
+            }
         },
         "java": {
             "title": "Runtime Java",
@@ -466,7 +484,18 @@
             "title": "Creazione Istanza",
             "copy_settings": "Copia Impostazioni da Istanza",
             "copy_settings_desc": "Copia automaticamente i comandi e le opzioni da un'istanza selezionata durante la creazione di una nuova.",
-            "source_instance": "Istanza di Origine"
+            "source_instance": "Istanza di Origine",
+            "show_modrinth_instances": "Mostra istanze Modrinth nella libreria",
+            "show_modrinth_instances_desc": "Se disattivato, le istanze esterne Modrinth importate vengono nascoste nella scheda Libreria.",
+            "show_curseforge_instances": "Mostra istanze CurseForge nella libreria",
+            "show_curseforge_instances_desc": "Se disattivato, le istanze esterne CurseForge importate vengono nascoste nella scheda Libreria.",
+            "uninstall_title": "Disinstalla launcher",
+            "uninstall_desc": "Avvia il programma di disinstallazione di sistema di Lux e chiude il launcher.",
+            "uninstall_btn": "Disinstalla launcher",
+            "uninstall_modal_title": "Disinstalla launcher",
+            "uninstall_modal_msg": "Vuoi avviare ora la disinstallazione di Lux? Il launcher verra chiuso.",
+            "uninstall_confirm_btn": "Avvia disinstallazione",
+            "uninstall_failed": "Impossibile avviare la disinstallazione."
         },
         "integration": {
             "title": "Integrazione Launcher",
@@ -876,6 +905,14 @@
         "no_issues": "Non è stato possibile identificare automaticamente la causa di questo crash.",
         "view_log": "Visualizza log caricato",
         "check_manually": "Controlla manualmente il file latest.log."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} è richiesto",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Questa versione di Minecraft richiede Java {{version}}. Abbiamo rilevato che al momento non è installata una versione compatibile.",
+        "settings_hint": "Puoi installare Java {{version}} subito. Se non lo installi con il pulsante, puoi farlo più tardi in Impostazioni > Java.",
+        "install_button": "Installa Java {{version}}",
+        "installing": "Installazione di Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Editor di Pixel",

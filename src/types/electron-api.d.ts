@@ -69,6 +69,7 @@ interface ElectronAPI {
   importFile: () => Promise<any>;
   ping: () => Promise<any>;
   restartApp: () => Promise<any>;
+  uninstallLauncher: () => Promise<any>;
   getInstances: () => Promise<any>;
   installModpack: (url: string, name: string, iconUrl?: string) => Promise<any>;
   searchModrinth: (query: string, facets?: any, options?: any) => Promise<any>;
@@ -125,6 +126,7 @@ interface ElectronAPI {
   onThemeUpdated: (callback: IpcCallback) => UnsubscribeFn;
   onSettingsUpdated: (callback: IpcCallback) => UnsubscribeFn;
   onJavaProgress: (callback: IpcCallback) => UnsubscribeFn;
+  onJavaRequired: (callback: IpcCallback) => UnsubscribeFn;
   onWindowStateChange: (callback: IpcCallback) => UnsubscribeFn;
 
   getServers: () => Promise<any>;

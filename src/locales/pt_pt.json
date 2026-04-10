@@ -429,6 +429,24 @@
             "swedish": "Sueco (SE)",
             "quick_switch_button": "Botão de Troca Rápida",
             "quick_switch_button_desc": "Botão de Troca Rápida",
+            "animations": {
+                "title": "Animações de página",
+                "desc": "Anima as mudanças de página e separador em vez de trocar de vista instantaneamente.",
+                "style_label": "Estilo de animação",
+                "style_desc": "Escolhe o estilo de transição a usar em todo o launcher.",
+                "presets": {
+                    "cinematic": "Cinemático",
+                    "cinematic_desc": "Desfoque suave, profundidade subtil e uma troca de página polida.",
+                    "glide": "Deslizante",
+                    "glide_desc": "Movimento horizontal rápido para uma troca de separador mais nítida.",
+                    "fade": "Esbatimento",
+                    "fade_desc": "Transição mínima com quase nenhum movimento.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "As páginas entram com um efeito de zoom mais focado.",
+                    "lift": "Elevação",
+                    "lift_desc": "O conteúdo sobe para a vista e sai para cima com mais movimento."
+                }
+            },
             "english_uk": "English (UK)"
         },
         "java": {
@@ -466,7 +484,18 @@
             "title": "Criação de Instância",
             "copy_settings": "Copiar Definições da Instância",
             "copy_settings_desc": "Copiar automaticamente as opções e atalhos de uma instância selecionada ao criar uma nova.",
-            "source_instance": "Instância de Origem"
+            "source_instance": "Instância de Origem",
+            "show_modrinth_instances": "Mostrar instancias do Modrinth na biblioteca",
+            "show_modrinth_instances_desc": "Se desativado, as instancias externas importadas do Modrinth ficam ocultas no separador Biblioteca.",
+            "show_curseforge_instances": "Mostrar instancias do CurseForge na biblioteca",
+            "show_curseforge_instances_desc": "Se desativado, as instancias externas importadas do CurseForge ficam ocultas no separador Biblioteca.",
+            "uninstall_title": "Desinstalar launcher",
+            "uninstall_desc": "Inicia o desinstalador do sistema do Lux e fecha o launcher.",
+            "uninstall_btn": "Desinstalar launcher",
+            "uninstall_modal_title": "Desinstalar launcher",
+            "uninstall_modal_msg": "Pretende iniciar agora a desinstalacao do Lux? O launcher sera fechado.",
+            "uninstall_confirm_btn": "Iniciar desinstalacao",
+            "uninstall_failed": "Nao foi possivel iniciar a desinstalacao."
         },
         "integration": {
             "title": "Integração do Launcher",
@@ -876,6 +905,14 @@
         "no_issues": "Não conseguimos identificar automaticamente a causa desta falha.",
         "view_log": "Ver log enviado",
         "check_manually": "Por favor, verifique o arquivo latest.log manualmente."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} é necessário",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Esta versão do Minecraft requer Java {{version}}. Detetámos que não existe uma versão compatível instalada atualmente.",
+        "settings_hint": "Podes instalar Java {{version}} agora. Se não o instalares pelo botão, podes fazê-lo depois em Definições > Java.",
+        "install_button": "Instalar Java {{version}}",
+        "installing": "A instalar Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Editor de Pixels",

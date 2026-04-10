@@ -430,7 +430,25 @@
             "slovenian": "Slovène (SI)",
             "swedish": "Suédois (SE)",
             "quick_switch_button": "Bouton de changement rapide",
-            "quick_switch_button_desc": "Bouton de changement rapide"
+            "quick_switch_button_desc": "Bouton de changement rapide",
+            "animations": {
+                "title": "Animations de page",
+                "desc": "Anime les changements de page et d'onglet au lieu de changer la vue instantanément.",
+                "style_label": "Style d'animation",
+                "style_desc": "Choisissez le style de transition utilisé dans tout le launcher.",
+                "presets": {
+                    "cinematic": "Cinématique",
+                    "cinematic_desc": "Flou doux, profondeur subtile et changement de page soigné.",
+                    "glide": "Glissement",
+                    "glide_desc": "Mouvement horizontal rapide pour un changement d'onglet plus net.",
+                    "fade": "Fondu",
+                    "fade_desc": "Fondu minimal avec presque aucun mouvement.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "Les pages apparaissent avec un effet de zoom plus marqué.",
+                    "lift": "Élévation",
+                    "lift_desc": "Le contenu monte à l'écran et sort vers le haut avec plus de mouvement."
+                }
+            }
         },
         "java": {
             "title": "Environnement d'exécution Java",
@@ -467,7 +485,18 @@
             "title": "Création d'instance",
             "copy_settings": "Copier les paramètres depuis l'instance",
             "copy_settings_desc": "Copie automatiquement les raccourcis et options d'une instance sélectionnée lors de la création d'une nouvelle.",
-            "source_instance": "Instance source"
+            "source_instance": "Instance source",
+            "show_modrinth_instances": "Afficher les instances Modrinth dans la bibliotheque",
+            "show_modrinth_instances_desc": "Si desactive, les instances externes Modrinth importees sont masquees dans l'onglet Bibliotheque.",
+            "show_curseforge_instances": "Afficher les instances CurseForge dans la bibliotheque",
+            "show_curseforge_instances_desc": "Si desactive, les instances externes CurseForge importees sont masquees dans l'onglet Bibliotheque.",
+            "uninstall_title": "Desinstaller le launcher",
+            "uninstall_desc": "Lance le desinstalleur systeme de Lux et ferme le launcher.",
+            "uninstall_btn": "Desinstaller le launcher",
+            "uninstall_modal_title": "Desinstaller le launcher",
+            "uninstall_modal_msg": "Voulez-vous vraiment lancer la desinstallation de Lux maintenant? Le launcher sera ferme.",
+            "uninstall_confirm_btn": "Demarrer la desinstallation",
+            "uninstall_failed": "Impossible de demarrer la desinstallation."
         },
         "integration": {
             "title": "Intégration du Launcher",
@@ -877,6 +906,14 @@
         "no_issues": "Nous n'avons pas pu identifier automatiquement la cause de ce crash.",
         "view_log": "Voir le log téléversé",
         "check_manually": "Veuillez vérifier le fichier latest.log manuellement."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} est requis",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Cette version de Minecraft nécessite Java {{version}}. Nous avons détecté qu'aucune version compatible n'est actuellement installée.",
+        "settings_hint": "Vous pouvez installer Java {{version}} maintenant. Si vous ne l'installez pas via le bouton, vous pouvez le faire plus tard dans Paramètres > Java.",
+        "install_button": "Installer Java {{version}}",
+        "installing": "Installation de Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Éditeur de Pixels",
