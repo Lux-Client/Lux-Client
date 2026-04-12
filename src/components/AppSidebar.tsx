@@ -180,7 +180,7 @@ function AppSidebar({
           layoutTransitionClass,
           isCollapsed ? 'px-2.5' : 'px-4',
           destructive
-            ? 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+            ? 'hover:text-destructive hover:bg-destructive/10 text-destructive/30 '
             : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
         )}
       >
