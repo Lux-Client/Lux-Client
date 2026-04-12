@@ -850,7 +850,7 @@ bind = "0.0.0.0:${port || 25577}"
 motd = "&bA Velocity Proxy"
 
 # What is the maximum number of players the proxy can hold?
-show-max-players = ${maxPlayers || 20}
+show-max-players = ${maxPlayers || new Date().getFullYear()}
 
 # Should we promote the player to the default server?
 # If this is enabled, the player will be sent to the first server in the priority list.
@@ -858,10 +858,12 @@ force-key-authentication = true
 
 [servers]
 # Configure your servers here.
-lobby = "127.0.0.1:25565"
+lobby = "127.0.0.1:25566"
 
 [forced-hosts]
-# Forced hosts.
+# Configure forced hosts here.
+# Format: domain = server_name
+# Example: pvp.example.com = "pvp"
 
 [advanced]
 # Advanced settings.
