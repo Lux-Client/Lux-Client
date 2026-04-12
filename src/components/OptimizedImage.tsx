@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { imageCache } from '../utils/lruCache';
 
 const OptimizedImage = ({ src, alt, className, fallback, ...props }) => {
+    const cached = imageCache.get(src);
     const [isVisible, setIsVisible] = useState(false);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(!!cached);
     const [error, setError] = useState(false);
     const imgRef = useRef(null);
 
     useEffect(() => {
+        // If image is already in cache, we don't need the observer
+        if (cached) {
+            setIsVisible(true);
+            return;
+        }
+
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
@@ -22,7 +30,7 @@ const OptimizedImage = ({ src, alt, className, fallback, ...props }) => {
         }
 
         return () => observer.disconnect();
-    }, []);
+    }, [src, cached]);
 
     if (error && fallback) return fallback;
 
@@ -33,7 +41,10 @@ const OptimizedImage = ({ src, alt, className, fallback, ...props }) => {
                     src={src}
                     alt={alt}
                     className={`w-full h-full object-cover transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                    onLoad={() => setIsLoaded(true)}
+                    onLoad={() => {
+                        setIsLoaded(true);
+                        imageCache.set(src, 'loaded');
+                    }}
                     onError={() => setError(true)}
                     {...props}
                 />

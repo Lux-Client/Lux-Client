@@ -16,7 +16,12 @@ import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
 import { Separator } from "../components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { ScrollArea } from "../components/ui/scroll-area";
 import {
   Upload,
@@ -192,27 +197,47 @@ const DEFAULT_THEME = {
   customFonts: [],
 };
 
-const normalizePresetShape = (preset = {}) => ({
+const normalizePresetShape = (preset: any = {}) => ({
   ...preset,
-  name: preset.name || preset.handle || 'Preset',
+  name: preset.name || preset.handle || "Preset",
   primary: preset.primary || preset.primaryColor || DEFAULT_THEME.primaryColor,
-  bg: preset.bg || preset.background || preset.backgroundColor || DEFAULT_THEME.backgroundColor,
+  bg:
+    preset.bg ||
+    preset.background ||
+    preset.backgroundColor ||
+    DEFAULT_THEME.backgroundColor,
   surface: preset.surface || preset.surfaceColor || DEFAULT_THEME.surfaceColor,
-  textOnBackground: preset.textOnBackground || preset.foreground || DEFAULT_THEME.textOnBackground,
-  textOnSurface: preset.textOnSurface || preset.text || DEFAULT_THEME.textOnSurface,
+  textOnBackground:
+    preset.textOnBackground ||
+    preset.foreground ||
+    DEFAULT_THEME.textOnBackground,
+  textOnSurface:
+    preset.textOnSurface || preset.text || DEFAULT_THEME.textOnSurface,
   textOnPrimary: preset.textOnPrimary || DEFAULT_THEME.textOnPrimary,
-  sidebarColor: preset.sidebarColor || preset.sidebar || '',
-  sidebarGlow: typeof preset.sidebarGlow === 'number' ? preset.sidebarGlow : DEFAULT_THEME.sidebarGlow,
-  globalGlow: typeof preset.globalGlow === 'number' ? preset.globalGlow : DEFAULT_THEME.globalGlow,
-  panelOpacity: typeof preset.panelOpacity === 'number' ? preset.panelOpacity : DEFAULT_THEME.panelOpacity,
-  bgOverlay: typeof preset.bgOverlay === 'number' ? preset.bgOverlay : DEFAULT_THEME.bgOverlay,
+  sidebarColor: preset.sidebarColor || preset.sidebar || "",
+  sidebarGlow:
+    typeof preset.sidebarGlow === "number"
+      ? preset.sidebarGlow
+      : DEFAULT_THEME.sidebarGlow,
+  globalGlow:
+    typeof preset.globalGlow === "number"
+      ? preset.globalGlow
+      : DEFAULT_THEME.globalGlow,
+  panelOpacity:
+    typeof preset.panelOpacity === "number"
+      ? preset.panelOpacity
+      : DEFAULT_THEME.panelOpacity,
+  bgOverlay:
+    typeof preset.bgOverlay === "number"
+      ? preset.bgOverlay
+      : DEFAULT_THEME.bgOverlay,
   fontFamily: preset.fontFamily || DEFAULT_THEME.fontFamily,
 });
 
 const sanitizeTheme = (nextTheme) => {
   const availableFonts = new Set([
     ...FONT_OPTIONS.map((font) => font.value),
-    ...((nextTheme.customFonts ?? []).map((font) => font.family)),
+    ...(nextTheme.customFonts ?? []).map((font) => font.family),
   ]);
 
   if (!availableFonts.has(nextTheme.fontFamily)) {
@@ -229,7 +254,7 @@ function Styling() {
   const { t } = useTranslation();
   const { addNotification } = useNotification();
   const [theme, setTheme] = useState({
-    ...DEFAULT_THEME
+    ...DEFAULT_THEME,
   });
 
   const [activeView, setActiveView] = useState("editor");
@@ -240,9 +265,7 @@ function Styling() {
       value: font.family,
       label: font.name,
       style: { fontFamily: font.family },
-      actionIcon: (
-        <Trash2 className="h-4 w-4" />
-      ),
+      actionIcon: <Trash2 className="h-4 w-4" />,
       fontId: font.id,
     })),
     ...FONT_OPTIONS.map((font) => ({
@@ -257,8 +280,7 @@ function Styling() {
     loadCustomPresets();
 
     return () => {
-
-      window.electronAPI.getSettings().then(res => {
+      window.electronAPI.getSettings().then((res) => {
         if (res.success && res.settings.theme) {
           const t = res.settings.theme;
           const root = document.documentElement;
@@ -266,18 +288,36 @@ function Styling() {
           root.style.setProperty("--primary-color", t.primaryColor);
           root.style.setProperty("--background-color", t.backgroundColor);
           root.style.setProperty("--surface-color", t.surfaceColor);
-          root.style.setProperty("--text-on-background", t.textOnBackground ?? "#fafafa");
-          root.style.setProperty("--text-on-surface", t.textOnSurface ?? "#fafafa");
-          root.style.setProperty("--text-on-primary", t.textOnPrimary ?? "#0d0d0d");
+          root.style.setProperty(
+            "--text-on-background",
+            t.textOnBackground ?? "#fafafa",
+          );
+          root.style.setProperty(
+            "--text-on-surface",
+            t.textOnSurface ?? "#fafafa",
+          );
+          root.style.setProperty(
+            "--text-on-primary",
+            t.textOnPrimary ?? "#0d0d0d",
+          );
           root.style.setProperty("--glass-blur", `${t.glassBlur}px`);
           root.style.setProperty("--glass-opacity", t.glassOpacity);
           root.style.setProperty("--console-opacity", t.consoleOpacity ?? 0.8);
-          root.style.setProperty("--border-radius", `${t.borderRadius ?? 12}px`);
-          root.style.setProperty("--sidebar-glow-intensity", t.sidebarGlow ?? 0);
+          root.style.setProperty(
+            "--border-radius",
+            `${t.borderRadius ?? 12}px`,
+          );
+          root.style.setProperty(
+            "--sidebar-glow-intensity",
+            t.sidebarGlow ?? 0,
+          );
           root.style.setProperty("--global-glow-intensity", t.globalGlow ?? 0);
           root.style.setProperty("--panel-opacity", t.panelOpacity ?? 0.85);
           root.style.setProperty("--bg-overlay-opacity", t.bgOverlay ?? 0.4);
-          root.style.setProperty("--launcher-font", `'${t.fontFamily ?? "Poppins"}'`);
+          root.style.setProperty(
+            "--launcher-font",
+            `'${t.fontFamily ?? "Poppins"}'`,
+          );
 
           const adjustColor = (hex, pct) => {
             const n = parseInt(hex.replace("#", ""), 16);
@@ -308,15 +348,21 @@ function Styling() {
           );
 
           const hexToRgb = (hex) => {
-            if (!hex || typeof hex !== 'string') return '28, 28, 28';
+            if (!hex || typeof hex !== "string") return "28, 28, 28";
             const r = parseInt(hex.slice(1, 3), 16);
             const g = parseInt(hex.slice(3, 5), 16);
             const b = parseInt(hex.slice(5, 7), 16);
             return `${r}, ${g}, ${b}`;
           };
 
-          root.style.setProperty("--surface-color-rgb", hexToRgb(t.surfaceColor));
-          root.style.setProperty("--primary-color-rgb", hexToRgb(t.primaryColor));
+          root.style.setProperty(
+            "--surface-color-rgb",
+            hexToRgb(t.surfaceColor),
+          );
+          root.style.setProperty(
+            "--primary-color-rgb",
+            hexToRgb(t.primaryColor),
+          );
           root.style.setProperty(
             "--background-dark-color-rgb",
             hexToRgb(adjustColor(t.backgroundColor, -20)),
@@ -337,7 +383,7 @@ function Styling() {
   }, []);
 
   useEffect(() => {
-    if (activeView === 'editor') {
+    if (activeView === "editor") {
       loadCustomPresets();
     }
   }, [activeView]);
@@ -350,19 +396,19 @@ function Styling() {
   const handleDeletePreset = async (handle) => {
     const res = await window.electronAPI.deleteCustomPreset(handle);
     if (res.success) {
-      addNotification(t('styling.preset_deleted'), "success");
+      addNotification(t("styling.preset_deleted"), "success");
       loadCustomPresets();
     }
   };
 
   const handleExportTheme = async (themeName) => {
     const presetData = {
-      handle: themeName.toLowerCase().replace(/[^a-z0-9_-]/g, '_'),
+      handle: themeName.toLowerCase().replace(/[^a-z0-9_-]/g, "_"),
       name: themeName,
       primary: theme.primaryColor,
       bg: theme.backgroundColor,
       surface: theme.surfaceColor,
-      sidebarColor: theme.sidebarColor || '',
+      sidebarColor: theme.sidebarColor || "",
       textOnBackground: theme.textOnBackground,
       textOnSurface: theme.textOnSurface,
       textOnPrimary: theme.textOnPrimary,
@@ -375,20 +421,20 @@ function Styling() {
 
     const res = await window.electronAPI.exportCustomPreset(presetData);
     if (res.success) {
-      addNotification(t('styling.exported_to', { path: res.path }), "success");
+      addNotification(t("styling.exported_to", { path: res.path }), "success");
       setShowExportModal(false);
-    } else if (res.error !== 'Cancelled') {
-      addNotification(`${t('styling.export')} failed: ${res.error}`, "error");
+    } else if (res.error !== "Cancelled") {
+      addNotification(`${t("styling.export")} failed: ${res.error}`, "error");
     }
   };
 
   const handleImportTheme = async () => {
     const res = await window.electronAPI.importCustomPreset();
     if (res.success) {
-      addNotification(t('styling.imported_success'), "success");
+      addNotification(t("styling.imported_success"), "success");
       loadCustomPresets();
-    } else if (res.error !== 'Cancelled') {
-      addNotification(`${t('styling.import')} failed: ${res.error}`, "error");
+    } else if (res.error !== "Cancelled") {
+      addNotification(`${t("styling.import")} failed: ${res.error}`, "error");
     }
   };
 
@@ -417,7 +463,10 @@ function Styling() {
     const res = await window.electronAPI.getSettings();
     if (res.success) {
       if (res.settings.theme) {
-        const loadedTheme = sanitizeTheme({ ...DEFAULT_THEME, ...res.settings.theme });
+        const loadedTheme = sanitizeTheme({
+          ...DEFAULT_THEME,
+          ...res.settings.theme,
+        });
         setTheme(loadedTheme);
         applyTheme(loadedTheme);
       }
@@ -427,7 +476,10 @@ function Styling() {
   const handleSelectCustomFont = async () => {
     const res = await window.electronAPI.selectCustomFont();
     if (res.success && res.settings?.theme) {
-      const nextTheme = sanitizeTheme({ ...DEFAULT_THEME, ...res.settings.theme });
+      const nextTheme = sanitizeTheme({
+        ...DEFAULT_THEME,
+        ...res.settings.theme,
+      });
       setTheme(nextTheme);
       applyTheme(nextTheme);
     }
@@ -440,7 +492,10 @@ function Styling() {
 
     const res = await window.electronAPI.deleteCustomFont(option.fontId);
     if (res.success && res.settings?.theme) {
-      const nextTheme = sanitizeTheme({ ...DEFAULT_THEME, ...res.settings.theme });
+      const nextTheme = sanitizeTheme({
+        ...DEFAULT_THEME,
+        ...res.settings.theme,
+      });
       setTheme(nextTheme);
       applyTheme(nextTheme);
     }
@@ -452,7 +507,10 @@ function Styling() {
     root.style.setProperty("--primary-color", t.primaryColor);
     root.style.setProperty("--background-color", t.backgroundColor);
     root.style.setProperty("--surface-color", t.surfaceColor);
-    root.style.setProperty("--text-on-background", t.textOnBackground ?? "#fafafa");
+    root.style.setProperty(
+      "--text-on-background",
+      t.textOnBackground ?? "#fafafa",
+    );
     root.style.setProperty("--text-on-surface", t.textOnSurface ?? "#fafafa");
     root.style.setProperty("--text-on-primary", t.textOnPrimary ?? "#0d0d0d");
     root.style.setProperty("--glass-blur", `${t.glassBlur}px`);
@@ -529,23 +587,35 @@ function Styling() {
 
   const extractColor = (url, type) => {
     return new Promise((resolve) => {
-      if (type === 'video') {
-        const video = document.createElement('video');
+      if (type === "video") {
+        const video = document.createElement("video");
         video.crossOrigin = "Anonymous";
         video.onloadeddata = () => {
-          const canvas = document.createElement('canvas');
+          const canvas = document.createElement("canvas");
           canvas.width = 100;
           canvas.height = 100;
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext("2d");
           ctx.drawImage(video, 0, 0, 100, 100);
           const data = ctx.getImageData(0, 0, 100, 100).data;
-          let r = 0, g = 0, b = 0;
+          let r = 0,
+            g = 0,
+            b = 0;
           for (let i = 0; i < data.length; i += 4) {
-            r += data[i]; g += data[i + 1]; b += data[i + 2];
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
           }
           const count = data.length / 4;
-          const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-          resolve(rgbToHex(Math.round(r / count), Math.round(g / count), Math.round(b / count)));
+          const rgbToHex = (r, g, b) =>
+            "#" +
+            [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
+          resolve(
+            rgbToHex(
+              Math.round(r / count),
+              Math.round(g / count),
+              Math.round(b / count),
+            ),
+          );
         };
         video.src = `app-media:///${url.replace(/\\/g, "/")}`;
         video.load();
@@ -553,19 +623,31 @@ function Styling() {
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = () => {
-          const canvas = document.createElement('canvas');
+          const canvas = document.createElement("canvas");
           canvas.width = 100;
           canvas.height = 100;
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0, 100, 100);
           const data = ctx.getImageData(0, 0, 100, 100).data;
-          let r = 0, g = 0, b = 0;
+          let r = 0,
+            g = 0,
+            b = 0;
           for (let i = 0; i < data.length; i += 4) {
-            r += data[i]; g += data[i + 1]; b += data[i + 2];
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
           }
           const count = data.length / 4;
-          const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-          resolve(rgbToHex(Math.round(r / count), Math.round(g / count), Math.round(b / count)));
+          const rgbToHex = (r, g, b) =>
+            "#" +
+            [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
+          resolve(
+            rgbToHex(
+              Math.round(r / count),
+              Math.round(g / count),
+              Math.round(b / count),
+            ),
+          );
         };
         img.src = `app-media:///${url.replace(/\\/g, "/")}`;
       }
@@ -576,9 +658,13 @@ function Styling() {
     const res = await window.electronAPI.selectBackgroundMedia();
     if (res.success && res.url) {
       if (theme.autoAdaptColor) {
-        const color = await extractColor(res.url, res.type) as string;
-        setTheme(prev => {
-          const nt = { ...prev, bgMedia: { url: res.url, type: res.type }, primaryColor: color };
+        const color = (await extractColor(res.url, res.type)) as string;
+        setTheme((prev) => {
+          const nt = {
+            ...prev,
+            bgMedia: { url: res.url, type: res.type },
+            primaryColor: color,
+          };
           applyTheme(nt, true);
           return nt;
         });
@@ -595,7 +681,7 @@ function Styling() {
     };
     setTheme(nextTheme);
     applyTheme(nextTheme, false);
-    addNotification(t('styling.reset_factory_success'), "success");
+    addNotification(t("styling.reset_factory_success"), "success");
   };
 
   const handleSave = async () => {
@@ -605,7 +691,7 @@ function Styling() {
       const saveRes = await window.electronAPI.saveSettings(newSettings);
       if (saveRes.success) {
         applyTheme(theme, false);
-        addNotification(t('styling.saved_success'), "success");
+        addNotification(t("styling.saved_success"), "success");
       }
     }
   };
@@ -613,23 +699,30 @@ function Styling() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title={t('styling.title')}
-        description={activeView === 'editor' ? undefined : t('extensions.theme_marketplace_desc', 'Discover and install custom themes built by the community.')}
+        title={t("styling.title")}
+        description={
+          activeView === "editor"
+            ? undefined
+            : t(
+                "extensions.theme_marketplace_desc",
+                "Discover and install custom themes built by the community.",
+              )
+        }
       >
         <Tabs value={activeView} onValueChange={setActiveView}>
           <TabsList>
             <TabsTrigger value="editor">
-              {t('styling.editor', 'Editor')}
+              {t("styling.editor", "Editor")}
             </TabsTrigger>
             <TabsTrigger value="marketplace">
-              {t('extensions.theme_marketplace', 'Marketplace')}
+              {t("extensions.theme_marketplace", "Marketplace")}
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </PageHeader>
 
       <PageContent>
-        {activeView === 'marketplace' ? (
+        {activeView === "marketplace" ? (
           <ThemeMarketplace />
         ) : (
           <>
@@ -638,39 +731,39 @@ function Styling() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {t('styling.accent_base_text_color')}
+                      {t("styling.accent_base_text_color")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-3">
                       <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        {t('styling.color')}
+                        {t("styling.color")}
                       </span>
                       <span className="w-10 justify-self-center text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        {t('styling.base')}
+                        {t("styling.base")}
                       </span>
                       <span className="w-10 justify-self-center text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        {t('styling.text')}
+                        {t("styling.text")}
                       </span>
 
                       {[
                         {
-                          id: 'accent',
-                          label: t('styling.accent_color'),
-                          baseKey: 'primaryColor',
-                          textKey: 'textOnPrimary',
+                          id: "accent",
+                          label: t("styling.accent_color"),
+                          baseKey: "primaryColor",
+                          textKey: "textOnPrimary",
                         },
                         {
-                          id: 'background',
-                          label: t('styling.background'),
-                          baseKey: 'backgroundColor',
-                          textKey: 'textOnBackground',
+                          id: "background",
+                          label: t("styling.background"),
+                          baseKey: "backgroundColor",
+                          textKey: "textOnBackground",
                         },
                         {
-                          id: 'panels',
-                          label: t('styling.panels'),
-                          baseKey: 'surfaceColor',
-                          textKey: 'textOnSurface',
+                          id: "panels",
+                          label: t("styling.panels"),
+                          baseKey: "surfaceColor",
+                          textKey: "textOnSurface",
                         },
                       ].map((row) => (
                         <React.Fragment key={row.id}>
@@ -680,25 +773,29 @@ function Styling() {
                           <input
                             type="color"
                             value={theme[row.baseKey]}
-                            onChange={(e) => handleUpdate(row.baseKey, e.target.value)}
+                            onChange={(e) =>
+                              handleUpdate(row.baseKey, e.target.value)
+                            }
                             className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
                             style={{
                               background: theme[row.baseKey],
-                              WebkitAppearance: 'none',
-                              MozAppearance: 'none',
-                              appearance: 'none',
+                              WebkitAppearance: "none",
+                              MozAppearance: "none",
+                              appearance: "none",
                             }}
                           />
                           <input
                             type="color"
                             value={theme[row.textKey]}
-                            onChange={(e) => handleUpdate(row.textKey, e.target.value)}
+                            onChange={(e) =>
+                              handleUpdate(row.textKey, e.target.value)
+                            }
                             className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
                             style={{
                               background: theme[row.textKey],
-                              WebkitAppearance: 'none',
-                              MozAppearance: 'none',
-                              appearance: 'none',
+                              WebkitAppearance: "none",
+                              MozAppearance: "none",
+                              appearance: "none",
                             }}
                           />
                         </React.Fragment>
@@ -711,7 +808,7 @@ function Styling() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {t('styling.quick_themes')}
+                        {t("styling.quick_themes")}
                       </CardTitle>
                       <Button
                         variant="ghost"
@@ -720,7 +817,7 @@ function Styling() {
                         className="h-auto py-1 px-2 text-[10px] font-medium uppercase tracking-wider text-primary hover:text-foreground"
                       >
                         <Download className="h-3 w-3" />
-                        {t('styling.import')}
+                        {t("styling.import")}
                       </Button>
                     </div>
                   </CardHeader>
@@ -729,7 +826,9 @@ function Styling() {
                       <div className="space-y-4">
                         {customPresets.length > 0 && (
                           <div className="space-y-3">
-                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('styling.custom')}</span>
+                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                              {t("styling.custom")}
+                            </span>
                             <div className="grid grid-cols-1 gap-2">
                               {customPresets.map((p) => (
                                 <ThemeCard
@@ -747,7 +846,9 @@ function Styling() {
                         {customPresets.length > 0 && <Separator />}
 
                         <div className="space-y-3">
-                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('styling.presets')}</span>
+                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                            {t("styling.presets")}
+                          </span>
                           <div className="grid grid-cols-1 gap-2">
                             {PRESETS.map((p) => (
                               <ThemeCard
@@ -768,7 +869,7 @@ function Styling() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {t('styling.live_preview')}
+                      {t("styling.live_preview")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -780,14 +881,14 @@ function Styling() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {t('styling.interactive_effects')}
+                        {t("styling.interactive_effects")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-5">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex-1">
-                            {t('styling.launcher_font')}
+                            {t("styling.launcher_font")}
                           </Label>
                           <Button
                             variant="outline"
@@ -796,7 +897,7 @@ function Styling() {
                             className="h-7 text-[10px] font-medium uppercase tracking-wider"
                           >
                             <Type className="h-3 w-3" />
-                            {t('styling.add_font')}
+                            {t("styling.add_font")}
                           </Button>
                         </div>
                         <Dropdown
@@ -807,7 +908,7 @@ function Styling() {
                         />
                       </div>
                       <SliderControl
-                        label={t('styling.corner_roundness')}
+                        label={t("styling.corner_roundness")}
                         value={theme.borderRadius ?? 12}
                         min={0}
                         max={32}
@@ -816,7 +917,7 @@ function Styling() {
                         onChange={(val) => handleUpdate("borderRadius", val)}
                       />
                       <SliderControl
-                        label={t('styling.glass_blur')}
+                        label={t("styling.glass_blur")}
                         value={theme.glassBlur}
                         min={0}
                         max={40}
@@ -825,40 +926,48 @@ function Styling() {
                         onChange={(val) => handleUpdate("glassBlur", val)}
                       />
                       <SliderControl
-                        label={t('styling.sidebar_glow')}
+                        label={t("styling.sidebar_glow")}
                         value={Math.round((theme.sidebarGlow ?? 0) * 100)}
                         min={0}
                         max={100}
                         step={5}
                         unit="%"
-                        onChange={(val) => handleUpdate("sidebarGlow", val / 100)}
+                        onChange={(val) =>
+                          handleUpdate("sidebarGlow", val / 100)
+                        }
                       />
                       <SliderControl
-                        label={t('styling.global_glow')}
+                        label={t("styling.global_glow")}
                         value={Math.round((theme.globalGlow ?? 0) * 100)}
                         min={0}
                         max={100}
                         step={5}
                         unit="%"
-                        onChange={(val) => handleUpdate("globalGlow", val / 100)}
+                        onChange={(val) =>
+                          handleUpdate("globalGlow", val / 100)
+                        }
                       />
                       <SliderControl
-                        label={t('styling.panel_opacity')}
+                        label={t("styling.panel_opacity")}
                         value={Math.round((theme.panelOpacity ?? 0.85) * 100)}
                         min={0}
                         max={100}
                         step={5}
                         unit="%"
-                        onChange={(val) => handleUpdate("panelOpacity", val / 100)}
+                        onChange={(val) =>
+                          handleUpdate("panelOpacity", val / 100)
+                        }
                       />
                       <SliderControl
-                        label={t('styling.console_opacity')}
+                        label={t("styling.console_opacity")}
                         value={Math.round((theme.consoleOpacity ?? 0.8) * 100)}
                         min={0}
                         max={100}
                         step={5}
                         unit="%"
-                        onChange={(val) => handleUpdate("consoleOpacity", val / 100)}
+                        onChange={(val) =>
+                          handleUpdate("consoleOpacity", val / 100)
+                        }
                       />
                     </CardContent>
                   </Card>
@@ -866,17 +975,19 @@ function Styling() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {t('styling.atmosphere')}
+                        {t("styling.atmosphere")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-5">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          {t('styling.auto_color')}
+                          {t("styling.auto_color")}
                         </Label>
                         <Switch
                           checked={theme.autoAdaptColor}
-                          onCheckedChange={(checked) => handleUpdate("autoAdaptColor", checked)}
+                          onCheckedChange={(checked) =>
+                            handleUpdate("autoAdaptColor", checked)
+                          }
                         />
                       </div>
 
@@ -904,7 +1015,7 @@ function Styling() {
                             )}
                             <div className="relative z-10 text-center">
                               <span className="text-[10px] font-medium uppercase tracking-wider text-foreground bg-background/60 px-3 py-1 rounded-full border border-border">
-                                {t('styling.change_bg')}
+                                {t("styling.change_bg")}
                               </span>
                             </div>
                           </>
@@ -912,7 +1023,7 @@ function Styling() {
                           <>
                             <ImageIcon className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
                             <span className="text-[10px] font-medium text-muted-foreground uppercase text-center break-words px-4">
-                              {t('styling.select_media')}
+                              {t("styling.select_media")}
                             </span>
                           </>
                         )}
@@ -921,27 +1032,34 @@ function Styling() {
                       {theme.bgMedia?.url && (
                         <div className="space-y-4">
                           <SliderControl
-                            label={t('styling.overlay_intensity')}
+                            label={t("styling.overlay_intensity")}
                             value={Math.round((theme.bgOverlay ?? 0.4) * 100)}
                             min={0}
                             max={100}
                             step={5}
                             unit="%"
-                            onChange={(val) => handleUpdate("bgOverlay", val / 100)}
+                            onChange={(val) =>
+                              handleUpdate("bgOverlay", val / 100)
+                            }
                           />
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={async () => {
                               if (theme.bgMedia.url) {
-                                await window.electronAPI.deleteBackgroundMedia(theme.bgMedia.url);
+                                await window.electronAPI.deleteBackgroundMedia(
+                                  theme.bgMedia.url,
+                                );
                               }
-                              handleUpdate("bgMedia", { url: "", type: "none" });
+                              handleUpdate("bgMedia", {
+                                url: "",
+                                type: "none",
+                              });
                             }}
                             className="text-destructive hover:text-destructive w-full justify-center gap-2"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            {t('styling.remove_bg')}
+                            {t("styling.remove_bg")}
                           </Button>
                         </div>
                       )}
@@ -954,19 +1072,28 @@ function Styling() {
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={loadTheme}>
                     <RotateCcw className="h-3.5 w-3.5" />
-                    {t('styling.reset')}
+                    {t("styling.reset")}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleFactoryReset} className="text-destructive hover:text-destructive">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleFactoryReset}
+                    className="text-destructive hover:text-destructive"
+                  >
                     <RotateCcw className="h-3.5 w-3.5" />
-                    {t('styling.reset_factory')}
+                    {t("styling.reset_factory")}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setShowExportModal(true)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowExportModal(true)}
+                  >
                     <Upload className="h-3.5 w-3.5" />
-                    {t('styling.export')}
+                    {t("styling.export")}
                   </Button>
                   <Button size="sm" onClick={handleSave}>
                     <Save className="h-3.5 w-3.5" />
-                    {t('styling.save')}
+                    {t("styling.save")}
                   </Button>
                 </div>
               </div>

@@ -1,45 +1,47 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import Dropdown from '../components/Dropdown';
-import { useNotification } from '../context/NotificationContext';
-import LoadingOverlay from '../components/LoadingOverlay';
-import ConfirmationModal from '../components/ConfirmationModal';
-import { Analytics } from '../services/Analytics';
-import ModpackCodeModal from '../components/ModpackCodeModal';
-import OptimizedImage from '../components/OptimizedImage';
-import { useTranslation } from 'react-i18next';
-import PageHeader from '../components/layout/PageHeader';
-import { PixelEditorModal } from '../components/PixelEditorModal';
-import PageContent from '../components/layout/PageContent';
-import EmptyState from '../components/layout/EmptyState';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Input } from '../components/ui/input';
-import { Separator } from '../components/ui/separator';
-import { filterInstancesForMode } from '../utils/instanceTypes';
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { List } from "react-window";
+import { AutoSizer } from "react-virtualized-auto-sizer";
+import Dropdown from "../components/Dropdown";
+import { useNotification } from "../context/NotificationContext";
+import LoadingOverlay from "../components/LoadingOverlay";
+import ConfirmationModal from "../components/ConfirmationModal";
+import { Analytics } from "../services/Analytics";
+import ModpackCodeModal from "../components/ModpackCodeModal";
+import OptimizedImage from "../components/OptimizedImage";
+import { useTranslation } from "react-i18next";
+import PageHeader from "../components/layout/PageHeader";
+import { PixelEditorModal } from "../components/PixelEditorModal";
+import PageContent from "../components/layout/PageContent";
+import EmptyState from "../components/layout/EmptyState";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Separator } from "../components/ui/separator";
+import { filterInstancesForMode } from "../utils/instanceTypes";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '../components/ui/dialog';
+} from "../components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
+} from "../components/ui/dropdown-menu";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '../components/ui/context-menu';
-import { Switch } from '../components/ui/switch';
-import { Label } from '../components/ui/label';
+} from "../components/ui/context-menu";
+import { Switch } from "../components/ui/switch";
+import { Label } from "../components/ui/label";
 import {
   Play,
   Square,
@@ -61,9 +63,10 @@ import {
   FileDown,
   Zap,
   ImageIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
-const DEFAULT_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
+const DEFAULT_ICON =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
 
 const InstanceCard = ({
   instance,
@@ -84,42 +87,52 @@ const InstanceCard = ({
   isGuest,
 }) => {
   const formatPlaytime = (ms) => {
-    if (!ms || ms <= 0) return t('common.time.0h');
+    if (!ms || ms <= 0) return t("common.time.0h");
     const hours = Math.floor(ms / 3600000);
     const minutes = Math.floor((ms % 3600000) / 60000);
-    if (hours > 0) return t('common.time.hours_minutes', { hours, minutes });
-    return t('common.time.minutes', { minutes });
+    if (hours > 0) return t("common.time.hours_minutes", { hours, minutes });
+    return t("common.time.minutes", { minutes });
   };
 
   const liveStatus = runningInstances[instance.name];
   const persistedStatus = instance.status;
   const installStateKey = Object.keys(activeDownloads).find(
-    k => k.toLowerCase() === instance.name.toLowerCase()
+    (k) => k.toLowerCase() === instance.name.toLowerCase(),
   );
-  const installState = installStateKey ? activeDownloads[installStateKey] : null;
+  const installState = installStateKey
+    ? activeDownloads[installStateKey]
+    : null;
   const isInstalling = !!installState;
   const status = isInstalling
-    ? 'installing'
-    : liveStatus || (persistedStatus === 'installing' ? 'installing' : null);
-  const isRunning = status === 'running';
-  const isLaunching = status === 'launching';
+    ? "installing"
+    : liveStatus || (persistedStatus === "installing" ? "installing" : null);
+  const isRunning = status === "running";
+  const isLaunching = status === "launching";
 
   return (
     <div
       onClick={() => onInstanceClick(instance)}
-      className={`group relative rounded-lg border p-3 transition-colors cursor-pointer ${isSelected
-        ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
-        : isRunning
-          ? 'border-primary/40 bg-primary/5'
-          : 'border-border hover:bg-accent/50 active:bg-accent'
-        }`}
+      className={`group relative rounded-lg border p-3 transition-colors cursor-pointer ${
+        isSelected
+          ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+          : isRunning
+            ? "border-primary/40 bg-primary/5"
+            : "border-border hover:bg-accent/50 active:bg-accent"
+      }`}
     >
       <div className="flex items-start gap-3 mb-2.5">
         {selectionMode && (
           <label
-            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${isSelectable ? 'cursor-pointer border-border' : 'cursor-not-allowed border-border/60 opacity-50'}`}
+            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${isSelectable ? "cursor-pointer border-border" : "cursor-not-allowed border-border/60 opacity-50"}`}
             onClick={(e) => e.stopPropagation()}
-            title={isSelectable ? t('dashboard.selection.toggle', 'Select instance') : t('dashboard.selection.not_selectable', 'External profiles cannot be selected')}
+            title={
+              isSelectable
+                ? t("dashboard.selection.toggle", "Select instance")
+                : t(
+                    "dashboard.selection.not_selectable",
+                    "External profiles cannot be selected",
+                  )
+            }
           >
             <input
               type="checkbox"
@@ -133,9 +146,9 @@ const InstanceCard = ({
           </label>
         )}
         {instance.icon &&
-          (instance.icon.startsWith('data:') ||
-            instance.icon.startsWith('app-media://') ||
-            instance.icon.startsWith('http')) ? (
+        (instance.icon.startsWith("data:") ||
+          instance.icon.startsWith("app-media://") ||
+          instance.icon.startsWith("http")) ? (
           <OptimizedImage
             src={instance.icon}
             alt={instance.name}
@@ -144,33 +157,41 @@ const InstanceCard = ({
           />
         ) : (
           <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border border-border shrink-0">
-            <span className="text-xl">{instance.icon || ''}</span>
-            {!instance.icon && <Box className="w-6 h-6 text-muted-foreground" />}
+            <span className="text-xl">{instance.icon || ""}</span>
+            {!instance.icon && (
+              <Box className="w-6 h-6 text-muted-foreground" />
+            )}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-foreground truncate">{instance.name}</h3>
+          <h3 className="text-sm font-medium text-foreground truncate">
+            {instance.name}
+          </h3>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-            <span className="capitalize">{String(instance.loader || 'Vanilla').trim() || 'Vanilla'}</span>
+            <span className="capitalize">
+              {String(instance.loader || "Vanilla").trim() || "Vanilla"}
+            </span>
             <span className="text-border">·</span>
-            <span>{String(instance.version || '').trim() || 'Unknown'}</span>
+            <span>{String(instance.version || "").trim() || "Unknown"}</span>
           </div>
-          {status && status !== 'ready' && status !== 'stopped' && (
+          {status && status !== "ready" && status !== "stopped" && (
             <div className="mt-1.5 flex items-center gap-1.5">
               <Badge
-                variant={isRunning ? 'default' : 'secondary'}
+                variant={isRunning ? "default" : "secondary"}
                 className="text-[10px] px-1.5 py-0 h-4 gap-1"
               >
-                {isRunning && <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
+                {isRunning && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                )}
                 {isInstalling
                   ? installState
-                    ? installState.type === 'duplicate'
-                      ? `${t('common.duplicating', 'Duplicating...')} (${installState.progress}%)`
-                      : `${t('common.installing')} (${installState.progress}%)`
-                    : t('common.installing')
+                    ? installState.type === "duplicate"
+                      ? `${t("common.duplicating", "Duplicating...")} (${installState.progress}%)`
+                      : `${t("common.installing")} (${installState.progress}%)`
+                    : t("common.installing")
                   : isLaunching
-                    ? t('common.starting')
-                    : t('common.running')}
+                    ? t("common.starting")
+                    : t("common.running")}
               </Badge>
             </div>
           )}
@@ -215,34 +236,47 @@ const InstanceCard = ({
           {formatPlaytime(instance.playtime)}
         </span>
         <Button
-          variant={isRunning ? 'destructive' : 'default'}
+          variant={isRunning ? "destructive" : "default"}
           size="sm"
-          className={`h-7 gap-1 text-xs ${!isRunning && !isInstalling && !isLaunching && !pendingLaunches[instance.name]
-            ? 'opacity-0 group-hover:opacity-100 transition-opacity'
-            : ''
-            }`}
+          className={`h-7 gap-1 text-xs ${
+            !isRunning &&
+            !isInstalling &&
+            !isLaunching &&
+            !pendingLaunches[instance.name]
+              ? "opacity-0 group-hover:opacity-100 transition-opacity"
+              : ""
+          }`}
           onClick={async (e) => {
             e.stopPropagation();
             if (isGuest) {
-              addNotification('To do that you have to be logged in', 'error');
+              addNotification("To do that you have to be logged in", "error");
               return;
             }
             if (isRunning) {
               window.electronAPI.killGame(instance.name);
-              addNotification(`Stopping ${instance.name}...`, 'info');
-            } else if (!isInstalling && !isLaunching && !pendingLaunches[instance.name]) {
-              setPendingLaunches(prev => ({ ...prev, [instance.name]: true }));
+              addNotification(`Stopping ${instance.name}...`, "info");
+            } else if (
+              !isInstalling &&
+              !isLaunching &&
+              !pendingLaunches[instance.name]
+            ) {
+              setPendingLaunches((prev) => ({
+                ...prev,
+                [instance.name]: true,
+              }));
               try {
-                const result = await window.electronAPI.launchGame(instance.name);
+                const result = await window.electronAPI.launchGame(
+                  instance.name,
+                );
                 if (!result.success) {
-                  addNotification(`Launch failed: ${result.error}`, 'error');
+                  addNotification(`Launch failed: ${result.error}`, "error");
                 } else {
-                  addNotification(`Launching ${instance.name}...`, 'info');
+                  addNotification(`Launching ${instance.name}...`, "info");
                 }
               } catch (err) {
-                addNotification(`Launch error: ${err.message}`, 'error');
+                addNotification(`Launch error: ${err.message}`, "error");
               } finally {
-                setPendingLaunches(prev => {
+                setPendingLaunches((prev) => {
                   const next = { ...prev };
                   delete next[instance.name];
                   return next;
@@ -250,39 +284,41 @@ const InstanceCard = ({
               }
             }
           }}
-          disabled={isInstalling || isLaunching || pendingLaunches[instance.name]}
+          disabled={
+            isInstalling || isLaunching || pendingLaunches[instance.name]
+          }
           title={
             isRunning
-              ? t('common.stop')
+              ? t("common.stop")
               : isInstalling
                 ? installState
                   ? installState.status
-                  : t('common.installing')
+                  : t("common.installing")
                 : isLaunching
-                  ? t('common.starting')
+                  ? t("common.starting")
                   : pendingLaunches[instance.name]
-                    ? t('common.starting')
-                    : t('dashboard.launch_game', 'Launch Game')
+                    ? t("common.starting")
+                    : t("dashboard.launch_game", "Launch Game")
           }
         >
           {isRunning ? (
             <>
               <Square className="w-3 h-3" />
-              {t('common.stop')}
+              {t("common.stop")}
             </>
           ) : isInstalling || isLaunching || pendingLaunches[instance.name] ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin" />
               {isInstalling
-                ? installState?.type === 'duplicate'
-                  ? t('common.duplicating', 'Duplicating...')
-                  : t('common.installing')
-                : t('common.starting')}
+                ? installState?.type === "duplicate"
+                  ? t("common.duplicating", "Duplicating...")
+                  : t("common.installing")
+                : t("common.starting")}
             </>
           ) : (
             <>
               <Play className="w-3 h-3" />
-              {t('common.play')}
+              {t("common.play")}
             </>
           )}
         </Button>
@@ -314,10 +350,10 @@ function Dashboard({
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [instanceToDelete, setInstanceToDelete] = useState(null);
-  const [newInstanceName, setNewInstanceName] = useState('');
-  const [newInstanceFolderPath, setNewInstanceFolderPath] = useState('');
-  const [selectedVersion, setSelectedVersion] = useState('');
-  const [selectedLoader, setSelectedLoader] = useState('Vanilla');
+  const [newInstanceName, setNewInstanceName] = useState("");
+  const [newInstanceFolderPath, setNewInstanceFolderPath] = useState("");
+  const [selectedVersion, setSelectedVersion] = useState("");
+  const [selectedLoader, setSelectedLoader] = useState("Vanilla");
   const [newInstanceIcon, setNewInstanceIcon] = useState(DEFAULT_ICON);
   const [availableVersions, setAvailableVersions] = useState([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
@@ -325,7 +361,7 @@ function Dashboard({
   const [isLoading, setIsLoading] = useState(false);
   const [creationStep, setCreationStep] = useState(1);
   const [loaderVersions, setLoaderVersions] = useState([]);
-  const [selectedLoaderVersion, setSelectedLoaderVersion] = useState('');
+  const [selectedLoaderVersion, setSelectedLoaderVersion] = useState("");
   const [availableLoaders, setAvailableLoaders] = useState({
     Vanilla: true,
     Fabric: true,
@@ -336,10 +372,10 @@ function Dashboard({
   const [checkingLoaders, setCheckingLoaders] = useState(false);
   const [pendingLaunches, setPendingLaunches] = useState({});
   const [installProgress, setInstallProgress] = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
-  const [sortMethod, setSortMethod] = useState('playtime');
-  const [groupMethod, setGroupMethod] = useState('none');
+  const [sortMethod, setSortMethod] = useState("playtime");
+  const [groupMethod, setGroupMethod] = useState("none");
   const [groupBySourceEnabled, setGroupBySourceEnabled] = useState(true);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showExportChoiceModal, setShowExportChoiceModal] = useState(false);
@@ -352,66 +388,89 @@ function Dashboard({
   const [isPreparingCodeExport, setIsPreparingCodeExport] = useState(false);
   const [showMoveFolderModal, setShowMoveFolderModal] = useState(false);
   const [folderTargetInstance, setFolderTargetInstance] = useState(null);
-  const [folderInputPath, setFolderInputPath] = useState('');
+  const [folderInputPath, setFolderInputPath] = useState("");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedInstanceNames, setSelectedInstanceNames] = useState([]);
   const [expandedFolders, setExpandedFolders] = useState({});
   const [actionBarActions, setActionBarActions] = useState([]);
   const fileInputRef = useRef(null);
   const [showSnapshots, setShowSnapshots] = useState(false);
-  const [showModrinthInstancesInLibrary, setShowModrinthInstancesInLibrary] = useState(true);
-  const [showCurseforgeInstancesInLibrary, setShowCurseforgeInstancesInLibrary] = useState(true);
+  const [showModrinthInstancesInLibrary, setShowModrinthInstancesInLibrary] =
+    useState(true);
+  const [
+    showCurseforgeInstancesInLibrary,
+    setShowCurseforgeInstancesInLibrary,
+  ] = useState(true);
 
-  const normalizeFolderPath = (value = '') => {
+  const normalizeFolderPath = (value = "") => {
     const segments = String(value)
       .split(/[\\/]+/)
       .map((segment) => segment.trim())
-      .filter((segment) => segment && segment !== '.' && segment !== '..');
-    return segments.join('/');
+      .filter((segment) => segment && segment !== "." && segment !== "..");
+    return segments.join("/");
   };
 
-  const splitFolderPath = (value = '') => {
+  const splitFolderPath = (value = "") => {
     const normalized = normalizeFolderPath(value);
-    return normalized ? normalized.split('/') : [];
+    return normalized ? normalized.split("/") : [];
   };
 
   const handleCodeImportComplete = async (modpackData) => {
-    addNotification(t('dashboard.import_starting', { name: modpackData.name }), 'info');
+    addNotification(
+      t("dashboard.import_starting", { name: modpackData.name }),
+      "info",
+    );
 
     try {
       const createRes = await window.electronAPI.createInstance(
         modpackData.name,
         modpackData.instanceVersion || modpackData.version,
         modpackData.instanceLoader || modpackData.loader,
-        null
+        null,
       );
 
       if (createRes.success) {
         const instanceName = createRes.instanceName;
-        setInstallProgress(prev => ({
+        setInstallProgress((prev) => ({
           ...prev,
-          [instanceName]: { progress: 0, status: 'Starting import...' },
+          [instanceName]: { progress: 0, status: "Starting import..." },
         }));
         window.electronAPI.installSharedContent(instanceName, modpackData);
-        addNotification(t('dashboard.instance_created', { name: instanceName }), 'success');
+        addNotification(
+          t("dashboard.instance_created", { name: instanceName }),
+          "success",
+        );
         loadInstances();
       } else {
-        addNotification(t('dashboard.create_failed', { error: createRes.error }), 'error');
+        addNotification(
+          t("dashboard.create_failed", { error: createRes.error }),
+          "error",
+        );
       }
     } catch (error) {
-      console.error('Code import error:', error);
-      addNotification(t('dashboard.import_failed', { error: error.message }), 'error');
+      console.error("Code import error:", error);
+      addNotification(
+        t("dashboard.import_failed", { error: error.message }),
+        "error",
+      );
     }
   };
 
   useEffect(() => {
     loadInstances();
 
-    const removeListener = window.electronAPI.onInstanceStatus(({ instanceName, status }) => {
-      if (status === 'stopped' || status === 'ready' || status === 'error' || status === 'deleted') {
-        loadInstances();
-      }
-    });
+    const removeListener = window.electronAPI.onInstanceStatus(
+      ({ instanceName, status }) => {
+        if (
+          status === "stopped" ||
+          status === "ready" ||
+          status === "error" ||
+          status === "deleted"
+        ) {
+          loadInstances();
+        }
+      },
+    );
 
     return () => {
       if (removeListener) removeListener();
@@ -423,27 +482,39 @@ function Dashboard({
       try {
         const settingsRes = await window.electronAPI.getSettings();
         if (settingsRes?.success) {
-          const existingActions = Array.isArray(settingsRes.settings?.actionBarActions)
+          const existingActions = Array.isArray(
+            settingsRes.settings?.actionBarActions,
+          )
             ? settingsRes.settings.actionBarActions
             : [];
           setActionBarActions(existingActions);
 
-          setShowModrinthInstancesInLibrary(settingsRes.settings?.showModrinthInstancesInLibrary !== false);
-          setShowCurseforgeInstancesInLibrary(settingsRes.settings?.showCurseforgeInstancesInLibrary !== false);
+          setShowModrinthInstancesInLibrary(
+            settingsRes.settings?.showModrinthInstancesInLibrary !== false,
+          );
+          setShowCurseforgeInstancesInLibrary(
+            settingsRes.settings?.showCurseforgeInstancesInLibrary !== false,
+          );
         }
-      } catch (e) { }
+      } catch (e) {}
     };
 
     loadActionBarActions();
 
-    const removeSettingsListener = window.electronAPI?.onSettingsUpdated?.((newSettings) => {
-      const existingActions = Array.isArray(newSettings?.actionBarActions)
-        ? newSettings.actionBarActions
-        : [];
-      setActionBarActions(existingActions);
-      setShowModrinthInstancesInLibrary(newSettings?.showModrinthInstancesInLibrary !== false);
-      setShowCurseforgeInstancesInLibrary(newSettings?.showCurseforgeInstancesInLibrary !== false);
-    });
+    const removeSettingsListener = window.electronAPI?.onSettingsUpdated?.(
+      (newSettings) => {
+        const existingActions = Array.isArray(newSettings?.actionBarActions)
+          ? newSettings.actionBarActions
+          : [];
+        setActionBarActions(existingActions);
+        setShowModrinthInstancesInLibrary(
+          newSettings?.showModrinthInstancesInLibrary !== false,
+        );
+        setShowCurseforgeInstancesInLibrary(
+          newSettings?.showCurseforgeInstancesInLibrary !== false,
+        );
+      },
+    );
 
     return () => {
       if (removeSettingsListener) removeSettingsListener();
@@ -454,21 +525,21 @@ function Dashboard({
     return actionBarActions.some(
       (action) =>
         action?.target === instanceName &&
-        (action?.type === 'instance:start' || action?.type === 'instance:stop')
+        (action?.type === "instance:start" || action?.type === "instance:stop"),
     );
   };
 
   useEffect(() => {
     if (showCreateModal) {
       fetchVersions();
-      setNewInstanceName('');
-      setNewInstanceFolderPath('');
+      setNewInstanceName("");
+      setNewInstanceFolderPath("");
       setNewInstanceIcon(DEFAULT_ICON);
-      setSelectedLoader('Vanilla');
+      setSelectedLoader("Vanilla");
       setIsCreating(false);
       setCreationStep(1);
       setLoaderVersions([]);
-      setSelectedLoaderVersion('');
+      setSelectedLoaderVersion("");
       setAvailableLoaders({
         Vanilla: true,
         Fabric: true,
@@ -485,34 +556,42 @@ function Dashboard({
     const updateVersions = async () => {
       setLoadingVersions(true);
       try {
-        if (selectedLoader === 'Vanilla') {
+        if (selectedLoader === "Vanilla") {
           const res = await window.electronAPI.getVanillaVersions();
           if (res.success) {
-            const versions = res.versions.filter(v => (showSnapshots ? true : v.type === 'release'));
+            const versions = res.versions.filter((v) =>
+              showSnapshots ? true : v.type === "release",
+            );
             setAvailableVersions(versions);
             if (
               versions.length > 0 &&
-              (!selectedVersion || !versions.find(v => v.id === selectedVersion))
+              (!selectedVersion ||
+                !versions.find((v) => v.id === selectedVersion))
             ) {
               setSelectedVersion(versions[0].id);
             }
           }
         } else {
-          const res = await window.electronAPI.getSupportedGameVersions(selectedLoader);
+          const res =
+            await window.electronAPI.getSupportedGameVersions(selectedLoader);
           if (res.success) {
             let versions = res.versions;
             if (!showSnapshots) {
-              versions = versions.filter(v => /^\d+\.\d+(\.\d+)?$/.test(v));
+              versions = versions.filter((v) => /^\d+\.\d+(\.\d+)?$/.test(v));
             }
-            const versionObjs = versions.map(v => ({ id: v, type: 'release' }));
+            const versionObjs = versions.map((v) => ({
+              id: v,
+              type: "release",
+            }));
             setAvailableVersions(versionObjs);
             if (
               versionObjs.length > 0 &&
-              (!selectedVersion || !versionObjs.find(v => v.id === selectedVersion))
+              (!selectedVersion ||
+                !versionObjs.find((v) => v.id === selectedVersion))
             ) {
               setSelectedVersion(versionObjs[0].id);
             } else if (versionObjs.length === 0) {
-              setSelectedVersion('');
+              setSelectedVersion("");
             }
           } else {
             setAvailableVersions([]);
@@ -530,7 +609,7 @@ function Dashboard({
 
   const loadInstances = async () => {
     const list = await window.electronAPI.getInstances();
-    setInstances(filterInstancesForMode(list, 'launcher'));
+    setInstances(filterInstancesForMode(list, "launcher"));
   };
 
   const fetchVersions = async () => {
@@ -538,7 +617,7 @@ function Dashboard({
     const res = await window.electronAPI.getVanillaVersions();
     setLoadingVersions(false);
     if (res.success) {
-      const versions = res.versions.filter(v => v.type === 'release');
+      const versions = res.versions.filter((v) => v.type === "release");
       setAvailableVersions(versions);
       if (versions.length > 0) setSelectedVersion(versions[0].id);
     }
@@ -549,15 +628,18 @@ function Dashboard({
     if (isCreating) return;
 
     const loaderForApi = selectedLoader.toLowerCase();
-    if (creationStep === 1 && loaderForApi !== 'vanilla') {
+    if (creationStep === 1 && loaderForApi !== "vanilla") {
       if (!selectedVersion) {
-        addNotification('Please select a Minecraft version', 'error');
+        addNotification("Please select a Minecraft version", "error");
         return;
       }
 
       setLoadingVersions(true);
       try {
-        const res = await window.electronAPI.getLoaderVersions(loaderForApi, selectedVersion);
+        const res = await window.electronAPI.getLoaderVersions(
+          loaderForApi,
+          selectedVersion,
+        );
         setLoadingVersions(false);
 
         if (res.success && res.versions && res.versions.length > 0) {
@@ -566,11 +648,17 @@ function Dashboard({
           setCreationStep(2);
           return;
         } else {
-          addNotification('No specific loader versions found, using latest.', 'info');
+          addNotification(
+            "No specific loader versions found, using latest.",
+            "info",
+          );
         }
       } catch (err) {
         setLoadingVersions(false);
-        addNotification('Failed to fetch loader versions: ' + err.message, 'error');
+        addNotification(
+          "Failed to fetch loader versions: " + err.message,
+          "error",
+        );
         return;
       }
     }
@@ -580,7 +668,7 @@ function Dashboard({
 
   const performCreation = async () => {
     setIsCreating(true);
-    const nameToUse = newInstanceName.trim() || 'New Instance';
+    const nameToUse = newInstanceName.trim() || "New Instance";
     const loaderForApi = selectedLoader.toLowerCase();
     const folderPath = normalizeFolderPath(newInstanceFolderPath);
 
@@ -591,19 +679,22 @@ function Dashboard({
         loaderForApi,
         newInstanceIcon,
         creationStep === 2 ? selectedLoaderVersion : null,
-        folderPath ? { folderPath } : undefined
+        folderPath ? { folderPath } : undefined,
       );
 
       if (result.success) {
         setShowCreateModal(false);
         await loadInstances();
-        addNotification(`Started creating: ${result.instanceName || nameToUse}`, 'success');
+        addNotification(
+          `Started creating: ${result.instanceName || nameToUse}`,
+          "success",
+        );
         Analytics.trackInstanceCreation(loaderForApi, selectedVersion);
       } else {
-        addNotification(`Failed to create instance: ${result.error}`, 'error');
+        addNotification(`Failed to create instance: ${result.error}`, "error");
       }
     } catch (err) {
-      addNotification(`Error creating instance: ${err.message}`, 'error');
+      addNotification(`Error creating instance: ${err.message}`, "error");
     } finally {
       setIsCreating(false);
     }
@@ -622,14 +713,16 @@ function Dashboard({
 
   const handleFileExport = async (instance) => {
     try {
-      const exportResult = await window.electronAPI.exportInstance(instance.name);
+      const exportResult = await window.electronAPI.exportInstance(
+        instance.name,
+      );
       if (exportResult.success) {
-        addNotification(`Exported to ${exportResult.path}`, 'success');
-      } else if (exportResult.error !== 'Cancelled') {
-        addNotification(`Export failed: ${exportResult.error}`, 'error');
+        addNotification(`Exported to ${exportResult.path}`, "success");
+      } else if (exportResult.error !== "Cancelled") {
+        addNotification(`Export failed: ${exportResult.error}`, "error");
       }
     } catch (e) {
-      addNotification(`Export failed: ${e.message}`, 'error');
+      addNotification(`Export failed: ${e.message}`, "error");
     }
   };
 
@@ -644,26 +737,40 @@ function Dashboard({
   const prepareCodeExport = async (instance) => {
     setIsPreparingCodeExport(true);
     try {
-      const [modsResult, resourcePacksResult, shadersResult] = await Promise.all([
-        window.electronAPI.getMods(instance.name),
-        window.electronAPI.getResourcePacks(instance.name),
-        window.electronAPI.getShaders(instance.name),
-      ]);
+      const [modsResult, resourcePacksResult, shadersResult] =
+        await Promise.all([
+          window.electronAPI.getMods(instance.name),
+          window.electronAPI.getResourcePacks(instance.name),
+          window.electronAPI.getShaders(instance.name),
+        ]);
 
-      const mods = modsResult?.success && Array.isArray(modsResult.mods)
-        ? modsResult.mods.map((entry) => ({ ...entry, type: 'mod' }))
-        : [];
-      const resourcePacks = resourcePacksResult?.success && Array.isArray(resourcePacksResult.packs)
-        ? resourcePacksResult.packs.map((entry) => ({ ...entry, type: 'resourcepack' }))
-        : [];
-      const shaders = shadersResult?.success && Array.isArray(shadersResult.shaders)
-        ? shadersResult.shaders.map((entry) => ({ ...entry, type: 'shader' }))
-        : [];
+      const mods =
+        modsResult?.success && Array.isArray(modsResult.mods)
+          ? modsResult.mods.map((entry) => ({ ...entry, type: "mod" }))
+          : [];
+      const resourcePacks =
+        resourcePacksResult?.success && Array.isArray(resourcePacksResult.packs)
+          ? resourcePacksResult.packs.map((entry) => ({
+              ...entry,
+              type: "resourcepack",
+            }))
+          : [];
+      const shaders =
+        shadersResult?.success && Array.isArray(shadersResult.shaders)
+          ? shadersResult.shaders.map((entry) => ({ ...entry, type: "shader" }))
+          : [];
 
-      if (!modsResult?.success || !resourcePacksResult?.success || !shadersResult?.success) {
+      if (
+        !modsResult?.success ||
+        !resourcePacksResult?.success ||
+        !shadersResult?.success
+      ) {
         addNotification(
-          t('dashboard.export_choice.partial_load_warning', 'Some content could not be read and will be skipped.'),
-          'error'
+          t(
+            "dashboard.export_choice.partial_load_warning",
+            "Some content could not be read and will be skipped.",
+          ),
+          "error",
         );
       }
 
@@ -674,7 +781,7 @@ function Dashboard({
       setShowExportChoiceModal(false);
       setShowExportCodeModal(true);
     } catch (e) {
-      addNotification(`Failed to prepare code export: ${e.message}`, 'error');
+      addNotification(`Failed to prepare code export: ${e.message}`, "error");
     } finally {
       setIsPreparingCodeExport(false);
     }
@@ -682,28 +789,33 @@ function Dashboard({
 
   const handleContextAction = async (action, instance) => {
     switch (action) {
-      case 'add-to-actionbar':
+      case "add-to-actionbar":
         try {
           const settingsRes = await window.electronAPI.getSettings();
           if (!settingsRes?.success) {
-            addNotification('Failed to load settings', 'error');
+            addNotification("Failed to load settings", "error");
             break;
           }
 
-          const existingActions = Array.isArray(settingsRes.settings?.actionBarActions)
+          const existingActions = Array.isArray(
+            settingsRes.settings?.actionBarActions,
+          )
             ? settingsRes.settings.actionBarActions
             : [];
 
           const liveStatus = runningInstances[instance.name];
-          const isRunning = liveStatus === 'running';
+          const isRunning = liveStatus === "running";
           const nextAction = {
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             name: isRunning
-              ? `${instance.name} (${t('common.stop')})`
-              : `${instance.name} (${t('common.play')})`,
-            type: isRunning ? 'instance:stop' : 'instance:start',
-            icon: instance.icon && instance.icon.startsWith('data:') ? instance.icon : '',
-            path: '',
+              ? `${instance.name} (${t("common.stop")})`
+              : `${instance.name} (${t("common.play")})`,
+            type: isRunning ? "instance:stop" : "instance:start",
+            icon:
+              instance.icon && instance.icon.startsWith("data:")
+                ? instance.icon
+                : "",
+            path: "",
             target: instance.name,
           };
 
@@ -713,24 +825,29 @@ function Dashboard({
           });
 
           if (saveRes?.success) {
-            addNotification(t('action_bar.added', 'Added to Actionbar'), 'success');
+            addNotification(
+              t("action_bar.added", "Added to Actionbar"),
+              "success",
+            );
             setActionBarActions([...existingActions, nextAction]);
           } else {
-            addNotification('Failed to save action', 'error');
+            addNotification("Failed to save action", "error");
           }
         } catch (e) {
-          addNotification(`Failed to add action: ${e.message}`, 'error');
+          addNotification(`Failed to add action: ${e.message}`, "error");
         }
         break;
-      case 'remove-from-actionbar':
+      case "remove-from-actionbar":
         try {
           const settingsRes2 = await window.electronAPI.getSettings();
           if (!settingsRes2?.success) {
-            addNotification('Failed to load settings', 'error');
+            addNotification("Failed to load settings", "error");
             break;
           }
 
-          const existingActions2 = Array.isArray(settingsRes2.settings?.actionBarActions)
+          const existingActions2 = Array.isArray(
+            settingsRes2.settings?.actionBarActions,
+          )
             ? settingsRes2.settings.actionBarActions
             : [];
 
@@ -738,8 +855,9 @@ function Dashboard({
             (entry) =>
               !(
                 entry?.target === instance.name &&
-                (entry?.type === 'instance:start' || entry?.type === 'instance:stop')
-              )
+                (entry?.type === "instance:start" ||
+                  entry?.type === "instance:stop")
+              ),
           );
 
           const saveRes2 = await window.electronAPI.saveSettings({
@@ -748,60 +866,71 @@ function Dashboard({
           });
 
           if (saveRes2?.success) {
-            addNotification(t('action_bar.removed', 'Removed from Actionbar'), 'success');
+            addNotification(
+              t("action_bar.removed", "Removed from Actionbar"),
+              "success",
+            );
             setActionBarActions(filteredActions);
           } else {
-            addNotification('Failed to remove action', 'error');
+            addNotification("Failed to remove action", "error");
           }
         } catch (e) {
-          addNotification(`Failed to remove action: ${e.message}`, 'error');
+          addNotification(`Failed to remove action: ${e.message}`, "error");
         }
         break;
-      case 'play':
+      case "play":
         window.electronAPI.launchGame(instance.name);
         break;
-      case 'view':
+      case "view":
         onInstanceClick(instance);
         break;
-      case 'duplicate':
+      case "duplicate":
         try {
-          const result = await window.electronAPI.duplicateInstance(instance.name);
+          const result = await window.electronAPI.duplicateInstance(
+            instance.name,
+          );
           if (result.success) {
-            addNotification(`Duplicated instance: ${instance.name}`, 'success');
+            addNotification(`Duplicated instance: ${instance.name}`, "success");
             await loadInstances();
           } else {
-            addNotification(`Duplicate failed: ${result.error}`, 'error');
+            addNotification(`Duplicate failed: ${result.error}`, "error");
           }
         } catch (e) {
-          addNotification(`Duplicate failed: ${e.message}`, 'error');
+          addNotification(`Duplicate failed: ${e.message}`, "error");
         }
         break;
-      case 'export':
+      case "export":
         setExportTargetInstance(instance);
         setShowExportChoiceModal(true);
         break;
-      case 'folder':
+      case "folder":
         window.electronAPI.openInstanceFolder(instance.name);
         break;
-      case 'move-to-folder':
+      case "move-to-folder":
         setFolderTargetInstance(instance);
-        setFolderInputPath(String(instance.folderPath || ''));
+        setFolderInputPath(String(instance.folderPath || ""));
         setShowMoveFolderModal(true);
         break;
-      case 'remove-from-folder':
+      case "remove-from-folder":
         try {
-          const res = await window.electronAPI.setInstanceFolderPath(instance, '');
+          const res = await window.electronAPI.setInstanceFolderPath(
+            instance,
+            "",
+          );
           if (res?.success) {
-            addNotification(`Removed ${instance.name} from folder`, 'success');
+            addNotification(`Removed ${instance.name} from folder`, "success");
             await loadInstances();
           } else {
-            addNotification(`Failed to update folder: ${res?.error || 'Unknown error'}`, 'error');
+            addNotification(
+              `Failed to update folder: ${res?.error || "Unknown error"}`,
+              "error",
+            );
           }
         } catch (e) {
-          addNotification(`Failed to update folder: ${e.message}`, 'error');
+          addNotification(`Failed to update folder: ${e.message}`, "error");
         }
         break;
-      case 'delete':
+      case "delete":
         setInstanceToDelete(instance);
         setShowDeleteModal(true);
         break;
@@ -812,32 +941,42 @@ function Dashboard({
     const nextPath = normalizeFolderPath(folderInputPath);
 
     if (!folderTargetInstance && selectedInstanceNames.length === 0) {
-      addNotification('No instances selected.', 'error');
+      addNotification("No instances selected.", "error");
       return;
     }
 
     setIsLoading(true);
     try {
       if (folderTargetInstance) {
-        const res = await window.electronAPI.setInstanceFolderPath(folderTargetInstance, nextPath);
+        const res = await window.electronAPI.setInstanceFolderPath(
+          folderTargetInstance,
+          nextPath,
+        );
         if (res?.success) {
           addNotification(
             nextPath
               ? `Moved ${folderTargetInstance.name} to ${nextPath}`
               : `Removed ${folderTargetInstance.name} from folder`,
-            'success'
+            "success",
           );
         } else {
-          addNotification(`Failed to update folder: ${res?.error || 'Unknown error'}`, 'error');
+          addNotification(
+            `Failed to update folder: ${res?.error || "Unknown error"}`,
+            "error",
+          );
           return;
         }
       } else {
         const updates = await Promise.all(
           selectedInstanceNames.map((instanceName) => {
-            const instanceRef = instances.find((instance) => instance.name === instanceName) || { name: instanceName };
-            return window.electronAPI.setInstanceFolderPath(instanceRef, nextPath);
-          }
-          )
+            const instanceRef = instances.find(
+              (instance) => instance.name === instanceName,
+            ) || { name: instanceName };
+            return window.electronAPI.setInstanceFolderPath(
+              instanceRef,
+              nextPath,
+            );
+          }),
         );
         const failed = updates.filter((entry) => !entry?.success).length;
         const successCount = updates.length - failed;
@@ -847,24 +986,24 @@ function Dashboard({
             nextPath
               ? `Moved ${successCount} instance(s) to ${nextPath}`
               : `Removed ${successCount} instance(s) from folders`,
-            'success'
+            "success",
           );
         }
         if (failed > 0) {
-          addNotification(`Failed to move ${failed} instance(s).`, 'error');
+          addNotification(`Failed to move ${failed} instance(s).`, "error");
         }
       }
 
       await loadInstances();
       setShowMoveFolderModal(false);
       setFolderTargetInstance(null);
-      setFolderInputPath('');
+      setFolderInputPath("");
       if (!folderTargetInstance) {
         setSelectedInstanceNames([]);
         setSelectionMode(false);
       }
     } catch (e) {
-      addNotification(`Failed to update folder: ${e.message}`, 'error');
+      addNotification(`Failed to update folder: ${e.message}`, "error");
     } finally {
       setIsLoading(false);
     }
@@ -878,13 +1017,13 @@ function Dashboard({
       const status = runningInstances[instanceToDelete.name];
       if (status) {
         await window.electronAPI.killGame(instanceToDelete.name);
-        addNotification(`Stopped ${instanceToDelete.name}`, 'info');
+        addNotification(`Stopped ${instanceToDelete.name}`, "info");
       }
       await window.electronAPI.deleteInstance(instanceToDelete.name);
-      addNotification(`Deleted instance: ${instanceToDelete.name}`, 'info');
+      addNotification(`Deleted instance: ${instanceToDelete.name}`, "info");
       await loadInstances();
     } catch (e) {
-      addNotification(`Failed to delete: ${e.message}`, 'error');
+      addNotification(`Failed to delete: ${e.message}`, "error");
     } finally {
       setIsLoading(false);
       setShowDeleteModal(false);
@@ -892,67 +1031,76 @@ function Dashboard({
     }
   };
 
-  const versionOptions = availableVersions.map(v => ({
+  const versionOptions = availableVersions.map((v) => ({
     value: v.id,
     label: v.id,
   }));
 
   const loaderOptions = [
-    { value: 'Vanilla', label: 'Vanilla' },
-    { value: 'Fabric', label: 'Fabric' },
-    { value: 'Forge', label: 'Forge' },
-    { value: 'NeoForge', label: 'NeoForge' },
-    { value: 'Quilt', label: 'Quilt' },
+    { value: "Vanilla", label: "Vanilla" },
+    { value: "Fabric", label: "Fabric" },
+    { value: "Forge", label: "Forge" },
+    { value: "NeoForge", label: "NeoForge" },
+    { value: "Quilt", label: "Quilt" },
   ];
 
   const sortOptions = [
-    { value: 'name', label: t('dashboard.sort.name') },
-    { value: 'version', label: t('dashboard.sort.version') },
-    { value: 'playtime', label: t('dashboard.sort.playtime') },
+    { value: "name", label: t("dashboard.sort.name") },
+    { value: "version", label: t("dashboard.sort.version") },
+    { value: "playtime", label: t("dashboard.sort.playtime") },
   ];
 
   const groupOptions = [
-    { value: 'none', label: t('dashboard.group.none') },
-    { value: 'version', label: t('dashboard.group.version') },
-    { value: 'loader', label: t('dashboard.group.loader') },
+    { value: "none", label: t("dashboard.group.none") },
+    { value: "version", label: t("dashboard.group.version") },
+    { value: "loader", label: t("dashboard.group.loader") },
   ];
 
   const getSourceGroupLabel = (inst) => {
-    if (String(inst?.instanceType || '').toLowerCase() === 'external') {
-      const source = String(inst?.externalSource || '').toLowerCase();
-      if (source === 'modrinth') return 'Modrinth';
-      if (source === 'curseforge') return 'CurseForge';
-      return 'External';
+    if (String(inst?.instanceType || "").toLowerCase() === "external") {
+      const source = String(inst?.externalSource || "").toLowerCase();
+      if (source === "modrinth") return "Modrinth";
+      if (source === "curseforge") return "CurseForge";
+      return "External";
     }
-    return 'LuxClient';
+    return "LuxClient";
   };
 
   const filteredInstances = instances.filter((inst) => {
-    const isExternal = String(inst?.instanceType || '').toLowerCase() === 'external';
-    const source = String(inst?.externalSource || '').toLowerCase();
+    const isExternal =
+      String(inst?.instanceType || "").toLowerCase() === "external";
+    const source = String(inst?.externalSource || "").toLowerCase();
 
-    if (isExternal && source === 'modrinth' && !showModrinthInstancesInLibrary) {
+    if (
+      isExternal &&
+      source === "modrinth" &&
+      !showModrinthInstancesInLibrary
+    ) {
       return false;
     }
 
-    if (isExternal && source === 'curseforge' && !showCurseforgeInstancesInLibrary) {
+    if (
+      isExternal &&
+      source === "curseforge" &&
+      !showCurseforgeInstancesInLibrary
+    ) {
       return false;
     }
 
-    const name = String(inst?.name || '').toLowerCase();
-    const version = String(inst?.version || '').toLowerCase();
+    const name = String(inst?.name || "").toLowerCase();
+    const version = String(inst?.version || "").toLowerCase();
     const query = deferredSearchQuery.toLowerCase();
 
     return name.includes(query) || version.includes(query);
   });
 
   const sortedInstances = [...filteredInstances].sort((a, b) => {
-    if (sortMethod === 'name') return a.name.localeCompare(b.name);
-    if (sortMethod === 'playtime') return (b.playtime || 0) - (a.playtime || 0);
-    if (sortMethod === 'version') {
+    if (sortMethod === "name") return a.name.localeCompare(b.name);
+    if (sortMethod === "playtime") return (b.playtime || 0) - (a.playtime || 0);
+    if (sortMethod === "version") {
       return b.version.localeCompare(a.version, undefined, {
         numeric: true,
-        sensitivity: 'base',
+        sensitivity: "base",
       });
     }
     return 0;
@@ -966,7 +1114,9 @@ function Dashboard({
 
   useEffect(() => {
     const availableNames = new Set(instances.map((instance) => instance.name));
-    setSelectedInstanceNames((prev) => prev.filter((name) => availableNames.has(name)));
+    setSelectedInstanceNames((prev) =>
+      prev.filter((name) => availableNames.has(name)),
+    );
   }, [instances]);
 
   const toggleInstanceSelection = (instanceName) => {
@@ -997,18 +1147,18 @@ function Dashboard({
 
   const openBulkMoveDialog = () => {
     if (selectedInstanceNames.length === 0) {
-      addNotification('Please select at least one instance first.', 'error');
+      addNotification("Please select at least one instance first.", "error");
       return;
     }
     setFolderTargetInstance(null);
-    setFolderInputPath('');
+    setFolderInputPath("");
     setShowMoveFolderModal(true);
   };
 
   const buildFolderTree = (items) => {
     const root = {
-      path: '',
-      name: '',
+      path: "",
+      name: "",
       instances: [],
       children: new Map(),
     };
@@ -1024,7 +1174,7 @@ function Dashboard({
       const pathParts = [];
       segments.forEach((segment) => {
         pathParts.push(segment);
-        const segmentPath = pathParts.join('/');
+        const segmentPath = pathParts.join("/");
         if (!current.children.has(segment)) {
           current.children.set(segment, {
             path: segmentPath,
@@ -1041,7 +1191,9 @@ function Dashboard({
     const finalizeNode = (node) => ({
       ...node,
       children: Array.from(node.children.values())
-        .sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        .sort((a: any, b: any) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+        )
         .map(finalizeNode),
     });
 
@@ -1049,7 +1201,8 @@ function Dashboard({
   };
 
   const countFolderInstances = (node) =>
-    node.instances.length + node.children.reduce((sum, child) => sum + countFolderInstances(child), 0);
+    node.instances.length +
+    node.children.reduce((sum, child) => sum + countFolderInstances(child), 0);
 
   const toggleFolder = (folderKey) => {
     setExpandedFolders((prev) => ({
@@ -1060,115 +1213,188 @@ function Dashboard({
 
   const isFolderExpanded = (folderKey) => expandedFolders[folderKey] ?? true;
 
-  const groupedData = [];
-  const buildGroupedSections = (items, sectionPrefix = null) => {
-    if (groupMethod === 'none') {
-      groupedData.push({ title: sectionPrefix, tree: buildFolderTree(items) });
-      return;
-    }
-
-    const groups = {};
-    items.forEach(inst => {
-      const key = groupMethod === 'version'
-        ? (inst.version || 'Unknown')
-        : (inst.loader || 'Vanilla');
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(inst);
-    });
-
-    const sortedKeys = Object.keys(groups).sort((a, b) => {
-      if (groupMethod === 'version') {
-        return b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' });
+  const groupedData = useMemo(() => {
+    const data = [];
+    const buildSections = (items, sectionPrefix = null) => {
+      if (groupMethod === "none") {
+        data.push({ title: sectionPrefix, tree: buildFolderTree(items) });
+        return;
       }
-      return a.localeCompare(b);
-    });
 
-    sortedKeys.forEach(key => {
-      groupedData.push({
-        title: sectionPrefix ? `${sectionPrefix} - ${key}` : key,
-        tree: buildFolderTree(groups[key]),
+      const groups = {};
+      items.forEach((inst) => {
+        const key =
+          groupMethod === "version"
+            ? inst.version || "Unknown"
+            : inst.loader || "Vanilla";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(inst);
       });
-    });
-  };
 
-  if (groupBySourceEnabled) {
-    const sourceGroups = {
-      LuxClient: [],
-      Modrinth: [],
-      CurseForge: [],
-      External: [],
+      const sortedKeys = Object.keys(groups).sort((a, b) => {
+        if (groupMethod === "version") {
+          return b.localeCompare(a, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        }
+        return a.localeCompare(b);
+      });
+
+      sortedKeys.forEach((key) => {
+        data.push({
+          title: sectionPrefix ? `${sectionPrefix} - ${key}` : key,
+          tree: buildFolderTree(groups[key]),
+        });
+      });
     };
 
-    sortedInstances.forEach((inst) => {
-      const sourceLabel = getSourceGroupLabel(inst);
-      if (!sourceGroups[sourceLabel]) sourceGroups[sourceLabel] = [];
-      sourceGroups[sourceLabel].push(inst);
+    if (groupBySourceEnabled) {
+      const sourceGroups = {
+        LuxClient: [],
+        Modrinth: [],
+        CurseForge: [],
+        External: [],
+      };
+
+      sortedInstances.forEach((inst) => {
+        const sourceLabel = getSourceGroupLabel(inst);
+        if (!sourceGroups[sourceLabel]) sourceGroups[sourceLabel] = [];
+        sourceGroups[sourceLabel].push(inst);
+      });
+
+      ["LuxClient", "Modrinth", "CurseForge", "External"].forEach(
+        (sourceLabel) => {
+          const sourceItems = sourceGroups[sourceLabel] || [];
+          if (sourceItems.length === 0) return;
+          buildSections(sourceItems, sourceLabel);
+        },
+      );
+    } else {
+      buildSections(sortedInstances, null);
+    }
+    return data;
+  }, [sortedInstances, groupMethod, groupBySourceEnabled]);
+
+  const virtualItems = useMemo(() => {
+    const items = [];
+
+    groupedData.forEach((group) => {
+      if (group.title) {
+        items.push({
+          type: "section-header",
+          title: group.title,
+          key: `header-${group.title}`,
+        });
+      }
+
+      const processFolder = (node, depth = 0, parentKeyPrefix = "") => {
+        const folderKey = `${group.title || "all"}::${parentKeyPrefix}${node.path}`;
+        const expanded = isFolderExpanded(folderKey);
+        const count = countFolderInstances(node);
+
+        if (node.path !== "") {
+          items.push({
+            type: "folder-header",
+            name: node.name,
+            key: folderKey,
+            depth,
+            expanded,
+            count,
+          });
+        }
+
+        if (expanded || node.path === "") {
+          if (node.instances.length > 0) {
+            items.push({
+              type: "instance-grid",
+              instances: node.instances,
+              key: `grid-${folderKey}-${items.length}`,
+              depth: node.path === "" ? depth : depth + 1,
+              isRoot: node.path === "",
+            });
+          }
+          node.children.forEach((child) => {
+            processFolder(
+              child,
+              node.path === "" ? depth : depth + 1,
+              parentKeyPrefix,
+            );
+          });
+        }
+      };
+
+      processFolder(group.tree);
     });
 
-    ['LuxClient', 'Modrinth', 'CurseForge', 'External'].forEach((sourceLabel) => {
-      const sourceItems = sourceGroups[sourceLabel] || [];
-      if (sourceItems.length === 0) return;
-      buildGroupedSections(sourceItems, sourceLabel);
-    });
-  } else {
-    buildGroupedSections(sortedInstances, null);
-  }
+    return items;
+  }, [groupedData, expandedFolders]);
 
   const isEmpty = sortedInstances.length === 0;
 
   const instanceMenuItems = (instance) => (
     <>
-      <ContextMenuItem onClick={() => handleContextAction('play', instance)}>
+      <ContextMenuItem onClick={() => handleContextAction("play", instance)}>
         <Play className="w-4 h-4 mr-2" />
-        {t('dashboard.context.play')}
+        {t("dashboard.context.play")}
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={() => handleContextAction('view', instance)}>
+      <ContextMenuItem onClick={() => handleContextAction("view", instance)}>
         <Eye className="w-4 h-4 mr-2" />
-        {t('dashboard.context.view')}
+        {t("dashboard.context.view")}
       </ContextMenuItem>
-      <ContextMenuItem onClick={() => handleContextAction('duplicate', instance)}>
+      <ContextMenuItem
+        onClick={() => handleContextAction("duplicate", instance)}
+      >
         <Copy className="w-4 h-4 mr-2" />
-        {t('dashboard.context.duplicate')}
+        {t("dashboard.context.duplicate")}
       </ContextMenuItem>
-      <ContextMenuItem onClick={() => handleContextAction('export', instance)}>
+      <ContextMenuItem onClick={() => handleContextAction("export", instance)}>
         <Download className="w-4 h-4 mr-2" />
-        {t('dashboard.context.export')}
+        {t("dashboard.context.export")}
       </ContextMenuItem>
-      <ContextMenuItem onClick={() => handleContextAction('folder', instance)}>
+      <ContextMenuItem onClick={() => handleContextAction("folder", instance)}>
         <FolderOpen className="w-4 h-4 mr-2" />
-        {t('dashboard.context.folder')}
+        {t("dashboard.context.folder")}
       </ContextMenuItem>
-      {String(instance?.instanceType || '').toLowerCase() !== 'external' && (
+      {String(instance?.instanceType || "").toLowerCase() !== "external" && (
         <>
-          <ContextMenuItem onClick={() => handleContextAction('move-to-folder', instance)}>
+          <ContextMenuItem
+            onClick={() => handleContextAction("move-to-folder", instance)}
+          >
             <Folder className="w-4 h-4 mr-2" />
-            {t('dashboard.context.move_to_folder', 'Move to folder')}
+            {t("dashboard.context.move_to_folder", "Move to folder")}
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => handleContextAction('remove-from-folder', instance)}>
+          <ContextMenuItem
+            onClick={() => handleContextAction("remove-from-folder", instance)}
+          >
             <Folder className="w-4 h-4 mr-2" />
-            {t('dashboard.context.remove_from_folder', 'Remove from folder')}
+            {t("dashboard.context.remove_from_folder", "Remove from folder")}
           </ContextMenuItem>
         </>
       )}
       {hasInstanceAction(instance.name) ? (
-        <ContextMenuItem onClick={() => handleContextAction('remove-from-actionbar', instance)}>
+        <ContextMenuItem
+          onClick={() => handleContextAction("remove-from-actionbar", instance)}
+        >
           <Zap className="w-4 h-4 mr-2" />
-          {t('action_bar.remove_from_actionbar', 'Remove from Actionbar')}
+          {t("action_bar.remove_from_actionbar", "Remove from Actionbar")}
         </ContextMenuItem>
       ) : (
-        <ContextMenuItem onClick={() => handleContextAction('add-to-actionbar', instance)}>
+        <ContextMenuItem
+          onClick={() => handleContextAction("add-to-actionbar", instance)}
+        >
           <Zap className="w-4 h-4 mr-2" />
-          {t('action_bar.add_to_actionbar', 'Add to Actionbar')}
+          {t("action_bar.add_to_actionbar", "Add to Actionbar")}
         </ContextMenuItem>
       )}
       <ContextMenuSeparator />
       <ContextMenuItem
         className="text-destructive focus:text-destructive"
-        onClick={() => handleContextAction('delete', instance)}
+        onClick={() => handleContextAction("delete", instance)}
       >
         <Trash2 className="w-4 h-4 mr-2" />
-        {t('dashboard.context.delete')}
+        {t("dashboard.context.delete")}
       </ContextMenuItem>
     </>
   );
@@ -1197,57 +1423,112 @@ function Dashboard({
           }}
           actionMenu={
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('play', instance); }}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleContextAction("play", instance);
+                }}
+              >
                 <Play className="w-4 h-4 mr-2" />
-                {t('dashboard.context.play')}
+                {t("dashboard.context.play")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('view', instance); }}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleContextAction("view", instance);
+                }}
+              >
                 <Eye className="w-4 h-4 mr-2" />
-                {t('dashboard.context.view')}
+                {t("dashboard.context.view")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('duplicate', instance); }}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleContextAction("duplicate", instance);
+                }}
+              >
                 <Copy className="w-4 h-4 mr-2" />
-                {t('dashboard.context.duplicate')}
+                {t("dashboard.context.duplicate")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('export', instance); }}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleContextAction("export", instance);
+                }}
+              >
                 <Download className="w-4 h-4 mr-2" />
-                {t('dashboard.context.export')}
+                {t("dashboard.context.export")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('folder', instance); }}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleContextAction("folder", instance);
+                }}
+              >
                 <FolderOpen className="w-4 h-4 mr-2" />
-                {t('dashboard.context.folder')}
+                {t("dashboard.context.folder")}
               </DropdownMenuItem>
-              {String(instance?.instanceType || '').toLowerCase() !== 'external' && (
+              {String(instance?.instanceType || "").toLowerCase() !==
+                "external" && (
                 <>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('move-to-folder', instance); }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleContextAction("move-to-folder", instance);
+                    }}
+                  >
                     <Folder className="w-4 h-4 mr-2" />
-                    {t('dashboard.context.move_to_folder', 'Move to folder')}
+                    {t("dashboard.context.move_to_folder", "Move to folder")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('remove-from-folder', instance); }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleContextAction("remove-from-folder", instance);
+                    }}
+                  >
                     <Folder className="w-4 h-4 mr-2" />
-                    {t('dashboard.context.remove_from_folder', 'Remove from folder')}
+                    {t(
+                      "dashboard.context.remove_from_folder",
+                      "Remove from folder",
+                    )}
                   </DropdownMenuItem>
                 </>
               )}
               {hasInstanceAction(instance.name) ? (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('remove-from-actionbar', instance); }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("remove-from-actionbar", instance);
+                  }}
+                >
                   <Zap className="w-4 h-4 mr-2" />
-                  {t('action_bar.remove_from_actionbar', 'Remove from Actionbar')}
+                  {t(
+                    "action_bar.remove_from_actionbar",
+                    "Remove from Actionbar",
+                  )}
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleContextAction('add-to-actionbar', instance); }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("add-to-actionbar", instance);
+                  }}
+                >
                   <Zap className="w-4 h-4 mr-2" />
-                  {t('action_bar.add_to_actionbar', 'Add to Actionbar')}
+                  {t("action_bar.add_to_actionbar", "Add to Actionbar")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={(e) => { e.stopPropagation(); handleContextAction('delete', instance); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleContextAction("delete", instance);
+                }}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                {t('dashboard.context.delete')}
+                {t("dashboard.context.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           }
@@ -1268,23 +1549,34 @@ function Dashboard({
     <div className="flex flex-col h-full relative">
       {isLoading && <LoadingOverlay message="Processing..." />}
 
-      <PageHeader title={t('dashboard.title')} description={t('dashboard.desc')}>
+      <PageHeader
+        title={t("dashboard.title")}
+        description={t("dashboard.desc")}
+      >
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder={t('dashboard.search_placeholder')}
+              placeholder={t("dashboard.search_placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-48 h-8 pl-8 text-xs"
             />
           </div>
           <div className="w-36">
-            <Dropdown options={sortOptions} value={sortMethod} onChange={setSortMethod} />
+            <Dropdown
+              options={sortOptions}
+              value={sortMethod}
+              onChange={setSortMethod}
+            />
           </div>
           <div className="w-36">
-            <Dropdown options={groupOptions} value={groupMethod} onChange={setGroupMethod} />
+            <Dropdown
+              options={groupOptions}
+              value={groupMethod}
+              onChange={setGroupMethod}
+            />
           </div>
           <div className="flex items-center gap-2 px-2 h-8 border border-border rounded-md bg-card">
             <Switch
@@ -1293,32 +1585,58 @@ function Dashboard({
               className="h-3.5 w-7 [&>span]:h-2.5 [&>span]:w-2.5"
             />
             <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-              {t('dashboard.group.launcher_toggle', 'Group by Launcher')}
+              {t("dashboard.group.launcher_toggle", "Group by Launcher")}
             </span>
           </div>
 
           {!selectionMode ? (
-            <Button type="button" size="sm" variant="outline" onClick={enableSelectionMode}>
-              {t('dashboard.selection.enable', 'Select')}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={enableSelectionMode}
+            >
+              {t("dashboard.selection.enable", "Select")}
             </Button>
           ) : (
             <>
               <div className="flex items-center gap-2 px-2 h-8 border border-primary/30 rounded-md bg-primary/10">
                 <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
-                  {t('dashboard.selection.count', { count: selectedInstanceNames.length, defaultValue: `${selectedInstanceNames.length} selected` })}
+                  {t("dashboard.selection.count", {
+                    count: selectedInstanceNames.length,
+                    defaultValue: `${selectedInstanceNames.length} selected`,
+                  })}
                 </span>
               </div>
-              <Button type="button" size="sm" variant="outline" onClick={selectAllVisible}>
-                {t('dashboard.selection.select_all', 'Select all visible')}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={selectAllVisible}
+              >
+                {t("dashboard.selection.select_all", "Select all visible")}
               </Button>
-              <Button type="button" size="sm" variant="outline" onClick={clearSelection}>
-                {t('dashboard.selection.clear', 'Clear')}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={clearSelection}
+              >
+                {t("dashboard.selection.clear", "Clear")}
               </Button>
               <Button type="button" size="sm" onClick={openBulkMoveDialog}>
-                {t('dashboard.selection.move_to_folder', 'Move selected to folder')}
+                {t(
+                  "dashboard.selection.move_to_folder",
+                  "Move selected to folder",
+                )}
               </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={disableSelectionMode}>
-                {t('dashboard.selection.done', 'Done')}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={disableSelectionMode}
+              >
+                {t("dashboard.selection.done", "Done")}
               </Button>
             </>
           )}
@@ -1327,14 +1645,14 @@ function Dashboard({
             <DropdownMenuTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
-                {t('dashboard.new_instance')}
+                {t("dashboard.new_instance")}
                 <ChevronDown className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem onClick={() => setShowCreateModal(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                {t('dashboard.manual_creation')}
+                {t("dashboard.manual_creation")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -1342,28 +1660,34 @@ function Dashboard({
                   try {
                     if (!window.electronAPI.importFile) {
                       throw new Error(
-                        'electronAPI.importFile is not defined. Please restart the application.'
+                        "electronAPI.importFile is not defined. Please restart the application.",
                       );
                     }
                     const result = await window.electronAPI.importFile();
                     if (result.success) {
-                      addNotification(`Importing Modpack: ${result.instanceName}...`, 'info');
+                      addNotification(
+                        `Importing Modpack: ${result.instanceName}...`,
+                        "info",
+                      );
                       loadInstances();
-                    } else if (result.error !== 'Cancelled') {
-                      addNotification(`Import failed: ${result.error}`, 'error');
+                    } else if (result.error !== "Cancelled") {
+                      addNotification(
+                        `Import failed: ${result.error}`,
+                        "error",
+                      );
                     }
                   } catch (err) {
-                    console.error('[Dashboard] Import error:', err);
-                    addNotification(`Import error: ${err.message}`, 'error');
+                    console.error("[Dashboard] Import error:", err);
+                    addNotification(`Import error: ${err.message}`, "error");
                   }
                 }}
               >
                 <FileDown className="w-4 h-4 mr-2" />
-                {t('dashboard.import_file')}
+                {t("dashboard.import_file")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowCodeModal(true)}>
                 <FileCode className="w-4 h-4 mr-2" />
-                {t('dashboard.import_code')}
+                {t("dashboard.import_code")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1374,112 +1698,121 @@ function Dashboard({
         {isEmpty ? (
           <EmptyState
             icon={Box}
-            title={t('dashboard.no_instances')}
-            description={t('dashboard.create_to_start')}
+            title={t("dashboard.no_instances")}
+            description={t("dashboard.create_to_start")}
             action={
-              <Button size="sm" onClick={() => setShowCreateModal(true)} className="gap-1.5">
+              <Button
+                size="sm"
+                onClick={() => setShowCreateModal(true)}
+                className="gap-1.5"
+              >
                 <Plus className="w-3.5 h-3.5" />
-                {t('dashboard.new_instance')}
+                {t("dashboard.new_instance")}
               </Button>
             }
           />
         ) : (
-          <div className="space-y-6">
-            {groupedData.map((group) => (
-              <div key={group.title || 'all'}>
-                {group.title && (
-                  <div className="mb-3 flex items-center gap-3">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                      {group.title}
-                    </span>
-                    <Separator className="flex-1" />
-                  </div>
-                )}
-                <div className="space-y-3">
-                  {group.tree.instances.length > 0 && (
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
-                      {group.tree.instances.map((instance) => renderInstanceCard(instance))}
-                    </div>
-                  )}
+          <div className="h-full w-full">
+            <AutoSizer
+              renderProp={({ height, width }) => {
+                const COLS = Math.max(1, Math.floor((width - 20) / 270));
 
-                  {group.tree.children.map((folderNode) => {
-                    const folderKey = `${group.title || 'all'}::${folderNode.path}`;
-                    const expanded = isFolderExpanded(folderKey);
-                    const count = countFolderInstances(folderNode);
+                // Flattening the instance grids into rows based on columns
+                const finalRows: any[] = [];
+                virtualItems.forEach((item) => {
+                  if (item.type === "instance-grid") {
+                    for (let i = 0; i < item.instances.length; i += COLS) {
+                      finalRows.push({
+                        ...item,
+                        type: "instance-row",
+                        instances: item.instances.slice(i, i + COLS),
+                        key: `${item.key}-row-${i}`,
+                      });
+                    }
+                  } else {
+                    finalRows.push(item);
+                  }
+                });
 
-                    const renderNestedFolder = (node, depth = 0) => {
-                      const nestedKey = `${group.title || 'all'}::${node.path}`;
-                      const nestedExpanded = isFolderExpanded(nestedKey);
-                      const nestedCount = countFolderInstances(node);
-
-                      return (
-                        <div key={nestedKey} className="space-y-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleFolder(nestedKey)}
-                            className="w-full flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
-                            style={{ marginLeft: `${depth * 10}px` }}
-                          >
-                            {nestedExpanded ? (
-                              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                            ) : (
-                              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                            )}
-                            <Folder className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-xs font-medium text-foreground truncate">{node.name}</span>
-                            <span className="ml-auto text-[10px] text-muted-foreground">{nestedCount}</span>
-                          </button>
-
-                          {nestedExpanded && (
-                            <div className="space-y-2">
-                              {node.instances.length > 0 && (
-                                <div
-                                  className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2"
-                                  style={{ marginLeft: `${(depth + 1) * 10}px` }}
-                                >
-                                  {node.instances.map((instance) => renderInstanceCard(instance))}
-                                </div>
-                              )}
-                              {node.children.map((childNode) => renderNestedFolder(childNode, depth + 1))}
+                return (
+                  <List
+                    rowCount={finalRows.length}
+                    rowHeight={(index: number) => {
+                      const item = finalRows[index];
+                      if (item.type === "section-header") return 52;
+                      if (item.type === "folder-header") return 42;
+                      return 145; // instance-row
+                    }}
+                    className="custom-scrollbar"
+                    rowProps={{}}
+                    rowComponent={({ index, style }) => {
+                      const item = finalRows[index];
+                      if (item.type === "section-header") {
+                        return (
+                          <div style={style}>
+                            <div className="mb-3 mt-2 flex items-center gap-3 pr-4">
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                                {item.title}
+                              </span>
+                              <Separator className="flex-1" />
                             </div>
-                          )}
-                        </div>
-                      );
-                    };
-
-                    return (
-                      <div key={folderKey} className="space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleFolder(folderKey)}
-                          className="w-full flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
-                        >
-                          {expanded ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                          )}
-                          <Folder className="w-3.5 h-3.5 text-muted-foreground" />
-                          <span className="text-xs font-medium text-foreground truncate">{folderNode.name}</span>
-                          <span className="ml-auto text-[10px] text-muted-foreground">{count}</span>
-                        </button>
-
-                        {expanded && (
-                          <div className="space-y-2">
-                            {folderNode.instances.length > 0 && (
-                              <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2 pl-2.5">
-                                {folderNode.instances.map((instance) => renderInstanceCard(instance))}
-                              </div>
-                            )}
-                            {folderNode.children.map((childNode) => renderNestedFolder(childNode, 1))}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+                        );
+                      }
+
+                      if (item.type === "folder-header") {
+                        return (
+                          <div style={style} className="pr-4">
+                            <button
+                              type="button"
+                              onClick={() => toggleFolder(item.key)}
+                              className="w-full flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
+                              style={{
+                                marginLeft: `${item.depth * 10}px`,
+                                width: `calc(100% - ${item.depth * 10}px)`,
+                              }}
+                            >
+                              {item.expanded ? (
+                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                              )}
+                              <Folder className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span className="text-xs font-medium text-foreground truncate">
+                                {item.name}
+                              </span>
+                              <span className="ml-auto text-[10px] text-muted-foreground">
+                                {item.count}
+                              </span>
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      if (item.type === "instance-row") {
+                        return (
+                          <div style={style} className="pr-4">
+                            <div
+                              className="grid gap-2"
+                              style={{
+                                marginLeft: `${item.depth * 10}px`,
+                                gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
+                              }}
+                            >
+                              {item.instances.map((instance: any) =>
+                                renderInstanceCard(instance),
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    }}
+                  />
+                );
+              }}
+            />
           </div>
         )}
       </PageContent>
@@ -1497,7 +1830,11 @@ function Dashboard({
                     className="group relative flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted transition-colors hover:border-primary/50"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <img src={newInstanceIcon} alt="Icon" className="object-cover w-full h-full" />
+                    <img
+                      src={newInstanceIcon}
+                      alt="Icon"
+                      className="object-cover w-full h-full"
+                    />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                       <ImageIcon className="h-6 w-6 text-white" />
                     </div>
@@ -1510,8 +1847,15 @@ function Dashboard({
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground">{t('dashboard.click_to_upload_icon', 'Click to upload icon')}</span>
-                    <span className="text-[11px] text-muted-foreground">or</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t(
+                        "dashboard.click_to_upload_icon",
+                        "Click to upload icon",
+                      )}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      or
+                    </span>
                     <Button
                       type="button"
                       variant="link"
@@ -1519,7 +1863,7 @@ function Dashboard({
                       className="h-auto p-0 text-[11px] font-medium"
                       onClick={() => setShowPixelEditor(true)}
                     >
-                      {t('dashboard.pixel_editor_btn', 'Pixel Editor')}
+                      {t("dashboard.pixel_editor_btn", "Pixel Editor")}
                     </Button>
                   </div>
                 </div>
@@ -1550,7 +1894,9 @@ function Dashboard({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between h-5">
-                      <Label className="text-xs">{t('dashboard.version')}</Label>
+                      <Label className="text-xs">
+                        {t("dashboard.version")}
+                      </Label>
                       <div className="flex items-center gap-1.5">
                         <Switch
                           checked={showSnapshots}
@@ -1558,28 +1904,28 @@ function Dashboard({
                           className="h-3.5 w-7 [&>span]:h-2.5 [&>span]:w-2.5"
                         />
                         <span className="text-[10px] text-muted-foreground">
-                          {t('dashboard.dev_builds')}
+                          {t("dashboard.dev_builds")}
                         </span>
                       </div>
                     </div>
                     {loadingVersions ? (
                       <div className="flex items-center justify-center rounded-md border border-border bg-muted p-2.5 text-xs text-muted-foreground">
                         <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                        {t('common.loading')}
+                        {t("common.loading")}
                       </div>
                     ) : (
                       <Dropdown
                         options={versionOptions}
                         value={selectedVersion}
                         onChange={setSelectedVersion}
-                        placeholder={t('dashboard.select_version')}
+                        placeholder={t("dashboard.select_version")}
                         className="w-full"
                       />
                     )}
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center h-5">
-                      <Label className="text-xs">{t('dashboard.loader')}</Label>
+                      <Label className="text-xs">{t("dashboard.loader")}</Label>
                     </div>
                     <Dropdown
                       options={loaderOptions}
@@ -1595,15 +1941,22 @@ function Dashboard({
             {creationStep === 2 && (
               <div className="space-y-1.5">
                 <Label className="text-xs">
-                  {t('dashboard.select_loader_version', { loader: selectedLoader })}
+                  {t("dashboard.select_loader_version", {
+                    loader: selectedLoader,
+                  })}
                 </Label>
                 <Dropdown
-                  options={loaderVersions.map(v => ({ value: v.version, label: v.version }))}
+                  options={loaderVersions.map((v) => ({
+                    value: v.version,
+                    label: v.version,
+                  }))}
                   value={selectedLoaderVersion}
                   onChange={setSelectedLoaderVersion}
-                  placeholder={t('dashboard.select_loader_version_placeholder')}
+                  placeholder={t("dashboard.select_loader_version_placeholder")}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Minecraft {selectedVersion}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Minecraft {selectedVersion}
+                </p>
               </div>
             )}
 
@@ -1611,9 +1964,14 @@ function Dashboard({
               {creationStep === 1 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" size="sm" className="gap-1.5 mr-auto">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 mr-auto"
+                    >
                       <Download className="w-3.5 h-3.5" />
-                      {t('dashboard.import_options')}
+                      {t("dashboard.import_options")}
                       <ChevronDown className="w-3 h-3" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -1623,25 +1981,34 @@ function Dashboard({
                         try {
                           if (!window.electronAPI.importFile) {
                             throw new Error(
-                              'electronAPI.importFile is not defined. Please restart the application.'
+                              "electronAPI.importFile is not defined. Please restart the application.",
                             );
                           }
                           const result = await window.electronAPI.importFile();
                           if (result.success) {
-                            addNotification(`Importing Modpack: ${result.instanceName}...`, 'info');
+                            addNotification(
+                              `Importing Modpack: ${result.instanceName}...`,
+                              "info",
+                            );
                             setShowCreateModal(false);
                             loadInstances();
-                          } else if (result.error !== 'Cancelled') {
-                            addNotification(`Import failed: ${result.error}`, 'error');
+                          } else if (result.error !== "Cancelled") {
+                            addNotification(
+                              `Import failed: ${result.error}`,
+                              "error",
+                            );
                           }
                         } catch (err) {
-                          console.error('[Dashboard] Import error:', err);
-                          addNotification(`Import error: ${err.message}`, 'error');
+                          console.error("[Dashboard] Import error:", err);
+                          addNotification(
+                            `Import error: ${err.message}`,
+                            "error",
+                          );
                         }
                       }}
                     >
                       <FileDown className="w-4 h-4 mr-2" />
-                      {t('dashboard.import_file')}
+                      {t("dashboard.import_file")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -1650,7 +2017,7 @@ function Dashboard({
                       }}
                     >
                       <FileCode className="w-4 h-4 mr-2" />
-                      {t('dashboard.import_code')}
+                      {t("dashboard.import_code")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -1662,7 +2029,7 @@ function Dashboard({
                   onClick={() => setCreationStep(1)}
                   className="mr-auto"
                 >
-                  {t('common.back')}
+                  {t("common.back")}
                 </Button>
               )}
 
@@ -1673,7 +2040,7 @@ function Dashboard({
                 disabled={isCreating}
                 onClick={() => setShowCreateModal(false)}
               >
-                {t('common.cancel')}
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -1683,10 +2050,11 @@ function Dashboard({
               >
                 {isCreating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {isCreating
-                  ? t('common.creating')
-                  : creationStep === 1 && selectedLoader.toLowerCase() !== 'vanilla'
-                    ? t('common.next')
-                    : t('common.create')}
+                  ? t("common.creating")
+                  : creationStep === 1 &&
+                      selectedLoader.toLowerCase() !== "vanilla"
+                    ? t("common.next")
+                    : t("common.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -1725,9 +2093,11 @@ function Dashboard({
 
       {showDeleteModal && (
         <ConfirmationModal
-          title={t('dashboard.delete_title')}
-          message={t('dashboard.delete_message', { name: instanceToDelete?.name })}
-          confirmText={t('common.delete')}
+          title={t("dashboard.delete_title")}
+          message={t("dashboard.delete_message", {
+            name: instanceToDelete?.name,
+          })}
+          confirmText={t("common.delete")}
           isDangerous={true}
           onConfirm={handleDeleteConfirm}
           onCancel={() => {
@@ -1742,13 +2112,16 @@ function Dashboard({
           <DialogHeader>
             <DialogTitle>
               {folderTargetInstance
-                ? t('dashboard.folder_modal.title', 'Move instance to folder')
-                : t('dashboard.folder_modal.title_multi', 'Move selected instances to folder')}
+                ? t("dashboard.folder_modal.title", "Move instance to folder")
+                : t(
+                    "dashboard.folder_modal.title_multi",
+                    "Move selected instances to folder",
+                  )}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
             <Label className="text-xs">
-              {t('dashboard.folder_modal.path', 'Folder path')}
+              {t("dashboard.folder_modal.path", "Folder path")}
             </Label>
             <Input
               value={folderInputPath}
@@ -1756,7 +2129,10 @@ function Dashboard({
               placeholder="e.g. Modpacks/Survival"
             />
             <p className="text-[11px] text-muted-foreground">
-              {t('dashboard.folder_modal.help', 'Use / to create subfolders. Leave empty to remove folder assignment.')}
+              {t(
+                "dashboard.folder_modal.help",
+                "Use / to create subfolders. Leave empty to remove folder assignment.",
+              )}
             </p>
           </div>
           <DialogFooter>
@@ -1767,13 +2143,13 @@ function Dashboard({
               onClick={() => {
                 setShowMoveFolderModal(false);
                 setFolderTargetInstance(null);
-                setFolderInputPath('');
+                setFolderInputPath("");
               }}
             >
-              {t('common.cancel')}
+              {t("common.cancel")}
             </Button>
             <Button type="button" size="sm" onClick={handleSaveFolderPath}>
-              {t('common.save', 'Save')}
+              {t("common.save", "Save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1788,26 +2164,38 @@ function Dashboard({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('dashboard.export_choice.title', 'Export instance')}</DialogTitle>
+            <DialogTitle>
+              {t("dashboard.export_choice.title", "Export instance")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.export_choice.description', 'Choose how you want to export this instance.')}
+              {t(
+                "dashboard.export_choice.description",
+                "Choose how you want to export this instance.",
+              )}
             </p>
             {exportTargetInstance && (
               <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                {`${t('dashboard.export_choice.target_prefix', 'Instance:')} ${exportTargetInstance.name}`}
+                {`${t("dashboard.export_choice.target_prefix", "Instance:")} ${exportTargetInstance.name}`}
               </div>
             )}
             <div className="grid grid-cols-1 gap-2">
               <Button
                 type="button"
-                onClick={() => exportTargetInstance && prepareCodeExport(exportTargetInstance)}
+                onClick={() =>
+                  exportTargetInstance &&
+                  prepareCodeExport(exportTargetInstance)
+                }
                 disabled={!exportTargetInstance || isPreparingCodeExport}
                 className="justify-start gap-2"
               >
-                {isPreparingCodeExport ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode className="w-4 h-4" />}
-                {t('dashboard.export_choice.code', 'Export as Code')}
+                {isPreparingCodeExport ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileCode className="w-4 h-4" />
+                )}
+                {t("dashboard.export_choice.code", "Export as Code")}
               </Button>
               <Button
                 type="button"
@@ -1822,7 +2210,7 @@ function Dashboard({
                 className="justify-start gap-2"
               >
                 <FileDown className="w-4 h-4" />
-                {t('dashboard.export_choice.file', 'Export as .mcpack file')}
+                {t("dashboard.export_choice.file", "Export as .mcpack file")}
               </Button>
             </div>
           </div>
@@ -1836,7 +2224,7 @@ function Dashboard({
                 setExportTargetInstance(null);
               }}
             >
-              {t('common.cancel')}
+              {t("common.cancel")}
             </Button>
           </DialogFooter>
         </DialogContent>
