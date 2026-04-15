@@ -6,14 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
-## [1.6.11] - 2026-03-05
-
-### Fixed
-- Game input issues in EdClub typing script.
-- Precision of `sendKey` event dispatching.
-
----
-
 ## [1.6.10] - 2026-03-03
 
 ### Added
