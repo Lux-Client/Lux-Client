@@ -99,6 +99,32 @@ async function resolveInstanceBaseDir(instanceName) {
     };
 }
 
+function isPathWithinBaseDir(targetPath, baseDir) {
+    const normalizedTarget = path.resolve(targetPath);
+    const normalizedBase = path.resolve(baseDir);
+
+    if (process.platform === 'win32') {
+        return normalizedTarget.toLowerCase().startsWith(normalizedBase.toLowerCase());
+    }
+
+    return normalizedTarget.startsWith(normalizedBase);
+}
+
+async function resolveInstanceTargetPath(instanceName, relativePath = '') {
+    const { baseDir } = await resolveInstanceBaseDir(instanceName);
+    const safeRelative = String(relativePath || '').replace(/^[/\\]+/, '');
+    const targetPath = path.resolve(path.join(baseDir, safeRelative));
+
+    if (!isPathWithinBaseDir(targetPath, baseDir)) {
+        throw new Error('Access denied');
+    }
+
+    return {
+        baseDir: path.resolve(baseDir),
+        targetPath
+    };
+}
+
 function normalizeLoaderFromString(value) {
     let candidate = value;
 
@@ -3982,6 +4008,123 @@ module.exports = (ipcMain, win) => {
                 return { success: true };
             } catch (e) {
                 console.error(`[Content:InstallLocal] Error adding content to ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:list-files', async (_, instanceName, relativePath = '') => {
+            try {
+                const { targetPath } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (!await fs.pathExists(targetPath)) {
+                    return { success: false, error: 'Directory not found' };
+                }
+
+                const stats = await fs.stat(targetPath);
+                if (!stats.isDirectory()) {
+                    return { success: false, error: 'Target is not a directory' };
+                }
+
+                const entries = await fs.readdir(targetPath);
+                const files = await Promise.all(entries.map(async (entry) => {
+                    const entryPath = path.join(targetPath, entry);
+                    const entryStats = await fs.stat(entryPath);
+                    return {
+                        name: entry,
+                        isDirectory: entryStats.isDirectory(),
+                        size: entryStats.size,
+                        mtime: entryStats.mtime
+                    };
+                }));
+
+                return { success: true, files };
+            } catch (e) {
+                console.error(`[Instance:Files] Error listing files for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:read-file', async (_, instanceName, relativePath) => {
+            try {
+                const { targetPath } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (!await fs.pathExists(targetPath)) {
+                    return { success: false, error: 'File not found' };
+                }
+
+                const stats = await fs.stat(targetPath);
+                if (!stats.isFile()) {
+                    return { success: false, error: 'Target is not a file' };
+                }
+
+                const content = await fs.readFile(targetPath, 'utf-8');
+                return { success: true, content };
+            } catch (e) {
+                console.error(`[Instance:Files] Error reading file for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:write-file', async (_, instanceName, relativePath, content) => {
+            try {
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.ensureDir(path.dirname(targetPath));
+                await fs.writeFile(targetPath, content, 'utf-8');
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error writing file for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:delete-file', async (_, instanceName, relativePath) => {
+            try {
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.remove(targetPath);
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error deleting path for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:create-directory', async (_, instanceName, relativePath) => {
+            try {
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.ensureDir(targetPath);
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error creating directory for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:upload-file', async (_, instanceName, relativePath, localFilePath) => {
+            try {
+                const sourcePath = String(localFilePath || '').trim();
+                if (!sourcePath) {
+                    return { success: false, error: 'Missing local file path' };
+                }
+
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.ensureDir(path.dirname(targetPath));
+                await fs.copy(sourcePath, targetPath);
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error uploading file for ${instanceName}:`, e);
                 return { success: false, error: e.message };
             }
         });

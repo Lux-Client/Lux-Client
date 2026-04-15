@@ -40,6 +40,12 @@ interface ElectronAPI {
   getMods: (instanceName: string) => Promise<any>;
   getResourcePacks: (instanceName: string) => Promise<any>;
   getShaders: (instanceName: string) => Promise<any>;
+  listInstanceFiles: (instanceName: string, relativePath?: string) => Promise<any>;
+  readInstanceFile: (instanceName: string, relativePath: string) => Promise<any>;
+  writeInstanceFile: (instanceName: string, relativePath: string, content: string) => Promise<any>;
+  deleteInstanceFile: (instanceName: string, relativePath: string) => Promise<any>;
+  uploadInstanceFile: (instanceName: string, relativePath: string, localFilePath: string) => Promise<any>;
+  createInstanceDirectory: (instanceName: string, relativePath: string) => Promise<any>;
   toggleMod: (instanceName: string, fileName: string) => Promise<any>;
   deleteMod: (instanceName: string, fileName: string, type?: string) => Promise<any>;
   getWorlds: (instanceName: string) => Promise<any>;

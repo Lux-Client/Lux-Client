@@ -8,6 +8,8 @@ import { Analytics } from '../services/Analytics';
 import ToggleBox from '../components/ToggleBox';
 import ExtensionSlot from '../components/Extensions/ExtensionSlot';
 import BackupManagerModal from '../components/BackupManagerModal';
+import InstanceFileBrowser from '../components/InstanceFileBrowser';
+import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
 function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate, isGuest }) {
     const { t } = useTranslation();
@@ -67,6 +69,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [worldToDelete, setWorldToDelete] = useState(null);
     const [showBackupManager, setShowBackupManager] = useState(false);
     const [isBackingUp, setIsBackingUp] = useState(false);
+    const instanceFileBrowserRef = useRef<InstanceFileBrowserHandle | null>(null);
+    const [fileTabHasUnsavedChanges, setFileTabHasUnsavedChanges] = useState(false);
+    const [pendingTabTarget, setPendingTabTarget] = useState<string | null>(null);
+    const [showUnsavedFileModal, setShowUnsavedFileModal] = useState(false);
+    const [isSavingUnsavedFile, setIsSavingUnsavedFile] = useState(false);
     const [bulkUpdateStatus, setBulkUpdateStatus] = useState<{
         isRunning: boolean;
         total: number;
@@ -892,6 +899,52 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     };
 
     const TAB_CLASSES = (id) => `px-6 py-2 font-bold transition-all border-b-2 ${activeTab === id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-accent-foreground'}`;
+    const requestTabChange = (targetTab: string) => {
+        if (targetTab === activeTab) return;
+
+        if (activeTab === 'files' && targetTab !== 'files' && fileTabHasUnsavedChanges) {
+            setPendingTabTarget(targetTab);
+            setShowUnsavedFileModal(true);
+            return;
+        }
+
+        setActiveTab(targetTab);
+    };
+
+    const closeUnsavedFileModal = () => {
+        setPendingTabTarget(null);
+        setShowUnsavedFileModal(false);
+    };
+
+    const continueTabSwitchWithoutSave = () => {
+        instanceFileBrowserRef.current?.discardUnsavedChanges();
+        setFileTabHasUnsavedChanges(false);
+
+        const target = pendingTabTarget;
+        closeUnsavedFileModal();
+        if (target) setActiveTab(target);
+    };
+
+    const saveThenContinueTabSwitch = async () => {
+        const target = pendingTabTarget;
+        if (!target) {
+            closeUnsavedFileModal();
+            return;
+        }
+
+        setIsSavingUnsavedFile(true);
+        try {
+            const didSave = await (instanceFileBrowserRef.current?.saveCurrentFile?.() ?? Promise.resolve(true));
+            if (!didSave) return;
+
+            setFileTabHasUnsavedChanges(false);
+            closeUnsavedFileModal();
+            setActiveTab(target);
+        } finally {
+            setIsSavingUnsavedFile(false);
+        }
+    };
+
     const getModVersion = (fileName) => {
 
         const parts = fileName.replace('.jar', '').replace('.disabled', '').split('-');
@@ -1091,10 +1144,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
             { }
             <div className="px-8 mt-4 flex gap-2 border-b border-border">
-                <button onClick={() => setActiveTab('content')} className={TAB_CLASSES('content')}>{t('instance_details.tabs.content')}</button>
+                <button onClick={() => requestTabChange('content')} className={TAB_CLASSES('content')}>{t('instance_details.tabs.content')}</button>
 
-                <button onClick={() => setActiveTab('worlds')} className={TAB_CLASSES('worlds')}>{t('instance_details.tabs.worlds')}</button>
-                <button onClick={() => setActiveTab('logs')} className={TAB_CLASSES('logs')}>{t('instance_details.tabs.logs')}</button>
+                <button onClick={() => requestTabChange('files')} className={TAB_CLASSES('files')}>{t('instance_details.tabs.files', 'Files')}</button>
+                <button onClick={() => requestTabChange('worlds')} className={TAB_CLASSES('worlds')}>{t('instance_details.tabs.worlds')}</button>
+                <button onClick={() => requestTabChange('logs')} className={TAB_CLASSES('logs')}>{t('instance_details.tabs.logs')}</button>
             </div>
 
             { }
@@ -1823,7 +1877,50 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     </div>
                 )
                 }
+                {activeTab === 'files' && (
+                    <div className="h-full">
+                        <InstanceFileBrowser
+                            ref={instanceFileBrowserRef}
+                            instanceName={instance.name}
+                            onDirtyChange={setFileTabHasUnsavedChanges}
+                        />
+                    </div>
+                )}
             </div >
+
+            {showUnsavedFileModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+                    <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-xl font-bold text-foreground mb-2">
+                            {t('instance_details.files.unsaved_title', 'Unsaved changes')}
+                        </h3>
+                        <p className="text-muted-foreground mb-6">
+                            {t('instance_details.files.unsaved_desc', 'You have unsaved changes in the current file. What do you want to do?')}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeUnsavedFileModal}
+                                className="flex-1 px-4 py-2 rounded-xl bg-muted hover:bg-accent text-foreground font-bold transition-all"
+                            >
+                                {t('instance_details.files.back_to_file', 'Back to file')}
+                            </button>
+                            <button
+                                onClick={continueTabSwitchWithoutSave}
+                                className="flex-1 px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-bold border border-red-500/30 transition-all"
+                            >
+                                {t('instance_details.files.discard_changes', 'Do not save')}
+                            </button>
+                            <button
+                                onClick={saveThenContinueTabSwitch}
+                                disabled={isSavingUnsavedFile}
+                                className="flex-1 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-60 text-black font-bold transition-all"
+                            >
+                                {isSavingUnsavedFile ? t('common.loading', 'Loading...') : t('common.save', 'Save')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             { }
             {
