@@ -3,7 +3,7 @@
   "name": "lux",
   "description": "Lux Client",
   "author": "Lux Team <lux@pluginhub.de>",
-  "version": "1.6.18.3",
+  "version": "1.6.18.4",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
