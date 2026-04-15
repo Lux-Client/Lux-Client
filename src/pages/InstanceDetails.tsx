@@ -8,6 +8,8 @@ import { Analytics } from '../services/Analytics';
 import ToggleBox from '../components/ToggleBox';
 import ExtensionSlot from '../components/Extensions/ExtensionSlot';
 import BackupManagerModal from '../components/BackupManagerModal';
+import InstanceFileBrowser from '../components/InstanceFileBrowser';
+import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
 function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate, isGuest }) {
     const { t } = useTranslation();
@@ -55,6 +57,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [projectVersions, setProjectVersions] = useState([]);
     const [loadingVersions, setLoadingVersions] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef(null);
     const [localPending, setLocalPending] = useState(false);
     const [modToDelete, setModToDelete] = useState(null);
     const [updates, setUpdates] = useState({});
@@ -66,6 +69,43 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [worldToDelete, setWorldToDelete] = useState(null);
     const [showBackupManager, setShowBackupManager] = useState(false);
     const [isBackingUp, setIsBackingUp] = useState(false);
+    const instanceFileBrowserRef = useRef<InstanceFileBrowserHandle | null>(null);
+    const [fileTabHasUnsavedChanges, setFileTabHasUnsavedChanges] = useState(false);
+    const [pendingTabTarget, setPendingTabTarget] = useState<string | null>(null);
+    const [showUnsavedFileModal, setShowUnsavedFileModal] = useState(false);
+    const [isSavingUnsavedFile, setIsSavingUnsavedFile] = useState(false);
+    const [bulkUpdateStatus, setBulkUpdateStatus] = useState<{
+        isRunning: boolean;
+        total: number;
+        completed: number;
+        currentName: string;
+        successCount: number;
+        failedCount: number;
+    } | null>(null);
+    const BULK_UPDATE_NOTIFICATION_THRESHOLD = 4;
+
+    useEffect(() => {
+        if (!showMenu) return;
+
+        const handleOutsideClick = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                setShowMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        window.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            window.removeEventListener('keydown', handleEscape);
+        };
+    }, [showMenu]);
 
     const handleNextImage = (e) => {
         e.stopPropagation();
@@ -158,6 +198,49 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             handleSearch();
         }
     }, [sortMethod, searchOffset, activeTab, provider]);
+    useEffect(() => {
+        if (activeTab !== 'content') return;
+        if (contentView !== 'mods' && contentView !== 'resourcepacks' && contentView !== 'shaders') return;
+
+        let inFlight = false;
+
+        const refreshVisibleContent = async () => {
+            if (inFlight) return;
+            inFlight = true;
+            try {
+                if (contentView === 'mods') {
+                    const res = await window.electronAPI.getMods(instance.name);
+                    if (res?.success && Array.isArray(res.mods)) setMods(res.mods);
+                } else if (contentView === 'resourcepacks') {
+                    const res = await window.electronAPI.getResourcePacks(instance.name);
+                    if (res?.success && Array.isArray(res.packs)) setResourcePacks(res.packs);
+                } else {
+                    const res = await window.electronAPI.getShaders(instance.name);
+                    if (res?.success && Array.isArray(res.shaders)) setShaders(res.shaders);
+                }
+            } catch (e) {
+                console.error('[InstanceDetails] Auto refresh failed:', e);
+            } finally {
+                inFlight = false;
+            }
+        };
+
+        const refreshIfVisible = () => {
+            if (!document.hidden) {
+                refreshVisibleContent();
+            }
+        };
+
+        const intervalId = window.setInterval(refreshIfVisible, 2500);
+        window.addEventListener('focus', refreshIfVisible);
+        document.addEventListener('visibilitychange', refreshIfVisible);
+
+        return () => {
+            window.clearInterval(intervalId);
+            window.removeEventListener('focus', refreshIfVisible);
+            document.removeEventListener('visibilitychange', refreshIfVisible);
+        };
+    }, [activeTab, contentView, instance.name]);
     useEffect(() => {
         if (autoScroll && logContainerRef.current) {
             logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
@@ -418,7 +501,8 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         }
     }, [mods.length, resourcePacks.length, shaders.length, activeTab]);
 
-    const handleUpdateMod = async (updateData) => {
+    const handleUpdateMod = async (updateData, options: { suppressSuccessNotification?: boolean; suppressErrorNotification?: boolean } = {}) => {
+        const { suppressSuccessNotification = false, suppressErrorNotification = false } = options;
         setUpdatingMod(updateData.projectId);
         try {
             const res = await window.electronAPI.updateFile({
@@ -430,7 +514,9 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             });
 
             if (res.success) {
-                addNotification(`Updated ${updateData.filename}!`, 'success');
+                if (!suppressSuccessNotification) {
+                    addNotification(`Updated ${updateData.filename}!`, 'success');
+                }
 
                 setUpdates(prev => {
                     const next = { ...prev };
@@ -441,27 +527,90 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 if (updateData.type === 'mod') loadMods();
                 else if (updateData.type === 'shader') loadShaders();
                 else loadResourcePacks();
+                return true;
             } else {
-                addNotification(`Failed to update: ${res.error}`, 'error');
+                if (!suppressErrorNotification) {
+                    addNotification(`Failed to update: ${res.error}`, 'error');
+                }
+                return false;
             }
         } catch (e) {
             console.error(e);
-            addNotification(`Update error: ${e.message}`, 'error');
+            if (!suppressErrorNotification) {
+                addNotification(`Update error: ${e.message}`, 'error');
+            }
+            return false;
         } finally {
             setUpdatingMod(null);
         }
     };
 
     const handleUpdateAll = async () => {
-        const updateList = Object.values(updates);
+        if (bulkUpdateStatus?.isRunning) return;
+
+        const updateList = Object.values(updates) as any[];
         if (updateList.length === 0) return;
 
         addNotification(`Updating ${updateList.length} item(s)...`, 'info');
-        for (const updateData of updateList) {
-            await handleUpdateMod(updateData);
+        const useCompactNotifications = updateList.length >= BULK_UPDATE_NOTIFICATION_THRESHOLD;
+        let successCount = 0;
+        let failedCount = 0;
+
+        setBulkUpdateStatus({
+            isRunning: true,
+            total: updateList.length,
+            completed: 0,
+            currentName: '',
+            successCount: 0,
+            failedCount: 0
+        });
+
+        for (let index = 0; index < updateList.length; index++) {
+            const updateData = updateList[index];
+            setBulkUpdateStatus((prev) => prev ? {
+                ...prev,
+                currentName: updateData.filename || updateData.name || 'Unknown',
+                completed: index
+            } : prev);
+
+            const success = await handleUpdateMod(updateData, {
+                suppressSuccessNotification: useCompactNotifications,
+                suppressErrorNotification: useCompactNotifications
+            });
+            if (success) successCount++;
+            else failedCount++;
+
+            setBulkUpdateStatus((prev) => prev ? {
+                ...prev,
+                completed: index + 1,
+                successCount,
+                failedCount
+            } : prev);
         }
 
-        addNotification("All updates completed!", 'success');
+        if (useCompactNotifications) {
+            if (successCount > 0) {
+                addNotification(`${successCount} mods/resource packs/shaders were updated successfully.`, 'success');
+            }
+            if (failedCount > 0) {
+                addNotification(`${failedCount} update(s) failed.`, 'error');
+            }
+        } else {
+            addNotification("All updates completed!", 'success');
+        }
+
+        setBulkUpdateStatus((prev) => prev ? {
+            ...prev,
+            isRunning: false,
+            currentName: ''
+        } : prev);
+
+        setTimeout(() => {
+            setBulkUpdateStatus((prev) => {
+                if (!prev?.isRunning) return null;
+                return prev;
+            });
+        }, 5000);
     };
     const handleSearch = async (e?: any, isAuto = false) => {
         if (e) e.preventDefault();
@@ -500,7 +649,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const handleDragOver = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (contentView === 'mods' || contentView === 'resourcepacks') {
+        if (contentView === 'mods' || contentView === 'resourcepacks' || contentView === 'shaders') {
             setIsDragging(true);
         }
     };
@@ -516,7 +665,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         e.stopPropagation();
         setIsDragging(false);
 
-        if (contentView !== 'mods' && contentView !== 'resourcepacks') return;
+        if (contentView !== 'mods' && contentView !== 'resourcepacks' && contentView !== 'shaders') return;
 
         const files: any[] = Array.from(e.dataTransfer.files);
 
@@ -528,15 +677,22 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             }
 
             let addedCount = 0;
+            let missingPathCount = 0;
             for (const file of validFiles) {
-                if (file.path) {
-                    const res = await window.electronAPI.installLocalMod(instance.name, file.path);
-                    if (res.success) addedCount++;
+                const filePath = window.electronAPI.resolveDroppedFilePath(file);
+                if (!filePath) {
+                    missingPathCount++;
+                    continue;
                 }
+
+                const res = await window.electronAPI.installLocalMod(instance.name, filePath);
+                if (res.success) addedCount++;
             }
             if (addedCount > 0) {
                 addNotification(`Successfully added ${addedCount} mod(s)`, 'success');
                 loadMods();
+            } else if (missingPathCount > 0) {
+                addNotification('Could not read dropped file path(s). Try dropping from Windows Explorer or use Add Content.', 'error');
             }
         } else {
             const validFiles = files.filter(f => f.name.toLowerCase().endsWith('.zip') || f.name.toLowerCase().endsWith('.rar'));
@@ -546,15 +702,28 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             }
 
             let addedCount = 0;
+            let missingPathCount = 0;
+            const projectType = contentView === 'shaders' ? 'shader' : 'resourcepack';
             for (const file of validFiles) {
-                if (file.path) {
-                    const res = await window.electronAPI.installLocalMod(instance.name, file.path, 'resourcepack');
-                    if (res.success) addedCount++;
+                const filePath = window.electronAPI.resolveDroppedFilePath(file);
+                if (!filePath) {
+                    missingPathCount++;
+                    continue;
                 }
+
+                const res = await window.electronAPI.installLocalMod(instance.name, filePath, projectType);
+                if (res.success) addedCount++;
             }
             if (addedCount > 0) {
-                addNotification(`Successfully added ${addedCount} resource pack(s)`, 'success');
-                loadResourcePacks();
+                if (contentView === 'shaders') {
+                    addNotification(`Successfully added ${addedCount} shader pack(s)`, 'success');
+                    loadShaders();
+                } else {
+                    addNotification(`Successfully added ${addedCount} resource pack(s)`, 'success');
+                    loadResourcePacks();
+                }
+            } else if (missingPathCount > 0) {
+                addNotification('Could not read dropped file path(s). Try dropping from Windows Explorer or use Add Content.', 'error');
             }
         }
     };
@@ -730,6 +899,52 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     };
 
     const TAB_CLASSES = (id) => `px-6 py-2 font-bold transition-all border-b-2 ${activeTab === id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-accent-foreground'}`;
+    const requestTabChange = (targetTab: string) => {
+        if (targetTab === activeTab) return;
+
+        if (activeTab === 'files' && targetTab !== 'files' && fileTabHasUnsavedChanges) {
+            setPendingTabTarget(targetTab);
+            setShowUnsavedFileModal(true);
+            return;
+        }
+
+        setActiveTab(targetTab);
+    };
+
+    const closeUnsavedFileModal = () => {
+        setPendingTabTarget(null);
+        setShowUnsavedFileModal(false);
+    };
+
+    const continueTabSwitchWithoutSave = () => {
+        instanceFileBrowserRef.current?.discardUnsavedChanges();
+        setFileTabHasUnsavedChanges(false);
+
+        const target = pendingTabTarget;
+        closeUnsavedFileModal();
+        if (target) setActiveTab(target);
+    };
+
+    const saveThenContinueTabSwitch = async () => {
+        const target = pendingTabTarget;
+        if (!target) {
+            closeUnsavedFileModal();
+            return;
+        }
+
+        setIsSavingUnsavedFile(true);
+        try {
+            const didSave = await (instanceFileBrowserRef.current?.saveCurrentFile?.() ?? Promise.resolve(true));
+            if (!didSave) return;
+
+            setFileTabHasUnsavedChanges(false);
+            closeUnsavedFileModal();
+            setActiveTab(target);
+        } finally {
+            setIsSavingUnsavedFile(false);
+        }
+    };
+
     const getModVersion = (fileName) => {
 
         const parts = fileName.replace('.jar', '').replace('.disabled', '').split('-');
@@ -825,7 +1040,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     </button>
 
                     { }
-                    <div className="relative">
+                    <div className="relative" ref={menuRef}>
                         <button
                             onClick={() => setShowMenu(!showMenu)}
                             className="p-3 rounded-xl bg-card hover:bg-accent text-foreground font-bold border border-border transition-colors"
@@ -929,10 +1144,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
             { }
             <div className="px-8 mt-4 flex gap-2 border-b border-border">
-                <button onClick={() => setActiveTab('content')} className={TAB_CLASSES('content')}>{t('instance_details.tabs.content')}</button>
+                <button onClick={() => requestTabChange('content')} className={TAB_CLASSES('content')}>{t('instance_details.tabs.content')}</button>
 
-                <button onClick={() => setActiveTab('worlds')} className={TAB_CLASSES('worlds')}>{t('instance_details.tabs.worlds')}</button>
-                <button onClick={() => setActiveTab('logs')} className={TAB_CLASSES('logs')}>{t('instance_details.tabs.logs')}</button>
+                <button onClick={() => requestTabChange('files')} className={TAB_CLASSES('files')}>{t('instance_details.tabs.files', 'Files')}</button>
+                <button onClick={() => requestTabChange('worlds')} className={TAB_CLASSES('worlds')}>{t('instance_details.tabs.worlds')}</button>
+                <button onClick={() => requestTabChange('logs')} className={TAB_CLASSES('logs')}>{t('instance_details.tabs.logs')}</button>
             </div>
 
             { }
@@ -1008,12 +1224,22 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         {Object.keys(updates).length > 0 && (
                                             <button
                                                 onClick={handleUpdateAll}
-                                                className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-sm transition-all transform"
+                                                disabled={bulkUpdateStatus?.isRunning}
+                                                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-sm transition-all transform ${bulkUpdateStatus?.isRunning ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                </svg>
-                                                {t('instance_details.actions.update_all')} ({Object.keys(updates).length})
+                                                {bulkUpdateStatus?.isRunning ? (
+                                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                    </svg>
+                                                )}
+                                                {bulkUpdateStatus?.isRunning
+                                                    ? `Updating ${bulkUpdateStatus.completed}/${bulkUpdateStatus.total}`
+                                                    : `${t('instance_details.actions.update_all')} (${Object.keys(updates).length})`}
                                             </button>
                                         )}
                                         <button
@@ -1061,6 +1287,22 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 )}
                             </div>
                         </div>
+
+                        {bulkUpdateStatus && (
+                            <div className="mb-4 px-3 py-2 rounded-xl border border-border bg-card text-xs text-muted-foreground flex items-center justify-between gap-3">
+                                <span>
+                                    {bulkUpdateStatus.isRunning
+                                        ? `Updating ${bulkUpdateStatus.completed}/${bulkUpdateStatus.total}${bulkUpdateStatus.currentName ? ` • Current: ${bulkUpdateStatus.currentName}` : ''}`
+                                        : `Update finished • Success: ${bulkUpdateStatus.successCount} • Failed: ${bulkUpdateStatus.failedCount}`}
+                                </span>
+                                <div className="w-36 h-1.5 rounded-full bg-muted overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary transition-all"
+                                        style={{ width: `${bulkUpdateStatus.total > 0 ? (bulkUpdateStatus.completed / bulkUpdateStatus.total) * 100 : 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
 
                         {contentView === 'mods' ? (
                             <div
@@ -1138,7 +1380,23 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 )}
                             </div>
                         ) : contentView === 'resourcepacks' ? (
-                            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar transition-all rounded-xl relative">
+                            <div
+                                className={`flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar transition-all rounded-xl relative ${isDragging ? 'bg-primary/5 ring-2 ring-primary ring-dashed ring-offset-4 ring-offset-background' : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                            >
+                                {isDragging && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-[2px] z-10 rounded-xl pointer-events-none">
+                                        <div className="bg-primary text-black p-4 rounded-full shadow-md mb-2 animate-bounce">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </div>
+                                        <div className="text-primary font-bold text-lg">{t('instance_details.content.drop_packs')}</div>
+                                        <div className="text-[10px] text-primary/60 uppercase tracking-widest mt-1">{t('instance_details.content.accepting_archives')}</div>
+                                    </div>
+                                )}
                                 {loadingResourcePacks ? (
                                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
@@ -1199,7 +1457,23 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 )}
                             </div>
                         ) : contentView === 'shaders' ? (
-                            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar transition-all rounded-xl relative">
+                            <div
+                                className={`flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar transition-all rounded-xl relative ${isDragging ? 'bg-primary/5 ring-2 ring-primary ring-dashed ring-offset-4 ring-offset-background' : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                            >
+                                {isDragging && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-[2px] z-10 rounded-xl pointer-events-none">
+                                        <div className="bg-primary text-black p-4 rounded-full shadow-md mb-2 animate-bounce">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </div>
+                                        <div className="text-primary font-bold text-lg">{t('instance_details.content.drop_shaders')}</div>
+                                        <div className="text-[10px] text-primary/60 uppercase tracking-widest mt-1">{t('instance_details.content.accepting_archives')}</div>
+                                    </div>
+                                )}
                                 {loadingShaders ? (
                                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
@@ -1603,7 +1877,50 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     </div>
                 )
                 }
+                {activeTab === 'files' && (
+                    <div className="h-full">
+                        <InstanceFileBrowser
+                            ref={instanceFileBrowserRef}
+                            instanceName={instance.name}
+                            onDirtyChange={setFileTabHasUnsavedChanges}
+                        />
+                    </div>
+                )}
             </div >
+
+            {showUnsavedFileModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+                    <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-xl font-bold text-foreground mb-2">
+                            {t('instance_details.files.unsaved_title', 'Unsaved changes')}
+                        </h3>
+                        <p className="text-muted-foreground mb-6">
+                            {t('instance_details.files.unsaved_desc', 'You have unsaved changes in the current file. What do you want to do?')}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeUnsavedFileModal}
+                                className="flex-1 px-4 py-2 rounded-xl bg-muted hover:bg-accent text-foreground font-bold transition-all"
+                            >
+                                {t('instance_details.files.back_to_file', 'Back to file')}
+                            </button>
+                            <button
+                                onClick={continueTabSwitchWithoutSave}
+                                className="flex-1 px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-bold border border-red-500/30 transition-all"
+                            >
+                                {t('instance_details.files.discard_changes', 'Do not save')}
+                            </button>
+                            <button
+                                onClick={saveThenContinueTabSwitch}
+                                disabled={isSavingUnsavedFile}
+                                className="flex-1 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-60 text-black font-bold transition-all"
+                            >
+                                {isSavingUnsavedFile ? t('common.loading', 'Loading...') : t('common.save', 'Save')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             { }
             {

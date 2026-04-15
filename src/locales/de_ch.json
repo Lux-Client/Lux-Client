@@ -128,7 +128,12 @@
         "browse": "Durchsuchen",
         "no_targets": "Keine Ziele verfügbar",
         "image": "Bild",
-        "add": "Hinzufügen"
+        "add": "Hinzufügen",
+        "remove": "Entferne",
+        "add_to_actionbar": "Zue Actionleiste hinzuefüege",
+        "added": "Zue Actionleiste hinzuegfüegt",
+        "remove_from_actionbar": "Vo Actionleiste entferne",
+        "removed": "Vo Actionleiste entfernt"
     },
     "home": {
         "welcome_back": "Willkomme zrugg!",
@@ -232,7 +237,10 @@
             "no_shaders": "Kei Shader gfunde",
             "check_folder_shaders": "Lueg de `shaderpacks`-Ordner im Instanz-Verzeichnis a",
             "browse_shaders": "Shader durchluege",
-            "preview": "Vorschau"
+            "preview": "Vorschau",
+            "drop_packs": "Resource Packs da ahzoge zum Installiere",
+            "drop_shaders": "Shader da ahzoge zum Installiere",
+            "accepting_archives": ".zip und .rar Dateie wäre aktzeptiert"
         },
         "search": {
             "placeholder": "Modrinth-ID iigäh oder nach Mod-Name sueche...",
@@ -349,7 +357,9 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "drop_skin": "Skin da ahzoge zum Aawände",
+        "drop_success": "Neui Skin aagwändet"
     },
     "styling": {
         "title": "Erscheinigsbild",
@@ -429,7 +439,25 @@
             "slovenian": "Slovenisch (SI)",
             "swedish": "Schwedisch (SE)",
             "quick_switch_button": "Schnelle Umschalttaste",
-            "quick_switch_button_desc": "Schnelle Umschalttaste"
+            "quick_switch_button_desc": "Schnelle Umschalttaste",
+            "animations": {
+                "title": "Syteanimatione",
+                "desc": "Animiert Syte- und Tab-Wächsel, statt d Ansicht sofort umzschalte.",
+                "style_label": "Animationsstil",
+                "style_desc": "Wähl, wellä Übergangsstil im Launcher söll bruucht wärde.",
+                "presets": {
+                    "cinematic": "Cinematic",
+                    "cinematic_desc": "Wiiche Blur, dezänti Tiefe und e hochwertigi Sytewächsel-Animation.",
+                    "glide": "Glide",
+                    "glide_desc": "Schnelli horizontali Bewegig für en chlarä Tab-Wächsel.",
+                    "fade": "Fade",
+                    "fade_desc": "Minimales Überblände mit fascht kei Bewegig.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "Syte blendet mit eme fokussierte Zoom ii.",
+                    "lift": "Lift",
+                    "lift_desc": "Inhalt chunnt vo unde ine und geit mit meh Bewegig nach obe use."
+                }
+            }
         },
         "java": {
             "title": "Java-Laufziitumgebig",
@@ -466,7 +494,18 @@
             "title": "Instanz-Erstellig",
             "copy_settings": "Iistellige vo Instanz kopiere",
             "copy_settings_desc": "Kopiert automatisch Tastaturella und Optionene vo dere Instanz, woni usgwehlt hesch.",
-            "source_instance": "Quäll-Instanz"
+            "source_instance": "Quäll-Instanz",
+            "show_modrinth_instances": "Modrinth-Instanzen in der Bibliothek anzeigen",
+            "show_modrinth_instances_desc": "Wenn deaktiviert, werden importierte externe Modrinth-Instanzen in der Bibliothek ausgeblendet.",
+            "show_curseforge_instances": "CurseForge-Instanzen in der Bibliothek anzeigen",
+            "show_curseforge_instances_desc": "Wenn deaktiviert, werden importierte externe CurseForge-Instanzen in der Bibliothek ausgeblendet.",
+            "uninstall_title": "Launcher deinstallieren",
+            "uninstall_desc": "Startet die System-Deinstallation von Lux und schließt den Launcher.",
+            "uninstall_btn": "Launcher deinstallieren",
+            "uninstall_modal_title": "Launcher deinstallieren",
+            "uninstall_modal_msg": "Möchtest du die Deinstallation von Lux jetzt wirklich starten? Der Launcher wird geschlossen.",
+            "uninstall_confirm_btn": "Deinstallation starten",
+            "uninstall_failed": "Die Deinstallation konnte nicht gestartet werden."
         },
         "integration": {
             "title": "Launcher-Integratio",
@@ -482,7 +521,6 @@
             "auto_mod_install_desc": "Installiert automatisch usgwehlti Mods bim Erstelle vo neune Instanze. Nöd verfüegbari Mods wärdet übersprunge.",
             "minimize_to_tray": "In den System-Tray minimieren",
             "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren.",
-            "smart_log_analytics": "Smart Log Analytics",
             "smart_log_analytics_desc": "Analysiert Abstürz automatisch und schlaat Lösige vor."
         },
         "cloud": {
@@ -876,6 +914,14 @@
         "no_issues": "Mir händ d'Ursach vo dem Absturz nöd automatisch chöne identifiziere.",
         "view_log": "Ufegladnes Protokoll aaluege",
         "check_manually": "Bitte überprüef d'Datei latest.log manuell."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} wird benoetigt",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Die Minecraft-Version bruucht Java {{version}}. Mir händ erkännt, dass aktuell kei kompatibles Java installiert isch.",
+        "settings_hint": "Du chasch Java {{version}} jetzt direkt installiere. Wenn du es nöd über de Button installiersch, chasch du es spöter über Iistellige > Java installiere.",
+        "install_button": "Installiere Java {{version}}",
+        "installing": "Installiere Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Pixel-Editor",

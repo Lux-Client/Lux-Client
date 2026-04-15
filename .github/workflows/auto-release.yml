@@ -139,6 +139,9 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -172,21 +175,39 @@ jobs:
 
       - name: Create or update GitHub release
         id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.prepare.outputs.tag }}
-          name: Lux ${{ needs.prepare.outputs.tag }}
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-          files: |
-            release-artifacts/*.exe
-            release-artifacts/*.dmg
-            release-artifacts/*.AppImage
-            release-artifacts/*.deb
-            release-artifacts/*.rpm
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
+            gh release edit "$TAG" --title "Lux $TAG"
+            if [ "$IS_DRAFT" = "true" ]; then
+              gh release edit "$TAG" --draft=false
+            fi
+          else
+            gh release create "$TAG" --title "Lux $TAG" --generate-notes
+          fi
+
+          CURRENT_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
+          if [ "$CURRENT_DRAFT" = "true" ]; then
+            gh release edit "$TAG" --draft=false
+          fi
+
+          gh release upload "$TAG" \
+            release-artifacts/*.exe \
+            release-artifacts/*.dmg \
+            release-artifacts/*.AppImage \
+            release-artifacts/*.deb \
+            release-artifacts/*.rpm \
+            --clobber
+
+          RELEASE_URL=$(gh release view "$TAG" --json url --jq '.url')
+          echo "url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
 
       - name: Notify Discord – success
         if: success()

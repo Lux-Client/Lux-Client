@@ -6,13 +6,19 @@ const { downloadAndCacheIcon } = require('../utils/icon-cache');
 
 const MODRINTH_API = 'https://api.modrinth.com/v2';
 const CURSEFORGE_API = 'https://api.curse.tools/v1/cf';
+const PLUGIN_PORTAL_API = 'https://api.pluginportal.link/v1';
 const CURSEFORGE_PROJECT_PREFIX = 'curseforge:';
 const CURSEFORGE_VERSION_PREFIX = 'cf-file:';
 const MODRINTH_PROJECT_PREFIX = 'modrinth:';
+const PLUGIN_PORTAL_PROJECT_PREFIX = 'pluginportal:';
+const PLUGIN_PORTAL_VERSION_PREFIX = 'ppv:';
 const USER_AGENT = 'LuxAGENT/MinecraftLauncher/1.0 (fernsehheft@pluginhub.de)';
 const appData = app.getPath('userData');
 const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
 const modrinthToCurseForgeProjectMap = new Map();
+const pluginPortalPluginCache = new Map();
+
+const PLUGIN_PORTAL_PLATFORM_PRIORITY = ['MODRINTH', 'HANGAR', 'SPIGOTMC'];
 
 const CURSEFORGE_CLASS_BY_PROJECT_TYPE = {
     mod: 6,
@@ -66,6 +72,51 @@ const normalizeModrinthProjectId = (projectId) => {
         return projectId.slice(MODRINTH_PROJECT_PREFIX.length);
     }
     return projectId;
+};
+
+const toPluginPortalProjectId = (projectId) => `${PLUGIN_PORTAL_PROJECT_PREFIX}${projectId}`;
+
+const isPluginPortalProjectId = (projectId) => {
+    if (typeof projectId !== 'string') return false;
+    return projectId.startsWith(PLUGIN_PORTAL_PROJECT_PREFIX);
+};
+
+const normalizePluginPortalProjectId = (projectId) => {
+    if (typeof projectId !== 'string') return '';
+    const normalized = projectId.trim();
+    if (!normalized) return '';
+    if (isPluginPortalProjectId(normalized)) {
+        return normalized.slice(PLUGIN_PORTAL_PROJECT_PREFIX.length);
+    }
+    return normalized;
+};
+
+const toPluginPortalVersionId = (platform, projectId) => {
+    const normalizedPlatform = String(platform || '').toLowerCase().trim();
+    const normalizedProjectId = normalizePluginPortalProjectId(String(projectId || ''));
+    return `${PLUGIN_PORTAL_VERSION_PREFIX}${normalizedPlatform}:${normalizedProjectId}`;
+};
+
+const isPluginPortalVersionId = (versionId) => {
+    if (typeof versionId !== 'string') return false;
+    return versionId.startsWith(PLUGIN_PORTAL_VERSION_PREFIX);
+};
+
+const parsePluginPortalVersionId = (versionId) => {
+    if (!isPluginPortalVersionId(versionId)) {
+        return { platform: '', projectId: '' };
+    }
+
+    const payload = versionId.slice(PLUGIN_PORTAL_VERSION_PREFIX.length);
+    const separatorIndex = payload.indexOf(':');
+    if (separatorIndex === -1) {
+        return { platform: payload, projectId: '' };
+    }
+
+    return {
+        platform: payload.slice(0, separatorIndex).toLowerCase(),
+        projectId: payload.slice(separatorIndex + 1)
+    };
 };
 
 const mapCurseForgeClassToProjectType = (classId) => {
@@ -263,6 +314,374 @@ const normalizeSources = (sourceValue) => {
     }
 
     return [];
+};
+
+const normalizePluginPortalPlatform = (platform) => {
+    const raw = String(platform || '').toUpperCase().trim();
+    if (raw === 'SPIGOTMC') return 'spigotmc';
+    if (raw === 'MODRINTH') return 'modrinth';
+    if (raw === 'HANGAR') return 'hangar';
+    return raw.toLowerCase();
+};
+
+const getPluginPortalPlatformPriority = (loaders = []) => {
+    const normalizedLoaders = (Array.isArray(loaders) ? loaders : [])
+        .map((loader) => String(loader || '').toLowerCase().trim())
+        .filter(Boolean);
+
+    const isProxyLoader = normalizedLoaders.some((loader) => ['velocity', 'waterfall', 'bungeecord'].includes(loader));
+    if (isProxyLoader) {
+        return ['HANGAR', 'MODRINTH', 'SPIGOTMC'];
+    }
+
+    return [...PLUGIN_PORTAL_PLATFORM_PRIORITY];
+};
+
+const isLikelyJarDownloadUrl = (url) => {
+    const normalized = String(url || '').trim().toLowerCase();
+    if (!normalized) return false;
+    if (normalized.endsWith('.jar')) return true;
+    if (normalized.includes('/download')) return true;
+    if (normalized.includes('api.spiget.org/v2/resources')) return true;
+    if (normalized.includes('hangarcdn.papermc.io')) return true;
+    if (normalized.includes('cdn.modrinth.com')) return true;
+    return false;
+};
+
+const parseGitHubReleaseUrl = (url) => {
+    const normalized = String(url || '').trim();
+    if (!normalized) return null;
+
+    const tagMatch = normalized.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/tag\/([^/?#]+)/i);
+    if (tagMatch) {
+        return {
+            owner: tagMatch[1],
+            repo: tagMatch[2],
+            tag: decodeURIComponent(tagMatch[3]),
+            latest: false
+        };
+    }
+
+    const latestMatch = normalized.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/latest/i);
+    if (latestMatch) {
+        return {
+            owner: latestMatch[1],
+            repo: latestMatch[2],
+            tag: '',
+            latest: true
+        };
+    }
+
+    return null;
+};
+
+const cachePluginPortalPlugin = (plugin) => {
+    if (!plugin || typeof plugin !== 'object') return;
+    const rawId = String(plugin._id || '').trim();
+    if (!rawId) return;
+    pluginPortalPluginCache.set(rawId, plugin);
+    pluginPortalPluginCache.set(toPluginPortalProjectId(rawId), plugin);
+};
+
+const getPluginPortalCachedPlugin = (projectId) => {
+    const normalized = normalizePluginPortalProjectId(projectId);
+    if (!normalized) return null;
+    return pluginPortalPluginCache.get(normalized)
+        || pluginPortalPluginCache.get(toPluginPortalProjectId(normalized))
+        || null;
+};
+
+const getPluginPortalLastUpdatedTs = (plugin) => {
+    const platforms = plugin?.platforms && typeof plugin.platforms === 'object' ? plugin.platforms : {};
+    const values = Object.values(platforms)
+        .map((platformData) => Number(platformData?.lastUpdated || platformData?.download?.lastUpdated || 0))
+        .filter((value) => Number.isFinite(value) && value > 0);
+
+    if (values.length === 0) return 0;
+    return Math.max(...values);
+};
+
+const mapPluginPortalPluginToSearchHit = (plugin, rank = 0) => {
+    const platforms = plugin?.platforms && typeof plugin.platforms === 'object' ? plugin.platforms : {};
+    const orderedPlatformKeys = Object.keys(platforms)
+        .sort((left, right) => {
+            const leftIndex = PLUGIN_PORTAL_PLATFORM_PRIORITY.indexOf(left);
+            const rightIndex = PLUGIN_PORTAL_PLATFORM_PRIORITY.indexOf(right);
+            const normalizedLeft = leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex;
+            const normalizedRight = rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex;
+            return normalizedLeft - normalizedRight;
+        });
+
+    const firstPlatform = orderedPlatformKeys.length > 0 ? platforms[orderedPlatformKeys[0]] : null;
+    const sources = orderedPlatformKeys.map((platformKey) => normalizePluginPortalPlatform(platformKey));
+    const source = sources.join(' + ') || 'pluginportal';
+    const updatedTs = getPluginPortalLastUpdatedTs(plugin);
+    const updatedIso = updatedTs > 0 ? new Date(updatedTs).toISOString() : null;
+
+    return {
+        project_id: toPluginPortalProjectId(plugin._id),
+        project_type: 'plugin',
+        title: plugin?.name || 'Unknown',
+        description: firstPlatform?.description || '',
+        author: firstPlatform?.author || 'Unknown',
+        icon_url: firstPlatform?.imageURL || null,
+        downloads: Number(plugin?.totalDownloads || 0),
+        follows: Number(plugin?.totalDownloads || 0),
+        slug: String(plugin?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        source,
+        sources,
+        date_modified: updatedIso,
+        date_created: updatedIso,
+        __providerRank: rank
+    };
+};
+
+const sortPluginPortalResults = (results, index, query = '') => {
+    const normalizedIndex = getNormalizedSearchIndex(index);
+    const normalizedQuery = normalizeSearchText(query);
+    const sorted = [...results];
+
+    if (normalizedIndex === 'downloads') {
+        sorted.sort((left, right) => Number(right?.downloads || 0) - Number(left?.downloads || 0));
+        return sorted;
+    }
+
+    if (normalizedIndex === 'newest' || normalizedIndex === 'updated') {
+        sorted.sort((left, right) => getSearchDateValue(right, ['date_modified', 'date_created']) - getSearchDateValue(left, ['date_modified', 'date_created']));
+        return sorted;
+    }
+
+    if (normalizedIndex === 'oldest') {
+        sorted.sort((left, right) => getSearchDateValue(left, ['date_modified', 'date_created']) - getSearchDateValue(right, ['date_modified', 'date_created']));
+        return sorted;
+    }
+
+    sorted.sort((left, right) => {
+        const leftTitle = normalizeSearchText(getSearchEntryTitle(left));
+        const rightTitle = normalizeSearchText(getSearchEntryTitle(right));
+
+        const leftExact = leftTitle === normalizedQuery ? 1 : 0;
+        const rightExact = rightTitle === normalizedQuery ? 1 : 0;
+        if (leftExact !== rightExact) {
+            return rightExact - leftExact;
+        }
+
+        const leftStarts = normalizedQuery && leftTitle.startsWith(normalizedQuery) ? 1 : 0;
+        const rightStarts = normalizedQuery && rightTitle.startsWith(normalizedQuery) ? 1 : 0;
+        if (leftStarts !== rightStarts) {
+            return rightStarts - leftStarts;
+        }
+
+        const downloadDiff = Number(right?.downloads || 0) - Number(left?.downloads || 0);
+        if (downloadDiff !== 0) return downloadDiff;
+
+        return compareSearchEntriesStable(left, right);
+    });
+
+    return sorted;
+};
+
+const resolvePluginPortalGithubDownload = async (url, preferredName = '') => {
+    const parsed = parseGitHubReleaseUrl(url);
+    if (!parsed) return null;
+
+    const releaseEndpoint = parsed.latest
+        ? `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/releases/latest`
+        : `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/releases/tags/${encodeURIComponent(parsed.tag)}`;
+
+    const response = await axios.get(releaseEndpoint, {
+        headers: {
+            'User-Agent': USER_AGENT,
+            Accept: 'application/vnd.github+json'
+        },
+        timeout: 10000
+    });
+
+    const assets = Array.isArray(response?.data?.assets) ? response.data.assets : [];
+    if (assets.length === 0) return null;
+
+    const lowerPreferredName = String(preferredName || '').toLowerCase();
+    const jarAssets = assets.filter((asset) => String(asset?.name || '').toLowerCase().endsWith('.jar'));
+    if (jarAssets.length === 0) return null;
+
+    const preferredAsset = jarAssets.find((asset) => {
+        const name = String(asset?.name || '').toLowerCase();
+        return lowerPreferredName && name.includes(lowerPreferredName);
+    }) || jarAssets[0];
+
+    return {
+        url: preferredAsset.browser_download_url,
+        filename: preferredAsset.name,
+        version: response?.data?.tag_name || response?.data?.name || null
+    };
+};
+
+const resolvePluginPortalDownload = async ({ url, filename, pluginName }) => {
+    const normalizedUrl = String(url || '').trim();
+    if (!normalizedUrl) {
+        return { url: '', filename: filename || '' };
+    }
+
+    if (isLikelyJarDownloadUrl(normalizedUrl)) {
+        return { url: normalizedUrl, filename: filename || '' };
+    }
+
+    const githubDownload = await resolvePluginPortalGithubDownload(normalizedUrl, pluginName);
+    if (githubDownload?.url) {
+        return {
+            url: githubDownload.url,
+            filename: filename || githubDownload.filename || '',
+            version: githubDownload.version || null
+        };
+    }
+
+    return { url: normalizedUrl, filename: filename || '' };
+};
+
+const buildPluginPortalVersionFileName = ({ pluginName, platform, version }) => {
+    const safeName = String(pluginName || 'plugin')
+        .replace(/[^a-z0-9-_]+/gi, '-')
+        .replace(/-{2,}/g, '-')
+        .replace(/^-+|-+$/g, '');
+    const safePlatform = String(platform || 'platform').toLowerCase().replace(/[^a-z0-9-_]+/g, '');
+    const safeVersion = String(version || 'latest')
+        .replace(/[^a-z0-9._-]+/gi, '-')
+        .replace(/-{2,}/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return `${safeName || 'plugin'}-${safePlatform || 'platform'}-${safeVersion || 'latest'}.jar`;
+};
+
+const getPluginPortalProject = async (projectId) => {
+    const cached = getPluginPortalCachedPlugin(projectId);
+    if (cached) return cached;
+    throw new Error('Plugin Portal project not in cache. Search for the plugin first.');
+};
+
+const searchPluginPortal = async ({ query, limit = 20, offset = 0, index }) => {
+    const normalizedLimit = Math.max(1, Number(limit) || 20);
+    const normalizedOffset = Math.max(0, Number(offset) || 0);
+    const fetchLimit = Math.min(100, normalizedLimit + normalizedOffset + 20);
+
+    const response = await axios.get(`${PLUGIN_PORTAL_API}/plugins`, {
+        params: {
+            prefix: query || undefined,
+            limit: fetchLimit
+        },
+        headers: { 'User-Agent': USER_AGENT },
+        timeout: 10000
+    });
+
+    const plugins = Array.isArray(response?.data) ? response.data : [];
+    plugins.forEach(cachePluginPortalPlugin);
+
+    const mapped = plugins.map((plugin, rank) => mapPluginPortalPluginToSearchHit(plugin, rank));
+    const sorted = sortPluginPortalResults(mapped, index, query);
+    const paginated = sorted.slice(normalizedOffset, normalizedOffset + normalizedLimit);
+
+    return {
+        results: paginated,
+        total_hits: sorted.length,
+        offset: normalizedOffset,
+        limit: normalizedLimit
+    };
+};
+
+const getPluginPortalVersions = async (projectId, loaders = []) => {
+    const plugin = await getPluginPortalProject(projectId);
+    const rawProjectId = normalizePluginPortalProjectId(projectId);
+    const platformPriority = getPluginPortalPlatformPriority(loaders);
+    const priorityMap = new Map(platformPriority.map((key, idx) => [key, idx]));
+
+    const platforms = plugin?.platforms && typeof plugin.platforms === 'object' ? plugin.platforms : {};
+    const entries = Object.entries(platforms)
+        .map(([platformKey, platformData]) => ({ platformKey, platformData }))
+        .filter((entry) => !!entry.platformData?.download?.url)
+        .sort((left, right) => {
+            const leftPriority = priorityMap.get(left.platformKey) ?? Number.MAX_SAFE_INTEGER;
+            const rightPriority = priorityMap.get(right.platformKey) ?? Number.MAX_SAFE_INTEGER;
+            if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+
+            const leftUpdated = Number(left.platformData?.lastUpdated || left.platformData?.download?.lastUpdated || 0);
+            const rightUpdated = Number(right.platformData?.lastUpdated || right.platformData?.download?.lastUpdated || 0);
+            return rightUpdated - leftUpdated;
+        });
+
+    const versions = [];
+    for (let index = 0; index < entries.length; index++) {
+        const { platformKey, platformData } = entries[index];
+        const normalizedPlatform = normalizePluginPortalPlatform(platformKey);
+        const version = String(platformData?.download?.version || 'latest');
+        const filename = buildPluginPortalVersionFileName({
+            pluginName: plugin?.name,
+            platform: normalizedPlatform,
+            version
+        });
+
+        const updatedTs = Number(platformData?.lastUpdated || platformData?.download?.lastUpdated || 0);
+        const datePublished = Number.isFinite(updatedTs) && updatedTs > 0
+            ? new Date(updatedTs).toISOString()
+            : null;
+
+        versions.push({
+            id: toPluginPortalVersionId(normalizedPlatform, rawProjectId),
+            project_id: toPluginPortalProjectId(rawProjectId),
+            source: normalizedPlatform,
+            version_number: `${version} (${normalizedPlatform})`,
+            version_type: 'release',
+            date_published: datePublished,
+            game_versions: [],
+            loaders: [],
+            files: [
+                {
+                    filename,
+                    url: platformData.download.url,
+                    primary: index === 0,
+                    size: 0
+                }
+            ]
+        });
+    }
+
+    return versions;
+};
+
+const mapPluginPortalProjectToProjectDetails = (plugin) => {
+    const platforms = plugin?.platforms && typeof plugin.platforms === 'object' ? plugin.platforms : {};
+    const orderedPlatformKeys = Object.keys(platforms)
+        .sort((left, right) => {
+            const leftIndex = PLUGIN_PORTAL_PLATFORM_PRIORITY.indexOf(left);
+            const rightIndex = PLUGIN_PORTAL_PLATFORM_PRIORITY.indexOf(right);
+            const normalizedLeft = leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex;
+            const normalizedRight = rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex;
+            return normalizedLeft - normalizedRight;
+        });
+    const firstPlatform = orderedPlatformKeys.length > 0 ? platforms[orderedPlatformKeys[0]] : null;
+
+    const descriptions = orderedPlatformKeys
+        .map((platformKey) => {
+            const platformData = platforms[platformKey];
+            const description = String(platformData?.description || '').trim();
+            if (!description) return '';
+            return `### ${platformKey}\n${description}`;
+        })
+        .filter(Boolean);
+
+    const sources = orderedPlatformKeys.map((platformKey) => normalizePluginPortalPlatform(platformKey));
+
+    return {
+        id: toPluginPortalProjectId(plugin._id),
+        title: plugin?.name || 'Unknown Plugin',
+        slug: String(plugin?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        description: firstPlatform?.description || '',
+        icon_url: firstPlatform?.imageURL || null,
+        project_type: 'plugin',
+        downloads: Number(plugin?.totalDownloads || 0),
+        source: sources.join(' + ') || 'pluginportal',
+        sources,
+        author: firstPlatform?.author || 'Unknown',
+        gallery: [],
+        body: descriptions.join('\n\n')
+    };
 };
 
 const createMergeCandidateKeys = (entry) => {
@@ -1223,24 +1642,38 @@ const resolveDependenciesInternal = async (versionId, loaders = [], gameVersions
 module.exports = (ipcMain, win) => {
     ipcMain.handle('modrinth:search', async (_, query, facets = [], options = {}) => {
         try {
-            const { limit = 20, offset = 0, index, projectType = 'mod', provider = 'modrinth' } = options;
-            const includeCurseforge = provider === 'curseforge' || provider === 'both';
+            const { limit = 20, offset = 0, index, projectType = 'mod', provider = 'modrinth', includeCurseforge = false } = options;
+            const normalizedProjectType = normalizeProjectType(projectType);
+
+            if (normalizedProjectType === 'plugin') {
+                const pluginPortalResults = await searchPluginPortal({ query, limit, offset, index });
+                return {
+                    success: true,
+                    results: pluginPortalResults.results.map(stripSearchInternalFields),
+                    total_hits: pluginPortalResults.total_hits,
+                    offset: pluginPortalResults.offset,
+                    limit: pluginPortalResults.limit
+                };
+            }
+
+            const shouldIncludeCurseforge = Boolean(includeCurseforge) || provider === 'curseforge' || provider === 'both';
+            const includeCurseforgeProvider = shouldIncludeCurseforge;
             const includeModrinth = provider === 'modrinth' || provider === 'both';
 
             const normalizedLimit = Math.max(1, Number(limit) || 20);
             const normalizedOffset = Math.max(0, Number(offset) || 0);
             const normalizedIndex = getNormalizedSearchIndex(index);
 
-            const baseFetchLimit = (includeCurseforge && includeModrinth)
+            const baseFetchLimit = (includeCurseforgeProvider && includeModrinth)
                 ? Math.min(Math.max(normalizedLimit + normalizedOffset, normalizedLimit), 100)
                 : normalizedLimit;
             const mergeFetchBuffer = 30;
             const mergeCandidateTarget = normalizedOffset + normalizedLimit + mergeFetchBuffer;
 
-            const modrinthFetchLimit = (includeCurseforge && includeModrinth)
+            const modrinthFetchLimit = (includeCurseforgeProvider && includeModrinth)
                 ? Math.min(Math.max(baseFetchLimit, mergeCandidateTarget), 100)
                 : baseFetchLimit;
-            const curseforgeFetchLimit = (includeCurseforge && includeModrinth)
+            const curseforgeFetchLimit = (includeCurseforgeProvider && includeModrinth)
                 ? Math.min(Math.max(baseFetchLimit, mergeCandidateTarget), 250)
                 : baseFetchLimit;
 
@@ -1256,7 +1689,7 @@ module.exports = (ipcMain, win) => {
                     query,
                     facets: facetStr,
                     limit: modrinthFetchLimit,
-                    offset: (includeCurseforge && includeModrinth) ? 0 : normalizedOffset
+                    offset: (includeCurseforgeProvider && includeModrinth) ? 0 : normalizedOffset
                 };
                 if (normalizedIndex) params.index = normalizedIndex;
 
@@ -1285,13 +1718,13 @@ module.exports = (ipcMain, win) => {
             let results = modrinthResults;
             let totalHits = modrinthTotalHits;
 
-            if (includeCurseforge) {
+            if (includeCurseforgeProvider) {
                 try {
                     const curseforgeResult = await searchCurseForge({
                         query,
                         projectType,
                         limit: curseforgeFetchLimit,
-                        offset: (includeCurseforge && includeModrinth) ? 0 : normalizedOffset,
+                        offset: (includeCurseforgeProvider && includeModrinth) ? 0 : normalizedOffset,
                         index: normalizedIndex
                     });
 
@@ -1326,8 +1759,8 @@ module.exports = (ipcMain, win) => {
                 success: true,
                 results: results.map(stripSearchInternalFields),
                 total_hits: totalHits,
-                offset: (includeCurseforge && includeModrinth) ? normalizedOffset : modrinthOffset,
-                limit: (includeCurseforge && includeModrinth) ? normalizedLimit : modrinthLimit
+                offset: (includeCurseforgeProvider && includeModrinth) ? normalizedOffset : modrinthOffset,
+                limit: (includeCurseforgeProvider && includeModrinth) ? normalizedLimit : modrinthLimit
             };
         } catch (e) {
             console.error("Modrinth Search Error:", e.response ? e.response.data : e.message);
@@ -1341,11 +1774,95 @@ module.exports = (ipcMain, win) => {
             String(data?.source || '').toLowerCase() === 'curseforge' ||
             isCurseForgeVersionId(String(data?.versionId || ''));
 
+        const isPluginPortalInstall =
+            isPluginPortalProjectId(String(data?.projectId || ''))
+            || isPluginPortalVersionId(String(data?.versionId || ''))
+            || String(data?.source || '').toLowerCase() === 'pluginportal';
+
         const normalizedData = {
             ...data,
             projectId: normalizeModrinthProjectId(data?.projectId),
             projectType: normalizeProjectType(data?.projectType)
         };
+
+        if (isPluginPortalInstall) {
+            try {
+                const rawPluginPortalProjectId = normalizePluginPortalProjectId(String(data?.projectId || parsePluginPortalVersionId(String(data?.versionId || '')).projectId || ''));
+                const plugin = rawPluginPortalProjectId ? getPluginPortalCachedPlugin(rawPluginPortalProjectId) : null;
+                const parsedVersion = parsePluginPortalVersionId(String(data?.versionId || ''));
+
+                let resolvedFilename = data.filename;
+                let resolvedUrl = data.url;
+                let resolvedVersionName = data.versionName || null;
+                const sourcePlatform = parsedVersion.platform || String(data?.source || '').toLowerCase() || 'pluginportal';
+
+                if ((!resolvedFilename || !resolvedUrl) && plugin && rawPluginPortalProjectId) {
+                    const versions = await getPluginPortalVersions(rawPluginPortalProjectId, []);
+                    const matchingVersion = versions.find((version) => version.id === data.versionId)
+                        || versions.find((version) => String(version.source || '').toLowerCase() === sourcePlatform)
+                        || versions[0];
+
+                    const versionFile = matchingVersion?.files?.find((file) => file.primary) || matchingVersion?.files?.[0];
+                    if (versionFile) {
+                        resolvedFilename = resolvedFilename || versionFile.filename;
+                        resolvedUrl = resolvedUrl || versionFile.url;
+                        resolvedVersionName = resolvedVersionName || matchingVersion?.version_number || null;
+                    }
+                }
+
+                const resolvedDownload = await resolvePluginPortalDownload({
+                    url: resolvedUrl,
+                    filename: resolvedFilename,
+                    pluginName: plugin?.name || data?.title || ''
+                });
+
+                resolvedUrl = resolvedDownload.url;
+                resolvedFilename = resolvedDownload.filename || resolvedFilename;
+                resolvedVersionName = resolvedDownload.version || resolvedVersionName;
+
+                if (!resolvedFilename && plugin?.name) {
+                    resolvedFilename = buildPluginPortalVersionFileName({
+                        pluginName: plugin.name,
+                        platform: sourcePlatform,
+                        version: resolvedVersionName || 'latest'
+                    });
+                }
+
+                if (!resolvedFilename || !resolvedUrl) {
+                    return { success: false, error: 'Could not resolve Plugin Portal download file' };
+                }
+
+                const cacheProjectId = rawPluginPortalProjectId
+                    ? toPluginPortalProjectId(rawPluginPortalProjectId)
+                    : String(data?.projectId || '');
+
+                const installResult = await installModInternal(win, {
+                    ...data,
+                    projectId: cacheProjectId,
+                    versionId: String(data?.versionId || toPluginPortalVersionId(sourcePlatform || 'pluginportal', rawPluginPortalProjectId || 'unknown')),
+                    filename: resolvedFilename,
+                    url: resolvedUrl,
+                    projectType: normalizeProjectType(data?.projectType || 'plugin')
+                });
+
+                if (installResult.success && installResult.destination) {
+                    await updateModCacheForInstall({
+                        destination: installResult.destination,
+                        projectId: cacheProjectId,
+                        versionId: String(data?.versionId || toPluginPortalVersionId(sourcePlatform || 'pluginportal', rawPluginPortalProjectId || 'unknown')),
+                        source: sourcePlatform || 'pluginportal',
+                        title: data?.title || plugin?.name || null,
+                        icon: data?.iconUrl || data?.icon || null,
+                        version: resolvedVersionName
+                    });
+                }
+
+                return installResult;
+            } catch (error) {
+                console.error('[PluginPortal:Install] Error:', error);
+                return { success: false, error: error.message };
+            }
+        }
 
         if (isCurseForgeInstall) {
             try {
@@ -1439,7 +1956,7 @@ module.exports = (ipcMain, win) => {
             }
         }
 
-        if (normalizedData.projectType === 'mod' || normalizedData.projectType === 'plugin') {
+        if ((normalizedData.projectType === 'mod' || normalizedData.projectType === 'plugin') && !isPluginPortalInstall) {
             try {
                 const { loader, version } = await resolveInstallContext(normalizedData);
 
@@ -1480,6 +1997,11 @@ module.exports = (ipcMain, win) => {
 
     ipcMain.handle('modrinth:get-versions', async (_, projectId, loaders = [], gameVersions = [], fallbackCurseForgeProjectId = null) => {
         try {
+            if (isPluginPortalProjectId(projectId)) {
+                const versions = await getPluginPortalVersions(projectId, loaders);
+                return { success: true, versions };
+            }
+
             if (isCurseForgeProjectId(projectId)) {
                 const versions = await getCurseForgeCompatibleVersions(projectId, loaders, gameVersions);
 
@@ -1571,6 +2093,15 @@ module.exports = (ipcMain, win) => {
 
     ipcMain.handle('modrinth:get-project', async (_, projectId) => {
         try {
+            if (isPluginPortalProjectId(projectId)) {
+                const plugin = await getPluginPortalProject(projectId);
+                cachePluginPortalPlugin(plugin);
+                return {
+                    success: true,
+                    project: mapPluginPortalProjectToProjectDetails(plugin)
+                };
+            }
+
             if (isCurseForgeProjectId(projectId)) {
                 const projectData = await getCurseForgeProject(projectId);
                 const gallery = Array.isArray(projectData?.screenshots)
@@ -1638,7 +2169,7 @@ module.exports = (ipcMain, win) => {
     });
 
     ipcMain.handle('modrinth:resolve-dependencies', async (_, versionId, loaders = [], gameVersions = []) => {
-        if (isCurseForgeVersionId(versionId)) {
+        if (isCurseForgeVersionId(versionId) || isPluginPortalVersionId(versionId)) {
             return { success: true, dependencies: [] };
         }
         return await resolveDependenciesInternal(versionId, loaders, gameVersions);

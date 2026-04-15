@@ -301,7 +301,9 @@ module.exports = (ipcMain, mainWindow) => {
                 const source = `${filePath.source || ''}`.trim();
                 const value = `${filePath.value || ''}`.trim();
 
-                if (source === 'url') {
+                console.log('[Skin:save-local] Received payload:', { source, valueLength: value.length, valuePreview: value.substring(0, 100) });
+
+                if (source === 'url' || source.startsWith('http')) {
                     if (!value) return { success: false, error: 'No URL provided' };
                     const fileBuffer = await fetchSkinBuffer(value);
                     return await saveSkinBuffer(fileBuffer, getSkinNameFromUrl(value), {}, { outputPath: filePath.outputPath });
@@ -319,33 +321,29 @@ module.exports = (ipcMain, mainWindow) => {
                     );
                 }
 
-                if (source === 'data-url' || source === 'data') {
-                    if (!value) return { success: false, error: 'No skin data provided' };
-
+                if (value) {
                     let base64Payload = value;
-                    if (source === 'data-url') {
-                        const dataUrlMatch = value.match(/^data:image\/png;base64,(.+)$/i);
-                        if (!dataUrlMatch || !dataUrlMatch[1]) {
-                            return { success: false, error: 'Invalid PNG data URL' };
-                        }
+                    
+                    const dataUrlMatch = value.match(/^data:image\/png;base64,(.+)$/i);
+                    if (dataUrlMatch && dataUrlMatch[1]) {
                         base64Payload = dataUrlMatch[1];
                     }
 
-                    const fileBuffer = Buffer.from(base64Payload, 'base64');
-                    if (!fileBuffer.length) {
-                        return { success: false, error: 'Invalid skin image data' };
+                    if (/^[A-Za-z0-9+/=]+$/.test(base64Payload) && base64Payload.length > 100) {
+                        try {
+                            const fileBuffer = Buffer.from(base64Payload, 'base64');
+                            if (fileBuffer && fileBuffer.length > 0) {
+                                const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
+                                const extraData = model ? { model } : {};
+                                return await saveSkinBuffer(fileBuffer, filePath.name || 'Skin', extraData, { outputPath: filePath.outputPath });
+                            }
+                        } catch (e) {
+                            console.error('[Skin] Base64 parse error:', e.message);
+                        }
                     }
-
-                    const model = filePath.model === 'slim' ? 'slim' : (filePath.model === 'classic' ? 'classic' : undefined);
-                    const extraData = model ? { model } : {};
-                    return await saveSkinBuffer(fileBuffer, filePath.name || 'Edited Skin', extraData, { outputPath: filePath.outputPath });
                 }
 
-                if (source) {
-                    return { success: false, error: `Unsupported skin source: ${source}` };
-                }
-
-                return { success: false, error: 'Invalid skin import payload' };
+                return { success: false, error: 'Invalid skin data. Please try again.' };
             }
 
             if (filePath && typeof filePath !== 'string') {

@@ -232,7 +232,10 @@
             "no_shaders": "Nenašli sa žiadne shadery",
             "check_folder_shaders": "Skontrolujte priečinok `shaderpacks` v adresári inštancie",
             "browse_shaders": "Prehľadávať shadery",
-            "preview": "Náhľad"
+            "preview": "Náhľad",
+            "drop_packs": "Drag and drop resource packs here to install",
+            "drop_shaders": "Drag and drop shader packs here to install",
+            "accepting_archives": "Accepting .zip and .rar files"
         },
         "search": {
             "placeholder": "Zadajte Modrinth ID alebo vyhľadajte názov módu...",
@@ -429,7 +432,25 @@
             "slovenian": "Slovinčina (SI)",
             "swedish": "Švédčina (SE)",
             "quick_switch_button": "Tlačidlo rýchleho prepnutia",
-            "quick_switch_button_desc": "Tlačidlo rýchleho prepnutia"
+            "quick_switch_button_desc": "Tlačidlo rýchleho prepnutia",
+            "animations": {
+                "title": "Animácie stránok",
+                "desc": "Animuje prepínanie stránok a kariet namiesto okamžitej zmeny zobrazenia.",
+                "style_label": "Štýl animácie",
+                "style_desc": "Vyber štýl prechodu, ktorý sa má používať v celom launcheri.",
+                "presets": {
+                    "cinematic": "Cinematic",
+                    "cinematic_desc": "Jemné rozmazanie, subtílna hĺbka a uhladená výmena stránok.",
+                    "glide": "Glide",
+                    "glide_desc": "Rýchly horizontálny pohyb pre výraznejšie prepínanie kariet.",
+                    "fade": "Fade",
+                    "fade_desc": "Minimálny prechod takmer bez pohybu.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "Stránky sa objavia s výraznejším efektom priblíženia.",
+                    "lift": "Lift",
+                    "lift_desc": "Obsah vstupuje zdola a odchádza nahor s väčším pohybom."
+                }
+            }
         },
         "java": {
             "title": "Prostredie Java (Runtime)",
@@ -466,7 +487,18 @@
             "title": "Vytvorenie inštancie",
             "copy_settings": "Kopírovať nastavenia z inštancie",
             "copy_settings_desc": "Automaticky skopíruje ovládacie prvky a možnosti z vybranej inštancie pri vytváraní novej.",
-            "source_instance": "Zdrojová inštancia"
+            "source_instance": "Zdrojová inštancia",
+            "show_modrinth_instances": "Zobrazit instancie Modrinth v kniznici",
+            "show_modrinth_instances_desc": "Ak je vypnute, importovane externe instancie Modrinth budu skryte na karte Kniznica.",
+            "show_curseforge_instances": "Zobrazit instancie CurseForge v kniznici",
+            "show_curseforge_instances_desc": "Ak je vypnute, importovane externe instancie CurseForge budu skryte na karte Kniznica.",
+            "uninstall_title": "Odinstalovat launcher",
+            "uninstall_desc": "Spusti systemovy odinstalator Lux a zatvori launcher.",
+            "uninstall_btn": "Odinstalovat launcher",
+            "uninstall_modal_title": "Odinstalovat launcher",
+            "uninstall_modal_msg": "Naozaj chcete teraz spustit odinstalovanie Lux? Launcher sa zatvori.",
+            "uninstall_confirm_btn": "Spustit odinstalovanie",
+            "uninstall_failed": "Nepodarilo sa spustit odinstalovanie."
         },
         "integration": {
             "title": "Integrácia launcheru",
@@ -876,6 +908,14 @@
         "no_issues": "Nepodarilo sa nám automaticky identifikovať príčinu tohto pádu.",
         "view_log": "Zobraziť nahraný log",
         "check_manually": "Skontrolujte súbor latest.log manuálne."
+    },
+    "java_required_modal": {
+        "title": "Vyžaduje sa Java {{version}}",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Táto verzia Minecraftu vyžaduje Java {{version}}. Zistili sme, že momentálne nie je nainštalovaná kompatibilná verzia.",
+        "settings_hint": "Java {{version}} môžeš nainštalovať hneď teraz. Ak to neurobíš cez tlačidlo, môžeš to neskôr urobiť v Nastavenia > Java.",
+        "install_button": "Nainštalovať Java {{version}}",
+        "installing": "Inštaluje sa Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Pixel Editor",

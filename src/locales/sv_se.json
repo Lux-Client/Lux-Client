@@ -232,7 +232,10 @@
             "no_shaders": "Inga shaders hittades",
             "check_folder_shaders": "Kontrollera mappen `shaderpacks` i instansens katalog",
             "browse_shaders": "Bläddra bland shaders",
-            "preview": "Förhandsgranska"
+            "preview": "Förhandsgranska",
+            "drop_packs": "Drag and drop resource packs here to install",
+            "drop_shaders": "Drag and drop shader packs here to install",
+            "accepting_archives": "Accepting .zip and .rar files"
         },
         "search": {
             "placeholder": "Ange Modrinth ID eller sök på modnamn...",
@@ -429,7 +432,25 @@
             "slovenian": "Slovenska (SI)",
             "swedish": "Svenska (SE)",
             "quick_switch_button": "Knapp för snabb växling",
-            "quick_switch_button_desc": "Knapp för snabb växling"
+            "quick_switch_button_desc": "Knapp för snabb växling",
+            "animations": {
+                "title": "Sidanimationer",
+                "desc": "Animerar byte mellan sidor och flikar i stället för att byta vy direkt.",
+                "style_label": "Animationsstil",
+                "style_desc": "Välj vilken övergångsstil som ska användas i hela launchern.",
+                "presets": {
+                    "cinematic": "Cinematic",
+                    "cinematic_desc": "Mjuk oskärpa, subtilt djup och ett polerat sidbyte.",
+                    "glide": "Glide",
+                    "glide_desc": "Snabb horisontell rörelse för ett tydligare flikbyte.",
+                    "fade": "Fade",
+                    "fade_desc": "Minimal övertoning med nästan ingen rörelse.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "Sidor tonas in med en mer fokuserad zoomeffekt.",
+                    "lift": "Lift",
+                    "lift_desc": "Innehåll lyfts in och lämnar uppåt med mer rörelse."
+                }
+            }
         },
         "java": {
             "title": "Java",
@@ -466,7 +487,18 @@
             "title": "Skapande av instans",
             "copy_settings": "Kopiera inställningar från instans",
             "copy_settings_desc": "Kopiera automatiskt knappar och alternativ från en vald instans när du skapar en ny.",
-            "source_instance": "Källinstans"
+            "source_instance": "Källinstans",
+            "show_modrinth_instances": "Visa Modrinth-instanser i biblioteket",
+            "show_modrinth_instances_desc": "Om avstangt döljs importerade externa Modrinth-instanser i fliken Bibliotek.",
+            "show_curseforge_instances": "Visa CurseForge-instanser i biblioteket",
+            "show_curseforge_instances_desc": "Om avstangt döljs importerade externa CurseForge-instanser i fliken Bibliotek.",
+            "uninstall_title": "Avinstallera launcher",
+            "uninstall_desc": "Startar systemets avinstallerare for Lux och stanger launchern.",
+            "uninstall_btn": "Avinstallera launcher",
+            "uninstall_modal_title": "Avinstallera launcher",
+            "uninstall_modal_msg": "Vill du verkligen starta avinstallationen av Lux nu? Launchern kommer att stangas.",
+            "uninstall_confirm_btn": "Starta avinstallation",
+            "uninstall_failed": "Avinstallationen kunde inte startas."
         },
         "integration": {
             "title": "Integration av Launcher",
@@ -876,6 +908,14 @@
         "no_issues": "Vi kunde inte automatiskt identifiera orsaken till denna krasch.",
         "view_log": "Visa uppladdad logg",
         "check_manually": "Kontrollera filen latest.log manuellt."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} krävs",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Den här Minecraft-versionen kräver Java {{version}}. Vi upptäckte att ingen kompatibel version är installerad just nu.",
+        "settings_hint": "Du kan installera Java {{version}} direkt nu. Om du inte installerar via knappen kan du göra det senare i Inställningar > Java.",
+        "install_button": "Installera Java {{version}}",
+        "installing": "Installerar Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Pixel Editor",

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 console.log('[Preload] 🚀 Preload script wird ausgeführt...');
 try {
@@ -75,7 +75,21 @@ const electronAPI = {
     importFile: () => ipcRenderer.invoke('instance:unified-import-v3'),
     ping: () => ipcRenderer.invoke('ping'),
     restartApp: () => ipcRenderer.invoke('app:restart'),
+    uninstallLauncher: () => ipcRenderer.invoke('app:uninstall'),
     getInstances: () => ipcRenderer.invoke('instance:get-all'),
+    resolveDroppedFilePath: (file) => {
+        if (!file) return '';
+        if (typeof file.path === 'string' && file.path.length > 0) return file.path;
+        try {
+            if (webUtils && typeof webUtils.getPathForFile === 'function') {
+                const resolved = webUtils.getPathForFile(file);
+                return typeof resolved === 'string' ? resolved : '';
+            }
+        } catch (e) {
+            console.warn('[Preload] Failed to resolve dropped file path:', e?.message || e);
+        }
+        return '';
+    },
     installModpack: (url, name, iconUrl) => ipcRenderer.invoke('instance:install-modpack', url, name, iconUrl),
     searchModrinth: (query, facets, options) => ipcRenderer.invoke('modrinth:search', query, facets, options),
     modrinthSearch: (query, facets, options) => ipcRenderer.invoke('modrinth:search', query, facets, options),
@@ -83,7 +97,7 @@ const electronAPI = {
     deleteServerMod: (serverName, fileName, type) => ipcRenderer.invoke('server:delete-mod', serverName, fileName, type),
     installMod: (data) => ipcRenderer.invoke('modrinth:install', data),
     modrinthInstall: (data) => ipcRenderer.invoke('modrinth:install', data),
-    installLocalMod: (instanceName, filePath) => ipcRenderer.invoke('instance:install-local-mod', instanceName, filePath),
+    installLocalMod: (instanceName, filePath, projectType) => ipcRenderer.invoke('instance:install-local-mod', instanceName, filePath, projectType),
     getModVersions: (projectId, loaders, gameVersions, fallbackCurseForgeProjectId) => ipcRenderer.invoke('modrinth:get-versions', projectId, loaders, gameVersions, fallbackCurseForgeProjectId),
     getModrinthProject: (projectId) => ipcRenderer.invoke('modrinth:get-project', projectId),
     resolveDependencies: (versionId, loaders, gameVersions) => ipcRenderer.invoke('modrinth:resolve-dependencies', versionId, loaders, gameVersions),
@@ -197,6 +211,11 @@ const electronAPI = {
         ipcRenderer.on('java:progress', subscription);
         return () => ipcRenderer.removeListener('java:progress', subscription);
     },
+    onJavaRequired: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('java:required', subscription);
+        return () => ipcRenderer.removeListener('java:required', subscription);
+    },
     onWindowStateChange: (callback) => {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('window-state', subscription);
@@ -222,6 +241,13 @@ const electronAPI = {
     readServerFile: (serverName, relativePath) => ipcRenderer.invoke('server:read-file', serverName, relativePath),
     writeServerFile: (serverName, relativePath, content) => ipcRenderer.invoke('server:write-file', serverName, relativePath, content),
     deleteServerFile: (serverName, relativePath) => ipcRenderer.invoke('server:delete-file', serverName, relativePath),
+    uploadServerFile: (serverName, relativePath, localFilePath) => ipcRenderer.invoke('server:upload-file', serverName, relativePath, localFilePath),
+    listInstanceFiles: (instanceName, relativePath) => ipcRenderer.invoke('instance:list-files', instanceName, relativePath),
+    readInstanceFile: (instanceName, relativePath) => ipcRenderer.invoke('instance:read-file', instanceName, relativePath),
+    writeInstanceFile: (instanceName, relativePath, content) => ipcRenderer.invoke('instance:write-file', instanceName, relativePath, content),
+    deleteInstanceFile: (instanceName, relativePath) => ipcRenderer.invoke('instance:delete-file', instanceName, relativePath),
+    uploadInstanceFile: (instanceName, relativePath, localFilePath) => ipcRenderer.invoke('instance:upload-file', instanceName, relativePath, localFilePath),
+    createInstanceDirectory: (instanceName, relativePath) => ipcRenderer.invoke('instance:create-directory', instanceName, relativePath),
     createServerDirectory: (serverName, relativePath) => ipcRenderer.invoke('server:create-directory', serverName, relativePath),
     renameServerFile: (serverName, oldPath, newPath) => ipcRenderer.invoke('server:rename-file', serverName, oldPath, newPath),
     getServerStatus: (name) => ipcRenderer.invoke('server:get-status', name),

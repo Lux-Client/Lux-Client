@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
+import { Upload, FolderUp, Loader2, X, FileIcon, Folder } from 'lucide-react';
 
 const FileBrowser = ({ serverName }) => {
     const { t } = useTranslation();
@@ -15,6 +18,13 @@ const FileBrowser = ({ serverName }) => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const fileInputRef = useRef(null);
+    const dropZoneRef = useRef(null);
 
     useEffect(() => {
         loadFiles();
@@ -128,6 +138,92 @@ const FileBrowser = ({ serverName }) => {
             console.error(e);
             addNotification(t('server_details.files.error_create_folder'), 'error');
         }
+    };
+
+        const handleOpenUploadModal = () => {
+        setUploadedFiles([]);
+        setUploadProgress(0);
+        setShowUploadModal(true);
+    };
+
+    const handleFilesSelected = async (selectedFiles) => {
+        if (!selectedFiles || selectedFiles.length === 0) return;
+        
+        setIsUploading(true);
+        setUploadProgress(0);
+        const uploaded = [];
+        
+        try {
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const relativePath = file.webkitRelativePath || file.name;
+                const targetPath = currentPath ? `${currentPath}/${relativePath}` : relativePath;
+                
+                try {
+                    const res = await window.electronAPI.uploadServerFile(serverName, targetPath, file.path || file);
+                    if (res.success) {
+                        uploaded.push({ name: file.name, path: relativePath, status: 'success' });
+                    } else {
+                        uploaded.push({ name: file.name, path: relativePath, status: 'error', error: res.error });
+                    }
+                } catch (e) {
+                    uploaded.push({ name: file.name, path: relativePath, status: 'error', error: e.message });
+                }
+                
+                setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
+            }
+            
+            setUploadedFiles(uploaded);
+            
+            if (uploaded.length === 1 && uploaded[0].status === 'success') {
+                addNotification(t('server_details.files.upload_success'), 'success');
+            } else if (uploaded.filter(f => f.status === 'success').length > 0) {
+                addNotification(`${uploaded.filter(f => f.status === 'success').length} ${t('server_details.files.files_uploaded')}`, 'success');
+            }
+            
+            loadFiles();
+        } catch (e) {
+            console.error(e);
+            addNotification(t('server_details.files.error_upload') + ': ' + e.message, 'error');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingOver(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.currentTarget.contains(e.relatedTarget)) return;
+        setIsDraggingOver(false);
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingOver(false);
+        
+        const droppedFiles = Array.from(e.dataTransfer.files);
+        if (droppedFiles.length > 0) {
+            handleFilesSelected(droppedFiles);
+        }
+    };
+
+    const handleBrowseClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileInputChange = (e) => {
+        const selectedFiles = Array.from(e.target.files);
+        if (selectedFiles.length > 0) {
+            handleFilesSelected(selectedFiles);
+        }
+        e.target.value = '';
     };
 
     const formatSize = (bytes) => {
@@ -255,15 +351,24 @@ const FileBrowser = ({ serverName }) => {
                             </button>
                         </div>
                     ) : (
-                        <button
-                            onClick={() => setIsCreatingFolder(true)}
-                            className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-accent-foreground"
-                            title={t('server_details.files.new_folder')}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-5L9 4H4zm7 5a1 1 0 10-2 0v1H8a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
-                            </svg>
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setIsCreatingFolder(true)}
+                                className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-accent-foreground"
+                                title={t('server_details.files.new_folder')}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-5L9 4H4zm7 5a1 1 0 10-2 0v1H8a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={handleOpenUploadModal}
+                                className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-accent-foreground"
+                                title={t('server_details.files.upload')}
+                            >
+                                <Upload className="h-5 w-5" />
+                            </button>
+                        </>
                     )}
                     <button
                         onClick={loadFiles}
@@ -356,6 +461,96 @@ const FileBrowser = ({ serverName }) => {
                     type="danger"
                 />
             )}
+            
+            <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{t('server_details.files.upload_title')}</DialogTitle>
+                    </DialogHeader>
+                    
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleFileInputChange}
+                    />
+                    
+                    <div
+                        ref={dropZoneRef}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={handleBrowseClick}
+                        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                            isDraggingOver 
+                                ? 'border-primary bg-primary/10' 
+                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                        }`}
+                    >
+                        <div className="flex flex-col items-center gap-4">
+                            <div className={`p-4 rounded-full ${isDraggingOver ? 'bg-primary/20' : 'bg-muted'}`}>
+                                <FolderUp className={`h-8 w-8 ${isDraggingOver ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-foreground">
+                                    {isDraggingOver 
+                                        ? t('server_details.files.drop_here') 
+                                        : t('server_details.files.drag_or_click')
+                                    }
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {t('server_details.files.upload_hint')}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {isUploading && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">{t('server_details.files.uploading')}</span>
+                                <span className="font-mono text-foreground">{uploadProgress}%</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-primary transition-all duration-300 rounded-full"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {uploadedFiles.length > 0 && !isUploading && (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                {t('server_details.files.upload_results')}
+                            </p>
+                            {uploadedFiles.map((file, index) => (
+                                <div 
+                                    key={index}
+                                    className={`flex items-center gap-2 p-2 rounded-lg ${
+                                        file.status === 'success' ? 'bg-green-500/10' : 'bg-red-500/10'
+                                    }`}
+                                >
+                                    {file.status === 'success' ? (
+                                        <FileIcon className="h-4 w-4 text-green-500 shrink-0" />
+                                    ) : (
+                                        <X className="h-4 w-4 text-red-500 shrink-0" />
+                                    )}
+                                    <span className="text-sm text-foreground truncate flex-1">{file.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-4 border-t border-border">
+                        <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+                            {uploadedFiles.length > 0 && !isUploading ? t('common.done') : t('common.cancel')}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

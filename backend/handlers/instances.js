@@ -99,6 +99,32 @@ async function resolveInstanceBaseDir(instanceName) {
     };
 }
 
+function isPathWithinBaseDir(targetPath, baseDir) {
+    const normalizedTarget = path.resolve(targetPath);
+    const normalizedBase = path.resolve(baseDir);
+
+    if (process.platform === 'win32') {
+        return normalizedTarget.toLowerCase().startsWith(normalizedBase.toLowerCase());
+    }
+
+    return normalizedTarget.startsWith(normalizedBase);
+}
+
+async function resolveInstanceTargetPath(instanceName, relativePath = '') {
+    const { baseDir } = await resolveInstanceBaseDir(instanceName);
+    const safeRelative = String(relativePath || '').replace(/^[/\\]+/, '');
+    const targetPath = path.resolve(path.join(baseDir, safeRelative));
+
+    if (!isPathWithinBaseDir(targetPath, baseDir)) {
+        throw new Error('Access denied');
+    }
+
+    return {
+        baseDir: path.resolve(baseDir),
+        targetPath
+    };
+}
+
 function normalizeLoaderFromString(value) {
     let candidate = value;
 
@@ -305,6 +331,136 @@ function getMimeTypeFromImagePath(filePath) {
     return '';
 }
 
+function readJsonSyncSafe(filePath) {
+    try {
+        if (!filePath || !fs.existsSync(filePath)) return null;
+        return fs.readJsonSync(filePath);
+    } catch (_) {
+        return null;
+    }
+}
+
+function collectAbsolutePathStrings(value, depth = 0, maxDepth = 6, bucket = []) {
+    if (depth > maxDepth || value === null || value === undefined) {
+        return bucket;
+    }
+
+    if (typeof value === 'string') {
+        const candidate = value.trim();
+        if (candidate && path.isAbsolute(candidate)) {
+            bucket.push(candidate);
+        }
+        return bucket;
+    }
+
+    if (Array.isArray(value)) {
+        for (const entry of value) {
+            collectAbsolutePathStrings(entry, depth + 1, maxDepth, bucket);
+        }
+        return bucket;
+    }
+
+    if (typeof value === 'object') {
+        for (const entry of Object.values(value)) {
+            collectAbsolutePathStrings(entry, depth + 1, maxDepth, bucket);
+        }
+    }
+
+    return bucket;
+}
+
+function pushDirCandidate(target, dirPath) {
+    const normalized = String(dirPath || '').trim();
+    if (!normalized) return;
+    const resolved = path.resolve(normalized);
+    if (!fs.existsSync(resolved)) return;
+    if (!target.includes(resolved)) {
+        target.push(resolved);
+    }
+}
+
+function expandModrinthCandidatePath(rawPath) {
+    const candidates = [];
+    const resolved = path.resolve(String(rawPath || '').trim());
+    if (!resolved) return candidates;
+
+    const baseName = path.basename(resolved).toLowerCase();
+    pushDirCandidate(candidates, resolved);
+    if (baseName !== 'profiles') {
+        pushDirCandidate(candidates, path.join(resolved, 'profiles'));
+    }
+    pushDirCandidate(candidates, path.join(resolved, '.minecraft', 'profiles'));
+    return candidates;
+}
+
+function expandCurseForgeCandidatePath(rawPath) {
+    const candidates = [];
+    const resolved = path.resolve(String(rawPath || '').trim());
+    if (!resolved) return candidates;
+
+    const baseName = path.basename(resolved).toLowerCase();
+    pushDirCandidate(candidates, resolved);
+    if (baseName !== 'instances') {
+        pushDirCandidate(candidates, path.join(resolved, 'Instances'));
+        pushDirCandidate(candidates, path.join(resolved, 'instances'));
+    }
+    pushDirCandidate(candidates, path.join(resolved, 'minecraft', 'Instances'));
+    pushDirCandidate(candidates, path.join(resolved, 'Minecraft', 'Instances'));
+    return candidates;
+}
+
+function getConfiguredExternalRootCandidates(source, homeDir, roamingDir) {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+    const appSettings = readJsonSyncSafe(settingsPath) || {};
+
+    const modrinthConfigPaths = [
+        path.join(roamingDir, 'com.modrinth.theseus', 'settings.json'),
+        path.join(roamingDir, 'com.modrinth.theseus', 'state.json'),
+        path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'settings.json'),
+        path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'config.json')
+    ];
+
+    const curseForgeConfigPaths = [
+        path.join(roamingDir, 'CurseForge', 'Settings.json'),
+        path.join(roamingDir, 'CurseForge', 'settings.json'),
+        path.join(roamingDir, 'CurseForge', 'Install', 'Settings.json'),
+        path.join(roamingDir, 'CurseForge', 'Install', 'settings.json')
+    ];
+
+    const configuredValues = [];
+
+    if (Array.isArray(appSettings.externalLauncherPaths)) {
+        configuredValues.push(...appSettings.externalLauncherPaths);
+    }
+    if (Array.isArray(appSettings.externalModrinthPaths) && source === 'modrinth') {
+        configuredValues.push(...appSettings.externalModrinthPaths);
+    }
+    if (Array.isArray(appSettings.externalCurseforgePaths) && source === 'curseforge') {
+        configuredValues.push(...appSettings.externalCurseforgePaths);
+    }
+
+    const configPaths = source === 'modrinth' ? modrinthConfigPaths : curseForgeConfigPaths;
+    for (const configPath of configPaths) {
+        const parsed = readJsonSyncSafe(configPath);
+        if (parsed) {
+            configuredValues.push(parsed);
+        }
+    }
+
+    const absolutePaths = collectAbsolutePathStrings(configuredValues);
+    const expanded = [];
+    for (const absolutePath of absolutePaths) {
+        const variants = source === 'modrinth'
+            ? expandModrinthCandidatePath(absolutePath)
+            : expandCurseForgeCandidatePath(absolutePath);
+        for (const variant of variants) {
+            pushDirCandidate(expanded, variant);
+        }
+    }
+
+    return expanded;
+}
+
 async function readImageAsDataUrl(imagePath) {
     if (!imagePath) return '';
     const exists = await fs.pathExists(imagePath);
@@ -407,7 +563,7 @@ function getExternalLauncherRoots() {
     const homeDir = os.homedir();
     const roamingDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
 
-    const roots = [
+    const defaults = [
         {
             source: 'modrinth',
             baseDir: path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'profiles')
@@ -422,7 +578,24 @@ function getExternalLauncherRoots() {
         }
     ];
 
-    return roots;
+    const dynamicRoots = [
+        ...getConfiguredExternalRootCandidates('modrinth', homeDir, roamingDir).map((baseDir) => ({ source: 'modrinth', baseDir })),
+        ...getConfiguredExternalRootCandidates('curseforge', homeDir, roamingDir).map((baseDir) => ({ source: 'curseforge', baseDir }))
+    ];
+
+    const deduped = [];
+    const seen = new Set();
+    for (const root of [...defaults, ...dynamicRoots]) {
+        const source = String(root?.source || '').trim().toLowerCase();
+        const baseDir = String(root?.baseDir || '').trim();
+        if (!source || !baseDir) continue;
+        const key = `${source}::${path.resolve(baseDir).toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push({ source, baseDir: path.resolve(baseDir) });
+    }
+
+    return deduped;
 }
 
 async function readExternalProfileConfig(source, profileDir, fallbackName) {
@@ -1379,10 +1552,13 @@ module.exports = (ipcMain, win) => {
 
                     const appendLog = async (line) => {
                         if (task.aborted) return;
-                        const formatted = `[${new Date().toLocaleTimeString()}] ${line}\n`;
+                        const normalizedLine = String(line)
+                            .replace(/\[Debug\]\[MCLC\]/g, '[Debug][LUX]')
+                            .replace(/\[DEBUG\]\[MCLC\]/g, '[DEBUG][LUX]');
+                        const formatted = `[${new Date().toLocaleTimeString()}] ${normalizedLine}\n`;
                         await fs.appendFile(logsPath, formatted);
                         if (win && win.webContents) {
-                            win.webContents.send('launch:log', line);
+                            win.webContents.send('launch:log', normalizedLine);
                         }
                     };
 
@@ -1469,6 +1645,7 @@ module.exports = (ipcMain, win) => {
                     const loaderType = (loader || 'vanilla').toLowerCase();
                     let resolvedMcVersion = String(version || '').trim();
                     sendProgress(10, `Downloading Minecraft ${version} base files (Phase 1/3)...`);
+                    let resolvedVersionAliases = [];
                     try {
                         const versionManifestUrl = 'https://piston-meta.mojang.com/mc/game/version_manifest.json';
                         const manifestPath = path.join(dir, 'version_manifest.json');
@@ -1485,7 +1662,7 @@ module.exports = (ipcMain, win) => {
                             appendLog(`Resolved Minecraft version alias ${version} -> ${resolvedMcVersion}`);
                         }
 
-                        const resolvedVersionAliases = buildGameVersionAliases(resolvedMcVersion);
+                        resolvedVersionAliases = buildGameVersionAliases(resolvedMcVersion);
 
                         const versionJsonUrl = versionData.url;
                         const versionDir = path.join(dir, 'versions', resolvedMcVersion);
@@ -3380,7 +3557,16 @@ module.exports = (ipcMain, win) => {
                 }
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                const dir = path.join(instancesDir, name);
+                const normalizedName = String(name || '').trim().toLowerCase();
+                const mergedInstances = await getMergedInstances();
+                const matchedExternalInstance = mergedInstances.find((entry) => {
+                    const entryName = String(entry?.name || '').trim().toLowerCase();
+                    return entryName === normalizedName && String(entry?.instanceType || '').toLowerCase() === 'external';
+                });
+
+                const externalPath = String(matchedExternalInstance?.externalPath || '').trim();
+                const dir = externalPath || path.join(instancesDir, name);
+
                 if (!await fs.pathExists(dir)) {
                     return { success: true };
                 }
@@ -3643,22 +3829,38 @@ module.exports = (ipcMain, win) => {
                             return { ...item, hasUpdate: false };
                         }
 
-                        const loaders = (item.type === 'resourcepack' || item.type === 'shader') ? [] : [loader];
+                        const isVisualContent = item.type === 'resourcepack' || item.type === 'shader';
+                        const loaders = isVisualContent ? [] : [loader];
                         const normalizedProjectId = String(item.projectId || '').startsWith(MODRINTH_PROJECT_PREFIX)
                             ? String(item.projectId || '').slice(MODRINTH_PROJECT_PREFIX.length)
                             : item.projectId;
-                        const params = {
-                            loaders: JSON.stringify(loaders),
-                            game_versions: JSON.stringify(mcVersionAliases)
-                        };
+                        const versionQueryCandidates = [];
 
-                        const response = await axios.get(`https://api.modrinth.com/v2/project/${normalizedProjectId}/version`, {
-                            params,
-                            headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
-                            timeout: 5000
-                        });
+                        if (isVisualContent) {
+                            versionQueryCandidates.push({
+                                game_versions: JSON.stringify(mcVersionAliases)
+                            });
+                            versionQueryCandidates.push({});
+                        } else {
+                            versionQueryCandidates.push({
+                                loaders: JSON.stringify(loaders),
+                                game_versions: JSON.stringify(mcVersionAliases)
+                            });
+                        }
 
-                        const versions = response.data;
+                        let versions = [];
+                        for (const params of versionQueryCandidates) {
+                            const response = await axios.get(`https://api.modrinth.com/v2/project/${normalizedProjectId}/version`, {
+                                params,
+                                headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
+                                timeout: 5000
+                            });
+                            versions = Array.isArray(response.data) ? response.data : [];
+                            if (versions.length > 0) {
+                                break;
+                            }
+                        }
+
                         if (versions.length > 0) {
                             const latest = versions[0];
                             if (latest.id !== item.versionId) {
@@ -3775,7 +3977,15 @@ module.exports = (ipcMain, win) => {
                 const safeNewConfig = sanitizeInstanceConfig(newConfig);
                 const finalConfig = { ...currentConfig, ...safeNewConfig, status: 'installing' };
                 await fs.writeJson(configPath, finalConfig, { spaces: 4 });
-                await startBackgroundInstall(instanceName, finalConfig, false, true);
+
+                if (win && win.webContents) {
+                    win.webContents.send('instance:status', { instanceName, status: 'installing' });
+                    win.webContents.send('install:progress', { instanceName, progress: 1, status: 'Starting migration...' });
+                }
+
+                startBackgroundInstall(instanceName, finalConfig, false, true).catch(e => {
+                    console.error(`[Instance:Migrate] Background migration error for ${instanceName}:`, e);
+                });
 
                 return { success: true };
             } catch (e) {
@@ -3784,7 +3994,9 @@ module.exports = (ipcMain, win) => {
         });
         ipcMain.handle('instance:install-local-mod', async (_, instanceName, filePath, projectType = 'mod') => {
             try {
-                const folder = projectType === 'resourcepack' ? 'resourcepacks' : 'mods';
+                let folder = 'mods';
+                if (projectType === 'resourcepack') folder = 'resourcepacks';
+                if (projectType === 'shader') folder = 'shaderpacks';
                 const destDir = path.join(instancesDir, instanceName, folder);
                 await fs.ensureDir(destDir);
 
@@ -3796,6 +4008,123 @@ module.exports = (ipcMain, win) => {
                 return { success: true };
             } catch (e) {
                 console.error(`[Content:InstallLocal] Error adding content to ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:list-files', async (_, instanceName, relativePath = '') => {
+            try {
+                const { targetPath } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (!await fs.pathExists(targetPath)) {
+                    return { success: false, error: 'Directory not found' };
+                }
+
+                const stats = await fs.stat(targetPath);
+                if (!stats.isDirectory()) {
+                    return { success: false, error: 'Target is not a directory' };
+                }
+
+                const entries = await fs.readdir(targetPath);
+                const files = await Promise.all(entries.map(async (entry) => {
+                    const entryPath = path.join(targetPath, entry);
+                    const entryStats = await fs.stat(entryPath);
+                    return {
+                        name: entry,
+                        isDirectory: entryStats.isDirectory(),
+                        size: entryStats.size,
+                        mtime: entryStats.mtime
+                    };
+                }));
+
+                return { success: true, files };
+            } catch (e) {
+                console.error(`[Instance:Files] Error listing files for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:read-file', async (_, instanceName, relativePath) => {
+            try {
+                const { targetPath } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (!await fs.pathExists(targetPath)) {
+                    return { success: false, error: 'File not found' };
+                }
+
+                const stats = await fs.stat(targetPath);
+                if (!stats.isFile()) {
+                    return { success: false, error: 'Target is not a file' };
+                }
+
+                const content = await fs.readFile(targetPath, 'utf-8');
+                return { success: true, content };
+            } catch (e) {
+                console.error(`[Instance:Files] Error reading file for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:write-file', async (_, instanceName, relativePath, content) => {
+            try {
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.ensureDir(path.dirname(targetPath));
+                await fs.writeFile(targetPath, content, 'utf-8');
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error writing file for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:delete-file', async (_, instanceName, relativePath) => {
+            try {
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.remove(targetPath);
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error deleting path for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:create-directory', async (_, instanceName, relativePath) => {
+            try {
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.ensureDir(targetPath);
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error creating directory for ${instanceName}:`, e);
+                return { success: false, error: e.message };
+            }
+        });
+        ipcMain.handle('instance:upload-file', async (_, instanceName, relativePath, localFilePath) => {
+            try {
+                const sourcePath = String(localFilePath || '').trim();
+                if (!sourcePath) {
+                    return { success: false, error: 'Missing local file path' };
+                }
+
+                const { targetPath, baseDir } = await resolveInstanceTargetPath(instanceName, relativePath);
+                if (targetPath === baseDir) {
+                    return { success: false, error: 'Access denied' };
+                }
+
+                await fs.ensureDir(path.dirname(targetPath));
+                await fs.copy(sourcePath, targetPath);
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:Files] Error uploading file for ${instanceName}:`, e);
                 return { success: false, error: e.message };
             }
         });

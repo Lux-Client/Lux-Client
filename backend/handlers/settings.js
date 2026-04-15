@@ -7,6 +7,7 @@ module.exports = (ipcMain) => {
     const fontsDir = path.join(app.getPath('userData'), 'fonts');
 
     const defaultSettings = {
+        analyticsMachineId: '',
         javaPath: '',
         minMemory: 1024,
         maxMemory: 4096,
@@ -17,10 +18,13 @@ module.exports = (ipcMain) => {
         copySettingsEnabled: false,
         copySettingsSourceInstance: '',
         instancesPath: '',
+        externalLauncherPaths: [],
         optimization: true,
         focusMode: false,
         minimalMode: true,
         minimizeToTray: false,
+        pageAnimationsEnabled: true,
+        pageAnimationPreset: 'cinematic',
         theme: {
             primaryColor: '#22e07a',
             backgroundColor: '#0d1117',
@@ -55,6 +59,8 @@ module.exports = (ipcMain) => {
         hasSelectedLanguage: false,
         hasSelectedThemeMode: true,
         hasSelectedStartupMode: true,
+        showModrinthInstancesInLibrary: true,
+        showCurseforgeInstancesInLibrary: true,
         guidePrompts: {
             launcher: true,
             server: true,
@@ -79,6 +85,9 @@ module.exports = (ipcMain) => {
     const buildSettings = (settings = {}) => ({
         ...defaultSettings,
         ...settings,
+        externalLauncherPaths: Array.isArray(settings.externalLauncherPaths)
+            ? [...new Set(settings.externalLauncherPaths.map((entry) => String(entry || '').trim()).filter(Boolean))]
+            : [],
         theme: {
             ...defaultSettings.theme,
             ...normalizeThemeSchema(settings.theme || {})

@@ -232,7 +232,10 @@
             "no_shaders": "Nenhum shader encontrado",
             "check_folder_shaders": "Verifique a pasta `shaderpacks` no diretório da instância",
             "browse_shaders": "Procurar shaders",
-            "preview": "Pré-visualização"
+            "preview": "Pré-visualização",
+            "drop_packs": "Drag and drop resource packs here to install",
+            "drop_shaders": "Drag and drop shader packs here to install",
+            "accepting_archives": "Accepting .zip and .rar files"
         },
         "search": {
             "placeholder": "Insira o ID do Modrinth ou pesquise o nome do mod...",
@@ -429,7 +432,25 @@
             "slovenian": "Esloveno (SI)",
             "swedish": "Sueco (SE)",
             "quick_switch_button": "Botão de Troca Rápida",
-            "quick_switch_button_desc": "Botão de Troca Rápida"
+            "quick_switch_button_desc": "Botão de Troca Rápida",
+            "animations": {
+                "title": "Animações de página",
+                "desc": "Anima as trocas de página e aba em vez de mudar a visualização instantaneamente.",
+                "style_label": "Estilo da animação",
+                "style_desc": "Escolha qual estilo de transição deve ser usado no launcher inteiro.",
+                "presets": {
+                    "cinematic": "Cinemático",
+                    "cinematic_desc": "Desfoque suave, profundidade sutil e uma troca de página refinada.",
+                    "glide": "Deslize",
+                    "glide_desc": "Movimento horizontal rápido para uma troca de abas mais marcada.",
+                    "fade": "Fade",
+                    "fade_desc": "Transição mínima com quase nenhum movimento.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "As páginas entram com um efeito de zoom mais focado.",
+                    "lift": "Elevação",
+                    "lift_desc": "O conteúdo sobe para a tela e sai para cima com mais movimento."
+                }
+            }
         },
         "java": {
             "title": "Tempo de Execução Java",
@@ -466,7 +487,18 @@
             "title": "Criação de Instância",
             "copy_settings": "Copiar Configurações da Instância",
             "copy_settings_desc": "Copie automaticamente os controles e opções de uma instância selecionada ao criar uma nova.",
-            "source_instance": "Instância de Origem"
+            "source_instance": "Instância de Origem",
+            "show_modrinth_instances": "Mostrar instancias do Modrinth na biblioteca",
+            "show_modrinth_instances_desc": "Se desativado, as instancias externas importadas do Modrinth ficam ocultas na aba Biblioteca.",
+            "show_curseforge_instances": "Mostrar instancias do CurseForge na biblioteca",
+            "show_curseforge_instances_desc": "Se desativado, as instancias externas importadas do CurseForge ficam ocultas na aba Biblioteca.",
+            "uninstall_title": "Desinstalar launcher",
+            "uninstall_desc": "Inicia o desinstalador do sistema do Lux e fecha o launcher.",
+            "uninstall_btn": "Desinstalar launcher",
+            "uninstall_modal_title": "Desinstalar launcher",
+            "uninstall_modal_msg": "Deseja iniciar a desinstalacao do Lux agora? O launcher sera fechado.",
+            "uninstall_confirm_btn": "Iniciar desinstalacao",
+            "uninstall_failed": "Nao foi possivel iniciar a desinstalacao."
         },
         "integration": {
             "title": "Integração do Launcher",
@@ -876,6 +908,14 @@
         "no_issues": "Não conseguimos identificar automaticamente a causa desta falha.",
         "view_log": "Ver log enviado",
         "check_manually": "Por favor, verifique o arquivo latest.log manualmente."
+    },
+    "java_required_modal": {
+        "title": "Java {{version}} é necessário",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Esta versão do Minecraft requer Java {{version}}. Detectamos que nenhuma versão compatível está instalada no momento.",
+        "settings_hint": "Você pode instalar o Java {{version}} agora. Se não instalar pelo botão, poderá instalar depois em Configurações > Java.",
+        "install_button": "Instalar Java {{version}}",
+        "installing": "Instalando Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Editor de Pixels",

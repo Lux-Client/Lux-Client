@@ -85,3 +85,5 @@ debug_forge_profile.js
 check_syntax.js
 updateLocales.js
 /extensions
+eslint_output.json
+eslint_output.txt

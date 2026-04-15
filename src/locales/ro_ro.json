@@ -232,7 +232,10 @@
             "no_shaders": "Niciun shader găsit",
             "check_folder_shaders": "Verifică folderul `shaderpacks` din directorul instanței",
             "browse_shaders": "Răsfoiește shadere",
-            "preview": "Previzualizare"
+            "preview": "Previzualizare",
+            "drop_packs": "Drag and drop resource packs here to install",
+            "drop_shaders": "Drag and drop shader packs here to install",
+            "accepting_archives": "Accepting .zip and .rar files"
         },
         "search": {
             "placeholder": "Introdu ID-ul Modrinth sau caută numele mod-ului...",
@@ -406,6 +409,14 @@
         "saved_success": "Setări salvate cu succes",
         "save_failed": "Eșec la salvarea setărilor",
         "advanced_settings": "Setări avansate",
+        "java_required_modal": {
+            "title": "Java {{version}} este necesar",
+            "subtitle": "Minecraft {{minecraftVersion}}",
+            "description": "Această versiune de Minecraft necesită Java {{version}}. Am detectat că momentan nu este instalată o versiune compatibilă.",
+            "settings_hint": "Poți instala Java {{version}} acum. Dacă nu îl instalezi din buton, îl poți instala mai târziu din Setări > Java.",
+            "install_button": "Instalează Java {{version}}",
+            "installing": "Se instalează Java {{version}}..."
+        },
         "general": {
             "title": "General",
             "startup_page": "Pagină de Pornire",
@@ -429,7 +440,25 @@
             "slovenian": "Slovenă (SI)",
             "swedish": "Suedeză (SE)",
             "quick_switch_button": "Buton de comutare rapidă",
-            "quick_switch_button_desc": "Buton de comutare rapidă"
+            "quick_switch_button_desc": "Buton de comutare rapidă",
+            "animations": {
+                "title": "Animații de pagină",
+                "desc": "Animează schimbările dintre pagini și taburi în loc să schimbe instant vizualizarea.",
+                "style_label": "Stil animație",
+                "style_desc": "Alege stilul de tranziție folosit în tot launcherul.",
+                "presets": {
+                    "cinematic": "Cinematic",
+                    "cinematic_desc": "Blur fin, profunzime subtilă și o schimbare de pagină bine finisată.",
+                    "glide": "Glide",
+                    "glide_desc": "Mișcare orizontală rapidă pentru o schimbare de tab mai clară.",
+                    "fade": "Fade",
+                    "fade_desc": "Tranziție minimă cu aproape deloc mișcare.",
+                    "zoom": "Zoom",
+                    "zoom_desc": "Paginile apar cu un efect de zoom mai concentrat.",
+                    "lift": "Lift",
+                    "lift_desc": "Conținutul intră de jos și iese în sus cu mai multă mișcare."
+                }
+            }
         },
         "java": {
             "title": "Runtime Java",
@@ -466,7 +495,18 @@
             "title": "Creare Instanță",
             "copy_settings": "Copiază Setările din Instanță",
             "copy_settings_desc": "Copiază automat controalele și opțiunile dintr-o instanță selectată la crearea uneia noi.",
-            "source_instance": "Instanță Sursă"
+            "source_instance": "Instanță Sursă",
+            "show_modrinth_instances": "Afiseaza instantele Modrinth in biblioteca",
+            "show_modrinth_instances_desc": "Daca este dezactivat, instantele externe Modrinth importate sunt ascunse in fila Biblioteca.",
+            "show_curseforge_instances": "Afiseaza instantele CurseForge in biblioteca",
+            "show_curseforge_instances_desc": "Daca este dezactivat, instantele externe CurseForge importate sunt ascunse in fila Biblioteca.",
+            "uninstall_title": "Dezinstaleaza launcherul",
+            "uninstall_desc": "Porneste dezinstalatorul de sistem Lux si inchide launcherul.",
+            "uninstall_btn": "Dezinstaleaza launcherul",
+            "uninstall_modal_title": "Dezinstaleaza launcherul",
+            "uninstall_modal_msg": "Sigur vrei sa pornesti dezinstalarea Lux acum? Launcherul se va inchide.",
+            "uninstall_confirm_btn": "Porneste dezinstalarea",
+            "uninstall_failed": "Dezinstalarea nu a putut fi pornita."
         },
         "integration": {
             "title": "Integrare Launcher",

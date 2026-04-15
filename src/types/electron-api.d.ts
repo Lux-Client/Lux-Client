@@ -40,6 +40,12 @@ interface ElectronAPI {
   getMods: (instanceName: string) => Promise<any>;
   getResourcePacks: (instanceName: string) => Promise<any>;
   getShaders: (instanceName: string) => Promise<any>;
+  listInstanceFiles: (instanceName: string, relativePath?: string) => Promise<any>;
+  readInstanceFile: (instanceName: string, relativePath: string) => Promise<any>;
+  writeInstanceFile: (instanceName: string, relativePath: string, content: string) => Promise<any>;
+  deleteInstanceFile: (instanceName: string, relativePath: string) => Promise<any>;
+  uploadInstanceFile: (instanceName: string, relativePath: string, localFilePath: string) => Promise<any>;
+  createInstanceDirectory: (instanceName: string, relativePath: string) => Promise<any>;
   toggleMod: (instanceName: string, fileName: string) => Promise<any>;
   deleteMod: (instanceName: string, fileName: string, type?: string) => Promise<any>;
   getWorlds: (instanceName: string) => Promise<any>;
@@ -69,7 +75,9 @@ interface ElectronAPI {
   importFile: () => Promise<any>;
   ping: () => Promise<any>;
   restartApp: () => Promise<any>;
+  uninstallLauncher: () => Promise<any>;
   getInstances: () => Promise<any>;
+  resolveDroppedFilePath: (file: File) => string;
   installModpack: (url: string, name: string, iconUrl?: string) => Promise<any>;
   searchModrinth: (query: string, facets?: any, options?: any) => Promise<any>;
   modrinthSearch: (query: string, facets?: any, options?: any) => Promise<any>;
@@ -125,6 +133,7 @@ interface ElectronAPI {
   onThemeUpdated: (callback: IpcCallback) => UnsubscribeFn;
   onSettingsUpdated: (callback: IpcCallback) => UnsubscribeFn;
   onJavaProgress: (callback: IpcCallback) => UnsubscribeFn;
+  onJavaRequired: (callback: IpcCallback) => UnsubscribeFn;
   onWindowStateChange: (callback: IpcCallback) => UnsubscribeFn;
 
   getServers: () => Promise<any>;
@@ -147,6 +156,7 @@ interface ElectronAPI {
   readServerFile: (serverName: string, relativePath: string) => Promise<any>;
   writeServerFile: (serverName: string, relativePath: string, content: string) => Promise<any>;
   deleteServerFile: (serverName: string, relativePath: string) => Promise<any>;
+  uploadServerFile: (serverName: string, relativePath: string, localFilePath: string) => Promise<any>;
   createServerDirectory: (serverName: string, relativePath: string) => Promise<any>;
   renameServerFile: (serverName: string, oldPath: string, newPath: string) => Promise<any>;
   getServerStatus: (name: string) => Promise<any>;

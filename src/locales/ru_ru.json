@@ -232,7 +232,10 @@
             "no_shaders": "Шейдеры не найдены",
             "check_folder_shaders": "Проверьте папку `shaderpacks` в директории сборки",
             "browse_shaders": "Поиск шейдеров",
-            "preview": "Превью"
+            "preview": "Превью",
+            "drop_packs": "Drag and drop resource packs here to install",
+            "drop_shaders": "Drag and drop shader packs here to install",
+            "accepting_archives": "Accepting .zip and .rar files"
         },
         "search": {
             "placeholder": "Введите ID Modrinth или название мода...",
@@ -429,7 +432,25 @@
             "slovenian": "Словенский (SI)",
             "swedish": "Шведский (SE)",
             "quick_switch_button": "Кнопка быстрого переключения",
-            "quick_switch_button_desc": "Кнопка быстрого переключения"
+            "quick_switch_button_desc": "Кнопка быстрого переключения",
+            "animations": {
+                "title": "Анимации страниц",
+                "desc": "Анимирует переключение страниц и вкладок вместо мгновенной смены вида.",
+                "style_label": "Стиль анимации",
+                "style_desc": "Выберите стиль переходов, который будет использоваться во всём лаунчере.",
+                "presets": {
+                    "cinematic": "Кинематографичный",
+                    "cinematic_desc": "Мягкое размытие, лёгкая глубина и аккуратная смена страницы.",
+                    "glide": "Скольжение",
+                    "glide_desc": "Быстрое горизонтальное движение для более чёткого переключения вкладок.",
+                    "fade": "Затухание",
+                    "fade_desc": "Минимальное затухание почти без движения.",
+                    "zoom": "Зум",
+                    "zoom_desc": "Страницы появляются с более сфокусированным эффектом увеличения.",
+                    "lift": "Подъём",
+                    "lift_desc": "Контент поднимается снизу и уходит вверх с более заметным движением."
+                }
+            }
         },
         "java": {
             "title": "Среда выполнения Java",
@@ -466,7 +487,18 @@
             "title": "Создание сборки",
             "copy_settings": "Копировать настройки из сборки",
             "copy_settings_desc": "Автоматически копировать управление и настройки из выбранной сборки при создании новой.",
-            "source_instance": "Исходная сборка"
+            "source_instance": "Исходная сборка",
+            "show_modrinth_instances": "Pokazyvat instansy Modrinth v biblioteke",
+            "show_modrinth_instances_desc": "Esli otklyucheno, importirovannye vneshnie instansy Modrinth budut skryty vo vkladke Biblioteka.",
+            "show_curseforge_instances": "Pokazyvat instansy CurseForge v biblioteke",
+            "show_curseforge_instances_desc": "Esli otklyucheno, importirovannye vneshnie instansy CurseForge budut skryty vo vkladke Biblioteka.",
+            "uninstall_title": "Udalit launcher",
+            "uninstall_desc": "Zapускает sistemnyy deinstallyator Lux i zakryvaet launcher.",
+            "uninstall_btn": "Udalit launcher",
+            "uninstall_modal_title": "Udalit launcher",
+            "uninstall_modal_msg": "Vy deystvitelno hotite zapustit udaleniye Lux seychas? Launcher budet zakryt.",
+            "uninstall_confirm_btn": "Nachat udaleniye",
+            "uninstall_failed": "Ne udalos zapustit udaleniye."
         },
         "integration": {
             "title": "Интеграции Лаунчера",
@@ -876,6 +908,14 @@
         "no_issues": "Мы не смогли автоматически определить причину этого сбоя.",
         "view_log": "Просмотреть загруженный лог",
         "check_manually": "Пожалуйста, проверьте файл latest.log вручную."
+    },
+    "java_required_modal": {
+        "title": "Требуется Java {{version}}",
+        "subtitle": "Minecraft {{minecraftVersion}}",
+        "description": "Эта версия Minecraft требует Java {{version}}. Мы обнаружили, что совместимая версия сейчас не установлена.",
+        "settings_hint": "Вы можете установить Java {{version}} прямо сейчас. Если не устанавливать через кнопку, это можно сделать позже в Настройки > Java.",
+        "install_button": "Установить Java {{version}}",
+        "installing": "Установка Java {{version}}..."
     },
     "pixel_editor": {
         "title": "Пиксельный редактор",

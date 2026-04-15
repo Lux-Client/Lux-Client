@@ -112,7 +112,8 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                 limit,
                 index: sortMethod,
                 projectType: projectType,
-                includeCurseforge: projectType === 'mod' || projectType === 'plugin'
+                includeCurseforge: projectType === 'mod',
+                usePluginPortal: projectType === 'plugin'
             });
 
             if (res.success) {

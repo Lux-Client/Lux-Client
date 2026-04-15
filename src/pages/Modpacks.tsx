@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import OptimizedImage from '../components/OptimizedImage';
 
 const Modpacks = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -94,7 +95,18 @@ const Modpacks = () => {
                             <div key={pack.slug} className="bg-muted border border-border rounded-xl p-4 hover:bg-accent transition-all group flex flex-col h-[320px]">
                                 <div className="h-32 w-full mb-4 rounded-lg overflow-hidden bg-muted relative">
                                     {pack.icon_url ? (
-                                        <img src={pack.icon_url} alt={pack.title} className="w-full h-full object-cover transition-transform duration-500" />
+                                        <OptimizedImage
+                                            src={pack.icon_url}
+                                            alt={pack.title}
+                                            className="w-full h-full object-cover transition-transform duration-500"
+                                            fallback={
+                                                <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-muted">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                    </svg>
+                                                </div>
+                                            }
+                                        />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">

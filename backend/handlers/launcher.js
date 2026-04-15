@@ -31,17 +31,167 @@ function stripExternalSuffix(value) {
         .trim();
 }
 
+function readJsonSyncSafe(filePath) {
+    try {
+        if (!filePath || !fs.existsSync(filePath)) return null;
+        return fs.readJsonSync(filePath);
+    } catch (_) {
+        return null;
+    }
+}
+
+function collectAbsolutePathStrings(value, depth = 0, maxDepth = 6, bucket = []) {
+    if (depth > maxDepth || value === null || value === undefined) {
+        return bucket;
+    }
+
+    if (typeof value === 'string') {
+        const candidate = value.trim();
+        if (candidate && path.isAbsolute(candidate)) {
+            bucket.push(candidate);
+        }
+        return bucket;
+    }
+
+    if (Array.isArray(value)) {
+        for (const entry of value) {
+            collectAbsolutePathStrings(entry, depth + 1, maxDepth, bucket);
+        }
+        return bucket;
+    }
+
+    if (typeof value === 'object') {
+        for (const entry of Object.values(value)) {
+            collectAbsolutePathStrings(entry, depth + 1, maxDepth, bucket);
+        }
+    }
+
+    return bucket;
+}
+
+function pushDirCandidate(target, dirPath) {
+    const normalized = String(dirPath || '').trim();
+    if (!normalized) return;
+    const resolved = path.resolve(normalized);
+    if (!fs.existsSync(resolved)) return;
+    if (!target.includes(resolved)) {
+        target.push(resolved);
+    }
+}
+
+function expandModrinthCandidatePath(rawPath) {
+    const candidates = [];
+    const resolved = path.resolve(String(rawPath || '').trim());
+    if (!resolved) return candidates;
+
+    const baseName = path.basename(resolved).toLowerCase();
+    pushDirCandidate(candidates, resolved);
+    if (baseName !== 'profiles') {
+        pushDirCandidate(candidates, path.join(resolved, 'profiles'));
+    }
+    pushDirCandidate(candidates, path.join(resolved, '.minecraft', 'profiles'));
+    return candidates;
+}
+
+function expandCurseForgeCandidatePath(rawPath) {
+    const candidates = [];
+    const resolved = path.resolve(String(rawPath || '').trim());
+    if (!resolved) return candidates;
+
+    const baseName = path.basename(resolved).toLowerCase();
+    pushDirCandidate(candidates, resolved);
+    if (baseName !== 'instances') {
+        pushDirCandidate(candidates, path.join(resolved, 'Instances'));
+        pushDirCandidate(candidates, path.join(resolved, 'instances'));
+    }
+    pushDirCandidate(candidates, path.join(resolved, 'minecraft', 'Instances'));
+    pushDirCandidate(candidates, path.join(resolved, 'Minecraft', 'Instances'));
+    return candidates;
+}
+
+function getConfiguredExternalRootCandidates(source, homeDir, roamingDir) {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+    const appSettings = readJsonSyncSafe(settingsPath) || {};
+
+    const modrinthConfigPaths = [
+        path.join(roamingDir, 'com.modrinth.theseus', 'settings.json'),
+        path.join(roamingDir, 'com.modrinth.theseus', 'state.json'),
+        path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'settings.json'),
+        path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'config.json')
+    ];
+
+    const curseForgeConfigPaths = [
+        path.join(roamingDir, 'CurseForge', 'Settings.json'),
+        path.join(roamingDir, 'CurseForge', 'settings.json'),
+        path.join(roamingDir, 'CurseForge', 'Install', 'Settings.json'),
+        path.join(roamingDir, 'CurseForge', 'Install', 'settings.json')
+    ];
+
+    const configuredValues = [];
+
+    if (Array.isArray(appSettings.externalLauncherPaths)) {
+        configuredValues.push(...appSettings.externalLauncherPaths);
+    }
+    if (Array.isArray(appSettings.externalModrinthPaths) && source === 'modrinth') {
+        configuredValues.push(...appSettings.externalModrinthPaths);
+    }
+    if (Array.isArray(appSettings.externalCurseforgePaths) && source === 'curseforge') {
+        configuredValues.push(...appSettings.externalCurseforgePaths);
+    }
+
+    const configPaths = source === 'modrinth' ? modrinthConfigPaths : curseForgeConfigPaths;
+    for (const configPath of configPaths) {
+        const parsed = readJsonSyncSafe(configPath);
+        if (parsed) {
+            configuredValues.push(parsed);
+        }
+    }
+
+    const absolutePaths = collectAbsolutePathStrings(configuredValues);
+    const expanded = [];
+
+    for (const absolutePath of absolutePaths) {
+        const variants = source === 'modrinth'
+            ? expandModrinthCandidatePath(absolutePath)
+            : expandCurseForgeCandidatePath(absolutePath);
+        for (const variant of variants) {
+            pushDirCandidate(expanded, variant);
+        }
+    }
+
+    return expanded;
+}
+
 function getExternalLauncherRoots() {
     if (process.platform !== 'win32') return [];
 
     const homeDir = require('os').homedir();
     const roamingDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
 
-    return [
+    const defaults = [
         { source: 'modrinth', baseDir: path.join(homeDir, 'AppData', 'Roaming', 'ModrinthApp', 'profiles') },
         { source: 'modrinth', baseDir: path.join(roamingDir, 'com.modrinth.theseus', 'profiles') },
         { source: 'curseforge', baseDir: path.join(homeDir, 'curseforge', 'minecraft', 'Instances') }
     ];
+
+    const dynamicRoots = [
+        ...getConfiguredExternalRootCandidates('modrinth', homeDir, roamingDir).map((baseDir) => ({ source: 'modrinth', baseDir })),
+        ...getConfiguredExternalRootCandidates('curseforge', homeDir, roamingDir).map((baseDir) => ({ source: 'curseforge', baseDir }))
+    ];
+
+    const deduped = [];
+    const seen = new Set();
+    for (const root of [...defaults, ...dynamicRoots]) {
+        const source = String(root?.source || '').trim().toLowerCase();
+        const baseDir = String(root?.baseDir || '').trim();
+        if (!source || !baseDir) continue;
+        const key = `${source}::${path.resolve(baseDir).toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push({ source, baseDir: path.resolve(baseDir) });
+    }
+
+    return deduped;
 }
 
 function normalizeLoaderFromString(value) {
@@ -60,6 +210,90 @@ function normalizeLoaderFromString(value) {
     if (raw.includes('forge')) return 'forge';
     if (raw.includes('vanilla')) return 'vanilla';
     return raw;
+}
+
+function inferVersionFromName(name) {
+    const raw = String(name || '');
+    const match = raw.match(/\b\d+\.\d+(?:\.\d+)?\b/);
+    return match ? match[0] : '';
+}
+
+async function inferVersionFromProfileDirectory(profileDir) {
+    const versionRoots = [
+        path.join(profileDir, '.minecraft', 'versions'),
+        path.join(profileDir, 'versions')
+    ];
+
+    for (const versionRoot of versionRoots) {
+        try {
+            if (!await fs.pathExists(versionRoot)) continue;
+            const entries = await fs.readdir(versionRoot, { withFileTypes: true });
+            const versionNames = entries
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => String(entry.name || '').trim())
+                .filter(Boolean)
+                .sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+
+            for (const candidate of versionNames) {
+                const inferred = inferVersionFromName(candidate);
+                if (inferred) {
+                    return inferred;
+                }
+            }
+        } catch (_) {
+            // Ignore scan errors and continue.
+        }
+    }
+
+    return '';
+}
+
+async function inferVersionFromProfileLogs(profileDir) {
+    const logCandidates = [
+        path.join(profileDir, 'logs', 'launcher_log.txt'),
+        path.join(profileDir, 'logs', 'latest.log')
+    ];
+
+    const versionPatterns = [
+        /--fml\.mcVersion,\s*([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i,
+        /--version,\s*([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i,
+        /minecraft server version\s+([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i,
+        /minecraft\s+([0-9]+\.[0-9]+(?:\.[0-9]+)?)/i
+    ];
+
+    for (const logPath of logCandidates) {
+        try {
+            if (!await fs.pathExists(logPath)) continue;
+            const content = await fs.readFile(logPath, 'utf8');
+
+            for (const pattern of versionPatterns) {
+                const match = content.match(pattern);
+                if (match && match[1]) {
+                    return String(match[1]).trim();
+                }
+            }
+        } catch (_) {
+            // Ignore log parsing failures.
+        }
+    }
+
+    return '';
+}
+
+function escapeRegex(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasDelimitedToken(haystack, token) {
+    const normalizedHaystack = String(haystack || '').trim().toLowerCase();
+    const normalizedToken = String(token || '').trim().toLowerCase();
+
+    if (!normalizedHaystack || !normalizedToken) {
+        return false;
+    }
+
+    const pattern = new RegExp(`(^|[^a-z0-9])${escapeRegex(normalizedToken)}($|[^a-z0-9])`, 'i');
+    return pattern.test(normalizedHaystack);
 }
 
 function parseFiniteNumber(value) {
@@ -205,19 +439,81 @@ async function resolveSharedVersionId(versionsDir, details) {
     const version = String(details?.version || '').trim().toLowerCase();
     const loader = String(details?.loader || '').trim().toLowerCase();
     const loaderVersion = String(details?.loaderVersion || '').trim().toLowerCase();
+    const versionAliases = buildGameVersionAliases(version).map((entry) => entry.toLowerCase());
+
+    const resolvedVersionCache = new Map();
+    const resolveBaseMinecraftVersionFromJson = async (versionName) => {
+        const cacheKey = String(versionName || '').trim().toLowerCase();
+        if (!cacheKey) return '';
+        if (resolvedVersionCache.has(cacheKey)) return resolvedVersionCache.get(cacheKey);
+
+        const visited = new Set();
+        let current = String(versionName || '').trim();
+        let resolved = '';
+
+        while (current) {
+            const currentKey = current.toLowerCase();
+            if (visited.has(currentKey)) break;
+            visited.add(currentKey);
+
+            const inferredFromCurrent = inferVersionFromName(current);
+            if (inferredFromCurrent) {
+                resolved = inferredFromCurrent;
+            }
+
+            const jsonPath = path.join(versionsDir, current, `${current}.json`);
+            const versionJson = await readJsonIfExists(jsonPath);
+            if (!versionJson) break;
+
+            const jsonId = String(versionJson?.id || '').trim();
+            const inferredFromJsonId = inferVersionFromName(jsonId);
+            if (inferredFromJsonId) {
+                resolved = inferredFromJsonId;
+            }
+
+            const inherited = String(versionJson?.inheritsFrom || '').trim();
+            if (!inherited) break;
+            current = inherited;
+        }
+
+        const normalized = String(resolved || '').trim().toLowerCase();
+        resolvedVersionCache.set(cacheKey, normalized);
+        return normalized;
+    };
+
+    const versionMatchedEntries = [];
+    for (const versionName of versionNames) {
+        const current = versionName.toLowerCase();
+        const byName = versionAliases.some((alias) => hasDelimitedToken(current, alias));
+        let byBaseVersion = false;
+
+        if (!byName && versionAliases.length > 0) {
+            const baseVersion = await resolveBaseMinecraftVersionFromJson(versionName);
+            byBaseVersion = baseVersion ? versionAliases.includes(baseVersion) : false;
+        }
+
+        if (byName || byBaseVersion) {
+            versionMatchedEntries.push(versionName);
+        }
+    }
+
+    const candidatesToScore = versionMatchedEntries.length > 0 ? versionMatchedEntries : versionNames;
 
     let bestMatch = '';
     let bestScore = -1;
 
-    for (const versionName of versionNames) {
+    for (const versionName of candidatesToScore) {
         const current = versionName.toLowerCase();
         let score = 0;
 
-        if (version && current.includes(version)) score += 40;
-        if (loaderVersion && current.includes(loaderVersion)) score += 35;
-        if (loader && current.includes(loader)) score += 20;
-        if (current.startsWith(version)) score += 10;
-        if (current.startsWith(`${loader}-`) || current.includes(`-${loader}-`)) score += 10;
+        const baseVersion = await resolveBaseMinecraftVersionFromJson(versionName);
+
+        if (versionAliases.some((alias) => hasDelimitedToken(current, alias))) score += 60;
+        if (baseVersion && versionAliases.includes(baseVersion)) score += 80;
+        if (loaderVersion && hasDelimitedToken(current, loaderVersion)) score += 35;
+        if (loader && hasDelimitedToken(current, loader)) score += 20;
+        if (version && current.endsWith(`-${version}`)) score += 12;
+        if (loader && (current.startsWith(`${loader}-`) || current.includes(`-${loader}-`))) score += 10;
 
         if (score > bestScore) {
             bestScore = score;
@@ -398,6 +694,7 @@ async function readExternalLaunchDetails(externalProfile) {
     let loaderVersion = '';
     let explicitVersionId = '';
     let assetIndex = '';
+    const fallbackProfileName = path.basename(profileDir);
 
     if (source === 'modrinth') {
         const profile = await readJsonIfExists(path.join(profileDir, 'profile.json'));
@@ -515,13 +812,42 @@ async function readExternalLaunchDetails(externalProfile) {
     }
 
     if (!version) {
-        const availableVersions = await listDirectoryNames(versionsDir);
-        const directVersionMatch = availableVersions.find((entry) => /^\d+\.\d+(?:\.\d+)?$/i.test(entry));
-        if (directVersionMatch) version = directVersionMatch;
+        version = inferVersionFromName(fallbackProfileName);
+    }
+
+    if (!version) {
+        version = await inferVersionFromProfileDirectory(profileDir);
+    }
+
+    if (!version) {
+        version = await inferVersionFromProfileLogs(profileDir);
+    }
+
+    if (!version) {
+        const availableVersions = (await listDirectoryNames(versionsDir))
+            .map((entry) => inferVersionFromName(entry))
+            .filter(Boolean)
+            .sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+        if (availableVersions.length > 0) {
+            version = availableVersions[0];
+        }
     }
 
     if (!loader) {
         loader = explicitVersionId ? normalizeLoaderFromString(explicitVersionId) : 'vanilla';
+    }
+
+    if (!loader) {
+        const hasFabricMarker = await fs.pathExists(path.join(profileDir, '.fabric'));
+        const hasQuiltMarker = await fs.pathExists(path.join(profileDir, '.quilt'));
+        if (hasFabricMarker) {
+            loader = 'fabric';
+        } else if (hasQuiltMarker) {
+            loader = 'quilt';
+        } else {
+            const inferredFromName = normalizeLoaderFromString(fallbackProfileName);
+            loader = inferredFromName || (explicitVersionId ? normalizeLoaderFromString(explicitVersionId) : 'vanilla');
+        }
     }
 
     const resolvedVersionId = await resolveSharedVersionId(versionsDir, {
@@ -1178,15 +1504,33 @@ Add-Type -TypeDefinition $code -Language CSharp
 
             const { installJava } = require('../utils/java-utils');
 
-            function getRequiredJavaVersion(mcVersion) {
-                const v = mcVersion.split('.');
-                const major = parseInt(v[0]);
-                const minor = parseInt(v[1]);
-                const patch = parseInt(v[2] || 0);
+            function parseMinecraftVersionForJava(mcVersion) {
+                const raw = String(mcVersion || '').trim();
+                const match = raw.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+                if (!match) {
+                    return { major: 0, minor: 0, patch: 0 };
+                }
 
-                if (minor >= 21) return 21;
-                if (minor === 20 && patch >= 5) return 21;
-                if (minor >= 17) return 17;
+                const first = Number.parseInt(match[1] || '0', 10);
+                const second = Number.parseInt(match[2] || '0', 10);
+                const third = Number.parseInt(match[3] || '0', 10);
+
+                // Normalize both "1.20.6" and "20.6" style versioning.
+                if (first === 1 && match[2]) {
+                    return { major: second, minor: third, patch: 0 };
+                }
+
+                return { major: first, minor: second, patch: third };
+            }
+
+            function getRequiredJavaVersion(mcVersion) {
+                const parsed = parseMinecraftVersionForJava(mcVersion);
+
+                // Newer MC builds from 26.1+ require Java 25.
+                if (parsed.major > 26 || (parsed.major === 26 && parsed.minor >= 1)) return 25;
+                if (parsed.major >= 21) return 21;
+                if (parsed.major === 20 && parsed.minor >= 5) return 21;
+                if (parsed.major >= 17) return 17;
                 return 8;
             }
 
@@ -1198,24 +1542,81 @@ Add-Type -TypeDefinition $code -Language CSharp
             const { promisify } = require('util');
             const execAsync = promisify(exec);
 
-            const performJavaCheck = async (p) => {
+            const detectJavaVersion = async (javaBinaryPath) => {
                 try {
-                    const { stderr, stdout } = await execAsync(`"${p}" -version`, { encoding: 'utf8' });
-                    javaOutput = stderr || stdout;
-
-                    const versionMatch = javaOutput.match(/(?:version|jd[kj])\s*["']?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
-                    if (versionMatch) {
-                        let major = parseInt(versionMatch[1]);
-                        if (major === 1) major = parseInt(versionMatch[2] || 8);
-                        javaVersion = major;
-                        console.log(`[Launcher] Detected Java version ${javaVersion} for ${p}`);
+                    const { stderr, stdout } = await execAsync(`"${javaBinaryPath}" -version`, { encoding: 'utf8' });
+                    const output = stderr || stdout || '';
+                    const versionMatch = output.match(/(?:version|jd[kj])\s*["']?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
+                    if (!versionMatch) {
+                        return { success: false, version: 0, output };
                     }
 
-                    return true;
+                    let major = Number.parseInt(versionMatch[1], 10);
+                    if (major === 1) major = Number.parseInt(versionMatch[2] || '8', 10);
+
+                    return { success: true, version: major, output };
                 } catch (e) {
-                    console.error(`[Launcher] Java check failed for ${p}:`, e.message);
-                    return false;
+                    return { success: false, version: 0, output: '', error: e.message };
                 }
+            };
+
+            const findCompatibleJavaRuntime = async (requiredVersion, preferredPaths = []) => {
+                const javaBinName = process.platform === 'win32' ? 'java.exe' : 'java';
+                const runtimesDir = path.join(app.getPath('userData'), 'runtimes');
+                const candidates = [];
+                const seen = new Set();
+
+                const addCandidate = (candidate) => {
+                    const normalized = String(candidate || '').trim();
+                    if (!normalized) return;
+                    const dedupeKey = process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+                    if (seen.has(dedupeKey)) return;
+                    seen.add(dedupeKey);
+                    candidates.push(normalized);
+                };
+
+                for (const p of preferredPaths) addCandidate(p);
+                addCandidate('java');
+
+                try {
+                    if (await fs.pathExists(runtimesDir)) {
+                        const runtimeDirs = await fs.readdir(runtimesDir);
+                        for (const dirName of runtimeDirs) {
+                            addCandidate(path.join(runtimesDir, dirName, 'bin', javaBinName));
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Launcher] Failed to scan internal runtimes:', e.message);
+                }
+
+                for (const candidate of candidates) {
+                    if (candidate !== 'java' && !await fs.pathExists(candidate)) continue;
+
+                    const detected = await detectJavaVersion(candidate);
+                    if (detected.success && detected.version >= requiredVersion) {
+                        return {
+                            found: true,
+                            path: candidate,
+                            version: detected.version,
+                            output: detected.output
+                        };
+                    }
+                }
+
+                return { found: false };
+            };
+
+            const performJavaCheck = async (p) => {
+                const detected = await detectJavaVersion(p);
+                if (detected.success) {
+                    javaOutput = detected.output;
+                    javaVersion = detected.version;
+                    console.log(`[Launcher] Detected Java version ${javaVersion} for ${p}`);
+                    return true;
+                }
+
+                console.error(`[Launcher] Java check failed for ${p}:`, detected.error || 'unknown error');
+                return false;
             };
 
             let javaToCheck = opts.javaPath || 'java';
@@ -1229,7 +1630,35 @@ Add-Type -TypeDefinition $code -Language CSharp
             }
 
             if (!javaValid) {
-                const reqVersion = getRequiredJavaVersion(config.version);
+                const compatibleJava = await findCompatibleJavaRuntime(reqVersion, [opts.javaPath, settings.javaPath]);
+                if (compatibleJava.found) {
+                    javaToCheck = compatibleJava.path;
+                    opts.javaPath = javaToCheck;
+                    javaValid = true;
+                    javaVersion = compatibleJava.version;
+                    javaOutput = compatibleJava.output || javaOutput;
+                    console.log(`[Launcher] Switched to compatible Java ${javaVersion}: ${javaToCheck}`);
+                }
+            }
+
+            if (!javaValid) {
+                if (reqVersion >= 25) {
+                    if (mainWindow?.webContents) {
+                        mainWindow.webContents.send('java:required', {
+                            instanceName,
+                            minecraftVersion: config.version,
+                            requiredVersion: reqVersion
+                        });
+                    }
+
+                    runningInstances.delete(instanceName);
+                    activeLaunches.delete(instanceName);
+                    return {
+                        success: false,
+                        error: `This Minecraft version requires Java ${reqVersion}, but no compatible Java runtime is installed.`
+                    };
+                }
+
                 console.log(`[Launcher] Java not found or invalid. Attempting auto-install of Java ${reqVersion}...`);
 
                 mainWindow.webContents.send('install:progress', {
@@ -1381,16 +1810,15 @@ Add-Type -TypeDefinition $code -Language CSharp
             const crashPatterns = [
                 'Failed to start Minecraft!',
                 'FormattedException',
-                'IllegalAccessException',
                 'NoClassDefFoundError',
-                'java.lang.NoSuchMethodError',
-                'Exception in thread "main"'
+                'java.lang.NoSuchMethodError'
             ];
+            let gameStarted = false;
 
             const appendLog = (data) => {
                 const line = data.toString();
 
-                if (!logCrashDetected) {
+                if (!logCrashDetected && !gameStarted) {
                     for (const pattern of crashPatterns) {
                         if (line.includes(pattern)) {
                             console.log(`[Launcher] Detected potential crash pattern in logs: ${pattern}`);
@@ -1412,7 +1840,14 @@ Add-Type -TypeDefinition $code -Language CSharp
                 mainWindow.webContents.send('launch:log', line);
             };
 
-            launcher.on('debug', (line) => appendLog(`[DEBUG] ${line}`));
+            launcher.on('debug', (line) => {
+                const sanitizedLine = String(line ?? '')
+                    .replace(/\[MCLC\]\s*:?\s*/gi, '')
+                    .trim();
+
+                if (!sanitizedLine) return;
+                appendLog(`[Debug] [LUX] ${sanitizedLine}`);
+            });
             launcher.on('data', (line) => appendLog(line));
             launcher.on('stderr', (line) => appendLog(`[ERROR] ${line}`));
             launcher.on('progress', (e) => {
@@ -1420,6 +1855,7 @@ Add-Type -TypeDefinition $code -Language CSharp
             });
 
             launcher.on('arguments', (e) => {
+                                gameStarted = true;
                 mainWindow.webContents.send('instance:status', {
                     instanceName,
                     status: 'running',
@@ -1456,7 +1892,7 @@ Add-Type -TypeDefinition $code -Language CSharp
                         }
 
                         const normalizedExitCode = Number.isInteger(code) ? code : null;
-                        const hasErrorExitCode = normalizedExitCode !== null && normalizedExitCode !== 0;
+                        const hasErrorExitCode = normalizedExitCode !== null && normalizedExitCode > 0;
                         const isShortSession = sessionTime < 15000;
                         const shouldFlagShortSessionCrash = process.platform !== 'linux' && isShortSession;
                         const isCrash = hasErrorExitCode || logCrashDetected || shouldFlagShortSessionCrash;

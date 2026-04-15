@@ -1036,7 +1036,8 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
             const result = await window.electronAPI.modrinthSearch(query, facets, {
                 projectType: getServerContentType(),
                 limit: 10,
-                includeCurseforge: true
+                includeCurseforge: !isPlugin,
+                usePluginPortal: isPlugin
             });
 
             if (result.success) {
@@ -2408,7 +2409,9 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             type="text"
                                             value={modSearch}
                                             onChange={(e) => setModSearch(e.target.value)}
-                                            placeholder={`Search ${getContentLabelPlural()} on Modrinth / CurseForge...`}
+                                            placeholder={getServerContentType() === 'plugin'
+                                                ? `Search ${getContentLabelPlural()} on Plugin Portal (Modrinth, Hangar, SpigotMC)...`
+                                                : `Search ${getContentLabelPlural()} on Modrinth / CurseForge...`}
                                             className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                         />
                                         <button
