@@ -14,7 +14,8 @@
         "jar_label": "jar",
         "res_pack_label": "RES\nPAK",
         "shader_label": "Shader",
-        "lightbox_image": "Galleribild"
+        "lightbox_image": "Galleribild",
+        "open_folder": "Open folder"
     },
     "common": {
         "dashboard": "Översikt",
@@ -88,7 +89,19 @@
         "add_account": "Lägg till konto",
         "installed": "Installerad",
         "applying": "Tillämpar...",
-        "launching": "Startar..."
+        "launching": "Startar...",
+        "open_launcher": "Open Launcher",
+        "readonly": "Read-only",
+        "add": "Add",
+        "done": "Done",
+        "forward": "Forward",
+        "navigate": "Navigate",
+        "new": "New",
+        "reset": "Reset",
+        "saving": "Saving...",
+        "select": "Select",
+        "unknown_error": "An unknown error occurred",
+        "useful_tools": "Useful Tools"
     },
     "client_page": {
         "title": "Open Client",
@@ -128,7 +141,12 @@
         "browse": "Bläddra",
         "no_targets": "Inga mål tillgängliga",
         "image": "Bild",
-        "add": "Lägg till"
+        "add": "Lägg till",
+        "remove": "Remove",
+        "add_to_actionbar": "Add to Actionbar",
+        "added": "Added to Actionbar",
+        "remove_from_actionbar": "Remove from Actionbar",
+        "removed": "Removed from Actionbar"
     },
     "home": {
         "welcome_back": "Välkommen tillbaka!",
@@ -143,7 +161,9 @@
         "other_mod": "Annan mod",
         "everything_place": "Var sak på sin plats.",
         "save_layout": "Spara layout",
-        "by_author": "av {{author}}"
+        "by_author": "av {{author}}",
+        "drag_to_reorder": "Drag to reorder",
+        "welcome_back_name": "Welcome back, {{name}}!"
     },
     "dashboard": {
         "title": "Bibliotek",
@@ -163,7 +183,8 @@
         "group": {
             "none": "Gruppera efter: Ingen",
             "version": "Gruppera efter: Spelversion",
-            "loader": "Gruppera efter: Laddare (Loader)"
+            "loader": "Gruppera efter: Laddare (Loader)",
+            "launcher_toggle": "Show launcher instances"
         },
         "context": {
             "play": "Spela",
@@ -171,7 +192,9 @@
             "duplicate": "Duplicera",
             "export": "Exportera",
             "folder": "Öppna mapp",
-            "delete": "Ta bort"
+            "delete": "Ta bort",
+            "move_to_folder": "Move to folder",
+            "remove_from_folder": "Remove from folder"
         },
         "version": "Version",
         "dev_builds": "Utvecklarversioner",
@@ -192,7 +215,26 @@
             "description": "Choose how you want to export this instance.",
             "code": "Export as Code",
             "file": "Export as .mcpack file",
-            "partial_load_warning": "Some content could not be read and will be skipped."
+            "partial_load_warning": "Some content could not be read and will be skipped.",
+            "target_prefix": "Export as"
+        },
+        "click_to_upload_icon": "Click to upload icon",
+        "folder_modal": {
+            "help": "Select a destination for the instance folder.",
+            "path": "Folder path",
+            "title": "Move to Folder",
+            "title_multi": "Move Selected Instances"
+        },
+        "launch_game": "Launch Game",
+        "selection": {
+            "clear": "Clear selection",
+            "count": "{{count}} selected",
+            "done": "Done",
+            "enable": "Enable selection",
+            "move_to_folder": "Move selected to folder",
+            "not_selectable": "Not selectable",
+            "select_all": "Select all",
+            "toggle": "Toggle selection"
         }
     },
     "instance_details": {
@@ -200,7 +242,8 @@
             "content": "Innehåll",
             "worlds": "Världar",
             "logs": "Loggar",
-            "screenshots": "Skärmdumpar"
+            "screenshots": "Skärmdumpar",
+            "files": "Files"
         },
         "actions": {
             "export_mcpack": "Exportera som .mcpack",
@@ -235,7 +278,9 @@
             "preview": "Förhandsgranska",
             "drop_packs": "Drag and drop resource packs here to install",
             "drop_shaders": "Drag and drop shader packs here to install",
-            "accepting_archives": "Accepting .zip and .rar files"
+            "accepting_archives": "Accepting .zip and .rar files",
+            "failed_packs": "Failed to load resource packs.",
+            "failed_shaders": "Failed to load shaders."
         },
         "search": {
             "placeholder": "Ange Modrinth ID eller sök på modnamn...",
@@ -269,12 +314,41 @@
             "refresh": "Uppdatera",
             "copy": "Kopiera",
             "clear": "Rensa",
-            "no_logs": "Inga aktiva loggposter."
+            "no_logs": "Inga aktiva loggposter.",
+            "upload": "Upload logs"
         },
         "project": {
             "compatible": "Kompatibel",
             "versions": "Versioner",
             "no_versions": "Inga versioner hittades"
+        },
+        "files": {
+            "back_to_file": "Back to files",
+            "delete_confirm": "Are you sure you want to delete this file?",
+            "delete_success": "File deleted successfully",
+            "discard_changes": "Discard changes",
+            "empty": "No files found",
+            "error_create_folder": "Could not create folder",
+            "error_delete": "Could not delete item",
+            "error_list": "Could not list files",
+            "error_read": "Could not read file",
+            "error_save": "Could not save file",
+            "error_upload": "Could not upload file",
+            "folder": "Folder",
+            "folder_created": "Folder created",
+            "folder_name_placeholder": "Enter folder name",
+            "keybinds_label": "Keybinds",
+            "loading": "Loading files...",
+            "new_folder": "New Folder",
+            "not_editable": "This file cannot be edited here",
+            "save_success": "File saved successfully",
+            "search_jump_to_result": "Jump to result",
+            "search_placeholder": "Search files...",
+            "unsaved_desc": "You have unsaved changes.",
+            "unsaved_title": "Unsaved Changes",
+            "upload": "Upload",
+            "upload_failed": "Upload failed",
+            "upload_success": "Upload successful"
         }
     },
     "skins": {
@@ -352,7 +426,23 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "add_skin_desc": "Add a new skin to your library.",
+        "advanced_editor_desc": "Use the advanced editor to fine-tune your skin.",
+        "brush_not_used": "Brush tool has not been used yet.",
+        "choose_save_location": "Choose where to save the edited skin.",
+        "color_replace": "Replace one color with another",
+        "drag_mode": "Drag Mode",
+        "drag_mode_hint": "Drag across the model to paint or sample colors.",
+        "edited_skin": "Edited Skin",
+        "first_layer": "First Layer",
+        "paint_layer": "Paint Layer",
+        "pipette": "Color Picker",
+        "second_layer": "Second Layer",
+        "select_cape_desc": "Choose a cape to wear in-game.",
+        "skin_name": "Skin Name",
+        "tool_hotkeys": "Tool Hotkeys",
+        "tool_hotkeys_hint": "Keyboard shortcuts for the skin editor."
     },
     "styling": {
         "title": "Utseende",
@@ -393,14 +483,20 @@
         "saved_success": "Stilinställningar sparade!",
         "preset_deleted": "Förinställning borttagen",
         "exported_to": "Temat exporterades till {{path}}",
-        "imported_success": "Temat importerades framgångsrikt!"
+        "imported_success": "Temat importerades framgångsrikt!",
+        "editor": "Editor",
+        "enter_name": "Enter a theme name",
+        "export_desc": "Export the current theme so it can be imported later.",
+        "no_custom_themes": "No custom themes yet",
+        "theme_name": "Theme Name"
     },
     "login": {
         "title": "Logga in",
         "microsoft_sign_in": "Logga in med ditt Microsoft-konto",
         "sign_in_button": "Logga in med Microsoft",
         "logging_in": "Loggar in...",
-        "failed": "Inloggning misslyckades"
+        "failed": "Inloggning misslyckades",
+        "guest_restriction": "Login required to access this feature"
     },
     "settings": {
         "title": "Inställningar",
@@ -450,7 +546,9 @@
                     "lift": "Lift",
                     "lift_desc": "Innehåll lyfts in och lämnar uppåt med mer rörelse."
                 }
-            }
+            },
+            "startup_section": "Startup Section",
+            "startup_subpage": "Startup Subpage"
         },
         "java": {
             "title": "Java",
@@ -498,7 +596,16 @@
             "uninstall_modal_title": "Avinstallera launcher",
             "uninstall_modal_msg": "Vill du verkligen starta avinstallationen av Lux nu? Launchern kommer att stangas.",
             "uninstall_confirm_btn": "Starta avinstallation",
-            "uninstall_failed": "Avinstallationen kunde inte startas."
+            "uninstall_failed": "Avinstallationen kunde inte startas.",
+            "external_paths_desc": "Add extra folders that Lux can use to store instances.",
+            "external_paths_empty": "No external paths configured",
+            "external_paths_exists": "This path is already configured",
+            "external_paths_label": "External Paths",
+            "external_paths_placeholder": "Enter an external path",
+            "storage_path": "Storage Path",
+            "storage_path_desc": "Choose where Lux saves instances and worlds.",
+            "storage_path_placeholder": "Select a storage path",
+            "storage_path_reset": "Reset to default storage path"
         },
         "integration": {
             "title": "Integration av Launcher",
@@ -515,7 +622,11 @@
             "minimize_to_tray": "Minimera till systemfältet",
             "minimize_to_tray_desc": "Dölj startprogrammet i systemfältet när du stänger eller minimerar det.",
             "smart_log_analytics": "Smart logganalys",
-            "smart_log_analytics_desc": "Analysera krascher automatiskt och föreslå åtgärder."
+            "smart_log_analytics_desc": "Analysera krascher automatiskt och föreslå åtgärder.",
+            "focus_mode": "Focus Mode",
+            "focus_mode_desc": "Reduce clutter and hide non-essential UI elements.",
+            "minimal_mode": "Minimal Mode",
+            "minimal_mode_desc": "Simplify the interface for a lightweight experience."
         },
         "cloud": {
             "title": "Inställningar för säkerhetskopiering i molnet",
@@ -580,6 +691,17 @@
             "add_success": "Mod tillagd i autoinstallation",
             "remove_success": "Mod borttagen från autoinstallation",
             "search_failed": "Misslyckades att söka på Modrinth"
+        },
+        "compatibility": {
+            "legacy_gpu": "Legacy GPU Support",
+            "legacy_gpu_desc": "Enable support for older graphics hardware.",
+            "low_graphics": "Low Graphics Mode",
+            "low_graphics_desc": "Reduce visual effects for a smoother experience.",
+            "restart_cancel": "Restart later",
+            "restart_confirm": "Restart now",
+            "restart_msg": "A restart is required to apply this change.",
+            "restart_title": "Restart Required",
+            "title": "Compatibility Settings"
         }
     },
     "extensions": {
@@ -636,7 +758,11 @@
         "installing_item": "Installerar {{title}} ({{current}}/{{total}})...",
         "failed_install_single": "Misslyckades med att installera {{title}}: {{error}}",
         "batch_success": "{{count}} objekt installerades",
-        "no_gallery": "Inga skärmdumpar tillgängliga för detta projekt."
+        "no_gallery": "Inga skärmdumpar tillgängliga för detta projekt.",
+        "provider": "Provider",
+        "modrinth": "Modrinth",
+        "curseforge": "CurseForge",
+        "error_preview_no_id": "Unable to preview item (missing ID)"
     },
     "server": {
         "title": "Serverhantering",
@@ -814,7 +940,8 @@
         "installing_item": "Installerar {{title}} ({{current}}/{{total}})...",
         "install_item_failed": "Kunde inte installera {{title}}: {{error}}",
         "batch_success": "Installerade {{count}} objekt framgångsrikt!",
-        "batch_failed": "Gruppinstallation misslyckades: {{error}}"
+        "batch_failed": "Gruppinstallation misslyckades: {{error}}",
+        "installed": "Installed"
     },
     "server_library": {
         "title": "Serverprogramvara",
@@ -841,7 +968,9 @@
             "players": "Spelare",
             "mods": "Moddar",
             "properties": "Egenskaper",
-            "files": "Filer"
+            "files": "Filer",
+            "config": "Config",
+            "plugins": "Plugins"
         },
         "performance": {
             "title": "Prestanda",
@@ -883,13 +1012,35 @@
             "new_folder": "Ny mapp",
             "folder_name": "Mappnamn",
             "delete_title": "Radera?",
-            "delete_confirm": "Är du säker på att du vill radera denna fil?"
+            "delete_confirm": "Är du säker på att du vill radera denna fil?",
+            "drag_or_click": "Drag files here or click to browse",
+            "drop_here": "Drop files here to upload",
+            "error_upload": "Failed to upload file",
+            "files_uploaded": "{{count}} files uploaded",
+            "upload": "Upload files",
+            "upload_hint": "Drop files or click to select",
+            "upload_results": "Upload results",
+            "upload_success": "Files uploaded successfully",
+            "upload_title": "Upload Files",
+            "uploading": "Uploading files..."
         }
     },
     "setup": {
         "chooseLanguage": "Välj ditt språk",
         "chooseLanguageDesc": "Välj ditt föredragna språk för att fortsätta installationen.",
-        "skipSelection": "Hoppa över val (Standard: Engelska)"
+        "skipSelection": "Hoppa över val (Standard: Engelska)",
+        "chooseTheme": "Choose Your Theme",
+        "chooseThemeDesc": "Pick your default appearance for Lux. You can change it later in Appearance.",
+        "darkMode": "Dark Mode",
+        "darkModeDesc": "Use Lux Forest as your default theme.",
+        "lightMode": "Light Mode",
+        "lightModeDesc": "Use Light Lux as your default theme.",
+        "useDarkMode": "Use Dark Mode",
+        "useLightMode": "Use Light Mode",
+        "chooseStartup": "Choose startup behavior",
+        "chooseStartupDesc": "Select what happens when Lux starts.",
+        "startupSelectedTab": "Selected startup tab",
+        "useAsStartup": "Use Lux as the startup application"
     },
     "agreement": {
         "title": "Välkommen till Lux",
@@ -907,7 +1058,89 @@
         "analysis": "Logganalys",
         "no_issues": "Vi kunde inte automatiskt identifiera orsaken till denna krasch.",
         "view_log": "Visa uppladdad logg",
-        "check_manually": "Kontrollera filen latest.log manuellt."
+        "check_manually": "Kontrollera filen latest.log manuellt.",
+        "incompatible_mods_found": "Incompatible Mods Found",
+        "mod_issues_detected": "Incompatible mods were detected. Use Auto Fix to install compatible versions.",
+        "applying_fix": "Applying fix: {{fix}}...",
+        "fix_success": "Fix applied successfully! Try launching again.",
+        "fix_error": "Failed to apply fix: {{error}}",
+        "fix_exception": "Error applying fix: {{error}}",
+        "fix_all_outdated": "Fix all outdated mods",
+        "labels": {
+            "fix_prefix": "Fix",
+            "cause_prefix": "Cause",
+            "install_compatible": "Install Compatible Mods"
+        },
+        "status": {
+            "all_updated_success": "Successfully updated all {{count}} mods!",
+            "some_updated_failed": "Updated {{success}} mods, but {{failed}} failed. Check logs."
+        },
+        "exit_codes": {
+            "success": "Success",
+            "general": "General error (check logs)",
+            "killed": "Process was killed or crashed",
+            "interrupted": "Interrupted (Ctrl+C)",
+            "oom_linux": "Out of memory (Linux OOM killer)",
+            "segfault": "Segmentation fault (core dumped)",
+            "vanilla": "Vanilla exit code (common for mods)",
+            "unknown": "Unknown exit code"
+        },
+        "patterns": {
+            "out_of_memory": {
+                "title": "Out of Memory",
+                "description": "Minecraft ran out of memory. This often happens with modded versions or large modpacks.",
+                "fix_text": "Increase Memory to 4GB"
+            },
+            "unsupported_java_version": {
+                "title": "Incompatible Java Version",
+                "description": "The Java version you are using is too old for this version of Minecraft or its mods.",
+                "fix_text": "Auto-detect & Fix Java"
+            },
+            "java_requirement_mismatch": {
+                "title": "Higher Java Version Required",
+                "description": "This instance requires Java {{version}} or higher to run.",
+                "fix_text": "Update Java Version"
+            },
+            "pixel_format_not_accelerated": {
+                "title": "Graphics Driver Issue",
+                "description": "Your graphics drivers are either outdated or not installed correctly. OpenGL acceleration is not working.",
+                "fix_text": "Update GPU Drivers"
+            },
+            "opengl_version_too_low": {
+                "title": "Legacy Graphics Hardware",
+                "description": "Your graphics card only supports OpenGL up to {{version}}, which is below the requirement for this Minecraft version.",
+                "fix_text": "Open Support Page"
+            },
+            "duplicate_mods": {
+                "title": "Duplicate Mods Detected",
+                "description": "You have multiple versions of the mod \"{{mod}}\" installed. Mod loaders cannot handle duplicates.",
+                "fix_text": "Open Mods Folder"
+            },
+            "config_corruption": {
+                "title": "Corrupted Configuration",
+                "description": "One of your mod configuration files is corrupted and cannot be read.",
+                "fix_text": "Reset Config Files"
+            },
+            "mixin_transformer_error": {
+                "title": "Mod Conflict (Mixin)",
+                "description": "A conflict occurred while patching the game code. Mod \"{{mod}}\" is the likely cause.",
+                "fix_text": "Disable Mod"
+            },
+            "outdated_loader": {
+                "title": "Outdated Mod Loader",
+                "description": "The mod loader is outdated. Many newer mods require a more recent loader version.",
+                "fix_text": "Update Loader"
+            }
+        },
+        "compatibility": {
+            "outdated_dependency_title": "Outdated Mod Dependency",
+            "missing_dependency_title": "Missing Mod Dependency",
+            "install_fix_text": "Install {{targetMod}}",
+            "needs_version_installed": "\"{{modName}}\" needs \"{{dependencyName}}\" {{requiredVersion}}+, but installed is {{foundVersion}}.",
+            "needs_version": "\"{{modName}}\" needs \"{{dependencyName}}\" in version {{requiredVersion}} or newer.",
+            "missing_dependency": "Missing required dependency \"{{dependencyName}}\" for \"{{modName}}\".",
+            "generic_conflict": "A mod dependency conflict was detected."
+        }
     },
     "java_required_modal": {
         "title": "Java {{version}} krävs",
@@ -928,7 +1161,8 @@
         "grid_toggle": "Toggle Grid",
         "brush_size": "Brush Size",
         "palette": "Palette",
-        "recent_colors": "Recent Colors"
+        "recent_colors": "Recent Colors",
+        "description": "Use the pixel editor to paint and preview skins."
     },
     "guide": {
         "prompt_title": "Welcome to Lux!",
@@ -998,5 +1232,68 @@
         "tools_step1_desc": "A collection of useful Minecraft utilities and tools.",
         "tools_step2_title": "Tools Dashboard",
         "tools_step2_desc": "Access all available tools from here."
+    },
+    "client_mods": {
+        "add_to_version": "Add to Version",
+        "all_versions": "All versions",
+        "auto_install": "Auto Install",
+        "auto_install_list": "Auto Install List",
+        "auto_install_removed": "Auto install mod removed",
+        "auto_install_saved": "Auto install settings saved",
+        "clear_all": "Clear all",
+        "custom_mods": "Custom Mods",
+        "default_locked": "Default slots are locked",
+        "default_mods": "Default Mods",
+        "desc": "Configure mods for this client version.",
+        "errors": {
+            "auto_install": "Failed to load auto install mods",
+            "install": "Mod install failed",
+            "load_installed": "Could not load installed mods",
+            "load_instances": "Could not load instances",
+            "load_settings": "Could not load settings",
+            "remove_installed": "Could not remove installed mod",
+            "save_settings": "Failed to save mod settings",
+            "search": "Search failed"
+        },
+        "incompatible_versions": "Incompatible versions found",
+        "install_failed_count": "{{count}} failed to install",
+        "install_none": "No mods selected for install",
+        "install_summary": "Installation Summary",
+        "installed_by_version": "Installed by version",
+        "instances_count": "{{count}} instances",
+        "loading_project_name": "Loading project name...",
+        "locked": "Locked",
+        "no_custom_mods": "No custom mods found",
+        "no_installed_for_version": "No mods installed for this version",
+        "no_results": "No results found",
+        "no_versions": "No versions available",
+        "refresh": "Refresh",
+        "remove": "Remove",
+        "removed_instances": "Removed from instances",
+        "search_placeholder": "Search mods...",
+        "search_results": "{{count}} results found",
+        "select_all": "Select all",
+        "select_version_first": "Select a version first",
+        "selected_versions": "Selected versions",
+        "title": "Client Mods"
+    },
+    "tools": {
+        "current_model": "Current model",
+        "dashboard_desc": "Browse tools and utilities for Minecraft.",
+        "loaded_skin": "Loaded skin",
+        "more_soon": "More tools coming soon",
+        "open_skin_editor": "Open skin editor",
+        "placeholder_one": "Placeholder 1",
+        "placeholder_two": "Placeholder 2",
+        "skin_editor_desc": "Edit your skin directly in the tool.",
+        "skin_editor_hint": "Use the editor to paint and customize your skin.",
+        "skin_editor_saved": "Skin saved successfully",
+        "skin_editor_start_desc": "Start editing your skin with the built-in editor.",
+        "skin_editor_title": "Skin Editor",
+        "start_skin_editor": "Start Skin Editor",
+        "start_with_steve": "Start with Steve model",
+        "start_with_texture": "Start with texture",
+        "steve_default": "Steve Default",
+        "upcoming_tools": "Upcoming Tools"
     }
 }

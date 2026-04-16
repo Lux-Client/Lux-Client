@@ -11,6 +11,11 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
     useEffect(() => {
         if (!isOpen || !crashData) return;
 
+        // Always reset status when a new crash report is shown
+        setFixStatus(null);
+        setIsApplyingFix(false);
+        setIssues([]);
+
         let cancelled = false;
 
         const resolveCrashLogContent = async () => {
@@ -60,6 +65,15 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
             cancelled = true;
         };
     }, [isOpen, crashData]);
+
+    // Clear all transient state whenever the modal is dismissed
+    useEffect(() => {
+        if (!isOpen) {
+            setFixStatus(null);
+            setIsApplyingFix(false);
+            setIssues([]);
+        }
+    }, [isOpen]);
 
     if (!isOpen || !crashData) return null;
 
@@ -185,16 +199,17 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
         return {
             success: true,
             projectTitle: selectedProject.title || requestedModName,
-            fileName: file.filename
-        };
+            fileName: file.filename,
+            error: null
+        } as any;
     };
 
     const handleApplyFix = async (issue) => {
         setIsApplyingFix(true);
-        setFixStatus({ type: 'info', message: `Applying fix: ${issue.fixText}...` });
+        setFixStatus({ type: 'info', message: t('crash.applying_fix', { fix: t(issue.fixText) }) });
 
         try {
-            let res;
+            let res: any = { success: false, error: 'Unknown fix action' };
             switch (issue.fixAction) {
                 case 'increase_memory':
                     res = await window.electronAPI.updateInstanceConfig(crashData.instanceName, { maxMemory: 4096 });
@@ -208,6 +223,27 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                 case 'install_compatible_mod':
                     res = await autoInstallCompatibleMod(issue);
                     break;
+                case 'reset_config':
+                    res = await window.electronAPI.resetInstanceConfig(crashData.instanceName);
+                    break;
+                case 'open_url':
+                    if (issue.fixUrl) {
+                        await window.electronAPI.openExternal(issue.fixUrl);
+                        res = { success: true };
+                    } else {
+                        res = { success: false, error: 'No URL provided' };
+                    }
+                    break;
+                case 'open_mods_folder':
+                    // We don't have a direct "open_mods_folder" but we can open the instance folder
+                    // or ideally show a message that they should open it.
+                    await window.electronAPI.openInstanceFolder(crashData.instanceName);
+                    res = { success: true };
+                    break;
+                case 'update_loader':
+                    // Trigger a soft reinstall which usually updates the loader meta
+                    res = await window.electronAPI.reinstallInstance(crashData.instanceName, 'soft');
+                    break;
                 default:
                     setFixStatus({ type: 'error', message: 'Unknown fix action.' });
                     setIsApplyingFix(false);
@@ -215,16 +251,43 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
             }
 
             if (res.success) {
-                setFixStatus({ type: 'success', message: 'Fix applied successfully! Try launching again.' });
+                setFixStatus({ type: 'success', message: t('crash.fix_success') });
                 if (onFixApplied) onFixApplied();
             } else {
-                setFixStatus({ type: 'error', message: `Failed to apply fix: ${res.error}` });
+                setFixStatus({ type: 'error', message: t('crash.fix_error', { error: res.error || t('common.unknown_error', 'Unknown error') }) });
             }
         } catch (err) {
-            setFixStatus({ type: 'error', message: `Error applying fix: ${err.message}` });
+            setFixStatus({ type: 'error', message: t('crash.fix_exception', { error: err.message }) });
         } finally {
             setIsApplyingFix(false);
         }
+    };
+
+    const handleFixAllOutdated = async () => {
+        const outdatedIssues = issues.filter(i => i.fixAction === 'install_compatible_mod');
+        if (outdatedIssues.length === 0) return;
+
+        setIsApplyingFix(true);
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const issue of outdatedIssues) {
+            setFixStatus({ type: 'info', message: `Updating ${issue.title}...` });
+            const res = await autoInstallCompatibleMod(issue);
+            if (res.success) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        }
+
+        if (failCount === 0) {
+            setFixStatus({ type: 'success', message: t('crash.status.all_updated_success', { count: successCount }) });
+            if (onFixApplied) onFixApplied();
+        } else {
+            setFixStatus({ type: 'error', message: t('crash.status.some_updated_failed', { success: successCount, failed: failCount }) });
+        }
+        setIsApplyingFix(false);
     };
 
     return (
@@ -241,10 +304,10 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                         <div>
                             <h2 className="text-2xl font-bold text-foreground">
                                 {hasCompatibilityIssues
-                                    ? t('crash.incompatible_mods_found', 'Incompatible mods found')
+                                    ? t('crash.incompatible_mods_found')
                                     : t('crash.title')}
                             </h2>
-                            <p className="text-muted-foreground text-sm">{crashData.instanceName} • {getExitCodeDescription(crashData.exitCode)}</p>
+                            <p className="text-muted-foreground text-sm">{crashData.instanceName} • {t(getExitCodeDescription(crashData.exitCode)) as string}</p>
                         </div>
                     </div>
                 </div>
@@ -252,28 +315,60 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                 <div className="p-8 max-h-[60vh] overflow-y-auto">
                     {issues.length > 0 ? (
                         <div className="space-y-6">
-                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('crash.analysis')}</h3>
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('crash.analysis')}</h3>
+                                {issues.filter(i => i.fixAction === 'install_compatible_mod').length > 1 && (
+                                    <button
+                                        onClick={handleFixAllOutdated}
+                                        disabled={isApplyingFix}
+                                        className="text-xs font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                        </svg>
+                                        {t('crash.fix_all_outdated')}
+                                    </button>
+                                )}
+                            </div>
                             {issues.map((issue) => (
                                 <div key={issue.id} className="bg-muted rounded-xl p-6 border border-border hover:border-primary/30 transition-colors group">
                                     <div className="flex justify-between items-start gap-4">
-                                        <div className="space-y-2">
-                                            <h4 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{issue.title}</h4>
-                                            <p className="text-muted-foreground text-sm leading-relaxed">{issue.description}</p>
-                                            {issue?.compatibility?.targetMod && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Target mod: <span className="font-semibold text-foreground">{issue.compatibility.targetMod}</span>
-                                                    {issue?.compatibility?.requiredVersion ? (
-                                                        <span> • required: {issue.compatibility.requiredVersion}</span>
-                                                    ) : null}
+                                        <div className="space-y-4 flex-1">
+                                            <div className="space-y-1">
+                                                <h4 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{t(issue.title)}</h4>
+                                                <p className="text-muted-foreground text-sm leading-relaxed">
+                                                    {t(issue.description, {
+                                                        ...issue.compatibility,
+                                                        // Fallback for regex groups if needed
+                                                        group1: issue.capturedGroups?.[0],
+                                                        group2: issue.capturedGroups?.[1],
+                                                        // Map specific fields for patterns
+                                                        mod: issue.capturedGroups?.[0],
+                                                        version: issue.capturedGroups?.[0]
+                                                    }) as string}
                                                 </p>
-                                            )}
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                {issue?.compatibility?.targetMod && (
+                                                    <div className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded uppercase font-bold tracking-wider">
+                                                        {t('crash.labels.fix_prefix')}: {issue.compatibility.targetMod}
+                                                        {issue?.compatibility?.requiredVersion && ` v${issue.compatibility.requiredVersion}`}
+                                                    </div>
+                                                )}
+                                                {Array.isArray(issue?.compatibility?.affectedMods) && issue.compatibility.affectedMods.length > 0 && (
+                                                    <div className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded uppercase font-bold tracking-wider">
+                                                        {t('crash.labels.cause_prefix')}: {issue.compatibility.affectedMods.join(', ')}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         <button
                                             onClick={() => handleApplyFix(issue)}
                                             disabled={isApplyingFix}
-                                            className="px-6 py-2.5 bg-primary text-black rounded-xl font-bold text-sm transition-all disabled:opacity-50 whitespace-nowrap shadow-md"
+                                            className="px-6 py-2.5 bg-primary text-black rounded-xl font-bold text-sm transition-all disabled:opacity-50 whitespace-nowrap shadow-md hover:scale-[1.02] active:scale-[0.98]"
                                         >
-                                            {isApplyingFix ? t('common.applying', 'Applying...') : issue.fixText}
+                                            {isApplyingFix ? t('common.applying') : (t(issue.fixText) as string)}
                                         </button>
                                     </div>
                                 </div>
@@ -283,7 +378,7 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                         <div className="text-center py-8">
                             <p className="text-muted-foreground mb-6">
                                 {hasCompatibilityIssues
-                                    ? t('crash.mod_issues_detected', 'Incompatible mods were detected. Use Auto Fix to install compatible versions.')
+                                    ? t('crash.mod_issues_detected')
                                     : t('crash.no_issues')}
                             </p>
                             {crashData.logUrl ? (

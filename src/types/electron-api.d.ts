@@ -69,6 +69,7 @@ interface ElectronAPI {
   deleteInstance: (name: string) => Promise<any>;
   renameInstance: (oldName: string, newName: string) => Promise<any>;
   duplicateInstance: (name: string) => Promise<any>;
+  resetInstanceConfig: (name: string) => Promise<any>;
   exportInstance: (name: string) => Promise<any>;
   importInstance: () => Promise<any>;
   importMrPack: () => Promise<any>;

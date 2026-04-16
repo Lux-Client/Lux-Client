@@ -3546,6 +3546,31 @@ module.exports = (ipcMain, win) => {
                 return { success: false, error: e.message };
             }
         });
+
+        ipcMain.handle('instance:reset-config', async (_, instanceName) => {
+            try {
+                const { baseDir } = await resolveInstanceBaseDir(instanceName);
+                if (!await fs.pathExists(baseDir)) {
+                    return { success: false, error: 'Instance folder does not exist' };
+                }
+
+                const configDir = path.join(baseDir, 'config');
+                const optionsFile = path.join(baseDir, 'options.txt');
+
+                if (await fs.pathExists(configDir)) {
+                    await fs.remove(configDir);
+                }
+                if (await fs.pathExists(optionsFile)) {
+                    await fs.remove(optionsFile);
+                }
+
+                console.log(`[Instance:ResetConfig] Reset config for ${instanceName}`);
+                return { success: true };
+            } catch (e) {
+                console.error(`[Instance:ResetConfig] Error:`, e);
+                return { success: false, error: e.message };
+            }
+        });
         ipcMain.handle('instance:delete', async (_, name) => {
             try {
                 console.log(`[Instance:Delete] Request to delete ${name}`);

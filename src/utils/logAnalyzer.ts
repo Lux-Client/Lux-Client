@@ -2,84 +2,119 @@ const CRASH_PATTERNS = [
     {
         id: 'out_of_memory',
         regex: /java\.lang\.OutOfMemoryError/i,
-        title: 'Out of Memory',
-        description: 'Minecraft ran out of memory. This often happens with modded versions.',
-        fixText: 'Increase Memory to 4GB',
+        title: 'crash.patterns.out_of_memory.title',
+        description: 'crash.patterns.out_of_memory.description',
+        fixText: 'crash.patterns.out_of_memory.fix_text',
         fixAction: 'increase_memory',
         priority: 10
     },
     {
         id: 'unsupported_java_version',
-        regex: /java\.lang\.UnsupportedClassVersionError/i,
-        title: 'Incompatible Java Version',
-        description: 'The version of Java being used is not compatible with this version of Minecraft.',
-        fixText: 'Auto-detect & Fix Java',
+        regex: /java\.lang\.UnsupportedClassVersionError|has\s+been\s+compiled\s+by\s+a\s+more\s+recent\s+version\s+of\s+the\s+Java\s+Runtime/i,
+        title: 'crash.patterns.unsupported_java_version.title',
+        description: 'crash.patterns.unsupported_java_version.description',
+        fixText: 'crash.patterns.unsupported_java_version.fix_text',
         fixAction: 'fix_java_version',
         priority: 10
     },
     {
+        id: 'java_requirement_mismatch',
+        regex: /Java\s+([0-9]+)\s+or\s+higher\s+is\s+required/i,
+        title: 'crash.patterns.java_requirement_mismatch.title',
+        description: 'crash.patterns.java_requirement_mismatch.description',
+        fixText: 'crash.patterns.java_requirement_mismatch.fix_text',
+        fixAction: 'fix_java_version',
+        priority: 10
+    },
+    {
+        id: 'pixel_format_not_accelerated',
+        regex: /org\.lwjgl\.LWJGLException:\s+Pixel\s+format\s+not\s+accelerated|GLFW\s+error\s+65542:\s+WGL:\s+The\s+driver\s+does\s+not\s+appear\s+to\s+support\s+OpenGL/i,
+        title: 'crash.patterns.pixel_format_not_accelerated.title',
+        description: 'crash.patterns.pixel_format_not_accelerated.description',
+        fixText: 'crash.patterns.pixel_format_not_accelerated.fix_text',
+        fixAction: 'open_url',
+        fixUrl: 'https://www.intel.com/content/www/us/en/support/detect.html',
+        priority: 15
+    },
+    {
+        id: 'opengl_version_too_low',
+        regex: /OpenGL\s+([0-9.]+)\s+or\s+higher\s+is\s+required/i,
+        title: 'crash.patterns.opengl_version_too_low.title',
+        description: 'crash.patterns.opengl_version_too_low.description',
+        fixText: 'crash.patterns.opengl_version_too_low.fix_text',
+        fixAction: 'open_url',
+        fixUrl: 'https://help.minecraft.net/hc/en-us/articles/4409137344397-Minecraft-Java-Edition-System-Requirements',
+        priority: 14
+    },
+    {
         id: 'duplicate_mods',
-        regex: /Duplicate mod ID\s+'([^']+)'\s+found/i,
-        title: 'Duplicate Mods Detected',
-        description: (match) => `You have two versions of the mod "${match[1]}" installed.`,
-        fixText: 'Remove Duplicate Mod',
-        fixAction: 'remove_duplicate_mod',
+        regex: /Duplicate\s+mod\s+id\s+'([^']+)'\s+found/i,
+        title: 'crash.patterns.duplicate_mods.title',
+        description: 'crash.patterns.duplicate_mods.description',
+        fixText: 'crash.patterns.duplicate_mods.fix_text',
+        fixAction: 'open_mods_folder',
+        priority: 12
+    },
+    {
+        id: 'config_corruption',
+        regex: /com\.google\.gson\.JsonSyntaxException|failed\s+to\s+parse\s+config\s+file/i,
+        title: 'crash.patterns.config_corruption.title',
+        description: 'crash.patterns.config_corruption.description',
+        fixText: 'crash.patterns.config_corruption.fix_text',
+        fixAction: 'reset_config',
         priority: 9
     },
     {
-        id: 'missing_dependency',
-        regex: /Mod\s+'([^']+)'\s+requires\s+mod\s+'([^']+)'/i,
-        title: 'Missing Mod Dependency',
-        description: (match) => `The mod "${match[1]}" requires "${match[2]}" to be installed.`,
-        fixText: 'Install Missing Dependency',
-        fixAction: 'install_dependency',
-        priority: 9
-    },
-    {
-        id: 'gl_error',
-        regex: /org\.lwjgl\.opengl\.OpenGLException:\s+Cannot\s+make\s+current/i,
-        title: 'Graphics Driver Issue',
-        description: 'Minecraft failed to initialize the graphics driver. This is often caused by outdated drivers.',
-        fixText: 'Enable Compatibility Mode',
-        fixAction: 'enable_compatibility_mode',
-        priority: 8
-    },
-    {
-        id: 'mod_conflict',
-        regex: /Patching\s+finalized\s+with\s+errors\s+for\s+([^,]+)/i,
-        title: 'Mod Conflict Detected',
-        description: (match) => `The mod "${match[1]}" failed to load, possibly due to a conflict with another mod.`,
-        fixText: 'Disable Conflicting Mod',
+        id: 'mixin_transformer_error',
+        regex: /org\.spongepowered\.asm\.mixin\.transformer\.throwables\.MixinTransformerError|Mixin\s+apply\s+failed\s+for\s+mod\s+([A-Za-z0-9_.\-]+)/i,
+        title: 'crash.patterns.mixin_transformer_error.title',
+        description: 'crash.patterns.mixin_transformer_error.description',
+        fixText: 'crash.patterns.mixin_transformer_error.fix_text',
         fixAction: 'disable_mod',
-        priority: 7
-    },
-    {
-        id: 'general_crash',
-        regex: /Exception\s+in\s+thread\s+"main"/i,
-        title: 'General Startup Crash',
-        description: 'Minecraft failed to start correctly during initialization.',
-        fixText: 'Full Reinstall',
-        fixAction: 'reinstall_instance',
-        priority: 1
+        priority: 11
     },
     {
         id: 'incompatible_mod_set',
         regex: /incompatible\s+mods?\s+found|mod\s+resolution\s+encountered\s+an\s+incompatible\s+mod\s+set/i,
-        title: 'Incompatible Mods Found',
-        description: 'One or more installed mods are incompatible with your current loader or Minecraft version.',
-        fixText: 'Install Compatible Mods',
+        title: 'crash.incompatible_mods_found',
+        description: 'crash.mod_issues_detected',
+        fixText: 'crash.labels.install_compatible',
         fixAction: 'install_compatible_mod',
-        priority: 11
+        priority: 5
+    },
+    {
+        id: 'outdated_loader',
+        regex: /Outdated\s+(Fabric|Forge|NeoForge)\s+loader|Loader\s+version\s+([0-9.]+)\s+is\s+too\s+old/i,
+        title: 'crash.patterns.outdated_loader.title',
+        description: 'crash.patterns.outdated_loader.description',
+        fixText: 'crash.patterns.outdated_loader.fix_text',
+        fixAction: 'update_loader',
+        priority: 12
     }
 ];
 
 const COMPATIBILITY_LINE_PATTERNS = [
+    // --- Fabric Patterns ---
     {
-        type: 'missing_dependency',
-        regex: /Mod\s+'([^']+)'\s+requires\s+mod\s+'([^']+)'(?:\s+any\s+version)?(?:\s+but\s+it\s+is\s+not\s+present)?/ig,
+        type: 'missing_dependency_simple_versioned',
+        // Example: - Install cloth-config, version 16.0.0 or later.
+        regex: /Install\s+['"]?([A-Za-z0-9_.\-]+)['"]?,\s+version\s+([0-9A-Za-z.+\-]+)\s+or\s+later/ig,
         mapMatch: (match) => ({
-            modName: match[1],
-            dependencyName: match[2],
+            modName: null,
+            dependencyName: match[1].trim(),
+            issueType: 'missing_dependency',
+            requiredVersion: match[2].trim(),
+            foundVersion: null,
+            sourceLine: match[0]
+        })
+    },
+    {
+        type: 'missing_dependency_simple_any',
+        // Example: - Install cloth-config, any version.
+        regex: /Install\s+['"]?([A-Za-z0-9_.\-]+)['"]?,\s+any\s+version/ig,
+        mapMatch: (match) => ({
+            modName: null,
+            dependencyName: match[1].trim(),
             issueType: 'missing_dependency',
             requiredVersion: null,
             foundVersion: null,
@@ -87,8 +122,35 @@ const COMPATIBILITY_LINE_PATTERNS = [
         })
     },
     {
-        type: 'outdated_dependency',
-        regex: /mod\s+'([^']+)'\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+requires\s+version\s+([^\s]+)\s+or\s+later\s+of\s+mod\s+'([^']+)'\s+\(([^)]+)\),\s+but\s+only\s+the\s+wrong\s+version\s+is\s+present:\s*([^!\r\n]+)/ig,
+        type: 'missing_dependency_detailed_versioned',
+        // Example: Mod 'More Culling' (moreculling) 1.6.2 requires version 16.0.0 or later of cloth-config, which is missing!
+        regex: /Mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+[0-9A-Za-z.+\-]+\s+requires\s+version\s+([0-9A-Za-z.+\-]+)\s+or\s+later\s+of\s+['"]?([A-Za-z0-9_.\-]+)['"]?/ig,
+        mapMatch: (match) => ({
+            modName: match[1] || match[2],
+            dependencyName: match[4].trim(),
+            issueType: 'missing_dependency',
+            requiredVersion: match[3].trim(),
+            foundVersion: null,
+            sourceLine: match[0]
+        })
+    },
+    {
+        type: 'missing_dependency_detailed_any',
+        // Example: Mod 'FastQuit' (fastquit) 3.1.3+mc1.21.11 requires any version of cloth-config, which is missing!
+        regex: /Mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+[0-9A-Za-z.+\-]+\s+requires\s+any\s+version\s+of\s+['"]?([A-Za-z0-9_.\-]+)['"]?/ig,
+        mapMatch: (match) => ({
+            modName: match[1] || match[2],
+            dependencyName: match[3].trim(),
+            issueType: 'missing_dependency',
+            requiredVersion: null,
+            foundVersion: null,
+            sourceLine: match[0]
+        })
+    },
+    {
+        type: 'outdated_dependency_fabric',
+        // Example: Mod 'Mod A' (moda) 1.0.0 requires version 1.1.0 or later of mod 'Mod B' (modb), but only the wrong version is present: 1.0.0!
+        regex: /Mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+requires\s+version\s+([^\s]+)\s+(?:or\s+later\s+)?of\s+mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\),\s+but\s+only\s+the\s+wrong\s+version\s+is\s+present:\s*([^!\r\n]+)/ig,
         mapMatch: (match) => ({
             modName: match[1] || match[2],
             dependencyName: match[5] || match[6],
@@ -99,7 +161,42 @@ const COMPATIBILITY_LINE_PATTERNS = [
         })
     },
     {
-        type: 'missing_required_mod',
+        type: 'replace_mod_fabric',
+        // Example: - Replace mod 'Sodium' (sodium) 0.8.7+mc1.21.11 with version 0.8.4+mc1.21.11.
+        regex: /Replace\s+mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+with\s+version\s+([0-9A-Za-z.+\-]+)/ig,
+        mapMatch: (match) => ({
+            modName: 'System',
+            dependencyName: match[2].trim(),
+            issueType: 'outdated_dependency',
+            requiredVersion: match[4].trim(),
+            foundVersion: match[3].trim(),
+            sourceLine: match[0]
+        })
+    },
+    // --- Forge Patterns ---
+    {
+        type: 'forge_missing_dep',
+        // Example: Mod modid requires dependency any version
+        regex: /Mod\s+([A-Za-z0-9_.\-]+)\s+requires\s+([A-Za-z0-9_.\-]+)\s+([><=~^*0-9A-Za-z.+\-]+|any(?:\s+version)?)/ig,
+        mapMatch: (match) => {
+            const dep = match[2];
+            const ver = match[3];
+            // Filter out common false matches
+            if (dep.toLowerCase() === 'version' || ver.toLowerCase() === 'version') return null;
+            if (['minecraft', 'fabricloader', 'forge'].includes(dep.toLowerCase())) return null;
+
+            return {
+                modName: match[1],
+                dependencyName: dep,
+                issueType: ver.toLowerCase().includes('any') ? 'missing_dependency' : 'outdated_dependency',
+                requiredVersion: ver,
+                foundVersion: null,
+                sourceLine: match[0]
+            };
+        }
+    },
+    {
+        type: 'missing_required_mod_generic',
         regex: /Could\s+not\s+find\s+required\s+mod:\s*([A-Za-z0-9_.\-]+)/ig,
         mapMatch: (match) => ({
             modName: null,
@@ -110,14 +207,29 @@ const COMPATIBILITY_LINE_PATTERNS = [
             sourceLine: match[0]
         })
     },
+    // --- Loader Patterns ---
     {
-        type: 'dependency_version_mismatch',
-        regex: /([A-Za-z0-9_.\-]+)\s+requires\s+([A-Za-z0-9_.\-]+)\s+([><=~^*0-9A-Za-z.+\-]+)/ig,
+        type: 'loader_outdated',
+        // Example: fabric-loader 0.16.0 or later is required but 0.15.11 is present
+        regex: /(fabric-loader|forge|neoforge|quilt\-loader)\s+([0-9A-Za-z.+\-]+)\s+or\s+later\s+is\s+required\s+but\s+([0-9A-Za-z.+\-]+)\s+is\s+present/ig,
         mapMatch: (match) => ({
-            modName: match[1],
-            dependencyName: match[2],
-            issueType: 'outdated_dependency',
-            requiredVersion: match[3] || null,
+            modName: 'System',
+            dependencyName: match[1],
+            issueType: 'loader_outdated',
+            requiredVersion: match[2],
+            foundVersion: match[3],
+            sourceLine: match[0]
+        })
+    },
+    {
+        type: 'loader_requirement_detailed',
+        // Example: Mod 'Sodium' (sodium) 0.6.0 requires version 0.16.0 or later of fabric-loader, which is missing!
+        regex: /Mod\s+'([^']+)'\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+requires\s+version\s+([0-9A-Za-z.+\-]+)\s+or\s+later\s+of\s+(fabric-loader|forge|neoforge|quilt\-loader)/ig,
+        mapMatch: (match) => ({
+            modName: match[1] || match[2],
+            dependencyName: match[5],
+            issueType: 'loader_outdated',
+            requiredVersion: match[4],
             foundVersion: null,
             sourceLine: match[0]
         })
@@ -132,6 +244,12 @@ const cleanToken = (value) => {
         .trim();
 };
 
+const stripColors = (text) => {
+    if (typeof text !== 'string') return '';
+    // Strip ANSI codes and Minecraft section symbols (§ + color code)
+    return text.replace(/\u001b\[[0-9;]*m/g, '').replace(/§[0-9a-fk-or]/gi, '');
+};
+
 const normalizeToken = (value) => cleanToken(value).toLowerCase();
 
 const buildCompatibilityDescription = (entry) => {
@@ -141,55 +259,83 @@ const buildCompatibilityDescription = (entry) => {
     const foundVersion = cleanToken(entry.foundVersion);
 
     if (dependencyName && requiredVersion && foundVersion) {
-        return `"${modName || 'A mod'}" needs "${dependencyName}" ${requiredVersion}+, but installed is ${foundVersion}.`;
+        return 'crash.compatibility.needs_version_installed';
     }
 
     if (dependencyName && requiredVersion) {
-        return `"${modName || 'A mod'}" needs "${dependencyName}" in version ${requiredVersion} or newer.`;
+        return 'crash.compatibility.needs_version';
     }
 
     if (dependencyName) {
-        return `Missing required dependency "${dependencyName}" for "${modName || 'a mod'}".`;
+        return 'crash.compatibility.missing_dependency';
     }
 
-    return 'A mod dependency conflict was detected.';
+    return 'crash.compatibility.generic_conflict';
 };
 
-const toCompatibilityIssue = (entry, index) => {
-    const dependencyName = cleanToken(entry.dependencyName);
-    const modName = cleanToken(entry.modName);
-    const targetMod = dependencyName || modName;
-    const requiredVersion = cleanToken(entry.requiredVersion);
-    const foundVersion = cleanToken(entry.foundVersion);
+const toCompatibilityIssue = (group, index) => {
+    const { targetMod, entries } = group;
+    const isOutdated = entries.some(e => e.issueType === 'outdated_dependency' || e.issueType === 'loader_outdated');
+    const isLoader = entries.some(e => ['fabric-loader', 'forge', 'neoforge', 'quilt-loader'].includes(normalizeToken(e.dependencyName)));
+
+    const requiredVersion = entries.find(e => e.requiredVersion)?.requiredVersion;
+    const foundVersion = entries.find(e => e.foundVersion)?.foundVersion;
+
+    // Collate affected mods
+    const affectedMods = Array.from(new Set(entries.map(e => e.modName).filter(n => n && n !== 'System')));
+    
+    let description = buildCompatibilityDescription(entries[0]);
+    if (affectedMods.length > 0) {
+        description += ` Required by: ${affectedMods.join(', ')}.`;
+    }
 
     return {
         id: `compat_${normalizeToken(targetMod) || index}`,
-        title: entry.issueType === 'outdated_dependency' ? 'Outdated Mod Dependency' : 'Missing Mod Dependency',
-        description: buildCompatibilityDescription(entry),
-        fixText: 'Install Compatible Mod',
-        fixAction: 'install_compatible_mod',
-        priority: entry.issueType === 'outdated_dependency' ? 12 : 11,
+        title: isLoader ? 'crash.patterns.outdated_loader.title' : (isOutdated ? 'crash.compatibility.outdated_dependency_title' : 'crash.compatibility.missing_dependency_title'),
+        description,
+        fixText: isLoader ? 'crash.patterns.outdated_loader.fix_text' : 'crash.compatibility.install_fix_text',
+        fixAction: isLoader ? 'update_loader' : 'install_compatible_mod',
+        priority: isLoader ? 20 : (isOutdated ? 17 : 18),
         compatibility: {
-            issueType: entry.issueType,
-            modName,
-            dependencyName,
-            targetMod,
+            issueType: isOutdated ? 'outdated_dependency' : 'missing_dependency',
+            targetMod: cleanToken(targetMod),
             requiredVersion: requiredVersion || null,
             foundVersion: foundVersion || null,
-            sourceLine: entry.sourceLine || ''
+            affectedMods,
+            details: entries.map(e => e.sourceLine)
         }
     };
 };
 
+const groupCompatibilityIssues = (entries) => {
+    const groups = new Map();
+
+    for (const entry of entries) {
+        const targetMod = normalizeToken(entry.dependencyName || entry.modName);
+        if (!targetMod) continue;
+
+        if (!groups.has(targetMod)) {
+            groups.set(targetMod, {
+                targetMod: entry.dependencyName || entry.modName,
+                entries: []
+            });
+        }
+        groups.get(targetMod).entries.push(entry);
+    }
+
+    return Array.from(groups.values());
+};
+
 const extractCompatibilityIssuesFromLog = (logContent) => {
     if (!logContent || typeof logContent !== 'string') return [];
-
+    
+    const cleanLog = stripColors(logContent);
     const found = [];
 
     for (const rule of COMPATIBILITY_LINE_PATTERNS) {
         rule.regex.lastIndex = 0;
         let match;
-        while ((match = rule.regex.exec(logContent)) !== null) {
+        while ((match = rule.regex.exec(cleanLog)) !== null) {
             const candidate = rule.mapMatch(match);
             if (!candidate) continue;
             found.push(candidate);
@@ -217,11 +363,13 @@ const extractCompatibilityIssuesFromLog = (logContent) => {
 };
 
 const mergeCompatibilityIssues = (existingIssues, compatibilityEntries) => {
-    const compatibilityIssues = compatibilityEntries.map((entry, index) => toCompatibilityIssue(entry, index));
+    const groups = groupCompatibilityIssues(compatibilityEntries);
+    const compatibilityIssues = groups.map((group, index) => toCompatibilityIssue(group, index));
+    
     const alreadyCovered = new Set(
         existingIssues
-            .filter((issue) => issue.fixAction === 'install_compatible_mod')
-            .map((issue) => normalizeToken(issue?.compatibility?.targetMod || issue?.compatibility?.dependencyName || issue?.compatibility?.modName || ''))
+            .filter((issue) => issue.fixAction === 'install_compatible_mod' || issue.fixAction === 'update_loader')
+            .map((issue) => normalizeToken(issue?.compatibility?.targetMod || ''))
     );
 
     const nextCompatibility = compatibilityIssues.filter((issue) => {
@@ -241,7 +389,8 @@ const mergeCompatibilityIssues = (existingIssues, compatibilityEntries) => {
  * @returns {Array} - A list of identified issues.
  */
 export function analyzeLog(logContent, options: any = {}) {
-    const safeLog = typeof logContent === 'string' ? logContent : '';
+    const rawLog = typeof logContent === 'string' ? logContent : '';
+    const safeLog = stripColors(rawLog);
     const externalCompatibilityIssues = Array.isArray(options.compatibilityIssues)
         ? options.compatibilityIssues
         : [];
@@ -272,7 +421,16 @@ export function analyzeLog(logContent, options: any = {}) {
 
     const allIssues = mergeCompatibilityIssues(issues, mergedCompatibility);
 
-    return allIssues.sort((a, b) => b.priority - a.priority);
+    // DEDUPLICATION: If we found specific mod dependencies (priority >= 17),
+    // suppress the generic "Incompatible Mod Set" (priority 5) to keep only the functional card.
+    const specificIssues = allIssues.filter(i => i.priority >= 17);
+    const hasSpecific = specificIssues.length > 0;
+
+    const filteredIssues = hasSpecific
+        ? allIssues.filter(i => i.id !== 'incompatible_mod_set')
+        : allIssues;
+
+    return filteredIssues.sort((a, b) => b.priority - a.priority);
 }
 
 /**
@@ -282,13 +440,13 @@ export function analyzeLog(logContent, options: any = {}) {
  */
 export function getExitCodeDescription(code) {
     switch (code) {
-        case 0: return 'Success';
-        case 1: return 'General error (check logs)';
-        case -1: return 'Process was killed or crashed';
-        case 130: return 'Interrupted (Ctrl+C)';
-        case 137: return 'Out of memory (Linux OOM killer)';
-        case 139: return 'Segmentation fault (core dumped)';
-        case 255: return 'Vanilla exit code (common for mods)';
-        default: return `Exit code ${code}`;
+        case 0: return 'crash.exit_codes.success';
+        case 1: return 'crash.exit_codes.general';
+        case -1: return 'crash.exit_codes.killed';
+        case 130: return 'crash.exit_codes.interrupted';
+        case 137: return 'crash.exit_codes.oom_linux';
+        case 139: return 'crash.exit_codes.segfault';
+        case 255: return 'crash.exit_codes.vanilla';
+        default: return 'crash.exit_codes.unknown';
     }
 }

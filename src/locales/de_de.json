@@ -14,7 +14,8 @@
         "jar_label": "jar",
         "res_pack_label": "RES\nPACK",
         "shader_label": "SHA\nDER",
-        "lightbox_image": "Galeriebild"
+        "lightbox_image": "Galeriebild",
+        "open_folder": "Open folder"
     },
     "common": {
         "dashboard": "Übersicht",
@@ -90,7 +91,17 @@
         "add_account": "Konto hinzufügen",
         "installed": "Installiert",
         "applying": "Wird angewendet...",
-        "launching": "Wird gestartet..."
+        "launching": "Wird gestartet...",
+        "add": "Add",
+        "done": "Done",
+        "forward": "Forward",
+        "navigate": "Navigate",
+        "new": "New",
+        "reset": "Reset",
+        "saving": "Saving...",
+        "select": "Select",
+        "unknown_error": "An unknown error occurred",
+        "useful_tools": "Useful Tools"
     },
     "client_page": {
         "title": "Open Client",
@@ -130,7 +141,12 @@
         "browse": "Durchsuchen",
         "no_targets": "Keine Ziele verfügbar",
         "image": "Bild",
-        "add": "Hinzufügen"
+        "add": "Hinzufügen",
+        "remove": "Remove",
+        "add_to_actionbar": "Add to Actionbar",
+        "added": "Added to Actionbar",
+        "remove_from_actionbar": "Remove from Actionbar",
+        "removed": "Removed from Actionbar"
     },
     "home": {
         "welcome_back": "Willkommen zurück!",
@@ -145,7 +161,9 @@
         "other_mod": "Anderer Mod",
         "everything_place": "Alles am richtigen Platz.",
         "save_layout": "Layout speichern",
-        "by_author": "von {{author}}"
+        "by_author": "von {{author}}",
+        "drag_to_reorder": "Drag to reorder",
+        "welcome_back_name": "Welcome back, {{name}}!"
     },
     "dashboard": {
         "title": "Bibliothek",
@@ -165,7 +183,8 @@
         "group": {
             "none": "Gruppieren nach: Nichts",
             "version": "Gruppieren nach: Spielversion",
-            "loader": "Gruppieren nach: Loader"
+            "loader": "Gruppieren nach: Loader",
+            "launcher_toggle": "Show launcher instances"
         },
         "context": {
             "play": "Spielen",
@@ -173,7 +192,9 @@
             "duplicate": "Duplizieren",
             "export": "Exportieren",
             "folder": "Ordner öffnen",
-            "delete": "Löschen"
+            "delete": "Löschen",
+            "move_to_folder": "Move to folder",
+            "remove_from_folder": "Remove from folder"
         },
         "version": "Version",
         "dev_builds": "Entwickler-Builds",
@@ -194,7 +215,26 @@
             "description": "Wähle, wie du diese Instanz exportieren möchtest.",
             "code": "Als Code exportieren",
             "file": "Als .mcpack-Datei exportieren",
-            "partial_load_warning": "Einige Inhalte konnten nicht gelesen werden und werden übersprungen."
+            "partial_load_warning": "Einige Inhalte konnten nicht gelesen werden und werden übersprungen.",
+            "target_prefix": "Export as"
+        },
+        "click_to_upload_icon": "Click to upload icon",
+        "folder_modal": {
+            "help": "Select a destination for the instance folder.",
+            "path": "Folder path",
+            "title": "Move to Folder",
+            "title_multi": "Move Selected Instances"
+        },
+        "launch_game": "Launch Game",
+        "selection": {
+            "clear": "Clear selection",
+            "count": "{{count}} selected",
+            "done": "Done",
+            "enable": "Enable selection",
+            "move_to_folder": "Move selected to folder",
+            "not_selectable": "Not selectable",
+            "select_all": "Select all",
+            "toggle": "Toggle selection"
         }
     },
     "pixel_editor": {
@@ -208,14 +248,16 @@
         "grid_toggle": "Raster umschalten",
         "brush_size": "Pinselgröße",
         "palette": "Palette",
-        "recent_colors": "Zuletzt verwendet"
+        "recent_colors": "Zuletzt verwendet",
+        "description": "Use the pixel editor to paint and preview skins."
     },
     "instance_details": {
         "tabs": {
             "content": "Inhalt",
             "worlds": "Welten",
             "logs": "Protokolle",
-            "screenshots": "Screenshots"
+            "screenshots": "Screenshots",
+            "files": "Files"
         },
         "actions": {
             "export_mcpack": "Als .mcpack exportieren",
@@ -250,7 +292,9 @@
             "preview": "Vorschau",
             "drop_packs": "Resource Packs hierher ziehen und ablegen, um sie zu installieren",
             "drop_shaders": "Shader hierher ziehen und ablegen, um sie zu installieren",
-            "accepting_archives": ".zip- und .rar-Dateien werden akzeptiert"
+            "accepting_archives": ".zip- und .rar-Dateien werden akzeptiert",
+            "failed_packs": "Failed to load resource packs.",
+            "failed_shaders": "Failed to load shaders."
         },
         "search": {
             "placeholder": "Modrinth-ID eingeben oder nach Mod-Namen suchen...",
@@ -284,12 +328,41 @@
             "refresh": "Aktualisieren",
             "copy": "Kopieren",
             "clear": "Leeren",
-            "no_logs": "Keine aktiven Logeinträge."
+            "no_logs": "Keine aktiven Logeinträge.",
+            "upload": "Upload logs"
         },
         "project": {
             "compatible": "Kompatibel",
             "versions": "Versionen",
             "no_versions": "Keine Versionen gefunden"
+        },
+        "files": {
+            "back_to_file": "Back to files",
+            "delete_confirm": "Are you sure you want to delete this file?",
+            "delete_success": "File deleted successfully",
+            "discard_changes": "Discard changes",
+            "empty": "No files found",
+            "error_create_folder": "Could not create folder",
+            "error_delete": "Could not delete item",
+            "error_list": "Could not list files",
+            "error_read": "Could not read file",
+            "error_save": "Could not save file",
+            "error_upload": "Could not upload file",
+            "folder": "Folder",
+            "folder_created": "Folder created",
+            "folder_name_placeholder": "Enter folder name",
+            "keybinds_label": "Keybinds",
+            "loading": "Loading files...",
+            "new_folder": "New Folder",
+            "not_editable": "This file cannot be edited here",
+            "save_success": "File saved successfully",
+            "search_jump_to_result": "Jump to result",
+            "search_placeholder": "Search files...",
+            "unsaved_desc": "You have unsaved changes.",
+            "unsaved_title": "Unsaved Changes",
+            "upload": "Upload",
+            "upload_failed": "Upload failed",
+            "upload_success": "Upload successful"
         }
     },
     "skins": {
@@ -367,7 +440,23 @@
         "mirror_both": "Both",
         "history": "History",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "add_skin_desc": "Add a new skin to your library.",
+        "advanced_editor_desc": "Use the advanced editor to fine-tune your skin.",
+        "brush_not_used": "Brush tool has not been used yet.",
+        "choose_save_location": "Choose where to save the edited skin.",
+        "color_replace": "Replace one color with another",
+        "drag_mode": "Drag Mode",
+        "drag_mode_hint": "Drag across the model to paint or sample colors.",
+        "edited_skin": "Edited Skin",
+        "first_layer": "First Layer",
+        "paint_layer": "Paint Layer",
+        "pipette": "Color Picker",
+        "second_layer": "Second Layer",
+        "select_cape_desc": "Choose a cape to wear in-game.",
+        "skin_name": "Skin Name",
+        "tool_hotkeys": "Tool Hotkeys",
+        "tool_hotkeys_hint": "Keyboard shortcuts for the skin editor."
     },
     "styling": {
         "title": "Erscheinungsbild",
@@ -408,14 +497,20 @@
         "saved_success": "Stileinstellungen gespeichert!",
         "preset_deleted": "Voreinstellung gelöscht",
         "exported_to": "Design exportiert nach {{path}}",
-        "imported_success": "Design erfolgreich importiert!"
+        "imported_success": "Design erfolgreich importiert!",
+        "editor": "Editor",
+        "enter_name": "Enter a theme name",
+        "export_desc": "Export the current theme so it can be imported later.",
+        "no_custom_themes": "No custom themes yet",
+        "theme_name": "Theme Name"
     },
     "login": {
         "title": "Anmeldung",
         "microsoft_sign_in": "Melde dich mit deinem Microsoft-Konto an",
         "sign_in_button": "Mit Microsoft anmelden",
         "logging_in": "Anmeldung läuft...",
-        "failed": "Anmeldung fehlgeschlagen"
+        "failed": "Anmeldung fehlgeschlagen",
+        "guest_restriction": "Login required to access this feature"
     },
     "settings": {
         "title": "Einstellungen",
@@ -465,7 +560,9 @@
             "slovenian": "Slowenisch (SI)",
             "swedish": "Schwedisch (SE)",
             "quick_switch_button": "Schnellwechsel-Button",
-            "quick_switch_button_desc": "Zeigt neben dem Logo einen Button zum schnellen Wechseln zwischen Client und Server"
+            "quick_switch_button_desc": "Zeigt neben dem Logo einen Button zum schnellen Wechseln zwischen Client und Server",
+            "startup_section": "Startup Section",
+            "startup_subpage": "Startup Subpage"
         },
         "java": {
             "title": "Java-Laufzeitumgebung",
@@ -513,7 +610,16 @@
             "uninstall_modal_title": "Launcher deinstallieren",
             "uninstall_modal_msg": "Möchtest du die Deinstallation von Lux jetzt wirklich starten? Der Launcher wird geschlossen.",
             "uninstall_confirm_btn": "Deinstallation starten",
-            "uninstall_failed": "Die Deinstallation konnte nicht gestartet werden."
+            "uninstall_failed": "Die Deinstallation konnte nicht gestartet werden.",
+            "external_paths_desc": "Add extra folders that Lux can use to store instances.",
+            "external_paths_empty": "No external paths configured",
+            "external_paths_exists": "This path is already configured",
+            "external_paths_label": "External Paths",
+            "external_paths_placeholder": "Enter an external path",
+            "storage_path": "Storage Path",
+            "storage_path_desc": "Choose where Lux saves instances and worlds.",
+            "storage_path_placeholder": "Select a storage path",
+            "storage_path_reset": "Reset to default storage path"
         },
         "integration": {
             "title": "Launcher-Integration",
@@ -530,7 +636,11 @@
             "smart_log_analytics": "Smart Log Analytics",
             "smart_log_analytics_desc": "Analysiert Abstürze automatisch und schlägt Lösungen vor.",
             "minimize_to_tray": "In den System-Tray minimieren",
-            "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren."
+            "minimize_to_tray_desc": "Versteckt den Launcher im System-Tray beim Schließen oder Minimieren.",
+            "focus_mode": "Focus Mode",
+            "focus_mode_desc": "Reduce clutter and hide non-essential UI elements.",
+            "minimal_mode": "Minimal Mode",
+            "minimal_mode_desc": "Simplify the interface for a lightweight experience."
         },
         "cloud": {
             "title": "Cloud-Backup-Einstellungen",
@@ -595,6 +705,17 @@
             "add_success": "Mod zu Auto-Install-Mods hinzugefügt",
             "remove_success": "Mod von Auto-Install-Mods entfernt",
             "search_failed": "Suche auf Modrinth fehlgeschlagen"
+        },
+        "compatibility": {
+            "legacy_gpu": "Legacy GPU Support",
+            "legacy_gpu_desc": "Enable support for older graphics hardware.",
+            "low_graphics": "Low Graphics Mode",
+            "low_graphics_desc": "Reduce visual effects for a smoother experience.",
+            "restart_cancel": "Restart later",
+            "restart_confirm": "Restart now",
+            "restart_msg": "A restart is required to apply this change.",
+            "restart_title": "Restart Required",
+            "title": "Compatibility Settings"
         }
     },
     "extensions": {
@@ -651,7 +772,11 @@
         "installing_item": "{{title}} wird installiert ({{current}}/{{total}})...",
         "failed_install_single": "{{title}} konnte nicht installiert werden: {{error}}",
         "batch_success": "{{count}} Elemente erfolgreich installiert",
-        "no_gallery": "Für dieses Projekt gibt es keine Screenshots."
+        "no_gallery": "Für dieses Projekt gibt es keine Screenshots.",
+        "provider": "Provider",
+        "modrinth": "Modrinth",
+        "curseforge": "CurseForge",
+        "error_preview_no_id": "Unable to preview item (missing ID)"
     },
     "server": {
         "title": "Serververwaltung",
@@ -829,7 +954,8 @@
         "installing_item": "{{title}} wird installiert ({{current}}/{{total}})...",
         "install_item_failed": "Installation von {{title}} fehlgeschlagen: {{error}}",
         "batch_success": "{{count}} Element(e) erfolgreich installiert!",
-        "batch_failed": "Batch-Installation fehlgeschlagen: {{error}}"
+        "batch_failed": "Batch-Installation fehlgeschlagen: {{error}}",
+        "installed": "Installed"
     },
     "server_library": {
         "title": "Server-Software",
@@ -856,7 +982,9 @@
             "players": "Spieler",
             "mods": "Mods",
             "properties": "Eigenschaften",
-            "files": "Dateien"
+            "files": "Dateien",
+            "config": "Config",
+            "plugins": "Plugins"
         },
         "performance": {
             "title": "Leistung",
@@ -898,7 +1026,17 @@
             "new_folder": "Neuer Ordner",
             "folder_name": "Ordnername",
             "delete_title": "Löschen?",
-            "delete_confirm": "Möchten Sie diese Datei wirklich löschen?"
+            "delete_confirm": "Möchten Sie diese Datei wirklich löschen?",
+            "drag_or_click": "Drag files here or click to browse",
+            "drop_here": "Drop files here to upload",
+            "error_upload": "Failed to upload file",
+            "files_uploaded": "{{count}} files uploaded",
+            "upload": "Upload files",
+            "upload_hint": "Drop files or click to select",
+            "upload_results": "Upload results",
+            "upload_success": "Files uploaded successfully",
+            "upload_title": "Upload Files",
+            "uploading": "Uploading files..."
         }
     },
     "setup": {
@@ -912,7 +1050,11 @@
         "lightMode": "Lightmode",
         "lightModeDesc": "Setzt Light Lux als Standard-Theme.",
         "useDarkMode": "Darkmode verwenden",
-        "useLightMode": "Lightmode verwenden"
+        "useLightMode": "Lightmode verwenden",
+        "chooseStartup": "Choose startup behavior",
+        "chooseStartupDesc": "Select what happens when Lux starts.",
+        "startupSelectedTab": "Selected startup tab",
+        "useAsStartup": "Use Lux as the startup application"
     },
     "agreement": {
         "title": "Herzlich Willkommen bei Lux",
@@ -927,10 +1069,92 @@
     },
     "crash": {
         "title": "Spielabsturz erkannt",
+        "incompatible_mods_found": "Inkompatible Mods gefunden",
+        "mod_issues_detected": "Inkompatible Mods wurden erkannt. Nutze Auto-Fix, um kompatible Versionen zu installieren.",
         "analysis": "Log-Analyse",
         "no_issues": "Wir konnten die Ursache dieses Absturzes nicht automatisch identifizieren.",
         "view_log": "Hochgeladenes Protokoll ansehen",
-        "check_manually": "Bitte überprüfe die Datei latest.log manuell."
+        "check_manually": "Bitte überprüfe die Datei latest.log manuell.",
+        "applying_fix": "Fix wird angewendet: {{fix}}...",
+        "fix_success": "Fix erfolgreich angewendet! Versuche das Spiel erneut zu starten.",
+        "fix_error": "Fehler beim Anwenden des Fixes: {{error}}",
+        "fix_exception": "Ausnahmefehler beim Anwenden des Fixes: {{error}}",
+        "fix_all_outdated": "Alle veralteten Mods aktualisieren",
+        "labels": {
+            "fix_prefix": "Fix",
+            "cause_prefix": "Ursache",
+            "install_compatible": "Kompatible Mods installieren"
+        },
+        "status": {
+            "all_updated_success": "Alle {{count}} Mods erfolgreich aktualisiert!",
+            "some_updated_failed": "{{success}} Mods aktualisiert, bei {{failed}} ist ein Fehler aufgetreten. Prüfe die Protokolle."
+        },
+        "exit_codes": {
+            "success": "Erfolg",
+            "general": "Allgemeiner Fehler (Protokolle prüfen)",
+            "killed": "Prozess wurde beendet oder ist abgestürzt",
+            "interrupted": "Unterbrochen (Strg+C)",
+            "oom_linux": "Speichermangel (Linux OOM Killer)",
+            "segfault": "Speicherzugriffsfehler (Core Dump)",
+            "vanilla": "Vanilla-Exit-Code (häufig bei Mods)",
+            "unknown": "Unbekannter Exit-Code"
+        },
+        "patterns": {
+            "out_of_memory": {
+                "title": "Arbeitsspeicher voll",
+                "description": "Minecraft hat nicht mehr genügend Arbeitsspeicher. Dies passiert häufig bei modifizierten Versionen oder großen Modpacks.",
+                "fix_text": "Speicher auf 4GB erhöhen"
+            },
+            "unsupported_java_version": {
+                "title": "Inkompatible Java-Version",
+                "description": "Die verwendete Java-Version ist zu alt für diese Minecraft-Version oder deren Mods.",
+                "fix_text": "Java automatisch finden & fixen"
+            },
+            "java_requirement_mismatch": {
+                "title": "Höhere Java-Version erforderlich",
+                "description": "Diese Instanz benötigt Java {{version}} oder höher zum Starten.",
+                "fix_text": "Java-Version aktualisieren"
+            },
+            "pixel_format_not_accelerated": {
+                "title": "Grafiktreiber-Problem",
+                "description": "Deine Grafiktreiber sind entweder veraltet oder nicht korrekt installiert. Die OpenGL-Beschleunigung funktioniert nicht.",
+                "fix_text": "GPU-Treiber aktualisieren"
+            },
+            "opengl_version_too_low": {
+                "title": "Veraltete Grafik-Hardware",
+                "description": "Deine Grafikkarte unterstützt nur OpenGL bis {{version}}, was unter der Anforderung für diese Minecraft-Version liegt.",
+                "fix_text": "Support-Seite öffnen"
+            },
+            "duplicate_mods": {
+                "title": "Doppelte Mods erkannt",
+                "description": "Du hast mehrere Versionen der Mod „{{mod}}“ installiert. Mod-Loader können keine Duplikate verarbeiten.",
+                "fix_text": "Mod-Ordner öffnen"
+            },
+            "config_corruption": {
+                "title": "Beschädigte Konfiguration",
+                "description": "Eine deiner Mod-Konfigurationsdateien ist beschädigt und kann nicht gelesen werden.",
+                "fix_text": "Konfigurationsdateien zurücksetzen"
+            },
+            "mixin_transformer_error": {
+                "title": "Mod-Konflikt (Mixin)",
+                "description": "Beim Patchen des Spielcodes ist ein Konflikt aufgetreten. Die Mod „{{mod}}“ ist die wahrscheinliche Ursache.",
+                "fix_text": "Mod deaktivieren"
+            },
+            "outdated_loader": {
+                "title": "Veralteter Mod-Loader",
+                "description": "Der Mod-Loader ist veraltet. Viele neuere Mods benötigen eine aktuellere Loader-Version.",
+                "fix_text": "Loader aktualisieren"
+            }
+        },
+        "compatibility": {
+            "outdated_dependency_title": "Veraltete Mod-Abhängigkeit",
+            "missing_dependency_title": "Fehlende Mod-Abhängigkeit",
+            "install_fix_text": "Mod {{targetMod}} installieren",
+            "needs_version_installed": "„{{modName}}“ benötigt „{{dependencyName}}“ {{requiredVersion}}+, aber installiert ist {{foundVersion}}.",
+            "needs_version": "„{{modName}}“ benötigt „{{dependencyName}}“ in Version {{requiredVersion}} oder neuer.",
+            "missing_dependency": "Benötigte Abhängigkeit „{{dependencyName}}“ für „{{modName}}“ fehlt.",
+            "generic_conflict": "Ein Mod-Abhängigkeitskonflikt wurde erkannt."
+        }
     },
     "java_required_modal": {
         "title": "Java {{version}} wird benötigt",
@@ -1008,5 +1232,68 @@
         "tools_step1_desc": "Eine Sammlung hilfreicher Minecraft-Dienstprogramme und Werkzeuge.",
         "tools_step2_title": "Tools-Dashboard",
         "tools_step2_desc": "Greife von hier aus auf alle verfügbaren Tools zu."
+    },
+    "client_mods": {
+        "add_to_version": "Add to Version",
+        "all_versions": "All versions",
+        "auto_install": "Auto Install",
+        "auto_install_list": "Auto Install List",
+        "auto_install_removed": "Auto install mod removed",
+        "auto_install_saved": "Auto install settings saved",
+        "clear_all": "Clear all",
+        "custom_mods": "Custom Mods",
+        "default_locked": "Default slots are locked",
+        "default_mods": "Default Mods",
+        "desc": "Configure mods for this client version.",
+        "errors": {
+            "auto_install": "Failed to load auto install mods",
+            "install": "Mod install failed",
+            "load_installed": "Could not load installed mods",
+            "load_instances": "Could not load instances",
+            "load_settings": "Could not load settings",
+            "remove_installed": "Could not remove installed mod",
+            "save_settings": "Failed to save mod settings",
+            "search": "Search failed"
+        },
+        "incompatible_versions": "Incompatible versions found",
+        "install_failed_count": "{{count}} failed to install",
+        "install_none": "No mods selected for install",
+        "install_summary": "Installation Summary",
+        "installed_by_version": "Installed by version",
+        "instances_count": "{{count}} instances",
+        "loading_project_name": "Loading project name...",
+        "locked": "Locked",
+        "no_custom_mods": "No custom mods found",
+        "no_installed_for_version": "No mods installed for this version",
+        "no_results": "No results found",
+        "no_versions": "No versions available",
+        "refresh": "Refresh",
+        "remove": "Remove",
+        "removed_instances": "Removed from instances",
+        "search_placeholder": "Search mods...",
+        "search_results": "{{count}} results found",
+        "select_all": "Select all",
+        "select_version_first": "Select a version first",
+        "selected_versions": "Selected versions",
+        "title": "Client Mods"
+    },
+    "tools": {
+        "current_model": "Current model",
+        "dashboard_desc": "Browse tools and utilities for Minecraft.",
+        "loaded_skin": "Loaded skin",
+        "more_soon": "More tools coming soon",
+        "open_skin_editor": "Open skin editor",
+        "placeholder_one": "Placeholder 1",
+        "placeholder_two": "Placeholder 2",
+        "skin_editor_desc": "Edit your skin directly in the tool.",
+        "skin_editor_hint": "Use the editor to paint and customize your skin.",
+        "skin_editor_saved": "Skin saved successfully",
+        "skin_editor_start_desc": "Start editing your skin with the built-in editor.",
+        "skin_editor_title": "Skin Editor",
+        "start_skin_editor": "Start Skin Editor",
+        "start_with_steve": "Start with Steve model",
+        "start_with_texture": "Start with texture",
+        "steve_default": "Steve Default",
+        "upcoming_tools": "Upcoming Tools"
     }
 }

@@ -69,6 +69,7 @@ const electronAPI = {
     deleteInstance: (name) => ipcRenderer.invoke('instance:delete', name),
     renameInstance: (oldName, newName) => ipcRenderer.invoke('instance:rename', oldName, newName),
     duplicateInstance: (name) => ipcRenderer.invoke('instance:duplicate', name),
+    resetInstanceConfig: (name) => ipcRenderer.invoke('instance:reset-config', name),
     exportInstance: (name) => ipcRenderer.invoke('instance:export', name),
     importInstance: () => ipcRenderer.invoke('instance:import'),
     importMrPack: () => ipcRenderer.invoke('instance:import-mrpack'),

@@ -1070,6 +1070,11 @@ async function findExternalProfileByDisplayName(instanceName) {
 
 const CRASH_LOG_MAX_CHARS = 400000;
 
+function stripColors(text) {
+    if (typeof text !== 'string') return '';
+    return text.replace(/\u001b\[[0-9;]*m/g, '').replace(/§[0-9a-fk-or]/gi, '');
+}
+
 function normalizeCompatibilityToken(value) {
     return String(value || '')
         .trim()
@@ -1083,10 +1088,47 @@ function extractCompatibilityIssuesFromCrashLog(logContent) {
     const patterns = [
         {
             issueType: 'missing_dependency',
-            regex: /Mod\s+'([^']+)'\s+requires\s+mod\s+'([^']+)'(?:\s+any\s+version)?(?:\s+but\s+it\s+is\s+not\s+present)?/ig,
+            // Example: - Install cloth-config, version 16.0.0 or later.
+            regex: /Install\s+['"]?([A-Za-z0-9_.\-]+)['"]?,\s+version\s+([0-9A-Za-z.+\-]+)\s+or\s+later/ig,
             map: (match) => ({
-                modName: match[1],
-                dependencyName: match[2],
+                modName: null,
+                dependencyName: match[1].trim(),
+                requiredVersion: match[2].trim(),
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'missing_dependency',
+            // Example: - Install cloth-config, any version.
+            regex: /Install\s+['"]?([A-Za-z0-9_.\-]+)['"]?,\s+any\s+version/ig,
+            map: (match) => ({
+                modName: null,
+                dependencyName: match[1].trim(),
+                requiredVersion: null,
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'missing_dependency',
+            // Example: Mod 'More Culling' (moreculling) 1.6.2 requires version 16.0.0 or later of cloth-config, which is missing!
+            regex: /Mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+[0-9A-Za-z.+\-]+\s+requires\s+version\s+([0-9A-Za-z.+\-]+)\s+or\s+later\s+of\s+['"]?([A-Za-z0-9_.\-]+)['"]?/ig,
+            map: (match) => ({
+                modName: match[1] || match[2],
+                dependencyName: match[4].trim(),
+                requiredVersion: match[3].trim(),
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'missing_dependency',
+            // Example: Mod 'FastQuit' (fastquit) 3.1.3+mc1.21.11 requires any version of cloth-config, which is missing!
+            regex: /Mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+[0-9A-Za-z.+\-]+\s+requires\s+any\s+version\s+of\s+['"]?([A-Za-z0-9_.\-]+)['"]?/ig,
+            map: (match) => ({
+                modName: match[1] || match[2],
+                dependencyName: match[3].trim(),
                 requiredVersion: null,
                 foundVersion: null,
                 sourceLine: match[0]
@@ -1094,12 +1136,25 @@ function extractCompatibilityIssuesFromCrashLog(logContent) {
         },
         {
             issueType: 'outdated_dependency',
-            regex: /mod\s+'([^']+)'\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+requires\s+version\s+([^\s]+)\s+or\s+later\s+of\s+mod\s+'([^']+)'\s+\(([^)]+)\),\s+but\s+only\s+the\s+wrong\s+version\s+is\s+present:\s*([^!\r\n]+)/ig,
+            // Example: Mod 'Mod A' (moda) 1.0.0 requires version 1.1.0 or later of mod 'Mod B' (modb), but only the wrong version is present: 1.0.0!
+            regex: /Mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+requires\s+version\s+([^\s]+)\s+(?:or\s+later\s+)?of\s+mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\),\s+but\s+only\s+the\s+wrong\s+version\s+is\s+present:\s*([^!\r\n]+)/ig,
             map: (match) => ({
                 modName: match[1] || match[2],
                 dependencyName: match[5] || match[6],
                 requiredVersion: match[4] || null,
                 foundVersion: match[7] || null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'outdated_dependency',
+            // Example: - Replace mod 'Sodium' (sodium) 0.8.7+mc1.21.11 with version 0.8.4+mc1.21.11.
+            regex: /Replace\s+mod\s+['"]?([^'"]+)['"]?\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+with\s+version\s+([0-9A-Za-z.+\-]+)/ig,
+            map: (match) => ({
+                modName: 'System',
+                dependencyName: match[2].trim(),
+                requiredVersion: match[4].trim(),
+                foundVersion: match[3].trim(),
                 sourceLine: match[0]
             })
         },
@@ -1113,16 +1168,72 @@ function extractCompatibilityIssuesFromCrashLog(logContent) {
                 foundVersion: null,
                 sourceLine: match[0]
             })
+        },
+        {
+            issueType: 'duplicate_mod',
+            regex: /Duplicate\s+mod\s+id\s+'([^']+)'\s+found/ig,
+            map: (match) => ({
+                modName: match[1],
+                dependencyName: null,
+                requiredVersion: null,
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'incompatible_mod',
+            regex: /Mod\s+'([^']+)'\s+is\s+incompatible\s+with\s+mod\s+'([^']+)'/ig,
+            map: (match) => ({
+                modName: match[1],
+                dependencyName: match[2],
+                requiredVersion: null,
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'mixin_failure',
+            regex: /Mixin\s+apply\s+failed\s+for\s+mod\s+([A-Za-z0-9_.\-]+)/ig,
+            map: (match) => ({
+                modName: match[1],
+                dependencyName: null,
+                requiredVersion: null,
+                foundVersion: null,
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'loader_outdated',
+            regex: /(fabric-loader|forge|neoforge|quilt\-loader)\s+([0-9A-Za-z.+\-]+)\s+or\s+later\s+is\s+required\s+but\s+([0-9A-Za-z.+\-]+)\s+is\s+present/ig,
+            map: (match) => ({
+                modName: 'System',
+                dependencyName: match[1],
+                requiredVersion: match[2],
+                foundVersion: match[3],
+                sourceLine: match[0]
+            })
+        },
+        {
+            issueType: 'loader_outdated',
+            regex: /Mod\s+'([^']+)'\s+\(([^)]+)\)\s+([0-9A-Za-z.+\-]+)\s+requires\s+version\s+([0-9A-Za-z.+\-]+)\s+or\s+later\s+of\s+(fabric-loader|forge|neoforge|quilt\-loader)/ig,
+            map: (match) => ({
+                modName: match[1] || match[2],
+                dependencyName: match[5],
+                requiredVersion: match[4],
+                foundVersion: null,
+                sourceLine: match[0]
+            })
         }
     ];
 
+    const cleanLog = stripColors(logContent);
     const issues = [];
     const seen = new Set();
 
     for (const rule of patterns) {
         rule.regex.lastIndex = 0;
         let match;
-        while ((match = rule.regex.exec(logContent)) !== null) {
+        while ((match = rule.regex.exec(cleanLog)) !== null) {
             const candidate = rule.map(match);
             const key = [
                 rule.issueType,
@@ -1151,19 +1262,41 @@ function extractCompatibilityIssuesFromCrashLog(logContent) {
 async function buildCrashLogContent(instanceDir, inMemoryLogs = []) {
     const latestLogPath = path.join(instanceDir, 'logs', 'latest.log');
     const debugLogPath = path.join(instanceDir, 'logs', 'debug.log');
+    const crashReportsDir = path.join(instanceDir, 'crash-reports');
 
     const sections = [];
 
+    // Prioritize actual crash reports if they exist
+    try {
+        if (await fs.pathExists(crashReportsDir)) {
+            const files = await fs.readdir(crashReportsDir);
+            const reportFiles = files
+                .filter(f => f.startsWith('crash-') && f.endsWith('.txt'))
+                .map(f => ({ name: f, path: path.join(crashReportsDir, f) }));
+
+            if (reportFiles.length > 0) {
+                // Sort by name (which includes timestamp) descending to get latest
+                reportFiles.sort((a, b) => b.name.localeCompare(a.name));
+                const latestReport = await fs.readFile(reportFiles[0].path, 'utf8');
+                sections.push(`--- LATEST CRASH REPORT (${reportFiles[0].name}) ---\n${latestReport}`);
+            }
+        }
+    } catch (e) {
+        console.error('[Launcher] Failed to read crash reports directory:', e);
+    }
+
     if (Array.isArray(inMemoryLogs) && inMemoryLogs.length > 0) {
-        sections.push(inMemoryLogs.join('\n'));
+        sections.push(`--- LIVE LOGS ---\n${inMemoryLogs.join('\n')}`);
     }
 
     if (await fs.pathExists(latestLogPath)) {
-        sections.push(await fs.readFile(latestLogPath, 'utf8').catch(() => ''));
+        const content = await fs.readFile(latestLogPath, 'utf8').catch(() => '');
+        sections.push(`--- LATEST LOG ---\n${content}`);
     }
 
     if (await fs.pathExists(debugLogPath)) {
-        sections.push(await fs.readFile(debugLogPath, 'utf8').catch(() => ''));
+        const content = await fs.readFile(debugLogPath, 'utf8').catch(() => '');
+        sections.push(`--- DEBUG LOG ---\n${content}`);
     }
 
     const combined = sections
@@ -1173,7 +1306,10 @@ async function buildCrashLogContent(instanceDir, inMemoryLogs = []) {
 
     if (!combined) return '';
     if (combined.length <= CRASH_LOG_MAX_CHARS) return combined;
-    return combined.slice(-CRASH_LOG_MAX_CHARS);
+    // For crash logs, usually the beginning (stack trace) and end (logs) are important.
+    // If it's too long, we take a bit from the start and a bit from the end.
+    const halfMax = Math.floor(CRASH_LOG_MAX_CHARS / 2);
+    return combined.slice(0, halfMax) + '\n\n... [LOG TRUNCATED] ...\n\n' + combined.slice(-halfMax);
 }
 
 module.exports = (ipcMain, mainWindow) => {
