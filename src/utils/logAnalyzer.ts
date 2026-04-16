@@ -1,4 +1,15 @@
-const CRASH_PATTERNS = [
+interface CrashPattern {
+    id: string;
+    regex: RegExp;
+    title: string;
+    description: string | ((match: RegExpMatchArray) => string);
+    fixText: string;
+    fixAction: string;
+    priority: number;
+    fixUrl?: string;
+}
+
+const CRASH_PATTERNS: CrashPattern[] = [
     {
         id: 'out_of_memory',
         regex: /java\.lang\.OutOfMemoryError/i,
@@ -388,7 +399,7 @@ const mergeCompatibilityIssues = (existingIssues, compatibilityEntries) => {
  * @param {string} logContent - The log content or crash report text.
  * @returns {Array} - A list of identified issues.
  */
-export function analyzeLog(logContent, options: any = {}) {
+export function analyzeLog(logContent: string | null | undefined, options: any = {}) {
     const rawLog = typeof logContent === 'string' ? logContent : '';
     const safeLog = stripColors(rawLog);
     const externalCompatibilityIssues = Array.isArray(options.compatibilityIssues)

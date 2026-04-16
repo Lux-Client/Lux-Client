@@ -143,7 +143,13 @@ Found a bug or need help? [Create an issue](https://github.com/Lux-Client/LuxCli
 
 ## Screenshots
 
-Screenshots are coming soon.
+<div align="center">
+  <img src="resources/screenshots/Img1.png" alt="Screenshot 1" style="border-radius: 8px; margin-bottom: 10px;" />
+  <img src="resources/screenshots/IMg2.png" alt="Screenshot 2" style="border-radius: 8px; margin-bottom: 10px;" />
+  <img src="resources/screenshots/Img3.png" alt="Screenshot 3" style="border-radius: 8px; margin-bottom: 10px;" />
+  <img src="resources/screenshots/Img4.png" alt="Screenshot 4" style="border-radius: 8px; margin-bottom: 10px;" />
+
+</div>
 
 ---
 
