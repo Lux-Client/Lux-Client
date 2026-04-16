@@ -6,6 +6,11 @@ on:
     paths-ignore:
       - "README.md"
       - "CHANGELOG.md"
+      - "TECHSTACK.md"
+      - "LICENSE.md"
+      - "SECRURITY.md"
+      - "STYLEGUIDE.md"
+      - "TODO.md"
   workflow_dispatch:
 
 concurrency:
