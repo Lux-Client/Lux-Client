@@ -15,13 +15,12 @@ app.setAboutPanelOptions({
 });
 
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
-app.commandLine.appendSwitch('disable-gpu-driver-bug-workarounds');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 
 if (process.platform === 'linux') {
     app.commandLine.appendSwitch('disable-gpu-sandbox');
-    app.commandLine.appendSwitch('use-gl', 'egl');
+    app.commandLine.appendSwitch('enable-webgl');
 }
 app.commandLine.appendSwitch('enable-webgl-draft-extensions');
 app.commandLine.appendSwitch('disable-features', 'NetworkServiceSandbox,CalculateNativeWinOcclusion');
@@ -368,7 +367,15 @@ async function checkAndLaunch() {
                 if (platform === 'win32') {
                     asset = release.assets.find(a => a.name.endsWith('.exe'));
                 } else if (platform === 'linux') {
-                    asset = release.assets.find(a => a.name.endsWith('.AppImage') || a.name.endsWith('.deb') || a.name.endsWith('.rpm'));
+                    if (process.env.APPIMAGE) {
+                        asset = release.assets.find(a => a.name.endsWith('.AppImage'));
+                    } else if (fs.existsSync('/usr/bin/apt-get') || fs.existsSync('/usr/bin/dpkg')) {
+                        asset = release.assets.find(a => a.name.endsWith('.deb'));
+                    } else if (fs.existsSync('/usr/bin/rpm') || fs.existsSync('/usr/bin/dnf')) {
+                        asset = release.assets.find(a => a.name.endsWith('.rpm'));
+                    } else {
+                        asset = release.assets.find(a => a.name.endsWith('.AppImage') || a.name.endsWith('.deb') || a.name.endsWith('.rpm'));
+                    }
                 } else if (platform === 'darwin') {
                     asset = release.assets.find(a => a.name.endsWith('.zip') || a.name.endsWith('.dmg'));
                 }

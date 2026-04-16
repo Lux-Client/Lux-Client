@@ -208,23 +208,3 @@ jobs:
 
           RELEASE_URL=$(gh release view "$TAG" --json url --jq '.url')
           echo "url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
-
-      - name: Notify Discord – success
-        if: success()
-        env:
-          RELEASE_URL: ${{ steps.create_release.outputs.url }}
-          TAG: ${{ needs.prepare.outputs.tag }}
-          RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          if [ -n "$RELEASE_ID" ]; then ACTION="updated"; else ACTION="released"; fi
-          curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" \
-            -d "{\"embeds\":[{\"title\":\"✅ Lux ${TAG} ${ACTION}\",\"description\":\"The release has been published successfully.\\n\\n**[View Release](${RELEASE_URL})**\",\"color\":3066993}]}" \
-            "$DISCORD_WEBHOOK"
-
-      - name: Notify Discord – failure
-        if: failure()
-        run: |
-          curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" \
-            -d "{\"embeds\":[{\"title\":\"❌ Release failed – Lux ${{ needs.prepare.outputs.tag }}\",\"description\":\"The release workflow failed. Check the [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\",\"color\":15158332}]}" \
-            "${{ secrets.DISCORD_WEBHOOK_URL }}"
