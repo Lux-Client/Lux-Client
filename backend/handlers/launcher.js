@@ -1437,6 +1437,23 @@ Add-Type -TypeDefinition $code -Language CSharp
         return [];
     };
 
+    const appendUniqueCustomArgs = (opts, argsToAdd) => {
+        if (!Array.isArray(argsToAdd) || argsToAdd.length === 0) return;
+
+        if (!Array.isArray(opts.customArgs)) {
+            opts.customArgs = Array.isArray(opts.customArgs) ? opts.customArgs : [];
+        }
+
+        const existing = new Set(opts.customArgs.map((value) => String(value)));
+        for (const arg of argsToAdd) {
+            const normalized = String(arg);
+            if (!existing.has(normalized)) {
+                opts.customArgs.push(normalized);
+                existing.add(normalized);
+            }
+        }
+    };
+
     ipcMain.handle('launcher:abort-launch', async (_, instanceName) => {
         if (activeLaunches.has(instanceName)) {
             activeLaunches.get(instanceName).cancelled = true;
@@ -1854,7 +1871,17 @@ Add-Type -TypeDefinition $code -Language CSharp
                 root: opts.root
             });
 
-            if (config.loader && config.loader.toLowerCase() === 'neoforge') {
+            const normalizedLoader = String(config.loader || '').toLowerCase();
+
+            if (normalizedLoader === 'forge') {
+                // Forge 1.20.1+ on newer Java needs this module opening for securejarhandler/bootstraplauncher.
+                appendUniqueCustomArgs(opts, [
+                    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+                ]);
+                console.log("Added Forge JVM arguments");
+            }
+
+            if (normalizedLoader === 'neoforge') {
                 const neoForgeArgs = [
                     `-DlibraryDirectory=${librariesDir}`,
                     "--add-modules=ALL-SYSTEM",
@@ -1870,15 +1897,7 @@ Add-Type -TypeDefinition $code -Language CSharp
                     "--add-opens=java.logging/java.util.logging=ALL-UNNAMED"
                 ];
 
-                if (opts.customArgs) {
-                    if (Array.isArray(opts.customArgs)) {
-                        opts.customArgs.push(...neoForgeArgs);
-                    } else {
-                        opts.customArgs = [...neoForgeArgs];
-                    }
-                } else {
-                    opts.customArgs = neoForgeArgs;
-                }
+                appendUniqueCustomArgs(opts, neoForgeArgs);
                 console.log("Added NeoForge JVM arguments");
             }
 
