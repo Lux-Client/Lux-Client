@@ -1370,11 +1370,35 @@ async function installForgeLoader(instanceDir, mcVersion, loaderVersion, onProgr
         if (logCallback) logCallback(msg);
     };
     try {
+        // If no loaderVersion given, fetch the recommended version from Forge Maven metadata.
+        if (!loaderVersion) {
+            if (onProgress) onProgress(3, 'Fetching recommended Forge version...');
+            try {
+                const metaUrl = `https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml`;
+                const res = await axios.get(metaUrl, { timeout: 10000 });
+                const xml = String(res.data);
+                // Find versions matching the mcVersion prefix
+                const regex = new RegExp(`<version>(${mcVersion.replace('.', '\.').replace('.', '\.')}[^<]*)<\/version>`, 'g');
+                const matches = [];
+                let m;
+                while ((m = regex.exec(xml)) !== null) matches.push(m[1]);
+                if (matches.length > 0) {
+                    const best = matches[matches.length - 1]; // last = highest
+                    loaderVersion = best.replace(`${mcVersion}-`, '');
+                    log(`Auto-resolved Forge version: ${loaderVersion}`);
+                } else {
+                    return { success: false, error: `Could not find a Forge version for Minecraft ${mcVersion}` };
+                }
+            } catch (e) {
+                return { success: false, error: `Failed to fetch Forge version list: ${e.message}` };
+            }
+        }
+
         if (onProgress) onProgress(5, `Preparing Forge ${loaderVersion}`);
         console.log(`Installing Forge ${loaderVersion} for MC ${mcVersion}...`);
 
         let fullVersion = loaderVersion;
-        if (!fullVersion.startsWith(mcVersion)) {
+        if (!String(fullVersion).startsWith(mcVersion)) {
             fullVersion = `${mcVersion}-${loaderVersion}`;
         }
 
@@ -1514,7 +1538,25 @@ module.exports = (ipcMain, win) => {
         console.log('--- INSTANCES HANDLER INIT START ---');
         const startBackgroundInstall = async (finalName, config, cleanInstall = false, isMigration = false) => {
             const dir = path.join(instancesDir, finalName);
-            const { version, loader, loaderVersion: existingLoaderVer } = config;
+            const { version, loader } = config;
+            // If loaderVersion is missing but versionId contains it (e.g. "1.20.1-forge-47.2.17"), extract it.
+            let existingLoaderVer = config.loaderVersion;
+            if (!existingLoaderVer && config.versionId) {
+                const loaderType = (loader || '').toLowerCase();
+                const vId = String(config.versionId);
+                if (loaderType === 'forge' && vId.includes('-forge-')) {
+                    existingLoaderVer = vId.split('-forge-')[1] || undefined;
+                } else if (loaderType === 'neoforge' && vId.includes('-neoforge-')) {
+                    existingLoaderVer = vId.split('-neoforge-')[1] || undefined;
+                } else if (loaderType === 'fabric' && vId.includes('-fabric-')) {
+                    existingLoaderVer = vId.split('-fabric-')[1] || undefined;
+                } else if (loaderType === 'quilt' && vId.includes('-quilt-')) {
+                    existingLoaderVer = vId.split('-quilt-')[1] || undefined;
+                }
+                if (existingLoaderVer) {
+                    console.log(`[Background Install] Extracted loaderVersion from versionId: ${existingLoaderVer}`);
+                }
+            }
 
             console.log(`[Background Install] Starting for ${finalName}, clean=${cleanInstall}, migration=${isMigration}`);
             if (activeTasks.has(finalName)) {
@@ -2486,7 +2528,14 @@ module.exports = (ipcMain, win) => {
                     zip.extractAllTo(targetDir, true);
                     instanceConfig.name = instanceName;
                     instanceConfig.imported = Date.now();
+                    instanceConfig.status = 'installing';
                     await fs.writeJson(path.join(targetDir, 'instance.json'), instanceConfig, { spaces: 4 });
+                    if (win && win.webContents) {
+                        win.webContents.send('instance:status', { instanceName, status: 'installing' });
+                    }
+                    startBackgroundInstall(instanceName, instanceConfig, false, false).catch(err => {
+                        console.error('[Import:MCPack] Background install failed:', err);
+                    });
                     return { success: true, instanceName };
                 } else if (zip.getEntry('manifest.json')) {
                     return await installCurseForgePack(packPath);

@@ -1948,7 +1948,7 @@ Add-Type -TypeDefinition $code -Language CSharp
 
                 const forgeArgs = [
                     '-Djava.net.preferIPv6Addresses=system',
-                    `-DignoreList=bootstraplauncher,securejarhandler,asm-commons,asm-util,asm-analysis,asm-tree,asm,JarJarFileSystems,client-extra,fmlcore,javafmllanguage,lowcodelanguage,mclanguage,forge-,${versionJarName}`,
+                    `-DignoreList=bootstraplauncher,securejarhandler,asm-commons,asm-util,asm-analysis,asm-tree,asm,JarJarFileSystems,client-extra,fmlcore,javafmllanguage,lowcodelanguage,mclanguage,forge-,${versionJarName},${config.version}`,
                     `-DmergeModules=${jnaJarName},${jnaPlatformJarName}`,
                     `-DlibraryDirectory=${librariesDir}`,
                     '-p',
@@ -1962,7 +1962,27 @@ Add-Type -TypeDefinition $code -Language CSharp
                 ];
 
                 if (modulePathEntries.length === 0) {
-                    console.warn('[Launcher] Required Forge bootstrap module-path entries were not found.');
+                    activeLaunches.delete(instanceName);
+                    return {
+                        success: false,
+                        error: `Forge is not fully installed for this instance (bootstrap libraries missing). Please reinstall the instance.`
+                    };
+                }
+
+                // Also verify the version JSON has the correct Forge main class.
+                // If it contains the vanilla main class, Forge installation was incomplete.
+                const forgeVersionJsonPath = path.join(versionDir, `${config.versionId}.json`);
+                if (await fs.pathExists(forgeVersionJsonPath)) {
+                    try {
+                        const forgeVersionJson = await fs.readJson(forgeVersionJsonPath);
+                        if (forgeVersionJson.mainClass && !forgeVersionJson.mainClass.includes('bootstraplauncher') && !forgeVersionJson.mainClass.includes('BootstrapLauncher')) {
+                            activeLaunches.delete(instanceName);
+                            return {
+                                success: false,
+                                error: `Forge is not fully installed for this instance (version profile is vanilla). Please reinstall the instance.`
+                            };
+                        }
+                    } catch (_) { /* ignore JSON parse errors */ }
                 }
 
                 appendUniqueCustomArgs(opts, forgeArgs);
