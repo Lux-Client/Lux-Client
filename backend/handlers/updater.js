@@ -117,6 +117,27 @@ objShell.Run """" & WScript.Arguments(1) & """", 1, False`;
                     fs.chmodSync(filePath, 0o755);
                     spawn(filePath, [], { detached: true, stdio: 'ignore' }).unref();
                     app.quit();
+                } else if (filePath.endsWith('.deb')) {
+                    const aptBinary = fs.existsSync('/usr/bin/apt') ? '/usr/bin/apt' : fs.existsSync('/usr/bin/apt-get') ? '/usr/bin/apt-get' : null;
+                    if (aptBinary) {
+                        const relativeDebPath = `./${path.basename(filePath)}`;
+                        spawn('pkexec', [aptBinary, 'install', '-y', relativeDebPath], {
+                            detached: true,
+                            stdio: 'ignore',
+                            cwd: path.dirname(filePath)
+                        }).unref();
+                    } else {
+                        spawn('pkexec', ['/usr/bin/dpkg', '-i', filePath], { detached: true, stdio: 'ignore' }).unref();
+                    }
+                    app.quit();
+                } else if (filePath.endsWith('.rpm')) {
+                    const dnfBinary = fs.existsSync('/usr/bin/dnf') ? '/usr/bin/dnf' : null;
+                    if (dnfBinary) {
+                        spawn('pkexec', [dnfBinary, 'install', '-y', filePath], { detached: true, stdio: 'ignore' }).unref();
+                    } else {
+                        spawn('pkexec', ['/usr/bin/rpm', '-Uvh', filePath], { detached: true, stdio: 'ignore' }).unref();
+                    }
+                    app.quit();
                 } else {
                     shell.openPath(path.dirname(filePath));
                 }
