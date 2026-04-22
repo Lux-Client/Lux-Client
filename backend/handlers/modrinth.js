@@ -344,7 +344,14 @@ const isLikelyJarDownloadUrl = (url) => {
     if (normalized.includes('/download')) return true;
     if (normalized.includes('api.spiget.org/v2/resources')) return true;
     if (normalized.includes('hangarcdn.papermc.io')) return true;
-    if (normalized.includes('cdn.modrinth.com')) return true;
+
+    try {
+        const parsed = new URL(normalized);
+        if (parsed.hostname === 'cdn.modrinth.com') return true;
+    } catch (_) {
+        // Ignore invalid URLs and fall through.
+    }
+
     return false;
 };
 
