@@ -1029,8 +1029,34 @@ function App() {
     root.style.setProperty("--sidebar-glow-intensity", t.sidebarGlow ?? 0);
     root.style.setProperty("--global-glow-intensity", t.globalGlow ?? 0);
     root.style.setProperty("--panel-opacity", t.panelOpacity ?? 0.85);
-    root.style.setProperty("--bg-overlay-opacity", t.bgOverlay ?? 0.4);
+root.style.setProperty("--bg-overlay-opacity", t.bgOverlay ?? 0.4);
     root.style.setProperty("--launcher-font", `'${fontFamily}'`);
+
+    const isLight = t.backgroundColor === "#f5f5f5" || t.backgroundColor === "#ffffff";
+    
+    root.style.setProperty("--background", isLight ? "0 0% 96%" : "0 0% 7%");
+    root.style.setProperty("--foreground", isLight ? "0 0% 10%" : "0 0% 98%");
+    root.style.setProperty("--card", isLight ? "0 0% 100%" : "0 0% 11%");
+    root.style.setProperty("--card-foreground", isLight ? "0 0% 10%" : "0 0% 98%");
+    root.style.setProperty("--popover", isLight ? "0 0% 100%" : "0 0% 4%");
+    root.style.setProperty("--popover-foreground", isLight ? "0 0% 10%" : "0 0% 98%");
+    root.style.setProperty("--primary", isLight ? "142 76% 36%" : "27 98% 45%");
+    root.style.setProperty("--primary-foreground", isLight ? "0 0% 100%" : "0 0% 5%");
+    root.style.setProperty("--secondary", isLight ? "0 0% 90%" : "22 99% 41%");
+    root.style.setProperty("--secondary-foreground", isLight ? "0 0% 10%" : "0 0% 90%");
+    root.style.setProperty("--muted", isLight ? "0 0% 90%" : "0 0% 15%");
+    root.style.setProperty("--muted-foreground", isLight ? "0 0% 40%" : "0 0% 52%");
+    root.style.setProperty("--accent", isLight ? "142 76% 36%" : "34 97% 46%");
+    root.style.setProperty("--accent-foreground", isLight ? "0 0% 100%" : "0 0% 98%");
+    root.style.setProperty("--destructive", isLight ? "0 84% 60%" : "0 84% 60%");
+    root.style.setProperty("--destructive-foreground", isLight ? "0 0% 100%" : "0 0% 98%");
+    root.style.setProperty("--border", isLight ? "0 0% 85%" : "0 0% 14%");
+    root.style.setProperty("--input", isLight ? "0 0% 85%" : "0 0% 14%");
+    root.style.setProperty("--ring", isLight ? "142 76% 36%" : "27 98% 45%");
+    root.style.setProperty("--sidebar", isLight ? "0 0% 96%" : "0 0% 7%");
+    root.style.setProperty("--sidebar-foreground", isLight ? "0 0% 40%" : "0 0% 52%");
+    root.style.setProperty("--sidebar-accent", isLight ? "0 0% 90%" : "0 0% 14%");
+    root.style.setProperty("--sidebar-accent-foreground", isLight ? "0 0% 10%" : "0 0% 98%");
 
     const adjustColor = (hex, percent) => {
       if (!hex || typeof hex !== "string") return "#ffffff";

@@ -155,6 +155,10 @@ function Settings({ mode = "default", onRestartGuide = null }) {
     enableAutoInstallMods: false,
     autoInstallMods: [],
     enableSmartLogAnalytics: true,
+    sendCrashReports: true,
+    shareErrorLogs: true,
+    sendUsageStatistics: true,
+    sendInstallationMetrics: true,
     language: "en_us",
     startPage: "dashboard",
     pageAnimationsEnabled: true,
@@ -1966,6 +1970,154 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                {t("settings.privacy.title", "Privacy & Data")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between gap-4 flex-wrap rounded-lg bg-secondary/30 p-4">
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-foreground font-semibold">
+                    {t("settings.privacy.disable_all", "Disable All Data Collection")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("settings.privacy.disable_all_desc", "Turn off all telemetry, crash reports, and analytics.")}
+                  </p>
+                </div>
+                <ToggleBox
+                  checked={
+                    settings.sendUsageStatistics === false &&
+                    settings.sendCrashReports === false &&
+                    settings.sendInstallationMetrics === false &&
+                    settings.shareErrorLogs === false &&
+                    settings.enableSmartLogAnalytics === false
+                  }
+                  onChange={(checked) =>
+                    setSettings((prev) => {
+                      const newSettings = {
+                        ...prev,
+                        sendUsageStatistics: !checked,
+                        sendCrashReports: !checked,
+                        sendInstallationMetrics: !checked,
+                        shareErrorLogs: !checked,
+                        enableSmartLogAnalytics: !checked,
+                      };
+                      saveSettings(newSettings, true);
+                      return newSettings;
+                    })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-foreground">
+                    {t("settings.privacy.analytics", "Usage Statistics")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("settings.privacy.analytics_desc", "Help us improve by sending anonymous usage data.")}
+                  </p>
+                </div>
+                <ToggleBox
+                  checked={settings.sendUsageStatistics !== false}
+                  onChange={(checked) =>
+                    setSettings((prev) => {
+                      const newSettings = { ...prev, sendUsageStatistics: checked };
+                      saveSettings(newSettings, true);
+                      return newSettings;
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-foreground">
+                    {t("settings.privacy.crash_reports", "Crash Reports")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("settings.privacy.crash_reports_desc", "Automatically send crash reports to help fix bugs.")}
+                  </p>
+                </div>
+                <ToggleBox
+                  checked={settings.sendCrashReports !== false}
+                  onChange={(checked) =>
+                    setSettings((prev) => {
+                      const newSettings = { ...prev, sendCrashReports: checked };
+                      saveSettings(newSettings, true);
+                      return newSettings;
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-foreground">
+                    {t("settings.privacy.installation_metrics", "Installation Metrics")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("settings.privacy.installation_metrics_desc", "Share which mods and modpacks you install.")}
+                  </p>
+                </div>
+                <ToggleBox
+                  checked={settings.sendInstallationMetrics !== false}
+                  onChange={(checked) =>
+                    setSettings((prev) => {
+                      const newSettings = { ...prev, sendInstallationMetrics: checked };
+                      saveSettings(newSettings, true);
+                      return newSettings;
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-foreground">
+                    {t("settings.privacy.error_logs", "Error Logs")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("settings.privacy.error_logs_desc", "Include logs when reporting errors.")}
+                  </p>
+                </div>
+                <ToggleBox
+                  checked={settings.shareErrorLogs !== false}
+                  onChange={(checked) =>
+                    setSettings((prev) => {
+                      const newSettings = { ...prev, shareErrorLogs: checked };
+                      saveSettings(newSettings, true);
+                      return newSettings;
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-foreground">
+                    {t("settings.privacy.smart_logs", "Smart Log Analytics")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("settings.privacy.smart_logs_desc", "Detailed logging for troubleshooting.")}
+                  </p>
+                </div>
+                <ToggleBox
+                  checked={settings.enableSmartLogAnalytics !== false}
+                  onChange={(checked) =>
+                    setSettings((prev) => {
+                      const newSettings = { ...prev, enableSmartLogAnalytics: checked };
+                      saveSettings(newSettings, true);
+                      return newSettings;
+                    })
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
 
