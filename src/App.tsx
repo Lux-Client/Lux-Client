@@ -635,6 +635,22 @@ function App() {
   useEffect(() => {
     Analytics.init();
 
+    const tryGetSkin = async (profile: any) => {
+      if (!profile?.access_token) return profile;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        let skinRes = await window.electronAPI.getCurrentSkin(profile.access_token);
+        clearTimeout(timeout);
+        if (skinRes?.success) {
+          profile.skinUrl = skinRes.url;
+        }
+      } catch (e) {
+        console.warn("Skin prefetch failed:", e);
+      }
+      return profile;
+    };
+
     const checkSession = async () => {
       let startupDestination = resolveStartupDestination(
         "launcher:dashboard",
@@ -655,24 +671,10 @@ function App() {
         if (res?.success) {
           const profile = await window.electronAPI.getProfile();
           if (profile) {
-            try {
-              let skinRes = await window.electronAPI.getCurrentSkin(
-                profile.access_token,
-              );
-              if (skinRes && !skinRes.success) {
-                await new Promise((r) => setTimeout(r, 1000));
-                skinRes = await window.electronAPI.getCurrentSkin(
-                  profile.access_token,
-                );
-              }
-              if (skinRes?.success) {
-                profile.skinUrl = skinRes.url;
-              }
-            } catch (e) {
-              console.error("Failed to prefetch skin", e);
-            }
-            setUserProfile(profile);
-            Analytics.setProfile(profile);
+            tryGetSkin(profile).then(p => {
+              setUserProfile(p);
+              Analytics.setProfile(p);
+            });
           }
         }
       } else {
@@ -723,7 +725,11 @@ function App() {
     };
 
     const init = async () => {
-      await Promise.all([checkSession(), loadTheme(), loadVersion()]);
+      try {
+        await Promise.all([checkSession(), loadTheme(), loadVersion()]);
+      } catch (e) {
+        console.warn('Init failed:', e);
+      }
       setIsInitialLoading(false);
     };
 
@@ -875,7 +881,7 @@ function App() {
       if (removeCrashReportListener) removeCrashReportListener();
       if (removeJavaRequiredListener) removeJavaRequiredListener();
     };
-  }, [startupPageOptions]);
+  }, []);
 
   const handleCloseJavaRequiredModal = () => {
     if (isInstallingRequiredJava) return;

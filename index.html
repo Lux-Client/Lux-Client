@@ -4,11 +4,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Lux Client - Modern Minecraft Launcher" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <title>Lux Client</title>
+  <style>
+    body { margin: 0; background: #0a0a0a; }
+    #root { min-height: 100vh; }
+    .app-loader {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0a;
+    }
+    .app-loader::after {
+      content: '';
+      width: 32px;
+      height: 32px;
+      border: 2px solid #22e07a20;
+      border-top-color: #22e07a;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 
 <body class="bg-background text-white overflow-hidden">
-  <div id="root"></div>
+  <div id="root">
+    <div class="app-loader"></div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

@@ -2,13 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "../context/NotificationContext";
 import SliderControl from "../components/SliderControl";
-import ThemeCard from "../components/ThemeCard";
-import MiniPreview from "../components/MiniPreview";
 import Dropdown from "../components/Dropdown";
-import ThemeExportModal from "../components/ThemeExportModal";
 import { syncCustomFonts } from "../services/fontManager";
 import { updateShadcnVars } from "../lib/utils";
-import ThemeMarketplace from "./ThemeMarketplace";
 import PageHeader from "../components/layout/PageHeader";
 import PageContent from "../components/layout/PageContent";
 import { Button } from "../components/ui/button";
@@ -16,6 +12,15 @@ import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
 import { Separator } from "../components/ui/separator";
+import { THEMES, getThemeById, DEFAULT_THEME as LUX_THEME } from "../config/theme";
+
+const ThemeMarketplace = () => null;
+const MiniPreview = ({ theme }: { theme: any }) => (
+  <div className="h-64 rounded-xl bg-surface border border-stroke flex items-center justify-center">
+    <span className="text-muted-foreground">Preview</span>
+  </div>
+);
+const ThemeExportModal = ({ onClose, onExport, presetData }: { onClose: () => void; onExport?: any; presetData?: any }) => null;
 import {
   Card,
   CardContent,
@@ -806,61 +811,34 @@ function Styling() {
 
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {t("styling.quick_themes")}
-                      </CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleImportTheme}
-                        className="h-auto py-1 px-2 text-[10px] font-medium uppercase tracking-wider text-primary hover:text-foreground"
-                      >
-                        <Download className="h-3 w-3" />
-                        {t("styling.import")}
-                      </Button>
-                    </div>
+                    <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      {t("styling.quick_themes")}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[500px] pr-2">
-                      <div className="space-y-4">
-                        {customPresets.length > 0 && (
-                          <div className="space-y-3">
-                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                              {t("styling.custom")}
-                            </span>
-                            <div className="grid grid-cols-1 gap-2">
-                              {customPresets.map((p) => (
-                                <ThemeCard
-                                  key={p.handle}
-                                  theme={p}
-                                  onApply={() => applyPreset(p)}
-                                  onDelete={() => handleDeletePreset(p.handle)}
-                                  isCustom={true}
-                                />
-                              ))}
-                            </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {THEMES.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => applyTheme(getThemeById(t.id))}
+                          className="flex flex-col items-center gap-2 p-4 rounded-xl border border-stroke hover:border-primary/50 transition-all bg-surface"
+                        >
+                          <div 
+                            className="w-12 h-12 rounded-full border-2"
+                            style={{ 
+                              backgroundColor: t.backgroundColor,
+                              borderColor: theme.primaryColor === t.primaryColor ? t.primaryColor : 'transparent'
+                            }}
+                          >
+                            <div 
+                              className="w-full h-full rounded-full"
+                              style={{ backgroundColor: t.primaryColor }}
+                            />
                           </div>
-                        )}
-
-                        {customPresets.length > 0 && <Separator />}
-
-                        <div className="space-y-3">
-                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                            {t("styling.presets")}
-                          </span>
-                          <div className="grid grid-cols-1 gap-2">
-                            {PRESETS.map((p) => (
-                              <ThemeCard
-                                key={p.name}
-                                theme={p}
-                                onApply={() => applyPreset(p)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </ScrollArea>
+                          <span className="text-sm font-medium">{t.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               </div>

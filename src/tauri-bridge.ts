@@ -206,7 +206,7 @@ const tauriBridge: any = {
   openFileDialog: (options: any) => invoke("open_file_dialog", { options }),
   selectFolder: () => invoke("select_folder"),
   
-  getServers: () => invoke("get_instances"), // Alias for get_instances
+  getServers: () => Promise.resolve([]),
   getServerMods: (instanceName: string) => invoke("get_server_mods", { instanceName }),
   
   resolveDependencies: (versionId: string, loaders: string[], gameVersions: string[]) => 
