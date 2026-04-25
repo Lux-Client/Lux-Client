@@ -50,6 +50,7 @@ function CommandPalette({
   const { t } = useTranslation();
   const [instances, setInstances] = useState([]);
   const [settings, setSettings] = useState({});
+  const [search, setSearch] = useState("");
   const isClientPageEnabled = isFeatureEnabled("openClientPage");
 
   useEffect(() => {
@@ -75,6 +76,7 @@ function CommandPalette({
 
   useEffect(() => {
     if (!isAvailable) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMod = (e.metaKey || e.ctrlKey);
       if ((isMod && e.key === "k") || (isMod && e.key === "j")) {
@@ -82,8 +84,18 @@ function CommandPalette({
         onOpenChange(!open);
       }
     };
+
+    const handleSearchChange = () => {
+      const input = document.querySelector('[data-cmdk-input]') as HTMLInputElement;
+      if (input) setSearch(input.value);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("input", handleSearchChange);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("input", handleSearchChange);
+    };
   }, [isAvailable, open, onOpenChange]);
 
   useEffect(() => {
@@ -189,9 +201,15 @@ function CommandPalette({
             className="h-12"
           />
           <CommandList className="max-h-[400px]">
-            <CommandEmpty className="py-8 text-center text-sm text-muted-foreground">
-              {t("dashboard.no_instances", "No results found.")}
-            </CommandEmpty>
+            {search ? (
+              <CommandEmpty className="py-8 text-center text-sm text-muted-foreground">
+                {t("dashboard.no_instances", "No results found.")}
+              </CommandEmpty>
+            ) : (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                {t("dashboard.search_hint", "Type to search...")}
+              </div>
+            )}
 
             <CommandGroup heading={t("common.navigation", "Navigation")}>
               {navItems.map((item) => {
