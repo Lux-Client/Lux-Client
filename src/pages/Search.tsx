@@ -713,7 +713,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div
                     key={i}
-                    className="rounded-xl border border-border bg-card p-5 space-y-3"
+                    className="rounded-xl border border-stroke bg-surface p-5 space-y-3"
                   >
                     <div className="flex items-start gap-3">
                       <Skeleton className="w-12 h-12 rounded-lg" />
@@ -745,7 +745,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                 {results.map((mod) => (
                   <div
                     key={mod.project_id}
-                    className="rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors group flex flex-col"
+                    className="rounded-xl border border-stroke bg-surface p-4 hover:border-primary/50 transition-colors group flex flex-col"
                   >
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0">
@@ -861,7 +861,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
             )}
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-stroke pt-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-medium">
                 {t("search.page_of", { current: currentPage })}
@@ -995,7 +995,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
         }}
       >
         <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
-          <div className="p-6 border-b border-border flex items-start gap-4 shrink-0">
+          <div className="p-6 border-b border-stroke flex items-start gap-4 shrink-0">
             <img
               src={
                 previewProject?.icon_url ||
@@ -1020,7 +1020,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                 {previewProject.gallery.map((img, idx) => (
                   <div
                     key={idx}
-                    className="relative group rounded-lg overflow-hidden border border-border bg-muted aspect-video cursor-zoom-in"
+                    className="relative group rounded-lg overflow-hidden border border-stroke bg-muted aspect-video cursor-zoom-in"
                     onClick={() => setLightboxIndex(idx)}
                   >
                     <img
@@ -1041,7 +1041,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
             )}
           </div>
 
-          <div className="p-4 border-t border-border flex justify-end gap-2 shrink-0">
+          <div className="p-4 border-t border-stroke flex justify-end gap-2 shrink-0">
             <Button variant="ghost" onClick={() => setShowPreviewModal(false)}>
               {t("common.cancel")}
             </Button>

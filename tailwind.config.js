@@ -48,7 +48,9 @@ module.exports = {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
         },
-        surface: 'var(--surface-color)',
+        surface: 'rgba(255, 255, 255, 0.02)',
+        stroke: 'rgba(255, 255, 255, 0.05)',
+        canvas: '#0a0a0a',
         chart: {
           1: "hsl(var(--chart-1))",
           2: "hsl(var(--chart-2))",
@@ -63,6 +65,13 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
         xl: "calc(var(--radius) + 4px)",
         "2xl": "calc(var(--radius) + 8px)",
+        bento: "2rem",
+      },
+      backdropBlur: {
+        overlay: "64px",
+      },
+      blur: {
+        glow: "120px",
       },
       fontFamily: {
         sans: ['var(--launcher-font)', 'system-ui', 'sans-serif'],

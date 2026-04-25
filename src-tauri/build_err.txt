@@ -1,0 +1,13 @@
+    Checking app v0.1.0 (C:\Users\mateo\Documents\GitHub\LuxClient\lux_client\src-tauri)
+error: unexpected closing delimiter: `}`
+   --> src\modrinth.rs:158:1
+    |
+153 |     pub async fn install(payload: Value) -> Result<Value> {
+    |                                                           - this opening brace...
+...
+157 |     }
+    |     - ...matches this closing brace
+158 | }
+    | ^ unexpected closing delimiter
+
+error: could not compile `app` (lib) due to 1 previous error

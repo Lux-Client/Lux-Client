@@ -76,7 +76,7 @@ const Modpacks = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search Modpacks..."
-                        className="bg-muted border border-border rounded-xl px-4 py-2 w-64 focus:outline-none focus:border-primary/50 transition-colors"
+                        className="bg-muted border border-stroke rounded-xl px-4 py-2 w-64 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                     <button type="submit" className="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-xl transition-colors">
                         Search
@@ -92,7 +92,7 @@ const Modpacks = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {searchResults.map((pack) => (
-                            <div key={pack.slug} className="bg-muted border border-border rounded-xl p-4 hover:bg-accent transition-all group flex flex-col h-[320px]">
+                            <div key={pack.slug} className="bg-muted border border-stroke rounded-xl p-4 hover:bg-accent transition-all group flex flex-col h-[320px]">
                                 <div className="h-32 w-full mb-4 rounded-lg overflow-hidden bg-muted relative">
                                     {pack.icon_url ? (
                                         <OptimizedImage
@@ -114,7 +114,7 @@ const Modpacks = () => {
                                             </svg>
                                         </div>
                                     )}
-                                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold border border-border">
+                                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold border border-stroke">
                                         Modpack
                                     </div>
                                 </div>
@@ -123,7 +123,7 @@ const Modpacks = () => {
                                 <p className="text-sm text-muted-foreground mb-2 truncate">by {pack.author}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-3 mb-auto">{pack.description}</p>
 
-                                <div className="mt-4 pt-4 border-t border-border flex justify-between items-center">
+                                <div className="mt-4 pt-4 border-t border-stroke flex justify-between items-center">
                                     <div className="flex gap-2 text-xs text-muted-foreground">
                                         <span className="flex items-center gap-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>

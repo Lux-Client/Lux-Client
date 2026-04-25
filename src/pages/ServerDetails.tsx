@@ -1230,13 +1230,13 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
     );
 
     return (
-        <div className="h-full flex flex-col bg-background">
+        <div className="h-full flex flex-col bg-canvas">
             {isLoading && <LoadingOverlay message="Processing..." />}
 
             { }
             {showEulaDialog && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4">
+                    <div className="bg-surface rounded-xl p-6 max-w-md w-full mx-4">
                         <h3 className="text-xl font-bold text-foreground mb-4">Minecraft EULA</h3>
                         <p className="text-foreground mb-6">
                             By pressing Start, you are indicating your agreement to the Minecraft EULA
@@ -1278,7 +1278,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
             { }
             {showBanDialog && selectedPlayer && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4">
+                    <div className="bg-surface rounded-xl p-6 max-w-md w-full mx-4">
                         <h3 className="text-xl font-bold text-foreground mb-4">Ban {selectedPlayer}</h3>
 
                         <div className="mb-4">
@@ -1286,7 +1286,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                             <select
                                 value={banDuration}
                                 onChange={(e) => setBanDuration(e.target.value)}
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             >
                                 <option value="permanent">Permanent</option>
                                 <option value="1h">1 Hour</option>
@@ -1306,7 +1306,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={banReason}
                                 onChange={(e) => setBanReason(e.target.value)}
                                 placeholder="Enter ban reason..."
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             />
                         </div>
 
@@ -1333,7 +1333,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
 
             {showTeleportDialog && selectedPlayer && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4">
+                    <div className="bg-surface rounded-xl p-6 max-w-md w-full mx-4">
                         <h3 className="text-xl font-bold text-foreground mb-4">Teleport {selectedPlayer}</h3>
 
                         <div className="grid grid-cols-3 gap-3 mb-4">
@@ -1343,7 +1343,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="number"
                                     value={teleportCoordinates.x}
                                     onChange={(e) => setTeleportCoordinates(prev => ({ ...prev, x: parseInt(e.target.value) || 0 }))}
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                 />
                             </div>
                             <div>
@@ -1352,7 +1352,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="number"
                                     value={teleportCoordinates.y}
                                     onChange={(e) => setTeleportCoordinates(prev => ({ ...prev, y: parseInt(e.target.value) || 64 }))}
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                 />
                             </div>
                             <div>
@@ -1361,7 +1361,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="number"
                                     value={teleportCoordinates.z}
                                     onChange={(e) => setTeleportCoordinates(prev => ({ ...prev, z: parseInt(e.target.value) || 0 }))}
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                 />
                             </div>
                         </div>
@@ -1410,7 +1410,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
 
             {showGiveDialog && selectedPlayer && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4">
+                    <div className="bg-surface rounded-xl p-6 max-w-md w-full mx-4">
                         <h3 className="text-xl font-bold text-foreground mb-4">Give Items to {selectedPlayer}</h3>
 
                         <div className="mb-4">
@@ -1420,7 +1420,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={giveItem.item}
                                 onChange={(e) => setGiveItem(prev => ({ ...prev, item: e.target.value }))}
                                 placeholder="e.g., minecraft:diamond, diamond_sword"
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             />
                         </div>
 
@@ -1432,7 +1432,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 max="64"
                                 value={giveItem.amount}
                                 onChange={(e) => setGiveItem(prev => ({ ...prev, amount: parseInt(e.target.value) || 1 }))}
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             />
                         </div>
 
@@ -1459,7 +1459,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
 
             {showWhitelistDialog && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4">
+                    <div className="bg-surface rounded-xl p-6 max-w-md w-full mx-4">
                         <h3 className="text-xl font-bold text-foreground mb-4">Add to Whitelist</h3>
 
                         <div className="mb-6">
@@ -1469,7 +1469,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={whitelistPlayer}
                                 onChange={(e) => setWhitelistPlayer(e.target.value)}
                                 placeholder="Enter player name..."
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             />
                         </div>
 
@@ -1496,7 +1496,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
             )}
 
             { }
-            <div className="flex items-center justify-between p-6 border-b border-border">
+            <div className="flex items-center justify-between p-6 border-b border-stroke">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onBack}
@@ -1507,7 +1507,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                         </svg>
                     </button>
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-background rounded-lg overflow-hidden">
+                        <div className="w-12 h-12 bg-canvas rounded-lg overflow-hidden">
                             {server.icon && server.icon.startsWith('data:') ? (
                                 <img src={server.icon} alt="" className="w-full h-full object-cover" />
                             ) : (
@@ -1573,8 +1573,8 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
             </div>
 
             { }
-            <div className="grid grid-cols-4 gap-4 p-6 border-b border-border">
-                <div className="bg-card/40 rounded-xl p-4">
+            <div className="grid grid-cols-4 gap-4 p-6 border-b border-stroke">
+                <div className="bg-surface/40 rounded-xl p-4">
                     <div className="text-muted-foreground text-sm mb-1">Players</div>
                     <div className="text-2xl font-bold text-foreground">
                         {serverStats.players?.length || 0}/{server.maxPlayers || 20}
@@ -1585,17 +1585,17 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                         </div>
                     )}
                 </div>
-                <div className="bg-card/40 rounded-xl p-4">
+                <div className="bg-surface/40 rounded-xl p-4">
                     <div className="text-muted-foreground text-sm mb-1">CPU Usage</div>
                     <div className="text-2xl font-bold text-foreground">{Math.round(serverStats.cpu)}%</div>
                 </div>
-                <div className="bg-card/40 rounded-xl p-4">
+                <div className="bg-surface/40 rounded-xl p-4">
                     <div className="text-muted-foreground text-sm mb-1">Memory Usage</div>
                     <div className="text-2xl font-bold text-foreground">
                         {Math.round(serverStats.memory || 0)} MB
                     </div>
                 </div>
-                <div className="bg-card/40 rounded-xl p-4">
+                <div className="bg-surface/40 rounded-xl p-4">
                     <div className="text-muted-foreground text-sm mb-1">Uptime</div>
                     <div className="text-2xl font-bold text-foreground">
                         {formatUptime(serverStats.uptime)}
@@ -1604,7 +1604,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
             </div>
 
             { }
-            <div className="flex gap-1 px-6 pt-4 border-b border-border">
+            <div className="flex gap-1 px-6 pt-4 border-b border-stroke">
                 <button
                     onClick={() => setActiveTab('console')}
                     className={`px-4 py-2 rounded-t-lg font-bold text-sm transition-colors ${activeTab === 'console'
@@ -1736,7 +1736,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={command}
                                 onChange={(e) => setCommand(e.target.value)}
                                 placeholder="Enter command... (with or without /)"
-                                className="flex-1 bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                className="flex-1 bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                 disabled={!isRunning}
                                 autoFocus
                             />
@@ -1795,7 +1795,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 <div className="mb-8 p-6 bg-green-500/20 border border-green-500/30 rounded-xl shadow-md animate-in fade-in slide-in-from-top-4 duration-500 text-center relative group">
                                     <h3 className="text-xl font-bold text-foreground mb-2">Server Public!</h3>
                                     <div className="flex items-center justify-center gap-3">
-                                        <div className="bg-black/40 rounded-xl px-4 py-2 font-mono text-lg border border-border text-white">
+                                        <div className="bg-black/40 rounded-xl px-4 py-2 font-mono text-lg border border-stroke text-white">
                                             {server.playitAddress}
                                         </div>
                                         <button
@@ -1829,7 +1829,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
-                                        <div className="flex-1 bg-black/40 rounded-xl p-4 font-mono text-center text-lg border border-border flex items-center justify-between">
+                                        <div className="flex-1 bg-black/40 rounded-xl p-4 font-mono text-center text-lg border border-stroke flex items-center justify-between">
                                             <span className="text-muted-foreground text-sm uppercase font-sans font-bold">Code</span>
                                             <span className="text-white select-all">{playitCode}</span>
                                             <button
@@ -1859,7 +1859,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
 
                             <div className="grid grid-cols-1 gap-6">
 
-                                <div className={`relative group p-6 rounded-xl border transition-all ${server.playitPluginInstalled ? 'bg-primary/5 border-primary/50 shadow-md' : 'bg-card/40 border-border hover:border-border'} ${!playitAvailable && !playitChecking ? 'opacity-50 grayscale' : ''}`}>
+                                <div className={`relative group p-6 rounded-xl border transition-all ${server.playitPluginInstalled ? 'bg-primary/5 border-primary/50 shadow-md' : 'bg-surface/40 border-stroke hover:border-stroke'} ${!playitAvailable && !playitChecking ? 'opacity-50 grayscale' : ''}`}>
                                     <div className="flex items-start justify-between mb-4">
                                         <div className={`p-3 rounded-xl ${server.playitPluginInstalled ? 'bg-primary text-black' : 'bg-muted text-muted-foreground'}`}>
                                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1918,7 +1918,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 </div>
                             </div>
 
-                            <div className="mt-12 bg-card/20 border border-border rounded-xl p-6 text-center">
+                            <div className="mt-12 bg-surface/20 border border-stroke rounded-xl p-6 text-center">
                                 <p className="text-muted-foreground text-sm mb-4">Need help with your tunnel configuration?</p>
                                 <button
                                     onClick={() => window.electronAPI.openExternal('https://playit.gg/dashboard')}
@@ -1939,7 +1939,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                     <div className="flex flex-col h-full">
                         <h2 className="text-lg font-bold text-foreground mb-4">Server Performance</h2>
 
-                        <div className="bg-card/40 rounded-xl p-4">
+                        <div className="bg-surface/40 rounded-xl p-4">
                             <canvas
                                 ref={chartsCanvasRef}
                                 width={800}
@@ -1949,19 +1949,19 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                         </div>
 
                         <div className="grid grid-cols-3 gap-4 mt-4">
-                            <div className="bg-card/40 rounded-xl p-3 text-center">
+                            <div className="bg-surface/40 rounded-xl p-3 text-center">
                                 <div className="text-sm text-muted-foreground">Avg CPU</div>
                                 <div className="text-xl font-bold text-foreground">
                                     {Math.round(serverStats.history.cpu.reduce((a, b) => a + b, 0) / serverStats.history.cpu.length || 0)}%
                                 </div>
                             </div>
-                            <div className="bg-card/40 rounded-xl p-3 text-center">
+                            <div className="bg-surface/40 rounded-xl p-3 text-center">
                                 <div className="text-sm text-muted-foreground">Avg Memory</div>
                                 <div className="text-xl font-bold text-foreground">
                                     {Math.round(serverStats.history.memory.reduce((a, b) => a + b, 0) / serverStats.history.memory.length || 0)} MB
                                 </div>
                             </div>
-                            <div className="bg-card/40 rounded-xl p-3 text-center">
+                            <div className="bg-surface/40 rounded-xl p-3 text-center">
                                 <div className="text-sm text-muted-foreground">Peak Players</div>
                                 <div className="text-xl font-bold text-foreground">
                                     {Math.max(...serverStats.history.playerCount, 0)}
@@ -1993,7 +1993,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="text"
                                     placeholder="Search players..."
                                     onChange={(e) => setPlayerSearch(e.target.value)}
-                                    className="bg-background border border-border rounded-lg px-4 py-1.5 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="bg-canvas border border-stroke rounded-lg px-4 py-1.5 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                 />
                             </div>
                         </div>
@@ -2027,7 +2027,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             Gamemode
                                         </button>
                                         {showGamemodeMenu && (
-                                            <div className="absolute right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-10">
+                                            <div className="absolute right-0 mt-1 bg-surface border border-stroke rounded-lg shadow-xl z-10">
                                                 {['survival', 'creative', 'adventure', 'spectator'].map(mode => (
                                                     <button
                                                         key={mode}
@@ -2053,18 +2053,18 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             XP
                                         </button>
                                         {showXpMenu && (
-                                            <div className="absolute right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-10 p-3 w-48">
+                                            <div className="absolute right-0 mt-1 bg-surface border border-stroke rounded-lg shadow-xl z-10 p-3 w-48">
                                                 <input
                                                     type="number"
                                                     value={xpAmount}
                                                     onChange={(e) => setXpAmount(parseInt(e.target.value) || 0)}
-                                                    className="w-full bg-background border border-border rounded px-2 py-1 text-foreground text-sm mb-2"
+                                                    className="w-full bg-canvas border border-stroke rounded px-2 py-1 text-foreground text-sm mb-2"
                                                     min="0"
                                                 />
                                                 <select
                                                     value={xpType}
                                                     onChange={(e) => setXpType(e.target.value)}
-                                                    className="w-full bg-background border border-border rounded px-2 py-1 text-foreground text-sm mb-2"
+                                                    className="w-full bg-canvas border border-stroke rounded px-2 py-1 text-foreground text-sm mb-2"
                                                 >
                                                     <option value="add">Add XP</option>
                                                     <option value="set">Set XP</option>
@@ -2123,7 +2123,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     {filteredOnlinePlayers.map(player => (
                                         <div
                                             key={player}
-                                            className={`bg-card/40 rounded-lg p-4 hover:bg-card/60 transition-colors cursor-pointer ${selectedPlayers.includes(player) ? 'ring-2 ring-primary' : ''
+                                            className={`bg-surface/40 rounded-lg p-4 hover:bg-surface/60 transition-colors cursor-pointer ${selectedPlayers.includes(player) ? 'ring-2 ring-primary' : ''
                                                 }`}
                                             onClick={() => togglePlayerSelection(player)}
                                         >
@@ -2254,7 +2254,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     {filteredOfflinePlayers.map(({ name, lastSeen }) => (
                                         <div
                                             key={name}
-                                            className={`bg-card/40 rounded-lg p-4 hover:bg-card/60 transition-colors cursor-pointer ${selectedPlayers.includes(name) ? 'ring-2 ring-primary' : ''
+                                            className={`bg-surface/40 rounded-lg p-4 hover:bg-surface/60 transition-colors cursor-pointer ${selectedPlayers.includes(name) ? 'ring-2 ring-primary' : ''
                                                 }`}
                                             onClick={() => togglePlayerSelection(name)}
                                         >
@@ -2376,10 +2376,10 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                         </h3>
                                         <span className="text-xs text-muted-foreground">{installedMods.length}</span>
                                     </div>
-                                    <div className="bg-card/30 rounded-lg border border-border max-h-80 overflow-y-auto custom-scrollbar">
+                                    <div className="bg-surface/30 rounded-lg border border-stroke max-h-80 overflow-y-auto custom-scrollbar">
                                         {installedMods.length > 0 ? (
                                             installedMods.map((item) => (
-                                                <div key={item.name} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-b-0">
+                                                <div key={item.name} className="flex items-center justify-between px-3 py-2 border-b border-stroke last:border-b-0">
                                                     <div className="min-w-0">
                                                         <div className="text-sm text-foreground truncate">{item.title || item.name}</div>
                                                         <div className="text-[11px] text-muted-foreground truncate">{item.name}</div>
@@ -2412,7 +2412,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             placeholder={getServerContentType() === 'plugin'
                                                 ? `Search ${getContentLabelPlural()} on Plugin Portal (Modrinth, Hangar, SpigotMC)...`
                                                 : `Search ${getContentLabelPlural()} on Modrinth / CurseForge...`}
-                                            className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                            className="flex-1 bg-canvas border border-stroke rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                         />
                                         <button
                                             onClick={() => searchMods(modSearch)}
@@ -2427,7 +2427,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                                             <div className="grid grid-cols-1 gap-3">
                                                 {modSearchResults.map(result => (
-                                                    <div key={result.project_id} className="bg-card/40 rounded-lg p-4 hover:bg-card/60 transition-colors">
+                                                    <div key={result.project_id} className="bg-surface/40 rounded-lg p-4 hover:bg-surface/60 transition-colors">
                                                         <div className="flex items-start justify-between mb-2">
                                                             <div className="flex-1">
                                                                 <h3 className="font-bold text-foreground text-lg">{result.title}</h3>
@@ -2469,7 +2469,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                                         loadModVersions(result);
                                                                     }
                                                                 }}
-                                                                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                                className="flex-1 bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                                             >
                                                                 <option value="">
                                                                     {loadingVersions.has(result.project_id) ? 'Loading versions...' : 'Select version...'}
@@ -2534,7 +2534,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">
 
-                                <div className="bg-card/40 rounded-xl p-4 md:col-span-2">
+                                <div className="bg-surface/40 rounded-xl p-4 md:col-span-2">
                                     <h3 className="font-bold text-foreground mb-4">Server Settings</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
@@ -2543,7 +2543,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['max-players'] ?? '20'}
                                                 onChange={(e) => updateProperty('max-players', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2552,7 +2552,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="text"
                                                 value={serverProperties['motd'] ?? 'A Minecraft Server'}
                                                 onChange={(e) => updateProperty('motd', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2561,7 +2561,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['server-port'] ?? '25565'}
                                                 onChange={(e) => updateProperty('server-port', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2570,7 +2570,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['view-distance'] ?? '10'}
                                                 onChange={(e) => updateProperty('view-distance', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2579,7 +2579,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['simulation-distance'] ?? '10'}
                                                 onChange={(e) => updateProperty('simulation-distance', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2588,14 +2588,14 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['spawn-protection'] ?? '16'}
                                                 onChange={(e) => updateProperty('spawn-protection', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
 
-                                <div className="bg-card/40 rounded-xl p-4">
+                                <div className="bg-surface/40 rounded-xl p-4">
                                     <h3 className="font-bold text-foreground mb-4">Gameplay</h3>
                                     <div className="space-y-3">
                                         <div>
@@ -2603,7 +2603,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             <select
                                                 value={serverProperties['difficulty'] || 'easy'}
                                                 onChange={(e) => updateProperty('difficulty', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             >
                                                 <option value="peaceful">Peaceful</option>
                                                 <option value="easy">Easy</option>
@@ -2616,7 +2616,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             <select
                                                 value={serverProperties['gamemode'] || 'survival'}
                                                 onChange={(e) => updateProperty('gamemode', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             >
                                                 <option value="survival">Survival</option>
                                                 <option value="creative">Creative</option>
@@ -2630,7 +2630,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="text"
                                                 value={serverProperties['level-name'] ?? 'world'}
                                                 onChange={(e) => updateProperty('level-name', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2639,7 +2639,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="text"
                                                 value={serverProperties['level-seed'] || ''}
                                                 onChange={(e) => updateProperty('level-seed', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                                 placeholder="Leave empty for random"
                                             />
                                         </div>
@@ -2648,7 +2648,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             <select
                                                 value={serverProperties['op-permission-level'] || '4'}
                                                 onChange={(e) => updateProperty('op-permission-level', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             >
                                                 <option value="1">1 - Bypass user protection</option>
                                                 <option value="2">2 - Use /clear, /difficulty, /effect, /gamemode, /gamerule, /give, /setblock, /tellraw</option>
@@ -2660,7 +2660,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 </div>
 
 
-                                <div className="bg-card/40 rounded-xl p-4">
+                                <div className="bg-surface/40 rounded-xl p-4">
                                     <h3 className="font-bold text-foreground mb-4">World</h3>
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
@@ -2694,7 +2694,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 </div>
 
 
-                                <div className="bg-card/40 rounded-xl p-4">
+                                <div className="bg-surface/40 rounded-xl p-4">
                                     <h3 className="font-bold text-foreground mb-4">Network</h3>
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
@@ -2739,14 +2739,14 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['network-compression-threshold'] ?? '256'}
                                                 onChange={(e) => updateProperty('network-compression-threshold', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
 
-                                <div className="bg-card/40 rounded-xl p-4">
+                                <div className="bg-surface/40 rounded-xl p-4">
                                     <h3 className="font-bold text-foreground mb-4">Players</h3>
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
@@ -2773,14 +2773,14 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['player-idle-timeout'] ?? '0'}
                                                 onChange={(e) => updateProperty('player-idle-timeout', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
 
-                                <div className="bg-card/40 rounded-xl p-4 md:col-span-2">
+                                <div className="bg-surface/40 rounded-xl p-4 md:col-span-2">
                                     <h3 className="font-bold text-foreground mb-4">Advanced Settings</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="flex items-center justify-between col-span-1">
@@ -2870,7 +2870,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['max-tick-time'] ?? '60000'}
                                                 onChange={(e) => updateProperty('max-tick-time', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2879,7 +2879,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['rcon.port'] ?? '25575'}
                                                 onChange={(e) => updateProperty('rcon.port', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                         <div>
@@ -2888,7 +2888,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['query.port'] ?? '25565'}
                                                 onChange={(e) => updateProperty('query.port', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                             />
                                         </div>
                                     </div>
@@ -2899,7 +2899,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                 )}
                 {activeTab === 'config' && (
                     <div className="flex flex-col h-full min-h-0">
-                        <div className="bg-card/40 rounded-xl p-4 mb-4">
+                        <div className="bg-surface/40 rounded-xl p-4 mb-4">
                             <div className="flex flex-col gap-3">
                                 <div className="flex items-center justify-between gap-3">
                                     <h2 className="text-lg font-bold text-foreground">{configEntityLabel.charAt(0).toUpperCase() + configEntityLabel.slice(1)} Config</h2>
@@ -2924,7 +2924,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     value={pluginConfigSearch}
                                     onChange={(e) => setPluginConfigSearch(e.target.value)}
                                     placeholder={`Search ${configEntityLabel}...`}
-                                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                 />
 
                                 <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto custom-scrollbar">
@@ -2934,7 +2934,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             onClick={() => setSelectedPluginConfigFile(plugin.configFile)}
                                             className={`px-3 py-1.5 rounded-lg border text-sm font-semibold transition-colors ${selectedPluginConfigFile === plugin.configFile
                                                 ? 'bg-primary/20 text-primary border-primary/40'
-                                                : 'bg-background/60 text-foreground border-border hover:border-border'
+                                                : 'bg-canvas/60 text-foreground border-stroke hover:border-stroke'
                                                 }`}
                                         >
                                             {plugin.pluginName}
@@ -2952,7 +2952,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                         {isLoadingPluginConfigs ? (
                             <div className="flex items-center justify-center flex-1 text-muted-foreground">Loading {configEntityLabel} configs...</div>
                         ) : (
-                            <div className="bg-card/40 rounded-xl p-4 overflow-y-auto custom-scrollbar flex-1">
+                            <div className="bg-surface/40 rounded-xl p-4 overflow-y-auto custom-scrollbar flex-1">
                                 {!selectedPluginConfig && (
                                     <div className="h-full flex items-center justify-center text-muted-foreground">
                                         Search and click a {configEntityLabel}, then configure it here.
@@ -2979,7 +2979,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                                 const nextValue = e.target.value;
                                                                 updatePluginFieldValue(field.key, nextValue === '' ? '' : Number(nextValue));
                                                             }}
-                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                            className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                                         />
                                                     )}
 
@@ -2988,7 +2988,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                             type="text"
                                                             value={field.value ?? ''}
                                                             onChange={(e) => updatePluginFieldValue(field.key, e.target.value)}
-                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                            className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                                         />
                                                     )}
 
@@ -2996,7 +2996,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                         <select
                                                             value={field.value ?? field.options?.[0] ?? ''}
                                                             onChange={(e) => updatePluginFieldValue(field.key, e.target.value)}
-                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                            className="w-full bg-canvas border border-stroke rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                                         >
                                                             {(field.options || []).map((option) => (
                                                                 <option key={option} value={option}>{option}</option>

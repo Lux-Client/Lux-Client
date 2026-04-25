@@ -303,7 +303,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
 
         <div className="flex flex-col md:flex-row gap-6 p-1">
           <div className="flex-1 flex flex-col items-center gap-4">
-            <div className="relative aspect-square w-full max-w-[320px] bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAACpJREFUGFdjZEACJ06c+M/AwMDIACHYGBgYGJkgAnAByAAqABOACMAGIAMAunIKf89M99AAAAAASUVORK5CYII=')] bg-repeat rounded-lg border-2 border-border overflow-hidden cursor-crosshair shadow-inner">
+            <div className="relative aspect-square w-full max-w-[320px] bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAACpJREFUGFdjZEACJ06c+M/AwMDIACHYGBgYGJkgAnAByAAqABOACMAGIAMAunIKf89M99AAAAAASUVORK5CYII=')] bg-repeat rounded-lg border-2 border-stroke overflow-hidden cursor-crosshair shadow-inner">
               <canvas
                 ref={canvasRef}
                 width={CANVAS_SIZE}
@@ -423,13 +423,13 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 {palette.map((color, i) => (
                   <button
                     key={i}
-                    className="h-8 w-full rounded-md border border-border shadow-sm transition-transform hover:scale-105 active:scale-95"
+                    className="h-8 w-full rounded-md border border-stroke shadow-sm transition-transform hover:scale-105 active:scale-95"
                     style={{ backgroundColor: color }}
                     onClick={() => setCurrentColor(color)}
                   />
                 ))}
                 {Array.from({ length: Math.max(0, 8 - palette.length) }).map((_, i) => (
-                  <div key={`empty-${i}`} className="h-8 w-full rounded-md border border-dashed border-border bg-muted/20" />
+                  <div key={`empty-${i}`} className="h-8 w-full rounded-md border border-dashed border-stroke bg-muted/20" />
                 ))}
               </div>
             </div>

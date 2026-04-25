@@ -973,7 +973,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         <div className="h-full flex flex-col bg-transparent">
             { }
             <div className="p-8 pb-0 flex items-center gap-6">
-                <div className="w-32 h-32 bg-card rounded-xl flex items-center justify-center text-6xl shadow-2xl border border-border overflow-hidden">
+                <div className="w-32 h-32 bg-surface rounded-xl flex items-center justify-center text-6xl shadow-2xl border border-stroke overflow-hidden">
                     {hasImageIcon ? (
                         <img src={instance.icon} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -985,7 +985,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         {instance.name}
                     </h1>
                     <div className="flex items-center gap-3 text-muted-foreground">
-                        <span className="flex items-center gap-1.5 bg-card px-3 py-1 rounded-full border border-border text-sm">
+                        <span className="flex items-center gap-1.5 bg-surface px-3 py-1 rounded-full border border-stroke text-sm">
                             {instance.loader === 'Forge' && <div className="w-2 h-2 rounded-full bg-blue-200"></div>}
                             {instance.loader || 'Vanilla'}
                         </span>
@@ -1035,7 +1035,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     )}
 
                     { }
-                    <button onClick={() => setShowSettings(true)} className="p-3 rounded-xl bg-card hover:bg-accent text-foreground font-bold border border-border transition-colors" title={t('settings.title')}>
+                    <button onClick={() => setShowSettings(true)} className="p-3 rounded-xl bg-surface hover:bg-accent text-foreground font-bold border border-stroke transition-colors" title={t('settings.title')}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
 
@@ -1043,14 +1043,14 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     <div className="relative" ref={menuRef}>
                         <button
                             onClick={() => setShowMenu(!showMenu)}
-                            className="p-3 rounded-xl bg-card hover:bg-accent text-foreground font-bold border border-border transition-colors"
+                            className="p-3 rounded-xl bg-surface hover:bg-accent text-foreground font-bold border border-stroke transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                             </svg>
                         </button>
                         {showMenu && (
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-stroke rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
                                 <button
                                     onClick={() => {
                                         window.electronAPI.openInstanceFolder(instance.name);
@@ -1143,7 +1143,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             </div>
 
             { }
-            <div className="px-8 mt-4 flex gap-2 border-b border-border">
+            <div className="px-8 mt-4 flex gap-2 border-b border-stroke">
                 <button onClick={() => requestTabChange('content')} className={TAB_CLASSES('content')}>{t('instance_details.tabs.content')}</button>
 
                 <button onClick={() => requestTabChange('files')} className={TAB_CLASSES('files')}>{t('instance_details.tabs.files', 'Files')}</button>
@@ -1155,8 +1155,8 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             <div className="flex-1 overflow-hidden p-8 pt-4">
                 {activeTab === 'content' && (
                     <div className="h-full flex flex-col min-h-0">
-                        <div className="sticky top-0 z-20 flex justify-between items-center mb-4 py-2 bg-background backdrop-blur-xl -mx-8 px-8 border-b border-border animate-in fade-in slide-in-from-top-4 duration-500">
-                            <div className="flex gap-1 bg-muted p-1 rounded-xl border border-border">
+                        <div className="sticky top-0 z-20 flex justify-between items-center mb-4 py-2 bg-canvas backdrop-blur-xl -mx-8 px-8 border-b border-stroke animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="flex gap-1 bg-muted p-1 rounded-xl border border-stroke">
                                 <button
                                     onClick={() => { setContentView('mods'); setLocalSearchQuery(''); }}
                                     className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'mods' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
@@ -1188,7 +1188,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
                             <div className="flex items-center gap-3">
                                 {contentView === 'search' && (
-                                    <div className="flex gap-1 bg-background p-1 rounded-xl border border-border mr-2 animate-in zoom-in-95 duration-200">
+                                    <div className="flex gap-1 bg-canvas p-1 rounded-xl border border-stroke mr-2 animate-in zoom-in-95 duration-200">
                                         <button
                                             onClick={() => { setSearchCategory('mod'); setSearchOffset(0); }}
                                             className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'mod' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
@@ -1214,7 +1214,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     <>
                                         <button
                                             onClick={() => { setContentView('search'); setLocalSearchQuery(''); }}
-                                            className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center ${(contentView as string) === 'search' ? 'bg-primary border-primary text-black shadow-lg shadow-sm' : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border'}`}
+                                            className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center ${(contentView as string) === 'search' ? 'bg-primary border-primary text-black shadow-lg shadow-sm' : 'bg-muted border-stroke text-muted-foreground hover:text-foreground hover:bg-accent hover:border-stroke'}`}
                                             title={t('instance_details.actions.add_content')}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1245,7 +1245,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         <button
                                             onClick={() => handleCheckUpdates()}
                                             disabled={checkingUpdates}
-                                            className={`p-2 rounded-xl border transition-all flex items-center justify-center ${checkingUpdates ? 'bg-muted border-border text-muted-foreground cursor-not-allowed' : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border'}`}
+                                            className={`p-2 rounded-xl border transition-all flex items-center justify-center ${checkingUpdates ? 'bg-muted border-stroke text-muted-foreground cursor-not-allowed' : 'bg-muted border-stroke text-muted-foreground hover:text-foreground hover:bg-accent hover:border-stroke'}`}
                                             title={t('instance_details.actions.check_updates')}
                                         >
                                             {checkingUpdates ? (
@@ -1268,7 +1268,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                 placeholder={t('instance_details.content.filter_placeholder')}
                                                 value={localSearchQuery}
                                                 onChange={(e) => setLocalSearchQuery(e.target.value)}
-                                                className="bg-muted border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-foreground w-48 focus:w-64 focus:border-primary focus:bg-accent outline-none transition-all shadow-inner"
+                                                className="bg-muted border border-stroke rounded-xl py-2 pl-9 pr-3 text-sm text-foreground w-48 focus:w-64 focus:border-primary focus:bg-accent outline-none transition-all shadow-inner"
                                             />
                                         </div>
                                     </>
@@ -1289,7 +1289,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         </div>
 
                         {bulkUpdateStatus && (
-                            <div className="mb-4 px-3 py-2 rounded-xl border border-border bg-card text-xs text-muted-foreground flex items-center justify-between gap-3">
+                            <div className="mb-4 px-3 py-2 rounded-xl border border-stroke bg-surface text-xs text-muted-foreground flex items-center justify-between gap-3">
                                 <span>
                                     {bulkUpdateStatus.isRunning
                                         ? `Updating ${bulkUpdateStatus.completed}/${bulkUpdateStatus.total}${bulkUpdateStatus.currentName ? ` • Current: ${bulkUpdateStatus.currentName}` : ''}`
@@ -1332,17 +1332,17 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     mods.filter(m => m.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || m.name?.toLowerCase().includes(localSearchQuery.toLowerCase()))
                                         .sort((a, b) => (a.title || a.name || "").localeCompare(b.title || b.name || ""))
                                         .map(mod => (
-                                            <div key={mod.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
+                                            <div key={mod.name} className="flex items-center justify-between p-3 bg-surface rounded-xl border border-stroke hover:border-stroke hover:bg-accent transition-all group">
                                                 <div className="flex items-center gap-4">
                                                     {mod.icon ? (
-                                                        <img src={mod.icon} alt="" className="w-10 h-10 rounded-lg bg-background object-cover" />
+                                                        <img src={mod.icon} alt="" className="w-10 h-10 rounded-lg bg-canvas object-cover" />
                                                     ) : (
-                                                        <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-xs border border-border">{t('instance.jar_label')}</div>
+                                                        <div className="w-10 h-10 bg-canvas rounded-lg flex items-center justify-center text-muted-foreground font-mono text-xs border border-stroke">{t('instance.jar_label')}</div>
                                                     )}
                                                     <div>
                                                         <div className={`font-bold ${!mod.enabled ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{mod.title || mod.name}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                                            <span className="bg-background px-1.5 rounded">{mod.version || 'v?'}</span>
+                                                            <span className="bg-canvas px-1.5 rounded">{mod.version || 'v?'}</span>
                                                             <span className="opacity-50">{mod.name}</span>
                                                         </div>
                                                     </div>
@@ -1413,17 +1413,17 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     resourcePacks.filter(p => p.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || p.name?.toLowerCase().includes(localSearchQuery.toLowerCase()))
                                         .sort((a, b) => (a.title || a.name || "").localeCompare(b.title || b.name || ""))
                                         .map(pack => (
-                                            <div key={pack.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
+                                            <div key={pack.name} className="flex items-center justify-between p-3 bg-surface rounded-xl border border-stroke hover:border-stroke hover:bg-accent transition-all group">
                                                 <div className="flex items-center gap-4">
                                                     {pack.icon ? (
-                                                        <img src={pack.icon} alt="" className="w-10 h-10 rounded-lg bg-background object-cover" />
+                                                        <img src={pack.icon} alt="" className="w-10 h-10 rounded-lg bg-canvas object-cover" />
                                                     ) : (
-                                                        <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-[10px] border border-border text-center leading-tight whitespace-pre-line">{t('instance.res_pack_label')}</div>
+                                                        <div className="w-10 h-10 bg-canvas rounded-lg flex items-center justify-center text-muted-foreground font-mono text-[10px] border border-stroke text-center leading-tight whitespace-pre-line">{t('instance.res_pack_label')}</div>
                                                     )}
                                                     <div>
                                                         <div className="font-bold text-foreground">{pack.title}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                                            {pack.version && <span className="bg-background px-1.5 rounded">{pack.version}</span>}
+                                                            {pack.version && <span className="bg-canvas px-1.5 rounded">{pack.version}</span>}
                                                             <span className="opacity-50">{pack.name}</span>
                                                         </div>
                                                     </div>
@@ -1490,10 +1490,10 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     shaders.filter(s => s.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || s.name?.toLowerCase().includes(localSearchQuery.toLowerCase()))
                                         .sort((a, b) => (a.title || a.name || "").localeCompare(b.title || b.name || ""))
                                         .map(shader => (
-                                            <div key={shader.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
+                                            <div key={shader.name} className="flex items-center justify-between p-3 bg-surface rounded-xl border border-stroke hover:border-stroke hover:bg-accent transition-all group">
                                                 <div className="flex items-center gap-4">
                                                     {shader.icon ? (
-                                                        <img src={shader.icon} alt="" className="w-10 h-10 rounded-lg bg-background object-cover" />
+                                                        <img src={shader.icon} alt="" className="w-10 h-10 rounded-lg bg-canvas object-cover" />
                                                     ) : (
                                                         <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-mono text-[10px] border border-primary/20 text-center leading-tight whitespace-pre-line">{t('instance.shader_label')}</div>
                                                     )}
@@ -1504,7 +1504,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                         </div>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handlePreview(shader); }}
-                                                            className="text-[10px] bg-muted hover:bg-accent text-foreground px-2 py-0.5 rounded mt-1 border border-border flex items-center gap-1 transition-colors"
+                                                            className="text-[10px] bg-muted hover:bg-accent text-foreground px-2 py-0.5 rounded mt-1 border border-stroke flex items-center gap-1 transition-colors"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                             {t('instance_details.content.preview')}
@@ -1549,7 +1549,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder={t('instance_details.search.placeholder')}
-                                            className="w-full bg-muted backdrop-blur-md border border-border rounded-xl p-3 pl-11 text-foreground focus:border-primary outline-none shadow-inner transition-all"
+                                            className="w-full bg-muted backdrop-blur-md border border-stroke rounded-xl p-3 pl-11 text-foreground focus:border-primary outline-none shadow-inner transition-all"
                                             autoFocus
                                         />
                                     </div>
@@ -1561,7 +1561,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         {t('instance_details.search.showing_results', { count: searchResults.length })}
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex bg-muted p-1 rounded-xl border border-border">
+                                        <div className="flex bg-muted p-1 rounded-xl border border-stroke">
                                             <button
                                                 onClick={() => setProvider('modrinth')}
                                                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'modrinth' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
@@ -1600,21 +1600,21 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         </div>
                                     ) : (
                                         searchResults.map(result => (
-                                            <div key={result.project_id} className="bg-card p-4 rounded-xl flex items-center gap-4 border border-border hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleViewProject(result)}>
-                                                <img src={result.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-12 h-12 rounded-lg bg-background" />
+                                            <div key={result.project_id} className="bg-surface p-4 rounded-xl flex items-center gap-4 border border-stroke hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleViewProject(result)}>
+                                                <img src={result.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-12 h-12 rounded-lg bg-canvas" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
                                                         <h3 className="font-bold text-lg text-foreground truncate">{result.title}</h3>
-                                                        <span className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded border border-border">{result.project_type}</span>
+                                                        <span className="text-[10px] bg-canvas text-muted-foreground px-1.5 py-0.5 rounded border border-stroke">{result.project_type}</span>
                                                         {getSourceTags(result.source, result.sources).map((sourceTag) => (
-                                                            <span key={`${result.project_id}-${sourceTag}`} className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded border border-border uppercase">{sourceTag}</span>
+                                                            <span key={`${result.project_id}-${sourceTag}`} className="text-[10px] bg-canvas text-muted-foreground px-1.5 py-0.5 rounded border border-stroke uppercase">{sourceTag}</span>
                                                         ))}
                                                     </div>
                                                     <p className="text-sm text-muted-foreground line-clamp-1">{result.description}</p>
                                                     {result.project_type === 'shader' && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handlePreview(result); }}
-                                                            className="text-xs bg-muted hover:bg-accent text-foreground px-3 py-1 rounded-lg mt-2 border border-border flex items-center gap-2 transition-colors w-fit"
+                                                            className="text-xs bg-muted hover:bg-accent text-foreground px-3 py-1 rounded-lg mt-2 border border-stroke flex items-center gap-2 transition-colors w-fit"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                             Preview
@@ -1624,7 +1624,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleInstall(result); }}
                                                     disabled={installationStatus[result.project_id] === 'installing' || installationStatus[result.project_id] === 'success'}
-                                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all border border-border flex items-center gap-2 ${installationStatus[result.project_id] === 'success' ? 'bg-emerald-500 text-white shadow-sm' :
+                                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all border border-stroke flex items-center gap-2 ${installationStatus[result.project_id] === 'success' ? 'bg-emerald-500 text-white shadow-sm' :
                                                         installationStatus[result.project_id] === 'failed' ? 'bg-red-500/20 text-red-500' :
                                                             installationStatus[result.project_id] === 'installing' ? 'bg-muted text-muted-foreground cursor-wait' :
                                                                 'bg-muted hover:bg-primary hover:text-black text-foreground'
@@ -1650,7 +1650,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 </div>
 
                                 { }
-                                <div className="flex justify-between items-center bg-card p-2 rounded-xl border border-border shrink-0 mt-4">
+                                <div className="flex justify-between items-center bg-surface p-2 rounded-xl border border-stroke shrink-0 mt-4">
                                     <button
                                         onClick={handlePrevPage}
                                         disabled={searchOffset === 0 || searching}
@@ -1693,15 +1693,15 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {worlds.length === 0 ? (
-                                <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted rounded-xl border border-dashed border-border">
+                                <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted rounded-xl border border-dashed border-stroke">
                                     <div className="text-5xl mb-4 opacity-50">🌍</div>
                                     <p className="text-lg font-medium">{t('instance_details.worlds.no_worlds')}</p>
                                 </div>
                             ) : (
                                 worlds.map(world => (
-                                    <div key={world.folderName} className="bg-card rounded-xl border border-border hover:border-border transition-all flex flex-col group overflow-hidden shadow-lg">
+                                    <div key={world.folderName} className="bg-surface rounded-xl border border-stroke hover:border-stroke transition-all flex flex-col group overflow-hidden shadow-lg">
                                         { }
-                                        <div className="relative h-32 bg-background overflow-hidden shrink-0">
+                                        <div className="relative h-32 bg-canvas overflow-hidden shrink-0">
                                             {world.hasIcon ? (
                                                 <img src={world.iconData} alt="" className="w-full h-full object-cover transition-transform duration-500" />
                                             ) : (
@@ -1739,7 +1739,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                 {world.name}
                                             </h3>
 
-                                            <div className="grid grid-cols-2 gap-2 mt-auto pt-4 border-t border-border">
+                                            <div className="grid grid-cols-2 gap-2 mt-auto pt-4 border-t border-stroke">
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t('instance_details.worlds.last_played')}</span>
                                                     <span className="text-xs text-foreground truncate" title={formatWorldDate(world.lastPlayed)}>
@@ -1755,7 +1755,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                             </div>
 
                                             { }
-                                            <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-border">
+                                            <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-stroke">
                                                 <button
                                                     onClick={() => handleOpenWorldFolder(world)}
                                                     className="p-2 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded-lg transition-all flex items-center justify-center group/btn"
@@ -1802,11 +1802,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 )}
                 {activeTab === 'logs' && (
                     <div
-                        className="flex flex-col h-full bg-background rounded-xl border border-border overflow-hidden shadow-inner"
+                        className="flex flex-col h-full bg-canvas rounded-xl border border-stroke overflow-hidden shadow-inner"
                         style={{ backgroundColor: 'rgba(var(--background-dark-color-rgb, 17, 17, 17), var(--console-opacity, 0.8))' }}
                     >
                         { }
-                        <div className="flex items-center justify-between p-2 bg-card border-b border-border">
+                        <div className="flex items-center justify-between p-2 bg-surface border-b border-stroke">
                             <div className="relative w-48">
                                 <Dropdown
                                     options={[
@@ -1849,16 +1849,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     />
                                     <span className={`text-xs font-bold uppercase ${autoScroll ? 'text-foreground' : 'text-muted-foreground group-hover:text-accent-foreground'}`}>{t('instance_details.logs.auto_scroll')}</span>
                                 </label>
-                                <button onClick={() => { loadLogFiles(); loadLog(); }} className="px-3 py-1 bg-muted hover:bg-accent rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors">{t('instance_details.logs.refresh')}</button>
+                                <button onClick={() => { loadLogFiles(); loadLog(); }} className="px-3 py-1 bg-muted hover:bg-accent rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-stroke transition-colors">{t('instance_details.logs.refresh')}</button>
                                 <button
                                     onClick={handleUploadLog}
                                     disabled={isUploadingLog}
-                                    className="px-3 py-1 bg-muted hover:bg-accent disabled:opacity-60 disabled:cursor-not-allowed rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors"
+                                    className="px-3 py-1 bg-muted hover:bg-accent disabled:opacity-60 disabled:cursor-not-allowed rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-stroke transition-colors"
                                 >
                                     {isUploadingLog ? t('common.loading', 'Loading...') : t('instance_details.logs.upload', 'Upload')}
                                 </button>
-                                <button onClick={handleCopyLog} className="px-3 py-1 bg-muted hover:bg-accent rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors">{t('instance_details.logs.copy')}</button>
-                                <button onClick={() => setLog('')} className="px-3 py-1 bg-muted hover:bg-red-500/20 hover:text-red-400 rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-border transition-colors">{t('instance_details.logs.clear')}</button>
+                                <button onClick={handleCopyLog} className="px-3 py-1 bg-muted hover:bg-accent rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-stroke transition-colors">{t('instance_details.logs.copy')}</button>
+                                <button onClick={() => setLog('')} className="px-3 py-1 bg-muted hover:bg-red-500/20 hover:text-red-400 rounded-lg text-xs font-bold text-foreground uppercase tracking-wide border border-stroke transition-colors">{t('instance_details.logs.clear')}</button>
                             </div>
                         </div>
 
@@ -1890,7 +1890,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
             {showUnsavedFileModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
-                    <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
+                    <div className="bg-surface border border-stroke rounded-xl p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
                         <h3 className="text-xl font-bold text-foreground mb-2">
                             {t('instance_details.files.unsaved_title', 'Unsaved changes')}
                         </h3>
@@ -1954,10 +1954,10 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             {
                 selectedProject && (
                     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setSelectedProject(null)}>
-                        <div className="bg-popover w-full max-w-3xl max-h-[80vh] rounded-xl border border-border flex flex-col overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="bg-popover w-full max-w-3xl max-h-[80vh] rounded-xl border border-stroke flex flex-col overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
                             { }
-                            <div className="p-6 border-b border-border flex items-center gap-4">
-                                <img src={selectedProject.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-16 h-16 rounded-xl bg-card" />
+                            <div className="p-6 border-b border-stroke flex items-center gap-4">
+                                <img src={selectedProject.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-16 h-16 rounded-xl bg-surface" />
                                 <div className="flex-1">
                                     <h2 className="text-2xl font-bold">{selectedProject.title}</h2>
                                     <p className="text-muted-foreground text-sm">{selectedProject.description}</p>
@@ -1978,7 +1978,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         {projectVersions.map(version => {
                                             const isCompatible = version.game_versions?.includes(instance.version) && version.loaders?.some(l => l.toLowerCase() === instance.loader?.toLowerCase());
                                             return (
-                                                <div key={version.id} className={`p-4 rounded-xl border flex items-center gap-4 ${isCompatible ? 'bg-card border-primary/30' : 'bg-card border-border'}`}>
+                                                <div key={version.id} className={`p-4 rounded-xl border flex items-center gap-4 ${isCompatible ? 'bg-surface border-primary/30' : 'bg-surface border-stroke'}`}>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <span className="font-bold text-foreground">{version.version_number}</span>
@@ -1995,7 +1995,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                     </div>
                                                     <button
                                                         onClick={() => handleInstallVersion(version)}
-                                                        className="bg-muted hover:bg-primary hover:text-black text-foreground px-4 py-2 rounded-lg font-bold text-sm transition-all border border-border flex items-center gap-2 shrink-0"
+                                                        className="bg-muted hover:bg-primary hover:text-black text-foreground px-4 py-2 rounded-lg font-bold text-sm transition-all border border-stroke flex items-center gap-2 shrink-0"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                                         {t('search.install')}
@@ -2015,9 +2015,9 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             {
                 showPreviewModal && previewProject && (
                     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-                        <div className="bg-card w-full max-w-5xl h-[85vh] rounded-xl border border-border shadow-2xl flex flex-col overflow-hidden animate-scale-in">
+                        <div className="bg-surface w-full max-w-5xl h-[85vh] rounded-xl border border-stroke shadow-2xl flex flex-col overflow-hidden animate-scale-in">
                             { }
-                            <div className="p-6 border-b border-border flex justify-between items-start bg-background">
+                            <div className="p-6 border-b border-stroke flex justify-between items-start bg-canvas">
                                 <div className="flex gap-4">
                                     <img
                                         src={previewProject.icon_url || 'https://cdn.modrinth.com/placeholder.svg'}
@@ -2040,13 +2040,13 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                             </div>
 
                             { }
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-background/50">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-canvas/50">
                                 {previewProject.gallery && previewProject.gallery.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {previewProject.gallery.map((img, idx) => (
                                             <div
                                                 key={idx}
-                                                className="relative group rounded-xl overflow-hidden border border-border bg-background aspect-video cursor-zoom-in"
+                                                className="relative group rounded-xl overflow-hidden border border-stroke bg-canvas aspect-video cursor-zoom-in"
                                                 onClick={() => setLightboxIndex(idx)}
                                             >
                                                 <img
@@ -2073,7 +2073,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                             </div>
 
                             { }
-                            <div className="p-6 border-t border-border bg-card flex justify-end gap-4">
+                            <div className="p-6 border-t border-stroke bg-surface flex justify-end gap-4">
                                 <button
                                     onClick={() => setShowPreviewModal(false)}
                                     className="px-6 py-3 rounded-xl hover:bg-accent text-foreground font-bold transition-colors"
@@ -2166,7 +2166,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             {
                 worldToDelete && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <div className="bg-surface border border-stroke rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
                             <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center text-3xl mb-4 mx-auto">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -2201,7 +2201,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             {
                 modToDelete && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <div className="bg-surface border border-stroke rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
                             <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center text-3xl mb-4 mx-auto">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

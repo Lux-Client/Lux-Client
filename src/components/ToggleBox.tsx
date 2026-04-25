@@ -16,10 +16,10 @@ const ToggleBox = ({ checked, onChange, label, description, className = '' }: { 
                     onChange={(e) => onChange(e.target.checked)}
                     className="sr-only peer"
                 />
-                <div className="relative w-11 h-6 bg-muted border border-border peer-focus:outline-none rounded-full peer
+                <div className="relative w-11 h-6 bg-muted border border-stroke peer-focus:outline-none rounded-full peer
                     peer-checked:after:translate-x-5 peer-checked:after:border-white
                     after:content-[''] after:absolute after:top-[1px] after:left-[1px]
-                    after:bg-white after:border-border after:border after:rounded-full
+                    after:bg-white after:border-stroke after:border after:rounded-full
                     after:h-5 after:w-5 after:transition-all after:duration-300
                     after:shadow-sm peer-checked:bg-primary peer-checked:border-primary/50
                     transition-all duration-300">

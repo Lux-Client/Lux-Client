@@ -424,7 +424,7 @@ function Client() {
 
   return (
     <div className="p-8 h-full overflow-y-auto custom-scrollbar">
-      <div className="max-w-xl mx-auto bg-card border border-border rounded-xl p-6 md:p-8">
+      <div className="max-w-xl mx-auto bg-surface border border-stroke rounded-xl p-6 md:p-8">
         <h1 className="text-xl md:text-2xl font-bold text-foreground mb-2">
           {t("client_page.title", "Open Client")}
         </h1>
@@ -442,10 +442,10 @@ function Client() {
           disabled={
             isLoadingVersions || isBusy || availableVersions.length === 0
           }
-          className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary/60"
+          className="w-full bg-muted border border-stroke rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary/60"
         >
           {availableVersions.map((version) => (
-            <option key={version} value={version} className="bg-background">
+            <option key={version} value={version} className="bg-canvas">
               {version}
             </option>
           ))}
@@ -467,7 +467,7 @@ function Client() {
               <button
                 onClick={handleUpdateAll}
                 disabled={isBusy || isInstalling || isUpdating}
-                className="px-4 py-3 bg-muted hover:bg-accent text-foreground rounded-xl text-sm font-bold border border-border disabled:opacity-60 transition"
+                className="px-4 py-3 bg-muted hover:bg-accent text-foreground rounded-xl text-sm font-bold border border-stroke disabled:opacity-60 transition"
               >
                 {isUpdating
                   ? t("common.loading", "Loading...")
@@ -503,7 +503,7 @@ function Client() {
                 !selectedVersion ||
                 isLoadingVersions
               }
-              className="w-full px-4 py-3 bg-muted hover:bg-accent text-foreground rounded-xl text-sm font-bold border border-border disabled:opacity-60 transition"
+              className="w-full px-4 py-3 bg-muted hover:bg-accent text-foreground rounded-xl text-sm font-bold border border-stroke disabled:opacity-60 transition"
             >
               {isBusy || isInstalling
                 ? t("common.installing", "Installing...")

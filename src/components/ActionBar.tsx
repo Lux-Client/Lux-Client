@@ -303,7 +303,7 @@ function ActionBar({ open, onOpenChange }) {
               return (
                 <div
                   key={action.id}
-                  className="group rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
+                  className="group rounded-lg border border-stroke bg-surface hover:bg-accent/50 transition-colors"
                 >
                   <button
                     onClick={() => {
@@ -314,7 +314,7 @@ function ActionBar({ open, onOpenChange }) {
                     className="w-full flex items-center gap-3 p-3 text-left"
                     disabled={isCustomizing}
                   >
-                    <div className="w-8 h-8 rounded-md bg-muted border border-border overflow-hidden shrink-0 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-md bg-muted border border-stroke overflow-hidden shrink-0 flex items-center justify-center">
                       {action.icon ? (
                         <img
                           src={action.icon}
@@ -365,7 +365,7 @@ function ActionBar({ open, onOpenChange }) {
         </ScrollArea>
 
         {isCustomizing && (
-          <div className="border-t border-border px-5 py-4 space-y-3">
+          <div className="border-t border-stroke px-5 py-4 space-y-3">
             <Label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               {t("action_bar.add_action")}
             </Label>

@@ -208,7 +208,7 @@ function ToolsDashboard() {
                 saveBehavior="prompt-location"
             />
 
-            <div className="border-b border-border px-6 py-5 shrink-0">
+            <div className="border-b border-stroke px-6 py-5 shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center">
                         <Wrench className="h-5 w-5" />
@@ -224,7 +224,7 @@ function ToolsDashboard() {
 
             <PageContent>
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                    <div className="xl:col-span-2 rounded-2xl border border-border bg-card/50 p-5">
+                    <div className="xl:col-span-2 rounded-2xl border border-stroke bg-surface/50 p-5">
                         <div className="flex items-start justify-between gap-4 mb-4">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
@@ -240,7 +240,7 @@ function ToolsDashboard() {
                             <Badge variant="secondary" className="shrink-0">{t('common.new', 'New')}</Badge>
                         </div>
 
-                        <div className="rounded-xl border border-border/70 bg-muted/30 p-4">
+                        <div className="rounded-xl border border-stroke/70 bg-muted/30 p-4">
                             <div className="flex items-start gap-3">
                                 <Sparkles className="h-4 w-4 text-primary mt-0.5" />
                                 <div className="text-sm text-muted-foreground">
@@ -249,7 +249,7 @@ function ToolsDashboard() {
                             </div>
                         </div>
 
-                        <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 p-4 flex flex-col gap-3">
+                        <div className="mt-4 rounded-xl border border-stroke/70 bg-muted/20 p-4 flex flex-col gap-3">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-medium text-foreground">{previewLabel}</p>
@@ -259,7 +259,7 @@ function ToolsDashboard() {
                                         })}
                                     </p>
                                 </div>
-                                <div className="h-16 w-16 rounded-lg border border-border bg-muted/40 overflow-hidden flex items-center justify-center">
+                                <div className="h-16 w-16 rounded-lg border border-stroke bg-muted/40 overflow-hidden flex items-center justify-center">
                                     <img src={skinSrc} alt={selectedName} className="w-full h-full object-contain image-pixelated" />
                                 </div>
                             </div>
@@ -273,14 +273,14 @@ function ToolsDashboard() {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-border bg-card/40 p-5">
+                    <div className="rounded-2xl border border-stroke bg-surface/40 p-5">
                         <h3 className="text-sm font-semibold text-foreground mb-3">{t('tools.upcoming_tools', 'Upcoming Tools')}</h3>
                         <div className="space-y-3">
-                            <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-sm text-muted-foreground flex items-center gap-2">
+                            <div className="rounded-xl border border-stroke/70 bg-muted/20 p-3 text-sm text-muted-foreground flex items-center gap-2">
                                 <FlaskConical className="h-4 w-4" />
                                 {t('tools.placeholder_one', 'Profile & performance analyzer')}
                             </div>
-                            <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-sm text-muted-foreground flex items-center gap-2">
+                            <div className="rounded-xl border border-stroke/70 bg-muted/20 p-3 text-sm text-muted-foreground flex items-center gap-2">
                                 <Hammer className="h-4 w-4" />
                                 {t('tools.placeholder_two', 'Resourcepack helper')}
                             </div>

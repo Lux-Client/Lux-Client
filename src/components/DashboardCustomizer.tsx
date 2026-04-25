@@ -84,10 +84,10 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
 
     return (
         <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-                <DialogContent animationVariant="zoom" className="max-w-xl overflow-hidden border-border bg-card p-0 shadow-2xl duration-150">
-                    <DialogHeader className="gap-0 border-b border-border bg-muted/30 px-6 py-5 text-left">
+                <DialogContent animationVariant="zoom" className="max-w-xl overflow-hidden border-stroke bg-surface p-0 shadow-2xl duration-150">
+                    <DialogHeader className="gap-0 border-b border-stroke bg-muted/30 px-6 py-5 text-left">
                         <div className="flex items-center gap-4 pr-8">
-                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-primary shadow-sm">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-stroke bg-canvas text-primary shadow-sm">
                                 <LayoutGrid />
                             </div>
                             <div className="flex min-w-0 flex-1 flex-col justify-center">
@@ -98,7 +98,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
 
                 <div className="max-h-[66vh] overflow-y-auto px-6 py-4">
                     <div className="flex flex-col gap-5">
-                        <Card className="overflow-hidden border-border bg-background/80">
+                        <Card className="overflow-hidden border-stroke bg-canvas/80">
                             <CardHeader className="pb-3">
                                 <div className="flex items-center gap-3">
                                     <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -111,7 +111,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
                                         </CardDescription>
                                     </div>
                                     {isEditing && (
-                                        <div className="rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                                        <div className="rounded-full border border-stroke bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
                                             Active
                                         </div>
                                     )}
@@ -137,7 +137,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
                                 value={settings.welcomeMessage || 'Welcome back!'}
                                 onChange={(e) => handleChange('welcomeMessage', e.target.value)}
                                 placeholder="Welcome back!"
-                                className="h-11 rounded-xl bg-background"
+                                className="h-11 rounded-xl bg-canvas"
                             />
                         </div>
 
@@ -153,7 +153,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
 
                             <div className="flex flex-col gap-2">
                                 {sections.map(({ id, title, description, icon: Icon }) => (
-                                    <Card key={id} className="border-border bg-background/70 shadow-sm">
+                                    <Card key={id} className="border-stroke bg-canvas/70 shadow-sm">
                                         <CardContent className="flex items-center justify-between gap-3 p-3">
                                             <div className="flex min-w-0 items-center gap-3">
                                                 <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -173,7 +173,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
                     </div>
                 </div>
 
-                <DialogFooter className="border-t border-border bg-muted/20 px-6 py-4 sm:justify-end">
+                <DialogFooter className="border-t border-stroke bg-muted/20 px-6 py-4 sm:justify-end">
                     <Button onClick={onClose} className="min-w-24">
                         Done
                     </Button>

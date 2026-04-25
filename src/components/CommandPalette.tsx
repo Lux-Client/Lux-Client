@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { isFeatureEnabled } from "../config/featureFlags";
 import {
@@ -47,6 +47,7 @@ function CommandPalette({
   isAvailable,
   canAccessSkins,
 }) {
+  const { t } = useTranslation();
   const [instances, setInstances] = useState([]);
   const [settings, setSettings] = useState({});
   const isClientPageEnabled = isFeatureEnabled("openClientPage");
@@ -73,16 +74,17 @@ function CommandPalette({
   }, [open, isAvailable, currentMode]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isAvailable) return;
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+    if (!isAvailable) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = (e.metaKey || e.ctrlKey);
+      if ((isMod && e.key === "k") || (isMod && e.key === "j")) {
         e.preventDefault();
         onOpenChange(!open);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onOpenChange, isAvailable]);
+  }, [isAvailable, open, onOpenChange]);
 
   useEffect(() => {
     if (!isAvailable && open) {
@@ -173,7 +175,7 @@ function CommandPalette({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-hidden p-0 max-w-xl rounded-xl border-border/50 shadow-2xl duration-300 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-2 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-bottom-4 data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-top-[50%] data-[state=open]:slide-in-from-top-[50%] [&>button]:hidden">
+      <DialogContent className="overflow-hidden p-0 max-w-xl rounded-xl border-stroke/50 shadow-2xl duration-300 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-2 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-bottom-4 data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-top-[50%] data-[state=open]:slide-in-from-top-[50%] [&>button]:hidden">
         <DialogTitle className="sr-only">Command Palette</DialogTitle>
         <DialogDescription className="sr-only">
           Search and quick navigation commands.
@@ -344,22 +346,22 @@ function CommandPalette({
             </CommandGroup>
           </CommandList>
 
-          <div className="border-t border-border px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
+          <div className="border-t border-stroke px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 bg-muted border border-border rounded text-[10px]">
+                <kbd className="px-1 py-0.5 bg-muted border border-stroke rounded text-[10px]">
                   ↑↓
                 </kbd>
                 {t("common.navigate")}
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 bg-muted border border-border rounded text-[10px]">
+                <kbd className="px-1 py-0.5 bg-muted border border-stroke rounded text-[10px]">
                   ↵
                 </kbd>
                 {t("common.select")}
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 bg-muted border border-border rounded text-[10px]">
+                <kbd className="px-1 py-0.5 bg-muted border border-stroke rounded text-[10px]">
                   Esc
                 </kbd>
                 {t("common.close", "Close")}

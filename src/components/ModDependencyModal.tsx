@@ -26,9 +26,9 @@ function ModDependencyModal({ mods, onConfirm, onCancel }) {
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-card w-full max-w-lg rounded-xl border border-border shadow-2xl overflow-hidden flex flex-col animate-scale-in">
+            <div className="bg-surface w-full max-w-lg rounded-xl border border-stroke shadow-2xl overflow-hidden flex flex-col animate-scale-in">
                 { }
-                <div className="p-6 border-b border-border bg-muted">
+                <div className="p-6 border-b border-stroke bg-muted">
                     <h2 className="text-xl font-bold text-foreground tracking-tight">Confirm mods selection</h2>
                     <p className="text-muted-foreground text-sm mt-1">Downloading {mods.length} mods including dependencies</p>
                 </div>
@@ -42,7 +42,7 @@ function ModDependencyModal({ mods, onConfirm, onCancel }) {
                             className={`flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all hover:bg-accent group ${selectedIds.has(mod.projectId) ? 'bg-primary/5' : 'opacity-40 grayscale'}`}
                         >
                             <div className="flex items-center justify-center w-6">
-                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selectedIds.has(mod.projectId) ? 'bg-primary border-primary' : 'border-border'}`}>
+                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${selectedIds.has(mod.projectId) ? 'bg-primary border-primary' : 'border-stroke'}`}>
                                     {selectedIds.has(mod.projectId) && (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-black" viewBox="0 0 20 20" fill="currentColor">
                                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -77,7 +77,7 @@ function ModDependencyModal({ mods, onConfirm, onCancel }) {
                 </div>
 
                 { }
-                <div className="p-6 border-t border-border bg-muted flex items-center justify-between">
+                <div className="p-6 border-t border-stroke bg-muted flex items-center justify-between">
                     <button
                         onClick={toggleAll}
                         className="text-sm font-bold text-muted-foreground hover:text-foreground transition-all flex items-center gap-3 group"

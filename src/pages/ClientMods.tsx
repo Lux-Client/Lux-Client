@@ -724,7 +724,7 @@ function ClientMods() {
         </p>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-4 mb-4">
+      <div className="bg-surface border border-stroke rounded-xl p-4 mb-4">
         <form
           onSubmit={handleSearchSubmit}
           className="flex flex-wrap gap-3 items-center"
@@ -737,7 +737,7 @@ function ClientMods() {
               "client_mods.search_placeholder",
               "Search Fabric mods...",
             )}
-            className="flex-1 min-w-[220px] bg-muted border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
+            className="flex-1 min-w-[220px] bg-muted border border-stroke rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
           />
 
           <select
@@ -746,7 +746,7 @@ function ClientMods() {
               setVersionFilter(event.target.value);
               setOffset(0);
             }}
-            className="bg-muted border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
+            className="bg-muted border border-stroke rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
           >
             <option value="all">
               {t("client_mods.all_versions", "All Versions")}
@@ -764,7 +764,7 @@ function ClientMods() {
               setSortMethod(event.target.value);
               setOffset(0);
             }}
-            className="bg-muted border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
+            className="bg-muted border border-stroke rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
           >
             <option value="relevance">
               {t("search.relevance", "Relevance")}
@@ -791,14 +791,14 @@ function ClientMods() {
           <button
             onClick={() => setSelectedVersions(availableVersions)}
             type="button"
-            className="px-2 py-1 text-[11px] rounded-md bg-muted hover:bg-accent text-foreground border border-border"
+            className="px-2 py-1 text-[11px] rounded-md bg-muted hover:bg-accent text-foreground border border-stroke"
           >
             {t("client_mods.select_all", "Select all")}
           </button>
           <button
             onClick={() => setSelectedVersions([])}
             type="button"
-            className="px-2 py-1 text-[11px] rounded-md bg-muted hover:bg-accent text-foreground border border-border"
+            className="px-2 py-1 text-[11px] rounded-md bg-muted hover:bg-accent text-foreground border border-stroke"
           >
             {t("client_mods.clear_all", "Clear")}
           </button>
@@ -810,7 +810,7 @@ function ClientMods() {
                 key={version}
                 onClick={() => toggleSelectedVersion(version)}
                 type="button"
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${active ? "bg-primary/20 text-primary border-primary/40" : "bg-muted text-foreground border-border hover:bg-accent"}`}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${active ? "bg-primary/20 text-primary border-primary/40" : "bg-muted text-foreground border-stroke hover:bg-accent"}`}
               >
                 {version}
               </button>
@@ -826,7 +826,7 @@ function ClientMods() {
       </div>
 
       <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-xl p-4 flex flex-col min-h-0">
+        <div className="bg-surface border border-stroke rounded-xl p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-foreground">
               {t("client_mods.search_results", "Search Results")}
@@ -856,7 +856,7 @@ function ClientMods() {
                 return (
                   <div
                     key={projectId || result.slug}
-                    className="p-3 rounded-xl border border-border bg-muted"
+                    className="p-3 rounded-xl border border-stroke bg-muted"
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <img
@@ -919,7 +919,7 @@ function ClientMods() {
             )}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-stroke flex items-center justify-between">
             <button
               type="button"
               onClick={() => setOffset((prev) => Math.max(0, prev - limit))}
@@ -945,7 +945,7 @@ function ClientMods() {
         </div>
 
         <div className="grid grid-rows-2 gap-4 min-h-0">
-          <div className="bg-card border border-border rounded-xl p-4 min-h-0 overflow-hidden flex flex-col">
+          <div className="bg-surface border border-stroke rounded-xl p-4 min-h-0 overflow-hidden flex flex-col">
             <h2 className="text-lg font-bold text-foreground mb-3">
               {t("client_mods.auto_install_list", "Client Auto Install")}
             </h2>
@@ -957,7 +957,7 @@ function ClientMods() {
               {DEFAULT_OPEN_CLIENT_MOD_IDS.map((projectId) => (
                 <div
                   key={projectId}
-                  className="flex items-center justify-between bg-muted border border-border rounded-lg px-3 py-2"
+                  className="flex items-center justify-between bg-muted border border-stroke rounded-lg px-3 py-2"
                 >
                   <span className="text-sm text-foreground truncate">
                     {projectTitles[projectId] ||
@@ -966,7 +966,7 @@ function ClientMods() {
                         "Loading mod name...",
                       )}
                   </span>
-                  <span className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground border border-border">
+                  <span className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground border border-stroke">
                     {t("client_mods.locked", "Locked")}
                   </span>
                 </div>
@@ -988,7 +988,7 @@ function ClientMods() {
                 customAutoInstallMods.map((projectId) => (
                   <div
                     key={projectId}
-                    className="flex items-center justify-between bg-muted border border-border rounded-lg px-3 py-2 gap-2"
+                    className="flex items-center justify-between bg-muted border border-stroke rounded-lg px-3 py-2 gap-2"
                   >
                     <span className="text-sm text-foreground truncate">
                       {projectTitles[projectId] ||
@@ -1011,7 +1011,7 @@ function ClientMods() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-xl p-4 min-h-0 overflow-hidden flex flex-col">
+          <div className="bg-surface border border-stroke rounded-xl p-4 min-h-0 overflow-hidden flex flex-col">
             <h2 className="text-lg font-bold text-foreground mb-3">
               {t("client_mods.installed_by_version", "Installed Client Mods")}
             </h2>
@@ -1035,7 +1035,7 @@ function ClientMods() {
                   return (
                     <div
                       key={version}
-                      className="border border-border rounded-xl p-3 bg-muted"
+                      className="border border-stroke rounded-xl p-3 bg-muted"
                     >
                       <div className="text-xs uppercase tracking-widest text-muted-foreground font-bold mb-2">
                         {version}
@@ -1064,7 +1064,7 @@ function ClientMods() {
                             return (
                               <div
                                 key={modItem.key}
-                                className="flex items-center justify-between gap-2 bg-muted border border-border rounded-lg px-2.5 py-2"
+                                className="flex items-center justify-between gap-2 bg-muted border border-stroke rounded-lg px-2.5 py-2"
                               >
                                 <div className="min-w-0">
                                   <div className="text-sm text-foreground truncate">
@@ -1089,7 +1089,7 @@ function ClientMods() {
                                   disabled={isDefaultProtected || isRemoving}
                                   className={`px-2 py-1 rounded text-xs font-bold border ${
                                     isDefaultProtected
-                                      ? "bg-muted text-muted-foreground border-border cursor-not-allowed"
+                                      ? "bg-muted text-muted-foreground border-stroke cursor-not-allowed"
                                       : "bg-red-500/10 text-red-300 border-red-400/20 hover:bg-red-500/20"
                                   } disabled:opacity-60`}
                                 >

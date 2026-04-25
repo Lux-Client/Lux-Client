@@ -2,7 +2,7 @@ import React from 'react';
 
 function MiniPreview({ theme }) {
     return (
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-border shadow-2xl">
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-stroke shadow-2xl">
             { }
             <div
                 className="absolute inset-0"

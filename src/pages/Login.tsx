@@ -27,18 +27,18 @@ function Login({ onLoginSuccess, onGuestMode }) {
     };
 
     return (
-        <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-background px-6 py-10">
+        <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-canvas px-6 py-10">
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
             <div className="relative w-full max-w-md">
-                <Card className="overflow-hidden border-border/70 bg-card/90 shadow-2xl backdrop-blur-xl">
+                <Card className="overflow-hidden border-stroke/70 bg-[#0a0a0a]/95 shadow-2xl backdrop-blur-xl">
                     <CardContent className="p-6 sm:p-8">
                         <div className="mb-8 flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-muted-foreground">Lux</p>
                                 <h2 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{t('login.title')}</h2>
                             </div>
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/70 bg-background/60 text-primary shadow-sm">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke/70 bg-canvas/60 text-primary shadow-sm">
                                 <ShieldCheck className="h-5 w-5" />
                             </div>
                         </div>
@@ -64,7 +64,7 @@ function Login({ onLoginSuccess, onGuestMode }) {
                                 onClick={onGuestMode}
                                 variant="outline"
                                 size="lg"
-                                className="h-12 w-full rounded-xl border-border/70 bg-background/40 text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                                className="h-12 w-full rounded-xl border-stroke/70 bg-canvas/40 text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                             >
                                 Guest Mode
                             </Button>

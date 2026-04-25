@@ -888,7 +888,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                 />
 
                 {settings.pageAnimationsEnabled !== false && (
-                  <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <div className="rounded-xl border border-stroke bg-muted/20 p-4">
                     <div className="mb-3">
                       <Label className="text-foreground">
                         {t(
@@ -917,7 +917,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                             onClick={() =>
                               handleChange("pageAnimationPreset", option.id)
                             }
-                            className={`rounded-xl border p-4 text-left transition-all ${isActive ? "border-primary bg-primary/10 shadow-[0_0_0_1px_rgba(var(--primary-color-rgb),0.15)]" : "border-border bg-background/50 hover:border-primary/40 hover:bg-accent/30"}`}
+                            className={`rounded-xl border p-4 text-left transition-all ${isActive ? "border-primary bg-primary/10 shadow-[0_0_0_1px_rgba(var(--primary-color-rgb),0.15)]" : "border-stroke bg-canvas/50 hover:border-primary/40 hover:bg-accent/30"}`}
                           >
                             <div className="flex items-center justify-between gap-3">
                               <span className="text-sm font-semibold text-foreground">
@@ -963,29 +963,30 @@ function Settings({ mode = "default", onRestartGuide = null }) {
           </Card>
 
           <Dialog open={showJavaModal} onOpenChange={setShowJavaModal}>
-            <DialogContent>
+            <DialogContent className="border-stroke/70 bg-[#0a0a0a]/95 shadow-2xl backdrop-blur-xl sm:rounded-[2rem]">
               <DialogHeader>
-                <DialogTitle>{t("settings.java.install")}</DialogTitle>
+                <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
+                    {t("settings.java.install")}
+                </DialogTitle>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">
                 {t("settings.java.install_desc")}
               </p>
-              <div className="space-y-2">
+              <div className="mt-2 grid gap-3">
                 {[8, 17, 21, 25].map((v) => (
-                  <Button
+                  <button
                     key={v}
-                    variant="outline"
-                    className="w-full justify-between h-auto py-3"
                     onClick={() => handleInstallJava(v)}
+                    className="group relative flex items-center justify-between rounded-xl border border-stroke/70 bg-canvas/50 p-4 transition-all hover:border-primary/50 hover:bg-primary/10 hover:shadow-[0_0_0_1px_rgba(var(--primary-color-rgb),0.15)]"
                   >
-                    <span className="font-medium">Java {v} (LTS)</span>
-                    <span className="text-primary text-xs">
+                    <span className="font-semibold text-foreground">Java {v} (LTS)</span>
+                    <span className="text-xs font-bold text-primary transition-transform group-hover:translate-x-1">
                       {t("settings.java.install")} &rarr;
                     </span>
-                  </Button>
+                  </button>
                 ))}
               </div>
-              <DialogFooter>
+              <DialogFooter className="mt-4">
                 <Button variant="ghost" onClick={() => setShowJavaModal(false)}>
                   {t("common.cancel")}
                 </Button>
@@ -1070,7 +1071,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                       {installedRuntimes.map((runtime) => (
                         <div
                           key={runtime.dirPath}
-                          className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3 group hover:border-border/80 transition"
+                          className="flex items-center justify-between rounded-lg border border-stroke bg-muted/30 p-3 group hover:border-stroke/80 transition"
                         >
                           <div className="flex-1 min-w-0 mr-4">
                             <p className="text-sm font-medium text-foreground truncate">
@@ -1360,7 +1361,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                     ).map((externalPath) => (
                       <div
                         key={externalPath}
-                        className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/30 px-2 py-1.5"
+                        className="flex items-center gap-2 rounded-md border border-stroke/70 bg-muted/30 px-2 py-1.5"
                       >
                         <span
                           className="flex-1 truncate text-xs font-mono"
@@ -1393,7 +1394,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                 />
 
                 <ToggleBox
-                  className="pt-4 border-t border-border"
+                  className="pt-4 border-t border-stroke"
                   checked={settings.showModrinthInstancesInLibrary !== false}
                   onChange={(val) =>
                     handleChange("showModrinthInstancesInLibrary", val)
@@ -1405,7 +1406,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                 />
 
                 <ToggleBox
-                  className="pt-4 border-t border-border"
+                  className="pt-4 border-t border-stroke"
                   checked={settings.showCurseforgeInstancesInLibrary !== false}
                   onChange={(val) =>
                     handleChange("showCurseforgeInstancesInLibrary", val)
@@ -1459,21 +1460,21 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                 description={t("settings.integration.discord_rpc_desc")}
               />
               <ToggleBox
-                className="mt-4 pt-4 border-t border-border"
+                className="mt-4 pt-4 border-t border-stroke"
                 checked={settings.autoUploadLogs || false}
                 onChange={(val) => handleChange("autoUploadLogs", val)}
                 label={t("settings.integration.auto_logs")}
                 description={t("settings.integration.auto_logs_desc")}
               />
               <ToggleBox
-                className="mt-4 pt-4 border-t border-border"
+                className="mt-4 pt-4 border-t border-stroke"
                 checked={settings.showDisabledFeatures || false}
                 onChange={(val) => handleChange("showDisabledFeatures", val)}
                 label={t("settings.integration.disabled_features")}
                 description={t("settings.integration.disabled_features_desc")}
               />
               <ToggleBox
-                className="mt-4 pt-4 border-t border-border"
+                className="mt-4 pt-4 border-t border-stroke"
                 checked={settings.focusMode || false}
                 onChange={(val) => handleChange("focusMode", val)}
                 label={t("settings.integration.focus_mode", "Focus Mode")}
@@ -1483,7 +1484,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                 )}
               />
               <ToggleBox
-                className="mt-4 pt-4 border-t border-border"
+                className="mt-4 pt-4 border-t border-stroke"
                 checked={settings.minimizeToTray || false}
                 onChange={(val) => handleChange("minimizeToTray", val)}
                 label={t(
@@ -1498,7 +1499,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
               {window.electronAPI &&
                 window.electronAPI.platform === "win32" && (
                   <ToggleBox
-                    className="mt-4 pt-4 border-t border-border"
+                    className="mt-4 pt-4 border-t border-stroke"
                     checked={settings.minimalMode || false}
                     onChange={(val) => handleChange("minimalMode", val)}
                     label={t(
@@ -1512,14 +1513,14 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                   />
                 )}
               <ToggleBox
-                className="mt-4 pt-4 border-t border-border"
+                className="mt-4 pt-4 border-t border-stroke"
                 checked={settings.optimization || false}
                 onChange={(val) => handleChange("optimization", val)}
                 label={"Enable Optimization Mods"}
                 description={t("settings.integration.optimization_desc")}
               />
               <ToggleBox
-                className="mt-4 pt-4 border-t border-border"
+                className="mt-4 pt-4 border-t border-stroke"
                 checked={settings.enableAutoInstallMods || false}
                 onChange={(val) => handleChange("enableAutoInstallMods", val)}
                 label={t("settings.integration.auto_mod_install")}
@@ -1569,7 +1570,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                   </div>
 
                   {autoInstallModsSearchResults.length > 0 && (
-                    <div className="rounded-lg border border-border bg-muted/30 overflow-hidden max-h-48 overflow-y-auto">
+                    <div className="rounded-lg border border-stroke bg-muted/30 overflow-hidden max-h-48 overflow-y-auto">
                       {autoInstallModsSearchResults.map((mod) => (
                         <button
                           key={mod.project_id}
@@ -1577,7 +1578,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                             setAutoInstallModsInput(mod.project_id);
                             setAutoInstallModsSearchResults([]);
                           }}
-                          className="w-full text-left px-3 py-2 hover:bg-accent transition border-b border-border last:border-b-0"
+                          className="w-full text-left px-3 py-2 hover:bg-accent transition border-b border-stroke last:border-b-0"
                         >
                           <p className="font-medium text-sm text-foreground">
                             {mod.title}
@@ -1636,7 +1637,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                         .map((mod) => (
                           <div
                             key={mod}
-                            className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2.5"
+                            className="flex items-center justify-between rounded-lg border border-stroke bg-muted/30 px-3 py-2.5"
                           >
                             <div>
                               <p className="text-sm text-foreground font-medium">
@@ -1673,7 +1674,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-6 rounded-lg border border-border bg-muted/20">
+                  <div className="text-center py-6 rounded-lg border border-stroke bg-muted/20">
                     <p className="text-muted-foreground text-sm">
                       {t("settings.auto_install.no_mods")}
                     </p>
@@ -1704,7 +1705,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                 )}
               />
               <ToggleBox
-                className="mt-4 pt-4 border-t border-border"
+                className="mt-4 pt-4 border-t border-stroke"
                 checked={settings.legacyGpuSupport || false}
                 onChange={(val) => handleChange("legacyGpuSupport", val)}
                 label={t(
@@ -1746,7 +1747,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                 ].map((provider) => (
                   <div
                     key={provider.id}
-                    className={`p-4 rounded-lg border transition-all ${cloudStatus[provider.id]?.loggedIn ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border hover:border-border/80"}`}
+                    className={`p-4 rounded-lg border transition-all ${cloudStatus[provider.id]?.loggedIn ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-stroke hover:border-stroke/80"}`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -2034,7 +2035,7 @@ function Settings({ mode = "default", onRestartGuide = null }) {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="rounded-lg border border-border bg-muted/30 p-4 flex flex-col justify-between min-h-[140px]">
+                        <div className="rounded-lg border border-stroke bg-muted/30 p-4 flex flex-col justify-between min-h-[140px]">
                           <div>
                             <h3 className="font-semibold text-foreground text-sm">
                               {t("settings.maintenance.soft_reset_title")}

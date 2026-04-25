@@ -11,7 +11,7 @@ function ColorPicker({ label, value, onChange }) {
                     type="color"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
+                    className="w-10 h-10 rounded-lg cursor-pointer border border-stroke hover:border-primary/50 transition-all"
                     style={{
                         background: value,
                         WebkitAppearance: 'none',

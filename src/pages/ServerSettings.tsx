@@ -85,7 +85,7 @@ function ServerSettings({ onRestartGuide = null }) {
 
             <div className="space-y-6 max-w-2xl">
                 { }
-                <div className="bg-card/40 backdrop-blur-sm border border-border rounded-xl p-6">
+                <div className="bg-surface/40 backdrop-blur-sm border border-stroke rounded-xl p-6">
                     <h2 className="text-lg font-bold text-foreground mb-4">{t('server.settings.paths_title')}</h2>
 
                     <div className="space-y-4">
@@ -98,7 +98,7 @@ function ServerSettings({ onRestartGuide = null }) {
                                     type="text"
                                     value={settings.serverPath}
                                     onChange={(e) => handleChange('serverPath', e.target.value)}
-                                    className="flex-1 bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                    className="flex-1 bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                     placeholder="%appdata%\Lux\servers"
                                 />
                                 <button
@@ -119,7 +119,7 @@ function ServerSettings({ onRestartGuide = null }) {
                                     type="text"
                                     value={settings.backupPath}
                                     onChange={(e) => handleChange('backupPath', e.target.value)}
-                                    className="flex-1 bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                    className="flex-1 bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                     placeholder="C:/Backups"
                                 />
                                 <button
@@ -134,7 +134,7 @@ function ServerSettings({ onRestartGuide = null }) {
                 </div>
 
                 { }
-                <div className="bg-card/40 backdrop-blur-sm border border-border rounded-xl p-6">
+                <div className="bg-surface/40 backdrop-blur-sm border border-stroke rounded-xl p-6">
                     <h2 className="text-lg font-bold text-foreground mb-4">{t('server.settings.backups_title')}</h2>
 
                     <div className="space-y-4">
@@ -161,7 +161,7 @@ function ServerSettings({ onRestartGuide = null }) {
                                         type="number"
                                         value={settings.backupInterval}
                                         onChange={(e) => handleChange('backupInterval', parseInt(e.target.value))}
-                                        className="w-full bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                         min="1"
                                         max="168"
                                     />
@@ -175,7 +175,7 @@ function ServerSettings({ onRestartGuide = null }) {
                                         type="number"
                                         value={settings.maxBackups}
                                         onChange={(e) => handleChange('maxBackups', parseInt(e.target.value))}
-                                        className="w-full bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                         min="1"
                                         max="50"
                                     />
@@ -186,7 +186,7 @@ function ServerSettings({ onRestartGuide = null }) {
                 </div>
 
                 { }
-                <div className="bg-card/40 backdrop-blur-sm border border-border rounded-xl p-6">
+                <div className="bg-surface/40 backdrop-blur-sm border border-stroke rounded-xl p-6">
                     <h2 className="text-lg font-bold text-foreground mb-4">{t('server.settings.defaults_title')}</h2>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -198,7 +198,7 @@ function ServerSettings({ onRestartGuide = null }) {
                                 type="number"
                                 value={settings.defaultMemory}
                                 onChange={(e) => handleChange('defaultMemory', e.target.value)}
-                                className="w-full bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                className="w-full bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                 min="512"
                                 step="512"
                             />
@@ -212,7 +212,7 @@ function ServerSettings({ onRestartGuide = null }) {
                                 type="number"
                                 value={settings.defaultPort}
                                 onChange={(e) => handleChange('defaultPort', e.target.value)}
-                                className="w-full bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                className="w-full bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                 min="1"
                                 max="65535"
                             />
@@ -226,7 +226,7 @@ function ServerSettings({ onRestartGuide = null }) {
                                 type="number"
                                 value={settings.defaultMaxPlayers}
                                 onChange={(e) => handleChange('defaultMaxPlayers', e.target.value)}
-                                className="w-full bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                className="w-full bg-canvas border border-stroke rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                 min="1"
                                 max="100"
                             />
@@ -247,7 +247,7 @@ function ServerSettings({ onRestartGuide = null }) {
                     </div>
                 </div>
 
-                <div className="bg-card/40 backdrop-blur-sm border border-primary/20 rounded-xl p-6">
+                <div className="bg-surface/40 backdrop-blur-sm border border-primary/20 rounded-xl p-6">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-bold text-foreground">{t('guide.restart_guide')}</h2>

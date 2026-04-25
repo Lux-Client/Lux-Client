@@ -9,7 +9,7 @@ function ReinstallModal({ instanceName, onClose, onConfirm }) {
 
     return (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card w-full max-w-md rounded-xl border border-border shadow-2xl overflow-hidden">
+            <div className="bg-surface w-full max-w-md rounded-xl border border-stroke shadow-2xl overflow-hidden">
                 <div className="p-6">
                     <h3 className="text-xl font-bold text-foreground mb-2">Reinstall Instance</h3>
                     <p className="text-muted-foreground text-sm mb-6">
@@ -17,7 +17,7 @@ function ReinstallModal({ instanceName, onClose, onConfirm }) {
                     </p>
 
                     <div className="space-y-4">
-                        <label className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${type === 'soft' ? 'border-primary bg-primary/10' : 'border-border bg-muted hover:bg-accent'}`}>
+                        <label className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${type === 'soft' ? 'border-primary bg-primary/10' : 'border-stroke bg-muted hover:bg-accent'}`}>
                             <div className="flex items-center gap-3 mb-2">
                                 <input
                                     type="radio"
@@ -25,7 +25,7 @@ function ReinstallModal({ instanceName, onClose, onConfirm }) {
                                     value="soft"
                                     checked={type === 'soft'}
                                     onChange={() => setType('soft')}
-                                    className="w-5 h-5 text-primary bg-transparent border-border focus:ring-primary"
+                                    className="w-5 h-5 text-primary bg-transparent border-stroke focus:ring-primary"
                                 />
                                 <span className="font-bold text-foreground">Soft Reinstall</span>
                             </div>
@@ -34,7 +34,7 @@ function ReinstallModal({ instanceName, onClose, onConfirm }) {
                             </p>
                         </label>
 
-                        <label className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${type === 'hard' ? 'border-red-500 bg-red-500/10' : 'border-border bg-muted hover:bg-accent'}`}>
+                        <label className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${type === 'hard' ? 'border-red-500 bg-red-500/10' : 'border-stroke bg-muted hover:bg-accent'}`}>
                             <div className="flex items-center gap-3 mb-2">
                                 <input
                                     type="radio"
@@ -42,7 +42,7 @@ function ReinstallModal({ instanceName, onClose, onConfirm }) {
                                     value="hard"
                                     checked={type === 'hard'}
                                     onChange={() => setType('hard')}
-                                    className="w-5 h-5 text-red-500 bg-transparent border-border focus:ring-red-500 accent-red-500"
+                                    className="w-5 h-5 text-red-500 bg-transparent border-stroke focus:ring-red-500 accent-red-500"
                                 />
                                 <span className="font-bold text-red-400">Hard Reinstall</span>
                             </div>
@@ -53,7 +53,7 @@ function ReinstallModal({ instanceName, onClose, onConfirm }) {
                     </div>
                 </div>
 
-                <div className="p-4 bg-muted border-t border-border flex gap-3 justify-end">
+                <div className="p-4 bg-muted border-t border-stroke flex gap-3 justify-end">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 rounded-lg text-muted-foreground hover:text-accent-foreground hover:bg-accent transition-colors font-medium text-sm"

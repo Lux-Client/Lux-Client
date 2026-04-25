@@ -286,7 +286,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
         <div className="h-full p-8 flex flex-col overflow-hidden">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-foreground">Find Content</h1>
-                <div className="flex bg-card rounded-xl p-1 border border-border">
+                <div className="flex bg-surface rounded-xl p-1 border border-stroke">
                     <button
                         onClick={() => toggleProjectType('mod')}
                         className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${projectType === 'mod' ? 'bg-primary text-black shadow-md' : 'text-muted-foreground hover:text-accent-foreground'}`}
@@ -308,7 +308,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={t('server_search.placeholder', { type: projectType === 'mod' ? t('server_search.mods') : t('server_search.plugins') })}
-                    className="flex-1 bg-background border border-border rounded-xl p-4 text-foreground focus:border-primary outline-none shadow-inner"
+                    className="flex-1 bg-canvas border border-stroke rounded-xl p-4 text-foreground focus:border-primary outline-none shadow-inner"
                 />
                 <button
                     type="submit"
@@ -325,7 +325,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                 <select
                     value={sortMethod}
                     onChange={(e) => setSortMethod(e.target.value)}
-                    className="bg-card border-none rounded-lg px-4 py-2 text-foreground outline-none appearance-none cursor-pointer focus:outline-none focus:border-none focus:ring-0"
+                    className="bg-surface border-none rounded-lg px-4 py-2 text-foreground outline-none appearance-none cursor-pointer focus:outline-none focus:border-none focus:ring-0"
                 >
                     <option value="relevance">{t('search.relevance')}</option>
                     <option value="downloads">{t('search.downloads')}</option>
@@ -339,24 +339,24 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="bg-card h-48 rounded-xl animate-pulse border border-border"></div>
+                            <div key={i} className="bg-surface h-48 rounded-xl animate-pulse border border-stroke"></div>
                         ))}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {results.map((mod) => (
-                            <div key={mod.project_id} className="bg-card p-5 rounded-xl border border-border hover:border-primary/50 transition-all group flex flex-col shadow-lg">
+                            <div key={mod.project_id} className="bg-surface p-5 rounded-xl border border-stroke hover:border-primary/50 transition-all group flex flex-col shadow-lg">
                                 <div className="flex items-start gap-4 mb-4">
-                                    <div className="w-16 h-16 rounded-xl bg-background overflow-hidden shrink-0 shadow-md">
+                                    <div className="w-16 h-16 rounded-xl bg-canvas overflow-hidden shrink-0 shadow-md">
                                         <img src={mod.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = 'https://cdn.modrinth.com/placeholder.svg'} />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <h3 className="font-bold text-lg text-foreground truncate" title={mod.title}>{mod.title}</h3>
                                         <p className="text-xs text-muted-foreground mt-1">{mod.author}</p>
                                         <div className="flex flex-wrap gap-2 mt-2">
-                                            <span className="text-[10px] bg-muted px-2 py-1 rounded text-muted-foreground capitalize border border-border">{projectType}</span>
+                                            <span className="text-[10px] bg-muted px-2 py-1 rounded text-muted-foreground capitalize border border-stroke">{projectType}</span>
                                             {getSourceTags(mod.source, mod.sources).map((sourceTag) => (
-                                                <span key={`${mod.project_id}-${sourceTag}`} className="text-[10px] bg-muted px-2 py-1 rounded text-muted-foreground uppercase border border-border">{sourceTag}</span>
+                                                <span key={`${mod.project_id}-${sourceTag}`} className="text-[10px] bg-muted px-2 py-1 rounded text-muted-foreground uppercase border border-stroke">{sourceTag}</span>
                                             ))}
                                             <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded border border-primary/20 flex items-center gap-1">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" transform="rotate(180 10 10)" /></svg>
@@ -394,7 +394,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
             </div>
 
             { }
-            <div className="mt-auto flex justify-between items-center bg-card p-4 rounded-xl border border-border shadow-2xl">
+            <div className="mt-auto flex justify-between items-center bg-surface p-4 rounded-xl border border-stroke shadow-2xl">
                 <button
                     onClick={handlePrev}
                     disabled={offset === 0}
@@ -424,7 +424,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
             {
                 showInstallModal && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-card w-full max-w-md rounded-xl p-6 border border-border shadow-md animate-scale-in">
+                        <div className="bg-surface w-full max-w-md rounded-xl p-6 border border-stroke shadow-md animate-scale-in">
                             <h2 className="text-2xl font-bold mb-4">{t('server_search.install_title', { title: selectedMod?.title })}</h2>
 
                             <div className="mb-6">
@@ -432,7 +432,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                                 <select
                                     value={selectedServer}
                                     onChange={(e) => setSelectedServer(e.target.value)}
-                                    className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary outline-none appearance-none"
+                                    className="w-full bg-canvas border border-stroke rounded-xl p-3 text-foreground focus:border-primary outline-none appearance-none"
                                 >
                                     {servers && servers.map(inst => (
                                         <option key={inst.name} value={inst.name}>{inst.name} ({inst.software} {inst.version})</option>
@@ -464,9 +464,9 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
             {
                 showPreviewModal && previewProject && (
                     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fade-in">
-                        <div className="bg-card w-full max-w-5xl h-[85vh] rounded-xl border border-border shadow-2xl flex flex-col overflow-hidden animate-scale-in">
+                        <div className="bg-surface w-full max-w-5xl h-[85vh] rounded-xl border border-stroke shadow-2xl flex flex-col overflow-hidden animate-scale-in">
                             { }
-                            <div className="p-6 border-b border-border flex justify-between items-start bg-background/50">
+                            <div className="p-6 border-b border-stroke flex justify-between items-start bg-canvas/50">
                                 <div className="flex gap-4">
                                     <img
                                         src={previewProject.icon_url || 'https://cdn.modrinth.com/placeholder.svg'}
@@ -489,13 +489,13 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                             </div>
 
                             { }
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-background/50">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-canvas/50">
                                 {previewProject.gallery && previewProject.gallery.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {previewProject.gallery.map((img, idx) => (
                                             <div
                                                 key={idx}
-                                                className="relative group rounded-xl overflow-hidden border border-border bg-background aspect-video cursor-zoom-in"
+                                                className="relative group rounded-xl overflow-hidden border border-stroke bg-canvas aspect-video cursor-zoom-in"
                                                 onClick={() => setLightboxIndex(idx)}
                                             >
                                                 <img
@@ -522,7 +522,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                             </div>
 
                             { }
-                            <div className="p-6 border-t border-border bg-card flex justify-end gap-4">
+                            <div className="p-6 border-t border-stroke bg-surface flex justify-end gap-4">
                                 <button
                                     onClick={() => setShowPreviewModal(false)}
                                     className="px-6 py-3 rounded-xl hover:bg-accent text-foreground font-bold transition-colors"

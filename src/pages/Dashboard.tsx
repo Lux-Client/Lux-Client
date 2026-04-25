@@ -121,13 +121,13 @@ const InstanceCard = ({
           ? "border-primary bg-primary/10 ring-1 ring-primary/40"
           : isRunning
             ? "border-primary/40 bg-primary/5"
-            : "border-border hover:bg-accent/50 active:bg-accent"
+            : "border-stroke hover:bg-accent/50 active:bg-accent"
       }`}
     >
       <div className="flex items-start gap-3 mb-2.5">
         {selectionMode && (
           <label
-            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${isSelectable ? "cursor-pointer border-border" : "cursor-not-allowed border-border/60 opacity-50"}`}
+            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${isSelectable ? "cursor-pointer border-stroke" : "cursor-not-allowed border-stroke/60 opacity-50"}`}
             onClick={(e) => e.stopPropagation()}
             title={
               isSelectable
@@ -156,11 +156,11 @@ const InstanceCard = ({
           <OptimizedImage
             src={instance.icon}
             alt={instance.name}
-            className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border shrink-0"
+            className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-stroke shrink-0"
             fallback={<Box className="w-6 h-6 text-muted-foreground" />}
           />
         ) : (
-          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border border-border shrink-0">
+          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border border-stroke shrink-0">
             <span className="text-xl">{instance.icon || ""}</span>
             {!instance.icon && (
               <Box className="w-6 h-6 text-muted-foreground" />
@@ -1565,7 +1565,7 @@ function Dashboard({
               onChange={setGroupMethod}
             />
           </div>
-          <div className="flex items-center gap-2 px-2 h-8 border border-border rounded-md bg-card">
+          <div className="flex items-center gap-2 px-2 h-8 border border-stroke rounded-md bg-surface">
             <Switch
               checked={groupBySourceEnabled}
               onCheckedChange={setGroupBySourceEnabled}
@@ -1753,7 +1753,7 @@ function Dashboard({
                             <button
                               type="button"
                               onClick={() => toggleFolder(item.key)}
-                              className="w-full flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
+                              className="w-full flex items-center gap-2 rounded-md border border-stroke bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
                               style={{
                                 marginLeft: `${item.depth * 10}px`,
                                 width: `calc(100% - ${item.depth * 10}px)`,
@@ -1814,7 +1814,7 @@ function Dashboard({
               <>
                 <div className="flex flex-col items-center gap-3">
                   <div
-                    className="group relative flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted transition-colors hover:border-primary/50"
+                    className="group relative flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-stroke bg-muted transition-colors hover:border-primary/50"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <img
@@ -1896,7 +1896,7 @@ function Dashboard({
                       </div>
                     </div>
                     {loadingVersions ? (
-                      <div className="flex items-center justify-center rounded-md border border-border bg-muted p-2.5 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-center rounded-md border border-stroke bg-muted p-2.5 text-xs text-muted-foreground">
                         <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
                         {t("common.loading")}
                       </div>
@@ -2163,7 +2163,7 @@ function Dashboard({
               )}
             </p>
             {exportTargetInstance && (
-              <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="rounded-md border border-stroke bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                 {`${t("dashboard.export_choice.target_prefix", "Instance:")} ${exportTargetInstance.name}`}
               </div>
             )}

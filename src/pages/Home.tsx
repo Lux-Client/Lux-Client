@@ -576,7 +576,7 @@ function Home({
                     onClick={() => onInstanceClick(instance)}
                     className="group flex items-center gap-3 rounded-lg px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
+                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-stroke">
                       {instance.icon &&
                       (instance.icon.startsWith("data:") ||
                         instance.icon.startsWith("app-media://")) ? (
@@ -687,14 +687,14 @@ function Home({
                 return (
                   <Card
                     key={`${world.instanceName}-${world.name}-${idx}`}
-                    className="group cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent border-border"
+                    className="group cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent border-stroke"
                     onClick={() => {
                       if (inst) onInstanceClick(inst);
                     }}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2.5 mb-2.5">
-                        <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
+                        <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-stroke">
                           {world.instanceIcon &&
                           (world.instanceIcon.startsWith("data:") ||
                             world.instanceIcon.startsWith("app-media://")) ? (
@@ -790,7 +790,7 @@ function Home({
             {loadingModpacks ? (
               <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} className="border-border">
+                  <Card key={i} className="border-stroke">
                     <Skeleton className="aspect-video w-full rounded-t-lg" />
                     <CardContent className="p-3">
                       <div className="flex items-start gap-2">
@@ -815,7 +815,7 @@ function Home({
                 {modpacks.map((pack) => (
                   <Card
                     key={pack.project_id}
-                    className="group cursor-pointer transition-colors hover:bg-accent/30 border-border overflow-hidden"
+                    className="group cursor-pointer transition-colors hover:bg-accent/30 border-stroke overflow-hidden"
                     onClick={() => setSelectedModpack(pack)}
                   >
                     <div className="aspect-video w-full overflow-hidden bg-muted">
@@ -837,7 +837,7 @@ function Home({
                           <img
                             src={pack.icon_url}
                             alt=""
-                            className="w-7 h-7 rounded-md shrink-0 border border-border"
+                            className="w-7 h-7 rounded-md shrink-0 border border-stroke"
                           />
                         )}
                         <div className="min-w-0">
@@ -862,7 +862,7 @@ function Home({
               {t("home.mod_of_the_day")}{" "}
             </h2>
             {loadingModOfTheDay ? (
-              <Card className="border-border overflow-hidden">
+              <Card className="border-stroke overflow-hidden">
                 <Skeleton className="w-full h-36" />
                 <CardContent className="p-4">
                   <div className="flex gap-3">
@@ -875,7 +875,7 @@ function Home({
                 </CardContent>
               </Card>
             ) : modOfTheDay ? (
-              <Card className="border-border overflow-hidden group">
+              <Card className="border-stroke overflow-hidden group">
                 <div className="relative w-full h-36 bg-gradient-to-br from-primary/10 to-muted overflow-hidden">
                   {modOfTheDay.featured_image ? (
                     <img
@@ -912,7 +912,7 @@ function Home({
                         <img
                           src={modOfTheDay.icon_url}
                           alt=""
-                          className="w-10 h-10 rounded-lg border border-border"
+                          className="w-10 h-10 rounded-lg border border-stroke"
                         />
                       )}{" "}
                     </div>
@@ -1001,7 +1001,7 @@ function Home({
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-border">
+              <Card className="border-stroke">
                 <CardContent className="p-4 text-center">
                   <p className="text-sm text-muted-foreground">
                     {t("home.failed_to_load_mod")}
@@ -1118,7 +1118,7 @@ function Home({
                       <img
                         src={selectedModpack.icon_url}
                         alt=""
-                        className="w-12 h-12 rounded-lg border border-border shrink-0"
+                        className="w-12 h-12 rounded-lg border border-stroke shrink-0"
                       />
                     )}
                     <div className="flex-1 min-w-0">
@@ -1187,7 +1187,7 @@ function Home({
                             key={i}
                             src={img}
                             alt=""
-                            className="w-full rounded-md object-cover aspect-video border border-border"
+                            className="w-full rounded-md object-cover aspect-video border border-stroke"
                           />
                         ))}{" "}
                       </div>
@@ -1220,7 +1220,7 @@ function Home({
                   )}{" "}
               </div>
 
-              <DialogFooter className="px-5 py-3 border-t border-border flex items-center justify-between">
+              <DialogFooter className="px-5 py-3 border-t border-stroke flex items-center justify-between">
                 <Button
                   variant="link"
                   size="sm"

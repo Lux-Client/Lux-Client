@@ -129,8 +129,8 @@ A collection of potential improvements for Lux, organized by category.
 - [x] **Core Backend Transition** - Migrate from Electron to Tauri/Rust for performance.
 - [x] **High-Performance Launcher** - Implement parallel library/asset processing.
 - [x] **Java Management** - Port Java detection/installation to Rust with caching.
-- [ ] **Microsoft OAuth** - Complete token exchange logic in Rust.
-- [ ] **Store Integration** - Migrate `electron-store` to `tauri-plugin-store`.
+- [x] **Microsoft OAuth** - Complete token exchange logic in Rust.
+- [x] **Store Integration** - Migrate `electron-store` to `tauri-plugin-store`.
 
 ## Technical Debt
 

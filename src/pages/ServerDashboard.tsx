@@ -636,7 +636,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                             key={server.name}
                             onClick={() => handleServerClick(server)}
                             onContextMenu={(e) => handleContextMenu(e, server)}
-                            className={`group bg-card/40 backdrop-blur-sm border rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-lg hover:shadow-xl hover:shadow-black/50 ${isRunning ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border hover:border-primary/50'}`}
+                            className={`group bg-surface/40 backdrop-blur-sm border rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-lg hover:shadow-xl hover:shadow-black/50 ${isRunning ? 'border-primary/50 ring-1 ring-primary/20' : 'border-stroke hover:border-primary/50'}`}
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-muted to-transparent opacity-0 group-hover:opacity-40 transition-opacity"></div>
 
@@ -654,7 +654,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                             </button>
 
                             <div className="flex items-start gap-4 mb-3 relative z-10">
-                                <div className="w-16 h-16 bg-background rounded-lg flex items-center justify-center text-4xl shadow-inner border border-border overflow-hidden">
+                                <div className="w-16 h-16 bg-canvas rounded-lg flex items-center justify-center text-4xl shadow-inner border border-stroke overflow-hidden">
                                     {server.icon && server.icon.startsWith('data:') ? (
                                         <img src={server.icon} alt="" className="w-full h-full object-cover" />
                                     ) : (
@@ -669,7 +669,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-bold text-lg text-foreground truncate group-hover:text-primary transition-colors">{server.name}</h3>
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                        <span className="bg-muted px-2 py-0.5 rounded capitalize border border-border">{server.software}</span>
+                                        <span className="bg-muted px-2 py-0.5 rounded capitalize border border-stroke">{server.software}</span>
                                         <span>{server.version}</span>
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-1">
@@ -678,7 +678,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-border relative z-10">
+                            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-stroke relative z-10">
                                 <div className="text-xs text-muted-foreground">
                                     <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">{t('server.players')}</span>
                                     <span className="font-mono">{server.players || '0'}/{server.maxPlayers || '20'}</span>
@@ -736,7 +736,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                 })}
 
                 {servers.length === 0 && (
-                    <div className="col-span-full py-20 text-center text-muted-foreground border-2 border-border border-dashed rounded-xl flex flex-col items-center justify-center">
+                    <div className="col-span-full py-20 text-center text-muted-foreground border-2 border-stroke border-dashed rounded-xl flex flex-col items-center justify-center">
                         <svg className="w-12 h-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <rect x="2" y="4" width="20" height="16" rx="2" ry="2" strokeWidth={1.5} />
                             <line x1="8" y1="9" x2="16" y2="9" strokeWidth={1.5} />
@@ -751,7 +751,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
 
             {contextMenu && createPortal(
                 <div
-                    className="fixed bg-card border border-border rounded-lg shadow-2xl py-2 z-[9999] min-w-[180px]"
+                    className="fixed bg-surface border border-stroke rounded-lg shadow-2xl py-2 z-[9999] min-w-[180px]"
                     style={{ left: contextMenu.x, top: contextMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -772,7 +772,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                             {t('server.start')}
                         </button>
                     )}
-                    <div className="border-t border-border my-1"></div>
+                    <div className="border-t border-stroke my-1"></div>
                     <button onClick={() => handleContextAction('console')} className="w-full px-4 py-2 text-left hover:bg-accent flex items-center gap-3 text-sm">
                         <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         {t('server.console')}
@@ -800,7 +800,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                             {t('action_bar.add_to_actionbar', 'Add to Actionbar')}
                         </button>
                     )}
-                    <div className="border-t border-border my-1"></div>
+                    <div className="border-t border-stroke my-1"></div>
                     <button onClick={() => handleContextAction('delete')} className="w-full px-4 py-2 text-left hover:bg-red-500/20 text-red-400 flex items-center gap-3 text-sm">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         {t('server.delete')}
@@ -811,7 +811,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
 
             {showNameConflictModal && (
                 <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 999999, background: 'transparent' }}>
-                    <div className="bg-card border border-border rounded-xl w-full max-w-lg p-6 shadow-2xl">
+                    <div className="bg-surface border border-stroke rounded-xl w-full max-w-lg p-6 shadow-2xl">
                         <h3 className="text-xl font-bold text-foreground mb-2">{t('server.conflict.title')}</h3>
                         <p className="text-sm text-muted-foreground mb-4">{t('server.conflict.desc', { name: conflictServer?.name })}</p>
 
@@ -820,10 +820,10 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                             <button onClick={performRename} className="w-full bg-primary/20 text-primary px-4 py-2 rounded-xl font-bold">{t('server.conflict.rename')}</button>
                         </div>
 
-                        <div className="pt-2 border-t border-border">
+                        <div className="pt-2 border-t border-stroke">
                             <label className="block text-muted-foreground text-sm font-bold mb-2">{t('server.conflict.another')}</label>
                             <div className="flex gap-2">
-                                <input value={conflictOtherName} onChange={(e) => setConflictOtherName(e.target.value)} className="flex-1 bg-background border border-border rounded-xl p-3 text-foreground" />
+                                <input value={conflictOtherName} onChange={(e) => setConflictOtherName(e.target.value)} className="flex-1 bg-canvas border border-stroke rounded-xl p-3 text-foreground" />
                                 <button onClick={performUseOtherName} className="bg-primary px-4 py-2 rounded-xl font-bold">{t('server.conflict.use_name')}</button>
                             </div>
                         </div>
@@ -838,12 +838,12 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
             { }
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-8 shadow-2xl transform transition-all scale-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <div className="bg-surface border border-stroke rounded-xl w-full max-w-2xl p-8 shadow-2xl transform transition-all scale-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <h2 className="text-2xl font-bold mb-6 text-foreground text-center">{t('server.create_title')}</h2>
                         <form onSubmit={handleCreate} className="space-y-6">
                             { }
                             <div className="flex flex-col items-center gap-4">
-                                <div className="w-24 h-24 bg-background rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden relative group cursor-pointer hover:border-primary/50 transition-colors"
+                                <div className="w-24 h-24 bg-canvas rounded-xl border-2 border-dashed border-stroke flex items-center justify-center overflow-hidden relative group cursor-pointer hover:border-primary/50 transition-colors"
                                     onClick={() => fileInputRef.current?.click()}>
                                     <img src={newServerIcon} alt="Icon" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -867,7 +867,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                         type="text"
                                         value={newServerName}
                                         onChange={(e) => setNewServerName(e.target.value)}
-                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-canvas border border-stroke rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                         placeholder="My Server"
                                     />
                                 </div>
@@ -878,7 +878,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                         type="number"
                                         value={serverPort}
                                         onChange={(e) => setServerPort(e.target.value)}
-                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-canvas border border-stroke rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                         min="1"
                                         max="65535"
                                     />
@@ -890,7 +890,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                         type="number"
                                         value={maxPlayers}
                                         onChange={(e) => setMaxPlayers(e.target.value)}
-                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-canvas border border-stroke rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                         min="1"
                                         max="100"
                                     />
@@ -919,7 +919,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                 <div className="col-span-2">
                                     <label className="block text-muted-foreground text-sm font-bold mb-2 uppercase tracking-wide">{t('server.version_label')}</label>
                                     {loadingVersions ? (
-                                        <div className="p-3 text-muted-foreground bg-background border border-border rounded-xl flex items-center gap-2">
+                                        <div className="p-3 text-muted-foreground bg-canvas border border-stroke rounded-xl flex items-center gap-2">
                                             <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                                             {t('server.versions_loading')}
                                         </div>
@@ -934,7 +934,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                 </div>
                             </div>
 
-                            <div className="flex justify-between gap-3 pt-4 border-t border-border">
+                            <div className="flex justify-between gap-3 pt-4 border-t border-stroke">
                                 <div className="flex gap-2">
                                     <button
                                         type="button"
@@ -953,7 +953,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                                 addNotification(`Import failed: ${error.message}`, 'error');
                                             }
                                         }}
-                                        className="px-4 py-2 rounded-xl text-xs text-muted-foreground font-bold hover:text-accent-foreground hover:bg-accent transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border border-border"
+                                        className="px-4 py-2 rounded-xl text-xs text-muted-foreground font-bold hover:text-accent-foreground hover:bg-accent transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border border-stroke"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                         Import Server

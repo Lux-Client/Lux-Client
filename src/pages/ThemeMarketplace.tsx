@@ -111,7 +111,7 @@ const ThemeMarketplace = () => {
 
     return (
         <div className="text-foreground w-full">
-            <div className="flex gap-4 mb-6 border-b border-border pb-4">
+            <div className="flex gap-4 mb-6 border-b border-stroke pb-4">
                 <button
                     onClick={() => setActiveTab('installed')}
                     className={`px-4 py-2 font-medium rounded-lg transition-colors ${activeTab === 'installed' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-accent-foreground hover:bg-accent'}`}
@@ -139,7 +139,7 @@ const ThemeMarketplace = () => {
                     <input
                         type="text"
                         placeholder={t('extensions.search')}
-                        className="w-full bg-background border border-border rounded-xl py-3 pl-11 pr-4 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-medium shadow-inner"
+                        className="w-full bg-canvas border border-stroke rounded-xl py-3 pl-11 pr-4 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-medium shadow-inner"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -149,7 +149,7 @@ const ThemeMarketplace = () => {
             <div className={activeTab === 'online' ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
                 {activeTab === 'installed' ? (
                     installedThemes.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-border border-dashed">
+                        <div className="flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-stroke border-dashed">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                             </svg>
@@ -157,8 +157,8 @@ const ThemeMarketplace = () => {
                         </div>
                     ) : (
                         installedThemes.map(theme => (
-                            <div key={theme.handle} className="p-5 rounded-xl border flex items-center gap-5 transition-all group backdrop-blur-md bg-card border-border">
-                                <div className="w-14 h-14 rounded-full flex flex-shrink-0 relative overflow-hidden shadow-inner border border-border" style={{ backgroundColor: theme.bg }}>
+                            <div key={theme.handle} className="p-5 rounded-xl border flex items-center gap-5 transition-all group backdrop-blur-md bg-surface border-stroke">
+                                <div className="w-14 h-14 rounded-full flex flex-shrink-0 relative overflow-hidden shadow-inner border border-stroke" style={{ backgroundColor: theme.bg }}>
                                     <div className="absolute inset-0 right-1/2" style={{ backgroundColor: theme.primary }}></div>
                                     <div className="absolute inset-x-0 bottom-0 h-1/3" style={{ backgroundColor: theme.surface }}></div>
                                 </div>
@@ -185,16 +185,16 @@ const ThemeMarketplace = () => {
                     )
                 ) : (
                     loadingOnline ? (
-                        <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-border border-dashed">
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-stroke border-dashed">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
                             <p className="text-muted-foreground font-medium text-lg">Loading themes...</p>
                         </div>
                     ) : onlineStatus === 'maintenance' ? (
-                        <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-border border-dashed">
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-stroke border-dashed">
                             <p className="text-muted-foreground font-medium text-lg">Marketplace is under maintenance. Please try again later.</p>
                         </div>
                     ) : onlineThemes.length === 0 ? (
-                        <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-border border-dashed">
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted rounded-xl border border-stroke border-dashed">
                             <p className="text-muted-foreground font-medium text-lg">No themes found online.</p>
                         </div>
                     ) : (
@@ -207,7 +207,7 @@ const ThemeMarketplace = () => {
 
                             if (filtered.length === 0) {
                                 return (
-                                    <div className="col-span-full flex flex-col items-center justify-center py-10 bg-muted rounded-xl border border-border border-dashed">
+                                    <div className="col-span-full flex flex-col items-center justify-center py-10 bg-muted rounded-xl border border-stroke border-dashed">
                                         <p className="text-muted-foreground font-medium">{t('extensions.no_search_results')}</p>
                                     </div>
                                 );
@@ -217,8 +217,8 @@ const ThemeMarketplace = () => {
                                 const isInstalled = installedThemes.some(ie => ie.handle === ext.identifier || ie.name === ext.name);
 
                                 return (
-                                    <div key={ext.id} className="rounded-xl border flex flex-col overflow-hidden transition-all group bg-card border-border hover:border-border hover:bg-accent">
-                                        <div className="w-full aspect-video bg-muted relative overflow-hidden flex items-center justify-center border-b border-border">
+                                    <div key={ext.id} className="rounded-xl border flex flex-col overflow-hidden transition-all group bg-surface border-stroke hover:border-stroke hover:bg-accent">
+                                        <div className="w-full aspect-video bg-muted relative overflow-hidden flex items-center justify-center border-b border-stroke">
                                             {ext.banner_path ? (
                                                 <img
                                                     src={`https://lux.pluginhub.de/uploads/${ext.banner_path}`}
@@ -240,14 +240,14 @@ const ThemeMarketplace = () => {
                                             </div>
                                             <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">{ext.summary || ext.description || 'No description provided.'}</p>
 
-                                            <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
+                                            <div className="flex items-center justify-between mt-auto pt-4 border-t border-stroke">
                                                 <div className="text-xs text-muted-foreground">
                                                     <span>By <span className="text-foreground font-medium">{ext.developer || 'Unknown'}</span></span>
                                                 </div>
 
                                                 <div className="flex items-center gap-2">
                                                     {isInstalled ? (
-                                                        <span className="px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-xs font-bold uppercase tracking-wider border border-border flex items-center gap-1">
+                                                        <span className="px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-xs font-bold uppercase tracking-wider border border-stroke flex items-center gap-1">
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                             </svg>

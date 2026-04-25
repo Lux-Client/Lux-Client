@@ -151,8 +151,8 @@ impl Launcher {
 }
 
 #[tauri::command]
-pub async fn launch_game(app: AppHandle, instance_name: String) -> Result<(), String> {
+pub async fn launch_game(app: AppHandle, instance_name: String) -> crate::utils::error::Result<()> {
     Launcher::launch(&app, &instance_name)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| crate::utils::error::LuxError::Unexpected(e.to_string()))
 }

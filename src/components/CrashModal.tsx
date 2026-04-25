@@ -385,8 +385,8 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-card w-full max-w-2xl rounded-xl border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="p-8 border-b border-border bg-gradient-to-r from-red-500/10 to-transparent">
+      <div className="bg-surface w-full max-w-2xl rounded-xl border border-stroke shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-8 border-b border-stroke bg-gradient-to-r from-red-500/10 to-transparent">
           <div className="flex items-center gap-4 mb-2">
             <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center text-red-500">
               <svg
@@ -451,7 +451,7 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
               {issues.map((issue) => (
                 <div
                   key={issue.id}
-                  className="bg-muted rounded-xl p-6 border border-border hover:border-primary/30 transition-colors group"
+                  className="bg-muted rounded-xl p-6 border border-stroke hover:border-primary/30 transition-colors group"
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="space-y-4 flex-1">
@@ -544,7 +544,7 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
           )}
         </div>
 
-        <div className="p-8 border-t border-border flex gap-4">
+        <div className="p-8 border-t border-stroke flex gap-4">
           <button
             onClick={onClose}
             className="flex-1 px-6 py-3 bg-muted hover:bg-accent rounded-xl text-foreground font-bold transition-colors"
@@ -555,7 +555,7 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
             onClick={() =>
               window.electronAPI.openInstanceFolder(crashData.instanceName)
             }
-            className="px-6 py-3 border border-border hover:border-border rounded-xl text-muted-foreground font-bold transition-all"
+            className="px-6 py-3 border border-stroke hover:border-stroke rounded-xl text-muted-foreground font-bold transition-all"
           >
             {t("instance.open_folder", "Open Folder")}
           </button>

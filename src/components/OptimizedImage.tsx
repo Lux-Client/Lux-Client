@@ -51,7 +51,7 @@ const OptimizedImage = ({ src, alt, className, fallback, ...props }) => {
             )}
             {!isLoaded && !error && (
                 <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
-                    <div className="w-1/3 h-1/3 border border-border rounded-full opacity-20"></div>
+                    <div className="w-1/3 h-1/3 border border-stroke rounded-full opacity-20"></div>
                 </div>
             )}
         </div>

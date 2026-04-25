@@ -123,9 +123,9 @@ function ModpackCodeModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh] sm:max-w-lg border-border shadow-2xl">
+            <DialogContent className="p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh] sm:max-w-lg border-stroke shadow-2xl">
                 <DialogPrimitive.Title className="sr-only">Modpack Code Modal</DialogPrimitive.Title>
-                <div className="p-6 border-b border-border flex flex-col gap-4">
+                <div className="p-6 border-b border-stroke flex flex-col gap-4">
                     <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-bold text-foreground pr-8">
                             {mode === 'export' ? 'Modpack Sharing' : 'Import from Code'}
@@ -193,7 +193,7 @@ function ModpackCodeModal({
                                             value={modpackName}
                                             onChange={(e) => setModpackName(e.target.value)}
                                             placeholder="My Awesome Modpack"
-                                            className="w-full bg-card border border-border rounded-xl p-3 text-foreground focus:border-primary outline-none transition-colors"
+                                            className="w-full bg-surface border border-stroke rounded-xl p-3 text-foreground focus:border-primary outline-none transition-colors"
                                         />
                                     </div>
 
@@ -207,8 +207,8 @@ function ModpackCodeModal({
                                                 { id: 'resourcePacks', label: 'Resource Packs', count: resourcePacks.length },
                                                 { id: 'shaders', label: 'Shaders', count: shaders.length }
                                             ].map(type => (
-                                                <label key={type.id} className="flex items-center gap-3 p-3 bg-muted rounded-xl border border-border cursor-pointer hover:bg-accent transition-colors group">
-                                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${selectedTypes[type.id] ? 'bg-primary border-primary' : 'border-border'}`}>
+                                                <label key={type.id} className="flex items-center gap-3 p-3 bg-muted rounded-xl border border-stroke cursor-pointer hover:bg-accent transition-colors group">
+                                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${selectedTypes[type.id] ? 'bg-primary border-primary' : 'border-stroke'}`}>
                                                         {selectedTypes[type.id] && (
                                                             <svg className="w-4 h-4 text-black" viewBox="0 0 20 20" fill="currentColor">
                                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -264,7 +264,7 @@ function ModpackCodeModal({
                                 </div>
                             ) : (
                                 myCodes.map(item => (
-                                    <div key={item.code} className="bg-muted border border-border rounded-xl p-4 flex items-center justify-between group hover:bg-accent transition-all">
+                                    <div key={item.code} className="bg-muted border border-stroke rounded-xl p-4 flex items-center justify-between group hover:bg-accent transition-all">
                                         <div>
                                             <div className="text-lg font-mono font-bold text-primary mb-1">{item.code}</div>
                                             <div className="text-xs font-bold text-foreground truncate max-w-[200px] mb-1">{item.name}</div>
@@ -302,7 +302,7 @@ function ModpackCodeModal({
                             )}
                             <button
                                 onClick={() => setMode('export')}
-                                className="w-full mt-4 py-3 bg-muted hover:bg-accent text-foreground text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-border"
+                                className="w-full mt-4 py-3 bg-muted hover:bg-accent text-foreground text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-stroke"
                             >
                                 Back to Export
                             </button>
@@ -319,7 +319,7 @@ function ModpackCodeModal({
                                     onChange={(e) => setCode(e.target.value.slice(0, 8))}
                                     placeholder="e.g. aB3xY7zP"
                                     maxLength={8}
-                                    className="w-full bg-card border border-border rounded-xl p-4 text-foreground font-mono text-center text-3xl tracking-widest focus:border-primary outline-none transition-all shadow-inner"
+                                    className="w-full bg-surface border border-stroke rounded-xl p-4 text-foreground font-mono text-center text-3xl tracking-widest focus:border-primary outline-none transition-all shadow-inner"
                                     autoFocus
                                 />
                                 <p className="text-xs text-muted-foreground mt-3 font-bold text-center">

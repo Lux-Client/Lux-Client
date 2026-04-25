@@ -140,10 +140,10 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
     return (
         <>
             <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={onClose}>
-                <div ref={modalRef} className="bg-popover w-full max-w-4xl h-[600px] rounded-xl border border-border flex overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div ref={modalRef} className="bg-popover w-full max-w-4xl h-[600px] rounded-xl border border-stroke flex overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
                     { }
-                    <div className="w-64 bg-card border-r border-border p-4 flex flex-col gap-2">
+                    <div className="w-64 bg-surface border-r border-stroke p-4 flex flex-col gap-2">
                         <div className="text-xl font-bold mb-4 px-2 truncate" title={instance.name}>{instance.name}</div>
 
                         <SettingsTab label={t('instance_settings.tabs.general')} id="general" active={activeTab} onClick={setActiveTab} icon="info" />
@@ -152,7 +152,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                         <SettingsTab label={t('instance_settings.tabs.java')} id="java" active={activeTab} onClick={setActiveTab} icon="memory" />
                         <SettingsTab label={t('instance_settings.tabs.hooks')} id="hooks" active={activeTab} onClick={setActiveTab} icon="code" />
 
-                        <div className="my-2 border-t border-border"></div>
+                        <div className="my-2 border-t border-stroke"></div>
                         <SettingsTab label={t('instance_settings.tabs.danger')} id="danger" active={activeTab} onClick={setActiveTab} icon="warning" isDanger />
 
                         <div className="mt-auto">
@@ -161,7 +161,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                     </div>
 
                     { }
-                    <div className="flex-1 p-8 overflow-y-auto bg-background">
+                    <div className="flex-1 p-8 overflow-y-auto bg-canvas">
                         <div className="max-w-2xl">
                             <h2 className={`text-2xl font-bold mb-6 ${activeTab === 'danger' ? 'text-red-500' : ''}`}>
                                 {activeTab === 'general' && t('instance_settings.general.title')}
@@ -182,7 +182,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                 <div className="space-y-6">
                                     <div className="flex flex-col items-center gap-4 mb-8">
                                         <div
-                                            className="w-24 h-24 bg-card rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden relative group cursor-pointer hover:border-primary/50 transition-colors shadow-inner"
+                                            className="w-24 h-24 bg-surface rounded-xl border-2 border-dashed border-stroke flex items-center justify-center overflow-hidden relative group cursor-pointer hover:border-primary/50 transition-colors shadow-inner"
                                             onClick={() => document.getElementById('instance-icon-upload').click()}
                                         >
                                             {config.icon && (config.icon.startsWith('data:') || config.icon.startsWith('app-media://')) ? (
@@ -219,7 +219,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                             type="text"
                                             value={config.name || ''}
                                             onChange={(e) => handleChange('name', e.target.value)}
-                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                            className="w-full bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors"
                                         />
                                         <p className="text-xs text-muted-foreground">{t('instance_settings.general.rename_note')}</p>
                                     </div>
@@ -236,7 +236,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                         </div>
                                     </div>
 
-                                    <div className="pb-4 border-b border-border">
+                                    <div className="pb-4 border-b border-stroke">
                                         <ToggleBox
                                             checked={showSnapshots}
                                             onChange={setShowSnapshots}
@@ -249,7 +249,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                         <div className="space-y-2">
                                             <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t('instance_settings.installation.game_version')}</label>
                                             {loadingVersions ? (
-                                                <div className="p-3 text-muted-foreground bg-card border border-border rounded">{t('common.loading')}</div>
+                                                <div className="p-3 text-muted-foreground bg-surface border border-stroke rounded">{t('common.loading')}</div>
                                             ) : (
                                                 <Dropdown
                                                     options={availableVersions.map(v => ({ value: v.id, label: v.id }))}
@@ -275,7 +275,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                     </div>
 
                                     {(config.version !== instance.version || config.loader !== instance.loader) && (
-                                        <div className="pt-4 border-t border-border">
+                                        <div className="pt-4 border-t border-stroke">
                                             <button
                                                 onClick={handleMigrate}
                                                 disabled={loading}
@@ -301,7 +301,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                                 type="number"
                                                 value={config.resolutionWidth || 854}
                                                 onChange={(e) => handleChange('resolutionWidth', parseInt(e.target.value))}
-                                                className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                className="w-full bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -310,7 +310,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                                 type="number"
                                                 value={config.resolutionHeight || 480}
                                                 onChange={(e) => handleChange('resolutionHeight', parseInt(e.target.value))}
-                                                className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                className="w-full bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors"
                                             />
                                         </div>
                                     </div>
@@ -327,7 +327,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                                 value={config.javaPath || ''}
                                                 onChange={(e) => handleChange('javaPath', e.target.value)}
                                                 placeholder={t('instance_settings.java.path_placeholder')}
-                                                className="flex-1 bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
+                                                className="flex-1 bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
                                             />
                                         </div>
                                     </div>
@@ -341,7 +341,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                                     type="number"
                                                     value={config.minMemory || 1024}
                                                     onChange={(e) => handleChange('minMemory', parseInt(e.target.value))}
-                                                    className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                    className="w-full bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors"
                                                 />
                                             </div>
                                             <div>
@@ -350,7 +350,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                                     type="number"
                                                     value={config.maxMemory || 4096}
                                                     onChange={(e) => handleChange('maxMemory', parseInt(e.target.value))}
-                                                    className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                    className="w-full bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors"
                                                 />
                                             </div>
                                         </div>
@@ -361,7 +361,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                             <select
                                                 value={config.javaProfile || 'default'}
                                                 onChange={(e) => handleChange('javaProfile', e.target.value)}
-                                                className="w-full bg-card border border-border rounded p-3 text-sm focus:border-primary outline-none appearance-none cursor-pointer hover:bg-accent transition-colors"
+                                                className="w-full bg-surface border border-stroke rounded p-3 text-sm focus:border-primary outline-none appearance-none cursor-pointer hover:bg-accent transition-colors"
                                             >
                                                 <option value="default">{t('common.disabled')} / Inherit Global</option>
                                                 <option value="performance">Performance (Aikar's Flags)</option>
@@ -393,7 +393,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                             value={config.preLaunchHook || ''}
                                             onChange={(e) => handleChange('preLaunchHook', e.target.value)}
                                             placeholder={t('instance_settings.hooks.placeholder')}
-                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
+                                            className="w-full bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
                                         />
                                         <p className="text-xs text-muted-foreground">{t('instance_settings.hooks.pre_launch_desc')}</p>
                                     </div>
@@ -404,7 +404,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                                             value={config.postExitHook || ''}
                                             onChange={(e) => handleChange('postExitHook', e.target.value)}
                                             placeholder={t('instance_settings.hooks.placeholder')}
-                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
+                                            className="w-full bg-surface border border-stroke rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
                                         />
                                         <p className="text-xs text-muted-foreground">{t('instance_settings.hooks.post_exit_desc')}</p>
                                     </div>
@@ -442,7 +442,7 @@ function InstanceSettingsModal({ instance, onClose, onSave, onDelete }) {
                             )}
 
                             {activeTab !== 'danger' && (
-                                <div className="mt-8 pt-6 border-t border-border flex justify-end gap-3">
+                                <div className="mt-8 pt-6 border-t border-stroke flex justify-end gap-3">
                                     <button onClick={onClose} className="px-6 py-2 rounded text-foreground hover:text-accent-foreground hover:bg-accent transition-colors">{t('common.cancel')}</button>
                                     <button
                                         onClick={handleSave}

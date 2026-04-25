@@ -19,7 +19,7 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any;
     return (
         <button
             onClick={onApply}
-            className="group relative overflow-hidden rounded-xl border border-border hover:border-primary/30 transition-all duration-300"
+            className="group relative overflow-hidden rounded-xl border border-stroke hover:border-primary/30 transition-all duration-300"
         >
             { }
             <div className="h-20 relative overflow-hidden">
@@ -34,7 +34,7 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any;
                     }}
                 />
                 <div
-                    className="absolute bottom-2 left-2 w-8 h-8 rounded-lg shadow-lg border-2 border-border"
+                    className="absolute bottom-2 left-2 w-8 h-8 rounded-lg shadow-lg border-2 border-stroke"
                     style={{
                         background: primary,
                         boxShadow: `0 0 calc(20px * var(--global-glow-intensity, 0)) rgba(${primaryRgb}, calc(0.375 * var(--global-glow-intensity, 0)))`
@@ -47,7 +47,7 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false }: { theme: any;
             </div>
 
             { }
-            <div className="bg-card backdrop-blur-sm p-3 border-t border-border">
+            <div className="bg-surface backdrop-blur-sm p-3 border-t border-stroke">
                 <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors truncate pr-2">
                         {theme.name || theme.handle || 'Theme'}

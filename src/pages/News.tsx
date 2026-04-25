@@ -37,14 +37,14 @@ function News() {
                     {newsItems.map((item, index) => (
                         <div
                             key={`${item.title || 'news'}-${index}`}
-                            className="group cursor-pointer bg-card border border-border rounded-xl p-3 hover:bg-card transition-colors"
+                            className="group cursor-pointer bg-surface border border-stroke rounded-xl p-3 hover:bg-surface transition-colors"
                             onClick={() => item.link && window.electronAPI.openExternal(item.link)}
                         >
                             <OptimizedImage
                                 src={item.image}
                                 alt={item.title}
-                                className="h-40 w-full object-cover bg-card rounded-xl border border-border mb-3 overflow-hidden"
-                                fallback={<div className="h-40 w-full bg-card rounded-xl" />}
+                                className="h-40 w-full object-cover bg-surface rounded-xl border border-stroke mb-3 overflow-hidden"
+                                fallback={<div className="h-40 w-full bg-surface rounded-xl" />}
                             />
                             <div className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
                                 {item.title}

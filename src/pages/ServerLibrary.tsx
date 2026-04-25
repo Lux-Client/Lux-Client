@@ -163,12 +163,12 @@ function ServerLibrary() {
                         <div key={platform.key} className="space-y-2">
                             <div
                                 onClick={() => handleSelectPlatform(platform)}
-                                className={`bg-card/40 backdrop-blur-sm border ${isSelected ? 'border-primary/50 shadow-md' : 'border-border'} rounded-xl overflow-hidden hover:border-primary/50 transition-all cursor-pointer group`}
+                                className={`bg-surface/40 backdrop-blur-sm border ${isSelected ? 'border-primary/50 shadow-md' : 'border-stroke'} rounded-xl overflow-hidden hover:border-primary/50 transition-all cursor-pointer group`}
                             >
                                 <div className="p-6">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-4 flex-1">
-                                            <div className={`w-16 h-16 bg-gradient-to-br ${details.color} to-transparent rounded-xl flex items-center justify-center border border-border transition-transform overflow-hidden p-3`}>
+                                            <div className={`w-16 h-16 bg-gradient-to-br ${details.color} to-transparent rounded-xl flex items-center justify-center border border-stroke transition-transform overflow-hidden p-3`}>
                                                 {details.logo ? (
                                                     <img src={details.logo} alt={details.name} className="w-full h-full object-contain" />
                                                 ) : (
@@ -216,7 +216,7 @@ function ServerLibrary() {
                                                 return (
                                                     <div
                                                         key={version.version}
-                                                        className="bg-card/20 border border-border rounded-xl p-4 hover:border-primary/50 transition-all flex items-center justify-between group/version"
+                                                        className="bg-surface/20 border border-stroke rounded-xl p-4 hover:border-primary/50 transition-all flex items-center justify-between group/version"
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <span className="text-sm font-mono text-foreground">{version.version}</span>

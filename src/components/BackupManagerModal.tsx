@@ -155,7 +155,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
             <div
                 key={id}
                 onClick={() => !isCloudRestricted && toggleItem(id)}
-                 className={`p-4 rounded-xl border transition-all flex items-center justify-between group ${isCloudRestricted ? 'opacity-40 grayscale cursor-not-allowed border-border' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5' : 'bg-muted border-border hover:border-border'}`}
+                 className={`p-4 rounded-xl border transition-all flex items-center justify-between group ${isCloudRestricted ? 'opacity-40 grayscale cursor-not-allowed border-stroke' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5' : 'bg-muted border-stroke hover:border-stroke'}`}
             >
                 <div className="flex items-center gap-4">
                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isSelected ? 'bg-primary text-black' : (isCloudRestricted ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground')}`}>
@@ -167,7 +167,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                     </div>
                 </div>
                 {!isCloudRestricted && (
-                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-primary border-primary' : 'border-border group-hover:border-border'}`}>
+                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-primary border-primary' : 'border-stroke group-hover:border-stroke'}`}>
                         {isSelected && <CheckIcon className="h-4 w-4 text-black stroke-[3]" />}
                     </div>
                 )}
@@ -182,7 +182,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-             <div className="bg-card border border-border rounded-xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+             <div className="bg-surface border border-stroke rounded-xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center mb-6">
                     <div>
                          <h3 className="text-xl font-bold text-foreground">Backup Manager</h3>
@@ -197,7 +197,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                     <div className="grid grid-cols-2 gap-4 py-8">
                         <button
                             onClick={() => { setMode('backup'); setView('setup'); }}
-                             className="bg-muted border border-border p-8 rounded-xl flex flex-col items-center gap-4 hover:bg-primary/5 hover:border-primary/50 transition-all group"
+                             className="bg-muted border border-stroke p-8 rounded-xl flex flex-col items-center gap-4 hover:bg-primary/5 hover:border-primary/50 transition-all group"
                          >
                              <div className="w-20 h-20 rounded-xl bg-primary/10 text-primary flex items-center justify-center transition-transform">
                                  <ArrowUpTrayIcon className="h-10 w-10" />
@@ -207,7 +207,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                         </button>
                         <button
                             onClick={() => { setMode('import'); setView('setup'); }}
-                             className="bg-muted border border-border p-8 rounded-xl flex flex-col items-center gap-4 hover:bg-primary/5 hover:border-primary/50 transition-all group"
+                             className="bg-muted border border-stroke p-8 rounded-xl flex flex-col items-center gap-4 hover:bg-primary/5 hover:border-primary/50 transition-all group"
                          >
                              <div className="w-20 h-20 rounded-xl bg-primary/10 text-primary flex items-center justify-center transition-transform">
                                  <ArrowDownTrayIcon className="h-10 w-10" />
@@ -218,7 +218,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                     </div>
                 ) : (
                     <>
-                         <div className="flex bg-background p-1 rounded-xl border border-border mb-4">
+                         <div className="flex bg-canvas p-1 rounded-xl border border-stroke mb-4">
                             <button
                                 onClick={() => { setType('local'); setSelectedItems([]); }}
                                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${type === 'local' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
@@ -238,7 +238,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                                 <button
                                     onClick={() => { setSelectedProvider('GOOGLE_DRIVE'); setSelectedItems([]); }}
                                     disabled={!cloudStatus.GOOGLE_DRIVE?.loggedIn}
-                                     className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedProvider === 'GOOGLE_DRIVE' ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5' : 'bg-muted border-border text-muted-foreground hover:border-border'} ${!cloudStatus.GOOGLE_DRIVE?.loggedIn ? 'opacity-30 grayscale cursor-not-allowed border-dashed' : ''}`}
+                                     className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedProvider === 'GOOGLE_DRIVE' ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5' : 'bg-muted border-stroke text-muted-foreground hover:border-stroke'} ${!cloudStatus.GOOGLE_DRIVE?.loggedIn ? 'opacity-30 grayscale cursor-not-allowed border-dashed' : ''}`}
                                 >
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 20h20L12 2z" /></svg>
                                     Google Drive
@@ -247,7 +247,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                                 <button
                                     onClick={() => { setSelectedProvider('DROPBOX'); setSelectedItems([]); }}
                                     disabled={!cloudStatus.DROPBOX?.loggedIn}
-                                     className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedProvider === 'DROPBOX' ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5' : 'bg-muted border-border text-muted-foreground hover:border-border'} ${!cloudStatus.DROPBOX?.loggedIn ? 'opacity-30 grayscale cursor-not-allowed border-dashed' : ''}`}
+                                     className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedProvider === 'DROPBOX' ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5' : 'bg-muted border-stroke text-muted-foreground hover:border-stroke'} ${!cloudStatus.DROPBOX?.loggedIn ? 'opacity-30 grayscale cursor-not-allowed border-dashed' : ''}`}
                                 >
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5-10-5-10 5z" /></svg>
                                     Dropbox
@@ -263,7 +263,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                                 placeholder={`Search for ${mode === 'backup' ? 'worlds' : 'backups'}...`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                 className="w-full bg-muted border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-foreground focus:border-primary outline-none transition-all"
+                                 className="w-full bg-muted border border-stroke rounded-xl py-2 pl-9 pr-3 text-sm text-foreground focus:border-primary outline-none transition-all"
                             />
                         </div>
 
@@ -273,7 +273,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                                 </div>
                             ) : getFilteredList().length === 0 ? (
-                                 <div className="text-center py-20 text-muted-foreground bg-muted rounded-xl border border-border border-dashed">
+                                 <div className="text-center py-20 text-muted-foreground bg-muted rounded-xl border border-stroke border-dashed">
                                     No {mode === 'backup' ? 'worlds' : 'backups'} found.
                                 </div>
                             ) : (
@@ -281,7 +281,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                             )}
                         </div>
 
-                         <div className="flex gap-3 pt-4 border-t border-border">
+                         <div className="flex gap-3 pt-4 border-t border-stroke">
                             <button
                                 onClick={() => setView('mode-select')}
                                  className="px-6 py-3 rounded-xl bg-muted hover:bg-accent text-foreground font-bold transition-all flex items-center gap-2"

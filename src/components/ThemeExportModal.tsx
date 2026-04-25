@@ -14,7 +14,7 @@ function ThemeExportModal({ onClose, onExport, presetData }: { onClose: any; onE
 
     return (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card w-full max-w-md rounded-xl border border-border shadow-2xl overflow-hidden">
+            <div className="bg-surface w-full max-w-md rounded-xl border border-stroke shadow-2xl overflow-hidden">
                 <form onSubmit={handleExport}>
                     <div className="p-6">
                         <h3 className="text-xl font-bold text-foreground mb-2">{t('styling.export')}</h3>
@@ -30,7 +30,7 @@ function ThemeExportModal({ onClose, onExport, presetData }: { onClose: any; onE
                                 <input
                                     type="text"
                                     autoFocus
-                                    className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-all font-medium"
+                                    className="w-full bg-muted border border-stroke rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-all font-medium"
                                     placeholder={t('styling.enter_name', 'My Awesome Theme')}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
@@ -40,7 +40,7 @@ function ThemeExportModal({ onClose, onExport, presetData }: { onClose: any; onE
                         </div>
                     </div>
 
-                    <div className="p-4 bg-muted border-t border-border flex gap-3 justify-end">
+                    <div className="p-4 bg-muted border-t border-stroke flex gap-3 justify-end">
                         <button
                             type="button"
                             onClick={onClose}

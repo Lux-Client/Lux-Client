@@ -37,7 +37,7 @@ const Dropdown = ({
             <button
                 type="button"
                 onClick={() => !disabled && setIsOpen(!isOpen)}
-                className={`w-full bg-background border border-border rounded-xl p-3 text-left flex justify-between items-center transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-border'} ${isOpen ? 'border-primary ring-1 ring-primary' : ''}`}
+                className={`w-full bg-canvas border border-stroke rounded-xl p-3 text-left flex justify-between items-center transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-stroke'} ${isOpen ? 'border-primary ring-1 ring-primary' : ''}`}
                 disabled={disabled}
             >
                 <span
@@ -57,7 +57,7 @@ const Dropdown = ({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="absolute z-50 w-full mt-1 bg-popover border border-stroke rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
                     {options.length === 0 ? (
                         <div className="p-3 text-muted-foreground text-sm text-center">No options</div>
                     ) : (

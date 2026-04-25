@@ -170,7 +170,7 @@ function ServerConsole({ server, onClose, onServerAction }) {
     return createPortal(
         <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
             { }
-            <div className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
+            <div className="bg-surface border-b border-stroke px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                         <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,9 +282,9 @@ function ServerConsole({ server, onClose, onServerAction }) {
             </div>
 
             { }
-            <div className="bg-card border-t border-border p-4">
+            <div className="bg-surface border-t border-stroke p-4">
                 <form onSubmit={handleSendCommand} className="flex gap-2">
-                    <div className="flex-1 flex items-center bg-background rounded-lg border border-border focus-within:border-primary transition-colors">
+                    <div className="flex-1 flex items-center bg-canvas rounded-lg border border-stroke focus-within:border-primary transition-colors">
                         <span className="text-muted-foreground pl-3 select-none font-mono">&gt;</span>
                         <input
                             ref={commandInputRef}

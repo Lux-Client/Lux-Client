@@ -155,7 +155,11 @@ const SkinPreview3D = ({ src, className, model = 'classic' }: { src?: any; class
     const [useFallback, setUseFallback] = useState(false);
 
     useEffect(() => {
-        if (!canvasRef.current || !src || useFallback) return;
+        console.log('[SkinPreview3D] Rendering with src:', src, 'model:', model);
+        if (!canvasRef.current || !src || useFallback) {
+            console.log('[SkinPreview3D] Skipping - no canvas/src or fallback');
+            return;
+        }
 
         if (activeWebGLContexts >= MAX_WEBGL_CONTEXTS) {
             setUseFallback(true);
@@ -1565,7 +1569,7 @@ export const AdvancedSkinEditorDialog = ({
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                         <div className="lg:col-span-8 space-y-3">
-                            <div className="rounded-lg border border-border bg-muted/20 h-[520px] relative" ref={viewerContainerRef}>
+                            <div className="rounded-lg border border-stroke bg-muted/20 h-[520px] relative" ref={viewerContainerRef}>
                                 <canvas
                                     ref={viewerCanvasRef}
                                     className={`w-full h-full ${activeLargeView === 'player' ? `${dragMode ? 'cursor-grab' : 'cursor-crosshair'} opacity-100` : 'opacity-0 pointer-events-none absolute inset-0'}`}
@@ -1576,7 +1580,7 @@ export const AdvancedSkinEditorDialog = ({
                                 />
                             </div>
 
-                            <div className="rounded-lg border border-border p-2 bg-muted/10">
+                            <div className="rounded-lg border border-stroke p-2 bg-muted/10">
                                 <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
                                     {t('skins.swap_large_view')}
                                 </div>
@@ -1584,7 +1588,7 @@ export const AdvancedSkinEditorDialog = ({
                                     <button
                                         type="button"
                                         onClick={() => setActiveLargeView('player')}
-                                        className={`rounded border p-2 text-left ${activeLargeView === 'player' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'}`}
+                                        className={`rounded border p-2 text-left ${activeLargeView === 'player' ? 'border-primary bg-primary/10' : 'border-stroke hover:border-primary/40'}`}
                                     >
                                         <div className="text-xs font-medium">{t('skins.player_view')}</div>
                                         <div className="text-[11px] text-muted-foreground">{t('skins.click_to_activate')}</div>
@@ -1592,7 +1596,7 @@ export const AdvancedSkinEditorDialog = ({
                                     <button
                                         type="button"
                                         onClick={() => setActiveLargeView('texture')}
-                                        className={`rounded border p-2 text-left ${activeLargeView === 'texture' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'}`}
+                                        className={`rounded border p-2 text-left ${activeLargeView === 'texture' ? 'border-primary bg-primary/10' : 'border-stroke hover:border-primary/40'}`}
                                     >
                                         <div className="text-xs font-medium">{t('skins.texture_view')}</div>
                                         {flatPreview ? (
@@ -1638,7 +1642,7 @@ export const AdvancedSkinEditorDialog = ({
                             <div className="space-y-2">
                                 <Label>{t('skins.pose')}</Label>
                                 <select
-                                    className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                                    className="w-full h-9 rounded-md border border-input bg-canvas px-2 text-sm"
                                     value={pose}
                                     onChange={(e) => setPose(e.target.value)}
                                 >
@@ -1788,7 +1792,7 @@ export const AdvancedSkinEditorDialog = ({
                                 </div>
                             </div>
 
-                            <div className="rounded border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+                            <div className="rounded border border-stroke bg-muted/20 p-3 text-xs text-muted-foreground">
                                 {t('skins.advanced_hint')}
                             </div>
 
@@ -2149,8 +2153,9 @@ function Skins({ onLogout, onProfileUpdate }) {
         if (skin.model) {
             setVariant(skin.model);
         }
-        if (skin.data) {
-            await updateSkinInViewer(skin.data, nextVariant);
+        const skinSrc = skin.data || (skin.path ? `file://${skin.path}` : null);
+        if (skinSrc) {
+            await updateSkinInViewer(skinSrc, nextVariant);
         }
     };
 
@@ -2285,7 +2290,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto pr-1">
                             <div
                                 onClick={() => handleSetCape(null)}
-                                className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all ${activeCapeId === null ? 'border-primary bg-primary/10' : 'border-border hover:border-muted-foreground/50 bg-muted/50'}`}
+                                className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all ${activeCapeId === null ? 'border-primary bg-primary/10' : 'border-stroke hover:border-muted-foreground/50 bg-muted/50'}`}
                             >
                                 <X className="h-6 w-6 text-muted-foreground mb-2" />
                                 <span className="text-sm font-medium text-muted-foreground">{t('skins.no_cape')}</span>
@@ -2295,7 +2300,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 <div
                                     key={cape.id}
                                     onClick={() => handleSetCape(cape.id)}
-                                    className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all relative overflow-hidden ${activeCapeId === cape.id ? 'border-primary bg-primary/10' : 'border-border hover:border-muted-foreground/50 bg-muted/50'}`}
+                                    className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all relative overflow-hidden ${activeCapeId === cape.id ? 'border-primary bg-primary/10' : 'border-stroke hover:border-muted-foreground/50 bg-muted/50'}`}
                                 >
                                     <div className="h-1/2 w-full p-2 flex items-center justify-center">
                                         <CapePreview src={cape.url} />
@@ -2327,7 +2332,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                             </TabsList>
 
                             <TabsContent value="file" className="mt-0 space-y-4">
-                                <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                                <div className="rounded-lg border border-stroke bg-muted/30 p-4 text-sm text-muted-foreground">
                                     {t('skins.source_file_desc')}
                                 </div>
                                 <Button onClick={handleImportSkinFromFile} disabled={isImportingSkin} className="w-full">
@@ -2394,7 +2399,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                     debugContext="skins-page"
                 />
 
-                <div className="w-1/3 min-w-[300px] bg-card/50 backdrop-blur-sm border-r border-border flex flex-col items-center justify-center relative p-6">
+                <div className="w-1/3 min-w-[300px] bg-surface/50 backdrop-blur-sm border-r border-stroke flex flex-col items-center justify-center relative p-6">
                     <div className={`relative w-full h-[400px] flex items-center justify-center transition-opacity duration-300 ${isSkinLoaded || webglError ? 'opacity-100' : 'opacity-0'}`}>
                         <div className="pointer-events-none absolute left-1/2 -top-7 z-10 -translate-x-1/2">
                             <div
@@ -2505,7 +2510,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-stroke shrink-0">
                         <div className="min-w-0">
                             <h1 className="text-lg font-semibold text-foreground tracking-tight">{t('skins.title')}</h1>
                             <p className="text-sm text-muted-foreground mt-0.5">{t('skins.desc')}</p>
@@ -2528,7 +2533,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                 <div
                                     onClick={() => handleAddSkinModalChange(true)}
-                                    className="aspect-[3/4] bg-muted/50 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
+                                    className="aspect-[3/4] bg-muted/50 border-2 border-dashed border-stroke rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
                                 >
                                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/15 transition-colors">
                                         <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -2541,7 +2546,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                         <ContextMenuTrigger>
                                             <div
                                                 onClick={() => handleSelectLocalSkin(skin)}
-                                                className={`aspect-[3/4] bg-card rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.id === skin.id ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-border'}`}
+                                                className={`aspect-[3/4] bg-surface rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.id === skin.id ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-stroke'}`}
                                             >
                                                 <div className="p-3 flex items-center justify-center h-full bg-muted/30">
                                                     {!webglError ? (
@@ -2555,7 +2560,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                                         {editingSkinId === skin.id ? (
                                                             <Input
                                                                 autoFocus
-                                                                className="h-6 text-xs px-1.5 bg-background/80 border-primary"
+                                                                className="h-6 text-xs px-1.5 bg-canvas/80 border-primary"
                                                                 value={editName}
                                                                 onChange={(e) => setEditName(e.target.value)}
                                                                 onKeyDown={(e) => {
@@ -2641,7 +2646,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                     <div
                                         key={skin.name}
                                         onClick={() => handleSelectDefaultSkin(skin)}
-                                        className={`aspect-[3/4] bg-card rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.name === skin.name ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-border'}`}
+                                        className={`aspect-[3/4] bg-surface rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.name === skin.name ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-stroke'}`}
                                     >
                                         <div className="p-3 flex items-center justify-center h-full bg-muted/30">
                                             {!webglError ? (

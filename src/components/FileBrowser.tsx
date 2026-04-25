@@ -238,8 +238,8 @@ const FileBrowser = ({ serverName }) => {
         const isReadOnly = selectedFile.name.toLowerCase().endsWith('.secret');
 
         return (
-            <div className="flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden glass-panel">
-                <div className="p-4 border-b border-border flex items-center justify-between bg-muted">
+            <div className="flex flex-col h-full bg-surface border border-stroke rounded-xl overflow-hidden glass-panel">
+                <div className="p-4 border-b border-stroke flex items-center justify-between bg-muted">
                     <div className="flex items-center gap-2 overflow-hidden">
                         <button onClick={() => setSelectedFile(null)} className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-accent-foreground">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -248,7 +248,7 @@ const FileBrowser = ({ serverName }) => {
                         </button>
                         <span className="font-medium text-foreground truncate">{selectedFile.name}</span>
                         {isReadOnly && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-muted-foreground border border-border uppercase tracking-wider backdrop-blur-sm">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-muted-foreground border border-stroke uppercase tracking-wider backdrop-blur-sm">
                                 {t('common.readonly')}
                             </span>
                         )}
@@ -293,7 +293,7 @@ const FileBrowser = ({ serverName }) => {
                         value={editingContent}
                         onChange={(e) => setEditingContent(e.target.value)}
                         readOnly={isReadOnly}
-                        className={`w-full h-full bg-black/40 text-foreground font-mono text-sm p-4 rounded-xl border border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none resize-none custom-scrollbar ${isReadOnly ? 'opacity-80 cursor-default' : ''}`}
+                        className={`w-full h-full bg-black/40 text-foreground font-mono text-sm p-4 rounded-xl border border-stroke focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none resize-none custom-scrollbar ${isReadOnly ? 'opacity-80 cursor-default' : ''}`}
                         spellCheck="false"
                     />
                 </div>
@@ -302,8 +302,8 @@ const FileBrowser = ({ serverName }) => {
     }
 
     return (
-        <div className="flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden glass-panel">
-            <div className="p-4 border-b border-border flex items-center justify-between bg-muted">
+        <div className="flex flex-col h-full bg-surface border border-stroke rounded-xl overflow-hidden glass-panel">
+            <div className="p-4 border-b border-stroke flex items-center justify-between bg-muted">
                 <div className="flex items-center gap-2 overflow-hidden">
                     <button
                         onClick={handleBackClick}
@@ -331,7 +331,7 @@ const FileBrowser = ({ serverName }) => {
                 </div>
                 <div className="flex items-center gap-2">
                     {isCreatingFolder ? (
-                        <div className="flex items-center gap-2 bg-black/40 p-1 pl-3 rounded-lg border border-border">
+                        <div className="flex items-center gap-2 bg-black/40 p-1 pl-3 rounded-lg border border-stroke">
                             <input
                                 autoFocus
                                 value={newFolderName}
@@ -397,7 +397,7 @@ const FileBrowser = ({ serverName }) => {
                     </div>
                 ) : (
                     <table className="w-full text-left">
-                        <thead className="sticky top-0 bg-card border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
+                        <thead className="sticky top-0 bg-surface border-b border-stroke text-xs text-muted-foreground uppercase tracking-wider">
                             <tr>
                                 <th className="px-6 py-3 font-medium">{t('common.name')}</th>
                                 <th className="px-6 py-3 font-medium text-right">{t('common.size')}</th>
@@ -485,7 +485,7 @@ const FileBrowser = ({ serverName }) => {
                         className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                             isDraggingOver 
                                 ? 'border-primary bg-primary/10' 
-                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                                : 'border-stroke hover:border-primary/50 hover:bg-muted/50'
                         }`}
                     >
                         <div className="flex flex-col items-center gap-4">
@@ -544,7 +544,7 @@ const FileBrowser = ({ serverName }) => {
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-2 pt-4 border-t border-border">
+                    <div className="flex justify-end gap-2 pt-4 border-t border-stroke">
                         <Button variant="outline" onClick={() => setShowUploadModal(false)}>
                             {uploadedFiles.length > 0 && !isUploading ? t('common.done') : t('common.cancel')}
                         </Button>

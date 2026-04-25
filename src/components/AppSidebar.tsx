@@ -230,8 +230,8 @@ function AppSidebar({
           layoutTransitionClass,
           isCollapsed ? "px-2.5" : "px-4",
           isActive
-            ? "bg-primary/15 text-primary"
-            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+            ? "bg-primary/10 text-primary shadow-[0_0_0_1px_rgba(var(--primary-color-rgb),0.15)]"
+            : "text-muted-foreground hover:bg-primary/5 hover:border-primary/20 hover:text-foreground",
           item.disabled && "opacity-40 cursor-not-allowed pointer-events-none",
         )}
       >
@@ -267,8 +267,8 @@ function AppSidebar({
           layoutTransitionClass,
           isCollapsed ? "px-2.5" : "px-4",
           destructive
-            ? "hover:text-destructive hover:bg-destructive/10 text-destructive/30 "
-            : "text-muted-foreground hover:text-primary hover:bg-primary/10",
+            ? "hover:text-destructive hover:bg-destructive/10 text-destructive/30"
+            : "text-muted-foreground hover:text-foreground hover:bg-primary/5 hover:border-primary/20",
         )}
       >
         <div className={iconShiftClass}>
@@ -285,7 +285,7 @@ function AppSidebar({
     <TooltipProvider>
       <div
         className={cn(
-          "relative z-50 flex h-full flex-col overflow-hidden border-r border-border bg-sidebar",
+          "relative z-50 flex h-full flex-col overflow-hidden border border-stroke bg-surface rounded-bento backdrop-blur-overlay",
           shellTransitionClass,
           isCollapsed
             ? "w-[var(--sidebar-width)]"

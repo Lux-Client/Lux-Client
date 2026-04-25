@@ -1,0 +1,42 @@
+warning: unused imports: `Deserialize` and `Serialize`
+ --> src\modrinth.rs:2:13
+  |
+2 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `tauri::Manager`
+ --> src\lib.rs:9:5
+  |
+9 | use tauri::Manager;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `instance_name`
+   --> src\instances.rs:154:30
+    |
+154 | pub async fn get_server_mods(instance_name: String) -> crate::utils::error::Result<Vec<String>> {
+    |                              ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_instance_name`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `loaders`
+   --> src\modrinth.rs:124:9
+    |
+124 |         loaders: Vec<String>,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_loaders`
+
+warning: unused variable: `game_versions`
+   --> src\modrinth.rs:125:9
+    |
+125 |         game_versions: Vec<String>,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_game_versions`
+
+warning: unused variable: `payload`
+   --> src\modrinth.rs:152:26
+    |
+152 |     pub async fn install(payload: Value) -> Result<Value> {
+    |                          ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_payload`
+
+warning: `app` (lib) generated 6 warnings (run `cargo fix --lib -p app` to apply 6 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.35s

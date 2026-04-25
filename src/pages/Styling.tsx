@@ -776,7 +776,7 @@ function Styling() {
                             onChange={(e) =>
                               handleUpdate(row.baseKey, e.target.value)
                             }
-                            className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
+                            className="w-10 h-10 rounded-lg cursor-pointer border border-stroke hover:border-primary/50 transition-all"
                             style={{
                               background: theme[row.baseKey],
                               WebkitAppearance: "none",
@@ -790,7 +790,7 @@ function Styling() {
                             onChange={(e) =>
                               handleUpdate(row.textKey, e.target.value)
                             }
-                            className="w-10 h-10 rounded-lg cursor-pointer border border-border hover:border-primary/50 transition-all"
+                            className="w-10 h-10 rounded-lg cursor-pointer border border-stroke hover:border-primary/50 transition-all"
                             style={{
                               background: theme[row.textKey],
                               WebkitAppearance: "none",
@@ -993,7 +993,7 @@ function Styling() {
 
                       <div
                         onClick={handleSelectBackground}
-                        className="aspect-video rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group overflow-hidden relative"
+                        className="aspect-video rounded-lg border-2 border-dashed border-stroke flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group overflow-hidden relative"
                       >
                         {theme.bgMedia?.url ? (
                           <>
@@ -1014,7 +1014,7 @@ function Styling() {
                               />
                             )}
                             <div className="relative z-10 text-center">
-                              <span className="text-[10px] font-medium uppercase tracking-wider text-foreground bg-background/60 px-3 py-1 rounded-full border border-border">
+                              <span className="text-[10px] font-medium uppercase tracking-wider text-foreground bg-canvas/60 px-3 py-1 rounded-full border border-stroke">
                                 {t("styling.change_bg")}
                               </span>
                             </div>

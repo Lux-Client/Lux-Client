@@ -5,12 +5,16 @@ import { NotificationProvider } from "./context/NotificationContext";
 import "./index.css";
 import "./i18n";
 import "./tauri-bridge";
+import { ErrorBoundary } from "./App.jsx";
+
 window.React = React;
 (window as any).ReactDOM = ReactDOM;
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <NotificationProvider>
-      <App />
-    </NotificationProvider>
+    <ErrorBoundary>
+      <NotificationProvider>
+        <App />
+      </NotificationProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

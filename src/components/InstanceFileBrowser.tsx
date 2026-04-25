@@ -757,12 +757,12 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
 
     if (selectedFile) {
         return (
-            <div className="h-full rounded-xl border border-border bg-card overflow-hidden flex flex-col">
-                <div className="px-4 py-3 border-b border-border bg-muted/70 flex items-center justify-between gap-3">
+            <div className="h-full rounded-xl border border-stroke bg-surface overflow-hidden flex flex-col">
+                <div className="px-4 py-3 border-b border-stroke bg-muted/70 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 min-w-0">
                         <button
                             onClick={handleRequestCloseEditor}
-                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-foreground text-xs border border-border"
+                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-foreground text-xs border border-stroke"
                         >
                             {t('common.back', 'Back')}
                         </button>
@@ -786,7 +786,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                     </div>
                 </div>
 
-                <div className="px-4 py-2 border-b border-border bg-background/70 flex items-center justify-between gap-3">
+                <div className="px-4 py-2 border-b border-stroke bg-canvas/70 flex items-center justify-between gap-3">
                     <span className={`text-xs font-semibold ${validationState.ok ? 'text-emerald-400' : 'text-red-400'}`}>
                         {validationState.ok ? 'OK' : 'Error'}
                     </span>
@@ -794,7 +794,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                 </div>
 
                 {showSearchBar && (
-                    <div className="px-4 py-2 border-b border-border bg-background/70 flex items-center gap-2">
+                    <div className="px-4 py-2 border-b border-stroke bg-canvas/70 flex items-center gap-2">
                         <input
                             ref={searchInputRef}
                             type="text"
@@ -819,7 +819,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                                 }
                             }}
                             placeholder={t('instance_details.files.search_placeholder', 'Search in file...')}
-                            className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none"
+                            className="flex-1 bg-muted border border-stroke rounded-lg px-3 py-1.5 text-sm text-foreground outline-none"
                         />
                         <span className="text-xs text-muted-foreground min-w-[72px] text-right">
                             {searchMatches.length === 0
@@ -829,28 +829,28 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                         <button
                             onClick={() => jumpToSearchMatch(activeSearchMatch - 1)}
                             disabled={searchMatches.length === 0}
-                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-50 text-xs text-foreground border border-border"
+                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-50 text-xs text-foreground border border-stroke"
                         >
                             Prev
                         </button>
                         <button
                             onClick={() => jumpToSearchMatch(activeSearchMatch + 1)}
                             disabled={searchMatches.length === 0}
-                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-50 text-xs text-foreground border border-border"
+                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-50 text-xs text-foreground border border-stroke"
                         >
                             Next
                         </button>
                         <button
                             onClick={closeSearchBar}
-                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-xs text-foreground border border-border"
+                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-xs text-foreground border border-stroke"
                         >
                             Close
                         </button>
                     </div>
                 )}
 
-                <div ref={editorShellRef} className="relative flex-1 min-h-0 bg-background">
-                    <div className="absolute inset-y-0 right-0 z-10 w-5 border-l border-border/60 bg-background/80 backdrop-blur-sm">
+                <div ref={editorShellRef} className="relative flex-1 min-h-0 bg-canvas">
+                    <div className="absolute inset-y-0 right-0 z-10 w-5 border-l border-stroke/60 bg-canvas/80 backdrop-blur-sm">
                         <div className="relative h-full w-full">
                             <div
                                 className="absolute left-1/2 w-2 -translate-x-1/2 rounded-full border border-primary/25 bg-primary/10"
@@ -901,7 +901,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                     </div>
                 </div>
 
-                <div className="px-4 py-2 border-t border-border bg-background/70 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                <div className="px-4 py-2 border-t border-stroke bg-canvas/70 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
                     <span>{t('instance_details.files.keybinds_label', 'Keybinds:')}</span>
                     <span>Ctrl+S Save</span>
                     <span>Ctrl+F Search</span>
@@ -915,7 +915,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
 
                 {showLeaveEditorModal && (
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-10 flex items-center justify-center p-4">
-                        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl">
+                        <div className="bg-surface border border-stroke rounded-xl p-6 w-full max-w-lg shadow-2xl">
                             <h3 className="text-xl font-bold text-foreground mb-2">
                                 {t('instance_details.files.unsaved_title', 'Unsaved changes')}
                             </h3>
@@ -951,13 +951,13 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
     }
 
     return (
-        <div className="h-full rounded-xl border border-border bg-card overflow-hidden flex flex-col">
-            <div className="px-4 py-3 border-b border-border bg-muted/70 flex flex-wrap items-center justify-between gap-2">
+        <div className="h-full rounded-xl border border-stroke bg-surface overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-stroke bg-muted/70 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <button
                         onClick={handleBack}
                         disabled={!currentPath}
-                        className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-40 text-foreground text-xs border border-border"
+                        className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-40 text-foreground text-xs border border-stroke"
                     >
                         {t('common.back', 'Back')}
                     </button>
@@ -968,14 +968,14 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setShowCreateFolder((prev) => !prev)}
-                        className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-foreground text-xs border border-border"
+                        className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-foreground text-xs border border-stroke"
                     >
                         {t('instance_details.files.new_folder', 'New Folder')}
                     </button>
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
-                        className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-50 text-foreground text-xs border border-border"
+                        className="px-2 py-1 rounded-md bg-muted hover:bg-accent disabled:opacity-50 text-foreground text-xs border border-stroke"
                     >
                         {isUploading ? t('common.loading', 'Loading...') : t('instance_details.files.upload', 'Upload')}
                     </button>
@@ -983,13 +983,13 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
             </div>
 
             {showCreateFolder && (
-                <div className="px-4 py-2 border-b border-border bg-background/60 flex items-center gap-2">
+                <div className="px-4 py-2 border-b border-stroke bg-canvas/60 flex items-center gap-2">
                     <input
                         type="text"
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         placeholder={t('instance_details.files.folder_name_placeholder', 'Folder name')}
-                        className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none"
+                        className="flex-1 bg-muted border border-stroke rounded-lg px-3 py-1.5 text-sm text-foreground outline-none"
                     />
                     <button
                         onClick={handleCreateFolder}
@@ -1027,7 +1027,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                         {files.map((file) => (
                             <div
                                 key={file.name}
-                                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-transparent hover:border-border hover:bg-accent/60"
+                                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-transparent hover:border-stroke hover:bg-accent/60"
                             >
                                 <button
                                     onClick={() => (file.isDirectory ? handleOpenFolder(file.name) : handleOpenFile(file))}
@@ -1038,7 +1038,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                                 </button>
                                 <button
                                     onClick={() => setPendingDelete(file)}
-                                    className="px-2 py-1 rounded-md bg-muted hover:bg-red-500/20 text-xs text-muted-foreground hover:text-red-400 border border-border"
+                                    className="px-2 py-1 rounded-md bg-muted hover:bg-red-500/20 text-xs text-muted-foreground hover:text-red-400 border border-stroke"
                                 >
                                     {t('common.delete', 'Delete')}
                                 </button>
@@ -1049,14 +1049,14 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
             </div>
 
             {pendingDelete && (
-                <div className="p-3 border-t border-border bg-background/80 flex items-center justify-between gap-3">
+                <div className="p-3 border-t border-stroke bg-canvas/80 flex items-center justify-between gap-3">
                     <div className="text-xs text-foreground truncate">
                         {t('instance_details.files.delete_confirm', 'Delete {{name}}?', { name: pendingDelete.name })}
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setPendingDelete(null)}
-                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-xs text-foreground border border-border"
+                            className="px-2 py-1 rounded-md bg-muted hover:bg-accent text-xs text-foreground border border-stroke"
                         >
                             {t('common.cancel', 'Cancel')}
                         </button>

@@ -197,9 +197,9 @@ const Extensions = () => {
                             installedExtensions.map(ext => (
                                 <div
                                     key={ext.id}
-                                    className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-colors border border-border ${ext.enabled ? 'bg-card' : 'bg-card/50 opacity-60'}`}
+                                    className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-colors border border-stroke ${ext.enabled ? 'bg-surface' : 'bg-surface/50 opacity-60'}`}
                                 >
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-base font-semibold overflow-hidden shrink-0 border border-border ${ext.enabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-base font-semibold overflow-hidden shrink-0 border border-stroke ${ext.enabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                                         {ext.iconPath ? (
                                             <img
                                                 src={`app-media:///${ext.iconPath}`}
@@ -255,7 +255,7 @@ const Extensions = () => {
                         loadingOnline ? (
                             <div className="space-y-2">
                                 {Array.from({ length: 4 }).map((_, i) => (
-                                    <div key={i} className="flex items-center gap-3 rounded-lg px-3 py-3 border border-border bg-card">
+                                    <div key={i} className="flex items-center gap-3 rounded-lg px-3 py-3 border border-stroke bg-surface">
                                         <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
                                         <div className="flex-1 min-w-0">
                                             <Skeleton className="h-4 w-32 mb-1.5" />
@@ -289,9 +289,9 @@ const Extensions = () => {
                                 return (
                                     <div
                                         key={ext.id}
-                                        className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors border border-border bg-card hover:bg-accent/50"
+                                        className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors border border-stroke bg-surface hover:bg-accent/50"
                                     >
-                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-semibold overflow-hidden shrink-0 bg-primary/10 text-primary border border-border">
+                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-semibold overflow-hidden shrink-0 bg-primary/10 text-primary border border-stroke">
                                             {ext.banner_path ? (
                                                 <img
                                                     src={`https://lux.pluginhub.de/uploads/${ext.banner_path}`}

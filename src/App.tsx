@@ -48,7 +48,14 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import i18n, { languageMap } from "./i18n";
-import { AlertCircle, RefreshCw, Box, TriangleAlert } from "lucide-react";
+import {
+  AlertCircle,
+  RefreshCw,
+  Box,
+  TriangleAlert,
+  Copy,
+  Check,
+} from "lucide-react";
 
 const DEFAULT_PAGE_ANIMATION_PRESET = "cinematic";
 const PAGE_TRANSITION_PRESETS = {
@@ -162,40 +169,54 @@ const getPageTransitionPreset = (preset) => {
   return PAGE_TRANSITION_PRESETS[DEFAULT_PAGE_ANIMATION_PRESET];
 };
 
-class ErrorBoundary extends React.Component<
+import { logger } from "./utils/logger";
+
+export class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean }
+  { hasError: boolean; error: Error | null }
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
   static getDerivedStateFromError(error: any) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
   componentDidCatch(error: any, errorInfo: any) {
-    console.error("ErrorBoundary caught an error", error, errorInfo);
+    logger.error(
+      "ErrorBoundary caught an unhandled exception",
+      error,
+      errorInfo,
+    );
   }
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback />;
+      return <ErrorFallback error={this.state.error} />;
     }
     return this.props.children;
   }
 }
 
-function ErrorFallback() {
+function ErrorFallback({ error }: { error?: Error | null }) {
   const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (!error) return;
+    const text = `${error.name}: ${error.message}\n\nStack:\n${error.stack}`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div
-      data-tauri-drag-region
-      className="h-screen w-screen flex flex-col items-center justify-center bg-[#0a0a0a] overflow-hidden relative"
-    >
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0a0a0a] overflow-hidden relative">
+      <div data-tauri-drag-region className="absolute inset-0 z-0" />
+
       {/* Ambient Background Glows */}
       <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-pulse pointer-events-none" />
       <div
-        className="absolute bottom-1/4 -right-20 w-96 h-96 bg-destructive/10 rounded-full blur-[120px] animate-pulse"
+        className="absolute bottom-1/4 -right-20 w-96 h-96 bg-destructive/10 rounded-full blur-[120px] animate-pulse pointer-events-none"
         style={{ animationDelay: "2s" }}
       />
 
@@ -219,12 +240,42 @@ function ErrorFallback() {
           {t("common.error_title")}
         </h1>
 
-        <p className="text-muted-foreground mb-10 leading-relaxed max-w-sm">
+        <p className="text-muted-foreground mb-4 leading-relaxed max-w-sm">
           {t("common.error_desc")}
-          <span className="block mt-2 text-xs opacity-50 font-mono">
-            Application state reached an irrecoverable point.
-          </span>
         </p>
+
+        {error && (
+          <div className="relative mb-6 w-full p-4 rounded-xl bg-destructive/5 border border-destructive/10 text-xs text-destructive/80 font-mono text-left group/error">
+            <div className="flex justify-between items-start mb-2">
+              <p className="font-bold underline">Error Details:</p>
+              <button
+                onClick={handleCopy}
+                className="opacity-0 group-hover/error:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-white/5 text-muted-foreground hover:text-white"
+                title="Copy Error"
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 text-green-500" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </button>
+            </div>
+            <div className="overflow-auto max-h-32">
+              {error.name}: {error.message}
+              {error.stack && (
+                <pre className="mt-2 text-[10px] opacity-60 leading-tight">
+                  {error.stack}
+                </pre>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!error && (
+          <p className="text-muted-foreground/50 text-[10px] font-mono mb-8">
+            Irrecoverable application state reached.
+          </p>
+        )}
 
         <div className="flex flex-col w-full gap-3">
           <button
@@ -238,9 +289,11 @@ function ErrorFallback() {
 
           <button
             onClick={() => {
-              try {
-                (window as any).electronAPI.showItemInFolder(null); // Just a dummy to see if API works, or use a better way to report
-              } catch (e) {}
+              // Redirect to support or issues
+              window.open(
+                "https://github.com/Lux-Client/LuxClient/issues",
+                "_blank",
+              );
             }}
             className="h-14 rounded-2xl border border-white/5 bg-white/[0.03] text-sm font-medium hover:bg-white/[0.08] transition-colors"
           >
@@ -589,7 +642,7 @@ function App() {
       );
       try {
         const settingsRes = await window.electronAPI?.getSettings();
-        if (settingsRes.success && settingsRes.settings.startPage) {
+        if (settingsRes?.success && settingsRes.settings?.startPage) {
           startupDestination = resolveStartupDestination(
             settingsRes.settings.startPage,
             startupPageOptions,
@@ -599,20 +652,20 @@ function App() {
 
       if (window.electronAPI?.validateSession) {
         const res = await window.electronAPI.validateSession();
-        if (res.success) {
+        if (res?.success) {
           const profile = await window.electronAPI.getProfile();
           if (profile) {
             try {
               let skinRes = await window.electronAPI.getCurrentSkin(
                 profile.access_token,
               );
-              if (!skinRes.success) {
+              if (skinRes && !skinRes.success) {
                 await new Promise((r) => setTimeout(r, 1000));
                 skinRes = await window.electronAPI.getCurrentSkin(
                   profile.access_token,
                 );
               }
-              if (skinRes.success) {
+              if (skinRes?.success) {
                 profile.skinUrl = skinRes.url;
               }
             } catch (e) {
@@ -634,28 +687,30 @@ function App() {
     };
 
     const loadTheme = async () => {
-      const res = await window.electronAPI?.getSettings();
-      if (res.success) {
-        setAppSettings(res.settings);
+      try {
+        const res = await window.electronAPI?.getSettings();
+        if (res?.success && res.settings) {
+          setAppSettings((prev) => ({ ...prev, ...res.settings }));
 
-        if (res.settings.language) {
-          let lang = res.settings.language;
-          if (languageMap[lang as keyof typeof languageMap]) {
-            lang = languageMap[lang as keyof typeof languageMap];
-            window.electronAPI.saveSettings({
-              ...res.settings,
-              language: lang,
-            });
+          if (res.settings.language) {
+            let lang = res.settings.language;
+            if (languageMap[lang as keyof typeof languageMap]) {
+              lang = languageMap[lang as keyof typeof languageMap];
+              window.electronAPI.saveSettings({
+                ...res.settings,
+                language: lang,
+              });
+            }
+            i18n.changeLanguage(lang);
           }
-          i18n.changeLanguage(lang);
-        }
 
-        if (res.settings.theme) {
-          const t = normalizeThemeSchema(res.settings.theme);
-          setTheme(t);
-          applyTheme(t);
+          if (res.settings.theme) {
+            const t = normalizeThemeSchema(res.settings.theme);
+            setTheme(t);
+            applyTheme(t);
+          }
         }
-      }
+      } catch (e) {}
     };
 
     const loadVersion = async () => {
@@ -1485,7 +1540,7 @@ function App() {
     return null;
   };
 
-  const currentPage = renderCurrentPage();
+  const currentPage = <ErrorBoundary>{renderCurrentPage()}</ErrorBoundary>;
   const currentPageKey = [
     currentMode,
     currentView,
@@ -1509,7 +1564,7 @@ function App() {
           />
         </React.Suspense>
       ) : (
-        <div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-foreground font-sans selection:bg-primary/30 selection:text-foreground relative">
+        <div className="flex flex-col h-screen w-screen overflow-hidden bg-canvas text-foreground font-sans selection:bg-primary/30 selection:text-foreground relative">
           {theme?.bgMedia?.url && theme.bgMedia.url.trim() !== "" && (
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
               {theme.bgMedia.type === "video" ? (
@@ -1526,7 +1581,7 @@ function App() {
                     (e.target as HTMLElement).classList.add("opacity-100")
                   }
                   onError={(e) => {
-                    console.error("Background video decoding error:", e);
+                    logger.error("Background video decoding error:", e);
                     setTheme((prev) => ({
                       ...prev,
                       bgMedia: { ...prev.bgMedia, type: "none" },
@@ -1547,7 +1602,7 @@ function App() {
                 />
               )}
               <div
-                className="absolute inset-0 bg-background pointer-events-none"
+                className="absolute inset-0 bg-canvas pointer-events-none"
                 style={{ opacity: theme.bgOverlay ?? 0.4 }}
               />
             </div>
@@ -1569,7 +1624,7 @@ function App() {
             isCommandPaletteAvailable={isCommandPaletteAvailable}
           />
 
-          <div className="flex flex-1 overflow-hidden relative z-10">
+          <div className="flex flex-1 overflow-hidden relative z-10 p-2 gap-2">
             <AppSidebar
               currentView={currentView}
               setView={(view) => startTransition(() => setCurrentView(view))}
@@ -1585,9 +1640,9 @@ function App() {
               setIsCollapsed={setIsSidebarCollapsed}
             />
 
-            <main className="flex-1 overflow-hidden flex flex-col relative">
+            <main className="flex-1 overflow-hidden flex flex-col relative bg-surface border border-stroke rounded-bento backdrop-blur-overlay">
               {isPending && (
-                <div className="absolute top-0 left-0 w-full h-0.5 z-[100] overflow-hidden bg-muted">
+                <div className="absolute top-0 left-0 w-full h-0.5 z-[100] overflow-hidden bg-stroke rounded-t-bento">
                   <div className="h-full bg-primary/60 animate-progress-fast"></div>
                 </div>
               )}
