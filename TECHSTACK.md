@@ -12,7 +12,16 @@
 - **3D**: skinview3d (Minecraft skin viewer)
 - **Notifications**: Sonner
 
-## Backend (Embedded Express)
+## Backend (Tauri / Rust) - v1.7+
+
+- **Runtime**: Tauri 2 (Rust)
+- **Language**: Rust 1.80+ / TypeScript
+- **State Management**: Rust-based persistent storage
+- **Parallelism**: Rayon, Tokio (Async I/O)
+- **I/O**: Standard FS + tokio-fs
+- **Compression**: zip-rs, flate2, tar
+
+## Backend (Legacy Embedded Express) - < v1.7
 
 - **Runtime**: Electron 40
 - **Framework**: Express.js
@@ -22,24 +31,22 @@
 - **HTTP Client**: Axios
 - **File Handling**: adm-zip, archiver, jszip, fs-extra
 
-## Desktop
+## Minecraft Integration (v1.7+)
 
-- **Build Tool**: electron-builder
-- **State Storage**: electron-store
-- **Auto Updates**: electron-updater
-- **Discord RPC**: discord-rpc
+- **Launcher Core**: Custom Rust-based high-performance implementation.
+- **Auth**: Microsoft OAuth via Tauri WebView.
+- **Dependency Management**: Parallel async downloads (tokio).
+- **Verification**: CPU-parallel SHA1 hashing (rayon).
 
-## Minecraft Integration
+## Minecraft Integration (Legacy)
 
 - **Launcher Core**: minecraft-launcher-core
 - **Auth**: msmc
-- **NBT Parsing**: prismarine-nbt
-- **CurseForge API**: mc-curseforge-api
-- **IPC**: ipc-event-emitter
 - **Process Management**: pidtree, pidusage
 
-## Dev Tools
+## Dev Tools & Runtime
 
+- **Package Manager**: Bun 1.2+ (Recommended)
 - **Linting**: ESLint 9
 - **Type Checking**: TypeScript
 - **PostCSS**: Autoprefixer

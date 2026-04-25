@@ -12,7 +12,10 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import { Skeleton } from "../components/ui/skeleton";
-import { filterInstancesForMode } from "../utils/instanceTypes";
+import {
+  filterInstancesForMode,
+  applyVisibilityFilters,
+} from "../utils/instanceTypes";
 import {
   Dialog,
   DialogContent,
@@ -307,7 +310,8 @@ function Home({
 
   const loadInstances = async () => {
     const list = await window.electronAPI.getInstances();
-    const launcherInstances = filterInstancesForMode(list, "launcher");
+    const filteredList = applyVisibilityFilters(list, settings);
+    const launcherInstances = filterInstancesForMode(filteredList, "launcher");
     setInstances(launcherInstances);
     if (launcherInstances.length > 0) {
       const recentInsts = [...launcherInstances]

@@ -6,9 +6,11 @@
   
   <p>
     <em>
-      <b>Lux</b> is a Minecraft launcher built with <b>Electron</b>, <b>React</b>, and <b>Tailwind CSS</b>.<br />
-      Seamlessly manage all your Minecraft instances, skins, and modpacks in a clean, simple app.  
-      Now with built-in support for both <b>Modrinth</b> and <b>CurseForge</b> modpacks.
+      <b>Lux</b> is a high-performance Minecraft launcher.
+      Starting from <b>v1.7+</b>, Lux uses a <b>Tauri (Rust)</b> backend for superior speed and memory safety.
+      Versions below 1.7 use an <b>Electron</b> architecture.
+      Built with <b>React</b> and <b>Tailwind CSS</b> for a premium frontend experience.
+      Seamlessly manage instances, skins, and modpacks with built-in support for <b>Modrinth</b> and <b>CurseForge</b>.
     </em>
   </p>
   
@@ -84,7 +86,8 @@ iwr https://lux.pluginhub.de/install.ps1 | iex
 #### Prerequisites
 
 - [Node.js](https://nodejs.org/) (latest LTS)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- [Bun](https://bun.sh/) (Recommended) or [npm](https://www.npmjs.com/)
+- [Rust](https://www.rust-lang.org/) (for v1.7+ backend)
 
 #### Steps
 
@@ -96,31 +99,25 @@ iwr https://lux.pluginhub.de/install.ps1 | iex
 
 2. Install dependencies:
    ```bash
-   npm install
-   # or
-   yarn install
+   bun install
    ```
 
 3. Start the dev server:
    ```bash
-   npm run dev
-   # or
-   yarn dev
+   bun dev
    ```
 
 4. Build for production:
    ```bash
-   npm run dist
-   # or
-   yarn dist
+   bun run dist
    ```
 
 5. Useful scripts:
-   - Lint: `npm run lint`
-   - Local test: `npm run dev`
+   - Lint: `bun run lint`
+   - Local test: `bun dev`
 
 6. Tips:
-   - If you have errors with native dependencies, check that Node and Electron match versions.
+   - v1.7+ requires **Rust** installed for the Tauri backend.
    - The project uses [Vite](https://vitejs.dev/) for fast building and hot reload.
 
 ---
@@ -131,13 +128,13 @@ Found a bug or need help? [Create an issue](https://github.com/Lux-Client/LuxCli
 
 ## Tech Stack
 
-- **Electron** – The desktop platform ([electronjs.org](https://www.electronjs.org/))
+- **Tauri (v1.7+)** – High-performance Rust backend ([tauri.app](https://tauri.app/))
+- **Electron (< v1.7)** – Original desktop platform ([electronjs.org](https://www.electronjs.org/))
 - **React** – The UI framework ([reactjs.org](https://reactjs.org/))
 - **Vite** – Tooling ([vitejs.dev](https://vitejs.dev/))
 - **Tailwind CSS** – Styling ([tailwindcss.com](https://tailwindcss.com/))
-- **skinview3d** – 3D Minecraft skin/model previews.
-- **State Management**: React Context and Hooks.
-- **Tooling**: JavaScript (ESNext), ESLint, and Prettier.
+- **Rust** – Core logic, concurrency, and safety.
+- **Bun** – Blazing fast package manager and runtime.
 
 ---
 

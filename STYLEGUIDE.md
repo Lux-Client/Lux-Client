@@ -4,10 +4,12 @@ This document outlines the coding conventions and best practices for the Lux cli
 
 ## General
 
-- **Language**: TypeScript is used throughout the frontend (`src/`) and backend (`backend/`, `electron/`)
-- **No comments**: Do not add comments unless explicitly requested
-- **ESLint**: All code must pass `npm run lint`
-- **TypeScript**: All code must pass `npm run typecheck`
+- **Language**: TypeScript for frontend (`src/`), Rust for backend (`src-tauri/src/`).
+- **Architecture**: v1.7+ uses Tauri (Rust), versions < 1.7 use Electron (Legacy).
+- **Backend Communication**: Use Tauri `invoke` for v1.7+, legacy IPC (`window.electronAPI`) for versions < 1.7.
+- **No comments**: Do not add comments unless explicitly requested.
+- **ESLint**: All JS/TS code must pass `bun run lint`.
+- **Rust Linting**: All Rust code must pass `cargo clippy`.
 
 ## File Naming
 

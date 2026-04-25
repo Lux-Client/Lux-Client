@@ -2,10 +2,10 @@ use crate::utils::paths;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camel Case")]
+#[serde(rename_all = "camelCase")]
 pub struct InstanceConfig {
     pub name: String,
     pub version: String,
@@ -37,8 +37,7 @@ impl InstanceManager {
                     let config_path = entry.path().join("instance.json");
                     if config_path.exists() {
                         if let Ok(content) = fs::read_to_string(&config_path) {
-                            if let Ok(mut config) = serde_json::from_str::<InstanceConfig>(&content)
-                            {
+                            if let Ok(config) = serde_json::from_str::<InstanceConfig>(&content) {
                                 let name = config.name.to_lowercase();
                                 if !seen_names.contains(&name) {
                                     seen_names.insert(name);

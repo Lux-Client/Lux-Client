@@ -1,10 +1,12 @@
-use std::path::{Path, PathBuf};
-use tauri::{AppHandle, Manager};
 use serde_json::Value;
 use std::fs;
+use std::path::PathBuf;
+use tauri::{AppHandle, Manager};
 
 pub fn get_user_data_dir(app: &AppHandle) -> PathBuf {
-    app.path().app_data_dir().expect("failed to get app data dir")
+    app.path()
+        .app_data_dir()
+        .expect("failed to get app data dir")
 }
 
 pub fn get_settings_path(app: &AppHandle) -> PathBuf {
@@ -28,7 +30,8 @@ pub fn get_default_instances_dir(app: &AppHandle) -> PathBuf {
 
 pub fn get_configured_instances_dir(app: &AppHandle) -> Option<PathBuf> {
     let settings = read_settings(app);
-    settings.get("instancesPath")
+    settings
+        .get("instancesPath")
         .or_else(|| settings.get("instancePath"))
         .and_then(|v| v.as_str())
         .map(PathBuf::from)
@@ -39,7 +42,10 @@ pub fn resolve_primary_instances_dir(app: &AppHandle) -> PathBuf {
 }
 
 pub fn get_legacy_instance_dirs(app: &AppHandle) -> Vec<PathBuf> {
-    let app_data = app.path().app_data_dir().expect("failed to get app data dir");
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .expect("failed to get app data dir");
     // On Windows, app_data_dir() usually returns AppData/Roaming/LuxClient
     // We want the parent to check other folder names if legacy
     let roaming = app_data.parent().unwrap_or(&app_data);
@@ -54,7 +60,10 @@ pub fn get_legacy_instance_dirs(app: &AppHandle) -> Vec<PathBuf> {
 }
 
 pub fn get_all_instance_dirs(app: &AppHandle) -> Vec<PathBuf> {
-    let mut dirs = vec![resolve_primary_instances_dir(app), get_default_instances_dir(app)];
+    let mut dirs = vec![
+        resolve_primary_instances_dir(app),
+        get_default_instances_dir(app),
+    ];
     dirs.extend(get_legacy_instance_dirs(app));
 
     let mut deduped = Vec::new();

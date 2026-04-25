@@ -1,27 +1,43 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
-import { ScrollArea } from './ui/scroll-area';
+import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { applyVisibilityFilters } from "../utils/instanceTypes";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Badge } from "./ui/badge";
+import { Separator } from "./ui/separator";
+import { ScrollArea } from "./ui/scroll-area";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from './ui/select';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription
-} from './ui/sheet';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "./ui/sheet";
 import {
-  Zap, Plus, Trash2, Play, Square, Globe, FolderOpen, Settings2
-} from 'lucide-react';
+  Zap,
+  Plus,
+  Trash2,
+  Play,
+  Square,
+  Globe,
+  FolderOpen,
+  Settings2,
+} from "lucide-react";
 
 const ACTION_TYPES = [
-  'external',
-  'instance:start',
-  'instance:stop',
-  'server:start',
-  'server:stop'
+  "external",
+  "instance:start",
+  "instance:stop",
+  "server:start",
+  "server:stop",
 ];
 
 function ActionBar({ open, onOpenChange }) {
@@ -30,12 +46,13 @@ function ActionBar({ open, onOpenChange }) {
   const [instances, setInstances] = useState([]);
   const [servers, setServers] = useState([]);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [settings, setSettings] = useState({});
 
-  const [newName, setNewName] = useState('');
-  const [newType, setNewType] = useState('external');
-  const [newPath, setNewPath] = useState('');
-  const [newTarget, setNewTarget] = useState('');
-  const [newIcon, setNewIcon] = useState('');
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState("external");
+  const [newPath, setNewPath] = useState("");
+  const [newTarget, setNewTarget] = useState("");
+  const [newIcon, setNewIcon] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -44,10 +61,14 @@ function ActionBar({ open, onOpenChange }) {
   }, [open]);
 
   useEffect(() => {
-    const removeSettingsListener = window.electronAPI?.onSettingsUpdated?.((newSettings) => {
-      const nextActions = Array.isArray(newSettings?.actionBarActions) ? newSettings.actionBarActions : [];
-      setActions(nextActions);
-    });
+    const removeSettingsListener = window.electronAPI?.onSettingsUpdated?.(
+      (newSettings) => {
+        const nextActions = Array.isArray(newSettings?.actionBarActions)
+          ? newSettings.actionBarActions
+          : [];
+        setActions(nextActions);
+      },
+    );
 
     return () => {
       if (removeSettingsListener) removeSettingsListener();
@@ -59,17 +80,24 @@ function ActionBar({ open, onOpenChange }) {
       const [settingsRes, instancesRes, serversRes] = await Promise.all([
         window.electronAPI.getSettings(),
         window.electronAPI.getInstances(),
-        window.electronAPI.getServers()
+        window.electronAPI.getServers(),
       ]);
 
       if (settingsRes?.success) {
-        const loadedActions = Array.isArray(settingsRes.settings?.actionBarActions)
+        const loadedActions = Array.isArray(
+          settingsRes.settings?.actionBarActions,
+        )
           ? settingsRes.settings.actionBarActions
           : [];
         setActions(loadedActions);
+        setSettings(settingsRes.settings);
       }
 
-      setInstances(Array.isArray(instancesRes) ? instancesRes : []);
+      const filteredInstances = applyVisibilityFilters(
+        Array.isArray(instancesRes) ? instancesRes : [],
+        settingsRes?.settings || {},
+      );
+      setInstances(filteredInstances);
 
       if (serversRes?.success && Array.isArray(serversRes.servers)) {
         setServers(serversRes.servers);
@@ -77,7 +105,7 @@ function ActionBar({ open, onOpenChange }) {
         setServers([]);
       }
     } catch (error) {
-      console.error('[ActionBar] Failed to load initial data:', error);
+      console.error("[ActionBar] Failed to load initial data:", error);
     }
   };
 
@@ -88,53 +116,67 @@ function ActionBar({ open, onOpenChange }) {
       if (!settingsRes?.success) return;
       await window.electronAPI.saveSettings({
         ...settingsRes.settings,
-        actionBarActions: nextActions
+        actionBarActions: nextActions,
       });
     } catch (error) {
-      console.error('[ActionBar] Failed to save actions:', error);
+      console.error("[ActionBar] Failed to save actions:", error);
     }
   };
 
   const targetOptions = useMemo(() => {
-    if (newType.startsWith('instance:')) return instances.map(item => item.name);
-    if (newType.startsWith('server:')) return servers.map(item => item.name);
+    if (newType.startsWith("instance:"))
+      return instances.map((item) => item.name);
+    if (newType.startsWith("server:")) return servers.map((item) => item.name);
     return [];
   }, [newType, instances, servers]);
 
   useEffect(() => {
-    if ((newType.startsWith('instance:') || newType.startsWith('server:')) && targetOptions.length > 0 && !targetOptions.includes(newTarget)) {
+    if (
+      (newType.startsWith("instance:") || newType.startsWith("server:")) &&
+      targetOptions.length > 0 &&
+      !targetOptions.includes(newTarget)
+    ) {
       setNewTarget(targetOptions[0]);
     }
-    if (newType === 'external') {
-      setNewTarget('');
+    if (newType === "external") {
+      setNewTarget("");
     }
   }, [newType, targetOptions, newTarget]);
 
   const getActionIcon = (type) => {
     switch (type) {
-      case 'external': return Globe;
-      case 'instance:start': return Play;
-      case 'instance:stop': return Square;
-      case 'server:start': return Play;
-      case 'server:stop': return Square;
-      default: return Zap;
+      case "external":
+        return Globe;
+      case "instance:start":
+        return Play;
+      case "instance:stop":
+        return Square;
+      case "server:start":
+        return Play;
+      case "server:stop":
+        return Square;
+      default:
+        return Zap;
     }
   };
 
   const getActionBadge = (type) => {
-    if (type === 'external') return t('action_bar.type_external');
-    if (type.startsWith('instance:')) return t('common.instance', 'Instance');
-    if (type.startsWith('server:')) return t('common.server');
+    if (type === "external") return t("action_bar.type_external");
+    if (type.startsWith("instance:")) return t("common.instance", "Instance");
+    if (type.startsWith("server:")) return t("common.server");
     return type;
   };
 
   const handlePickExternal = async () => {
     const result = await window.electronAPI.openFileDialog({
-      properties: ['openFile'],
+      properties: ["openFile"],
       filters: [
-        { name: t('action_bar.programs'), extensions: ['exe', 'bat', 'cmd', 'com', 'ps1'] },
-        { name: t('action_bar.all_files'), extensions: ['*'] }
-      ]
+        {
+          name: t("action_bar.programs"),
+          extensions: ["exe", "bat", "cmd", "com", "ps1"],
+        },
+        { name: t("action_bar.all_files"), extensions: ["*"] },
+      ],
     });
     if (!result?.canceled && result?.filePaths?.length > 0) {
       setNewPath(result.filePaths[0]);
@@ -146,7 +188,7 @@ function ActionBar({ open, onOpenChange }) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
+      if (typeof reader.result === "string") {
         setNewIcon(reader.result);
       }
     };
@@ -156,77 +198,82 @@ function ActionBar({ open, onOpenChange }) {
   const handleAddAction = async () => {
     const trimmedName = newName.trim();
     if (!trimmedName) return;
-    if (newType === 'external' && !newPath.trim()) return;
-    if (newType !== 'external' && !newTarget) return;
+    if (newType === "external" && !newPath.trim()) return;
+    if (newType !== "external" && !newTarget) return;
 
     const nextAction = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name: trimmedName,
       type: newType,
-      icon: newIcon || '',
-      path: newType === 'external' ? newPath.trim() : '',
-      target: newType !== 'external' ? newTarget : ''
+      icon: newIcon || "",
+      path: newType === "external" ? newPath.trim() : "",
+      target: newType !== "external" ? newTarget : "",
     };
 
     await persistActions([...actions, nextAction]);
 
-    setNewName('');
-    setNewPath('');
-    setNewIcon('');
+    setNewName("");
+    setNewPath("");
+    setNewIcon("");
   };
 
   const handleDelete = async (id) => {
-    const nextActions = actions.filter(action => action.id !== id);
+    const nextActions = actions.filter((action) => action.id !== id);
     await persistActions(nextActions);
   };
 
   const executeAction = async (action) => {
     try {
-      if (action.type === 'external') {
+      if (action.type === "external") {
         await window.electronAPI.runExternalFile(action.path);
         return;
       }
-      if (action.type === 'instance:start') {
+      if (action.type === "instance:start") {
         await window.electronAPI.launchGame(action.target, false);
         return;
       }
-      if (action.type === 'instance:stop') {
+      if (action.type === "instance:stop") {
         await window.electronAPI.killGame(action.target);
         return;
       }
-      if (action.type === 'server:start') {
+      if (action.type === "server:start") {
         await window.electronAPI.startServer(action.target);
         return;
       }
-      if (action.type === 'server:stop') {
+      if (action.type === "server:stop") {
         await window.electronAPI.stopServer(action.target);
       }
     } catch (error) {
-      console.error('[ActionBar] Failed to execute action:', error);
+      console.error("[ActionBar] Failed to execute action:", error);
     }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[340px] sm:max-w-[340px] flex flex-col p-0">
+      <SheetContent
+        side="right"
+        className="w-[340px] sm:max-w-[340px] flex flex-col p-0"
+      >
         <SheetHeader className="px-5 pt-5 pb-0 pr-12">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-sm font-semibold flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
-              {t('action_bar.title')}
+              {t("action_bar.title")}
             </SheetTitle>
             <Button
-              variant={isCustomizing ? 'default' : 'outline'}
+              variant={isCustomizing ? "default" : "outline"}
               size="sm"
               className="h-7 text-[11px]"
-              onClick={() => setIsCustomizing(prev => !prev)}
+              onClick={() => setIsCustomizing((prev) => !prev)}
             >
               <Settings2 className="h-3 w-3" />
-              {isCustomizing ? t('action_bar.exit_customize') : t('action_bar.customize')}
+              {isCustomizing
+                ? t("action_bar.exit_customize")
+                : t("action_bar.customize")}
             </Button>
           </div>
           <SheetDescription className="text-xs">
-            {t('action_bar.empty', 'No quick actions configured')}
+            {t("action_bar.empty", "No quick actions configured")}
           </SheetDescription>
         </SheetHeader>
 
@@ -239,12 +286,14 @@ function ActionBar({ open, onOpenChange }) {
                 <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
                   <Zap className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground">{t('action_bar.empty')}</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {t("action_bar.empty")}
+                </p>
                 <button
                   onClick={() => setIsCustomizing(true)}
                   className="text-xs text-primary hover:text-primary/80 mt-1 cursor-pointer font-medium transition-colors"
                 >
-                  {t('action_bar.customize')}
+                  {t("action_bar.customize")}
                 </button>
               </div>
             )}
@@ -267,19 +316,30 @@ function ActionBar({ open, onOpenChange }) {
                   >
                     <div className="w-8 h-8 rounded-md bg-muted border border-border overflow-hidden shrink-0 flex items-center justify-center">
                       {action.icon ? (
-                        <img src={action.icon} alt={action.name} className="w-full h-full object-cover" />
+                        <img
+                          src={action.icon}
+                          alt={action.name}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-foreground truncate">{action.name}</div>
+                      <div className="text-sm font-medium text-foreground truncate">
+                        {action.name}
+                      </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">
+                        <Badge
+                          variant="secondary"
+                          className="h-4 px-1.5 text-[10px] font-medium"
+                        >
                           {getActionBadge(action.type)}
                         </Badge>
                         {action.target && (
-                          <span className="text-[10px] text-muted-foreground truncate">{action.target}</span>
+                          <span className="text-[10px] text-muted-foreground truncate">
+                            {action.target}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -294,7 +354,7 @@ function ActionBar({ open, onOpenChange }) {
                         className="h-6 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-3 w-3" />
-                        {t('action_bar.remove', t('common.delete'))}
+                        {t("action_bar.remove", t("common.delete"))}
                       </Button>
                     </div>
                   )}
@@ -307,13 +367,13 @@ function ActionBar({ open, onOpenChange }) {
         {isCustomizing && (
           <div className="border-t border-border px-5 py-4 space-y-3">
             <Label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              {t('action_bar.add_action')}
+              {t("action_bar.add_action")}
             </Label>
 
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder={t('action_bar.name_placeholder')}
+              placeholder={t("action_bar.name_placeholder")}
               className="h-8 text-xs"
             />
 
@@ -324,18 +384,18 @@ function ActionBar({ open, onOpenChange }) {
               <SelectContent>
                 {ACTION_TYPES.map((typeKey) => (
                   <SelectItem key={typeKey} value={typeKey} className="text-xs">
-                    {t(`action_bar.type_${typeKey.replace(':', '_')}`)}
+                    {t(`action_bar.type_${typeKey.replace(":", "_")}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {newType === 'external' ? (
+            {newType === "external" ? (
               <div className="flex gap-2">
                 <Input
                   value={newPath}
                   onChange={(e) => setNewPath(e.target.value)}
-                  placeholder={t('action_bar.path_placeholder')}
+                  placeholder={t("action_bar.path_placeholder")}
                   className="h-8 text-xs flex-1"
                 />
                 <Button
@@ -345,18 +405,24 @@ function ActionBar({ open, onOpenChange }) {
                   className="h-8 text-xs shrink-0"
                 >
                   <FolderOpen className="h-3 w-3" />
-                  {t('action_bar.browse')}
+                  {t("action_bar.browse")}
                 </Button>
               </div>
             ) : (
               <Select value={newTarget} onValueChange={setNewTarget}>
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder={targetOptions.length === 0 ? t('action_bar.no_targets') : undefined} />
+                  <SelectValue
+                    placeholder={
+                      targetOptions.length === 0
+                        ? t("action_bar.no_targets")
+                        : undefined
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {targetOptions.length === 0 ? (
                     <SelectItem value="__none" disabled className="text-xs">
-                      {t('action_bar.no_targets')}
+                      {t("action_bar.no_targets")}
                     </SelectItem>
                   ) : (
                     targetOptions.map((name) => (
@@ -370,7 +436,9 @@ function ActionBar({ open, onOpenChange }) {
             )}
 
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground shrink-0">{t('action_bar.image')}</Label>
+              <Label className="text-xs text-muted-foreground shrink-0">
+                {t("action_bar.image")}
+              </Label>
               <input
                 type="file"
                 accept="image/*"
@@ -385,7 +453,7 @@ function ActionBar({ open, onOpenChange }) {
               className="w-full h-8 text-xs"
             >
               <Plus className="h-3 w-3" />
-              {t('action_bar.add')}
+              {t("action_bar.add")}
             </Button>
           </div>
         )}

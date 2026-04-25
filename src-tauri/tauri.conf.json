@@ -1,12 +1,12 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Lux Client",
-  "version": "1.6.18.7",
+  "version": "1.7.0",
   "identifier": "de.pluginhub.lux",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
-    "beforeDevCommand": "bun dev",
+    "beforeDevCommand": "bun run frontend:dev",
     "beforeBuildCommand": "bun build"
   },
   "app": {

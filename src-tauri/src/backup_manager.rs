@@ -3,10 +3,8 @@ use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 use walkdir::WalkDir;
-use zip::write::FileOptions;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BackupResponse {
@@ -51,7 +49,7 @@ impl BackupManager {
 
         let file = fs::File::create(&file_path)?;
         let mut zip = zip::ZipWriter::new(file);
-        let options = FileOptions::default()
+        let options = zip::write::SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated)
             .unix_permissions(0o755);
 

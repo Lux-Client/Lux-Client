@@ -17,8 +17,12 @@ import EmptyState from "../components/layout/EmptyState";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
+import { Skeleton } from "../components/ui/skeleton";
 import { Separator } from "../components/ui/separator";
-import { filterInstancesForMode } from "../utils/instanceTypes";
+import {
+  filterInstancesForMode,
+  applyVisibilityFilters,
+} from "../utils/instanceTypes";
 import {
   Dialog,
   DialogContent,
@@ -1066,27 +1070,10 @@ function Dashboard({
     return "LuxClient";
   };
 
-  const filteredInstances = instances.filter((inst) => {
-    const isExternal =
-      String(inst?.instanceType || "").toLowerCase() === "external";
-    const source = String(inst?.externalSource || "").toLowerCase();
-
-    if (
-      isExternal &&
-      source === "modrinth" &&
-      !showModrinthInstancesInLibrary
-    ) {
-      return false;
-    }
-
-    if (
-      isExternal &&
-      source === "curseforge" &&
-      !showCurseforgeInstancesInLibrary
-    ) {
-      return false;
-    }
-
+  const filteredInstances = applyVisibilityFilters(instances, {
+    showModrinthInstancesInLibrary,
+    showCurseforgeInstancesInLibrary,
+  }).filter((inst) => {
     const name = String(inst?.name || "").toLowerCase();
     const version = String(inst?.version || "").toLowerCase();
     const query = deferredSearchQuery.toLowerCase();

@@ -24,8 +24,37 @@ export const filterInstancesForMode = (instances: any, mode?: string) => {
   if (mode === 'launcher') {
     return safeInstances.filter(isLauncherInstance);
   }
-
+ 
   return safeInstances;
+};
+ 
+export const applyVisibilityFilters = (instances: any[], settings: any) => {
+  const safeInstances = Array.isArray(instances) ? instances : [];
+  if (!settings) return safeInstances;
+
+  return safeInstances.filter((inst) => {
+    const isExternal =
+      String(inst?.instanceType || "").toLowerCase() === "external";
+    const source = String(inst?.externalSource || "").toLowerCase();
+
+    if (
+      isExternal &&
+      source === "modrinth" &&
+      settings.showModrinthInstancesInLibrary === false
+    ) {
+      return false;
+    }
+
+    if (
+      isExternal &&
+      source === "curseforge" &&
+      settings.showCurseforgeInstancesInLibrary === false
+    ) {
+      return false;
+    }
+
+    return true;
+  });
 };
 
 export const getOpenClientCreateOptions = () => ({
