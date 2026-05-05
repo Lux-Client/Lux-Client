@@ -139,7 +139,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
                                             <SelectTrigger className="w-full rounded-xl border-border/70 bg-background/80">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="z-[10001]">
                                                 {options.map((option) => (
                                                     <SelectItem key={option.id} value={option.id}>
                                                         {t(option.titleKey, option.titleFallback)}
@@ -161,7 +161,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
                                             <SelectTrigger className="w-full rounded-xl border-border/70 bg-background/80">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="z-[10001]">
                                                 {selectedOption.pages.map((page) => (
                                                     <SelectItem key={page.value} value={page.value}>
                                                         {t(page.labelKey, page.labelFallback)}
