@@ -858,7 +858,7 @@ function setupAppMediaProtocol() {
 }
 
 const handleDeepLink = (argv) => {
-    const file = argv.find(arg => arg.endsWith('.mcextension'));
+    const file = argv.find(arg => arg.endsWith('.mcextension') || arg.endsWith('.luxextension'));
     if (file) {
         console.log('[Main] file opened:', file);
 
@@ -870,6 +870,38 @@ const handleDeepLink = (argv) => {
             mainWindow.once('ready-to-show', () => {
                 mainWindow.webContents.send('extension:open-file', file);
             });
+        }
+    }
+
+    const deepLink = argv.find(arg => arg.startsWith('luxclient://'));
+    if (deepLink) {
+        try {
+            const parsed = new URL(deepLink);
+            if (parsed.hostname === 'install') {
+                const payload = {
+                    identifier: parsed.searchParams.get('identifier'),
+                    type: parsed.searchParams.get('type') || 'extension',
+                    url: parsed.searchParams.get('url'),
+                    name: parsed.searchParams.get('name'),
+                };
+                console.log('[Main] luxclient://install received:', payload);
+
+                const send = () => {
+                    if (mainWindow && mainWindow.webContents) {
+                        mainWindow.webContents.send('extension:install-from-marketplace', payload);
+                        if (mainWindow.isMinimized()) mainWindow.restore();
+                        mainWindow.focus();
+                    }
+                };
+
+                if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isLoading()) {
+                    send();
+                } else if (mainWindow) {
+                    mainWindow.once('ready-to-show', send);
+                }
+            }
+        } catch (e) {
+            console.error('[Main] Failed to parse luxclient:// deep link:', e);
         }
     }
 };
@@ -890,7 +922,14 @@ if (!gotTheLock) {
     });
 }
 
+app.on('open-url', (event, url) => {
+    event.preventDefault();
+    console.log('[Main] macOS open-url:', url);
+    handleDeepLink([url]);
+});
+
 app.whenReady().then(() => {
+    app.setAsDefaultProtocolClient('luxclient');
     if (process.platform === 'darwin') {
         const dockIconPath = path.join(__dirname, '../resources/icon-mac.png');
         if (fs.existsSync(dockIconPath)) {

@@ -325,6 +325,11 @@ const electronAPI = {
         ipcRenderer.on('extension:open-file', subscription);
         return () => ipcRenderer.removeListener('extension:open-file', subscription);
     },
+    onInstallFromMarketplace: (callback) => {
+        const subscription = (_event, payload) => callback(payload);
+        ipcRenderer.on('extension:install-from-marketplace', subscription);
+        return () => ipcRenderer.removeListener('extension:install-from-marketplace', subscription);
+    },
     getActiveProcesses: () => ipcRenderer.invoke('launcher:get-active-processes'),
     getProcessStats: (pid) => ipcRenderer.invoke('launcher:get-process-stats', pid),
 

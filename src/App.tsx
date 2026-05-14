@@ -619,6 +619,39 @@ function App() {
             setJavaRequirement(data || null);
         });
 
+        const removeInstallFromMarketplaceListener = window.electronAPI?.onInstallFromMarketplace?.(async (payload) => {
+            if (!payload?.url) return;
+            console.log('[App] Install from marketplace deep link:', payload);
+
+            if (payload.type === 'theme') {
+                startTransition(() => {
+                    setCurrentMode('launcher');
+                    setCurrentView('styling');
+                });
+                try {
+                    const result = await window.electronAPI.installThemeFromMarketplace(payload.url);
+                    if (!result?.success) {
+                        console.error('[App] Theme install failed:', result?.error);
+                    }
+                } catch (e) {
+                    console.error('[App] Theme install error:', e);
+                }
+            } else {
+                startTransition(() => {
+                    setCurrentMode('launcher');
+                    setCurrentView('extensions');
+                });
+                try {
+                    const result = await window.electronAPI.installExtension(payload.url);
+                    if (!result?.success) {
+                        console.error('[App] Extension install failed:', result?.error);
+                    }
+                } catch (e) {
+                    console.error('[App] Extension install error:', e);
+                }
+            }
+        });
+
         return () => {
             if (removeInstallListener) removeInstallListener();
             if (removeLaunchProgressListener) removeLaunchProgressListener();
@@ -629,6 +662,7 @@ function App() {
             if (removeWindowStateListener) removeWindowStateListener();
             if (removeCrashReportListener) removeCrashReportListener();
             if (removeJavaRequiredListener) removeJavaRequiredListener();
+            if (removeInstallFromMarketplaceListener) removeInstallFromMarketplaceListener();
         };
     }, [startupPageOptions]);
 
