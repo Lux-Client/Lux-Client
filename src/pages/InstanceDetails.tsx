@@ -13,9 +13,10 @@ import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowse
 import { getSourceTags } from '../utils/sourceTags';
 function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate, isGuest }) {
     const { t } = useTranslation();
+    const isVanilla = !instance.loader || instance.loader.toLowerCase() === 'vanilla';
     const [activeTab, setActiveTab] = useState('content');
-    const [contentView, setContentView] = useState('mods');
-    const [searchCategory, setSearchCategory] = useState('mod');
+    const [contentView, setContentView] = useState(isVanilla ? 'resourcepacks' : 'mods');
+    const [searchCategory, setSearchCategory] = useState(isVanilla ? 'resourcepack' : 'mod');
     const [mods, setMods] = useState([]);
     const [resourcePacks, setResourcePacks] = useState([]);
     const [loadingResourcePacks, setLoadingResourcePacks] = useState(false);
@@ -424,6 +425,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         const isStarting = status === 'launching' || status === 'installing';
 
         if (wasStopped && isStarting) {
+            setLog('');
             setActiveTab('logs');
             setSelectedLog(status === 'installing' ? 'install.log' : 'latest.log');
         }
@@ -553,13 +555,13 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         }
     };
     useEffect(() => {
-        if (activeTab === 'content' && (mods.length > 0 || resourcePacks.length > 0 || shaders.length > 0)) {
+        if (!isVanilla && activeTab === 'content' && (mods.length > 0 || resourcePacks.length > 0 || shaders.length > 0)) {
 
             if (Object.keys(updates).length === 0 && !checkingUpdates) {
                 handleCheckUpdates(true);
             }
         }
-    }, [mods.length, resourcePacks.length, shaders.length, activeTab]);
+    }, [mods.length, resourcePacks.length, shaders.length, activeTab, isVanilla]);
 
     const handleUpdateMod = async (updateData, options: { suppressSuccessNotification?: boolean; suppressErrorNotification?: boolean } = {}) => {
         const { suppressSuccessNotification = false, suppressErrorNotification = false } = options;
@@ -1217,15 +1219,17 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     <div className="h-full flex flex-col min-h-0">
                         <div className="sticky top-0 z-20 flex justify-between items-center mb-4 py-2 bg-background backdrop-blur-xl -mx-8 px-8 border-b border-border animate-in fade-in slide-in-from-top-4 duration-500">
                             <div className="flex gap-1 bg-muted p-1 rounded-xl border border-border">
-                                <button
-                                    onClick={() => { setContentView('mods'); setLocalSearchQuery(''); }}
-                                    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'mods' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
-                                    </svg>
-                                    {t('instance_details.content.mods')}
-                                </button>
+                                {!isVanilla && (
+                                    <button
+                                        onClick={() => { setContentView('mods'); setLocalSearchQuery(''); }}
+                                        className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'mods' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                                        </svg>
+                                        {t('instance_details.content.mods')}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => { setContentView('resourcepacks'); setLocalSearchQuery(''); }}
                                     className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'resourcepacks' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
@@ -1249,12 +1253,14 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                             <div className="flex items-center gap-3">
                                 {contentView === 'search' && (
                                     <div className="flex gap-1 bg-background p-1 rounded-xl border border-border mr-2 animate-in zoom-in-95 duration-200">
-                                        <button
-                                            onClick={() => { setSearchCategory('mod'); setSearchOffset(0); }}
-                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'mod' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
-                                        >
-                                            {t('instance_details.content.mods')}
-                                        </button>
+                                        {!isVanilla && (
+                                            <button
+                                                onClick={() => { setSearchCategory('mod'); setSearchOffset(0); }}
+                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'mod' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                            >
+                                                {t('instance_details.content.mods')}
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => { setSearchCategory('resourcepack'); setSearchOffset(0); }}
                                             className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'resourcepack' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
@@ -1281,7 +1287,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
                                             </svg>
                                         </button>
-                                        {Object.keys(updates).length > 0 && (
+                                        {!isVanilla && Object.keys(updates).length > 0 && (
                                             <button
                                                 onClick={handleUpdateAll}
                                                 disabled={bulkUpdateStatus?.isRunning}
@@ -1302,23 +1308,25 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                     : `${t('instance_details.actions.update_all')} (${Object.keys(updates).length})`}
                                             </button>
                                         )}
-                                        <button
-                                            onClick={() => handleCheckUpdates()}
-                                            disabled={checkingUpdates}
-                                            className={`p-2 rounded-xl border transition-all flex items-center justify-center ${checkingUpdates ? 'bg-muted border-border text-muted-foreground cursor-not-allowed' : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border'}`}
-                                            title={t('instance_details.actions.check_updates')}
-                                        >
-                                            {checkingUpdates ? (
-                                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            ) : (
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                </svg>
-                                            )}
-                                        </button>
+                                        {!isVanilla && (
+                                            <button
+                                                onClick={() => handleCheckUpdates()}
+                                                disabled={checkingUpdates}
+                                                className={`p-2 rounded-xl border transition-all flex items-center justify-center ${checkingUpdates ? 'bg-muted border-border text-muted-foreground cursor-not-allowed' : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border'}`}
+                                                title={t('instance_details.actions.check_updates')}
+                                            >
+                                                {checkingUpdates ? (
+                                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        )}
                                         <div className="relative group">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-3 top-3 text-muted-foreground group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

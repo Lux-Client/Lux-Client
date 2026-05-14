@@ -1166,6 +1166,7 @@ function setCachedMergedInstances(instances) {
 
 function invalidateMergedInstancesCache() {
     mergedInstancesCacheAt = 0;
+    mergedInstancesCache = [];
 }
 
 async function refreshMergedInstancesCache(force = false) {
@@ -2327,6 +2328,7 @@ module.exports = (ipcMain, win) => {
                             const updatedConfig = await fs.readJson(configPath);
                             updatedConfig.status = success ? 'ready' : 'error';
                             await fs.writeJson(configPath, updatedConfig, { spaces: 4 });
+                            invalidateMergedInstancesCache();
                         } catch (e) { console.error('Failed to update instance config:', e); }
 
                         if (win && win.webContents) {
@@ -3992,6 +3994,7 @@ module.exports = (ipcMain, win) => {
 
                 config.status = 'installing';
                 await fs.writeJson(configPath, config, { spaces: 4 });
+                invalidateMergedInstancesCache();
                 win.webContents.send('instance:status', { instanceName, status: 'installing' });
                 if (type === 'hard') {
                     console.log(`[Instance Reinstall] Performing HARD reinstall (wiping directory)`);

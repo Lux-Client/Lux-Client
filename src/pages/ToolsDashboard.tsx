@@ -32,7 +32,7 @@ import {
 const DEFAULT_STEVE = {
     name: 'Steve',
     model: 'classic',
-    url: '/assets/skins/steve-classic.png',
+    url: './assets/skins/steve-classic.png',
 };
 
 const LOADER_OPTIONS = ['Vanilla', 'Fabric', 'Forge', 'NeoForge', 'Quilt'];

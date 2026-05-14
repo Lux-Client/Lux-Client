@@ -16,15 +16,15 @@ import { Separator } from '../components/ui/separator';
 import { Plus, Trash2, Pencil, Pause, Play, X, AlertTriangle, Loader2, User, Crown, ImageUp, Link2, Download, Paintbrush, Eraser, Save, PaintBucket, Hand, Settings2 } from 'lucide-react';
 
 const DEFAULT_SKINS = [
-    { name: 'Steve', defaultModel: 'classic', urls: { classic: '/assets/skins/steve-classic.png', slim: '/assets/skins/steve-slim.png' } },
-    { name: 'Alex', defaultModel: 'slim', urls: { classic: '/assets/skins/alex-classic.png', slim: '/assets/skins/alex-slim.png' } },
-    { name: 'Ari', defaultModel: 'slim', urls: { classic: '/assets/skins/ari-classic.png', slim: '/assets/skins/ari-slim.png' } },
-    { name: 'Efe', defaultModel: 'classic', urls: { classic: '/assets/skins/efe-classic.png', slim: '/assets/skins/efe-slim.png' } },
-    { name: 'Kai', defaultModel: 'slim', urls: { classic: '/assets/skins/kai-classic.png', slim: '/assets/skins/kai-slim.png' } },
-    { name: 'Makena', defaultModel: 'slim', urls: { classic: '/assets/skins/makena-classic.png', slim: '/assets/skins/makena-slim.png' } },
-    { name: 'Noor', defaultModel: 'classic', urls: { classic: '/assets/skins/noor-classic.png', slim: '/assets/skins/noor-slim.png' } },
-    { name: 'Sunny', defaultModel: 'classic', urls: { classic: '/assets/skins/sunny-classic.png', slim: '/assets/skins/sunny-slim.png' } },
-    { name: 'Zuri', defaultModel: 'classic', urls: { classic: '/assets/skins/zuri-classic.png', slim: '/assets/skins/zuri-slim.png' } }
+    { name: 'Steve', defaultModel: 'classic', urls: { classic: './assets/skins/steve-classic.png', slim: './assets/skins/steve-slim.png' } },
+    { name: 'Alex', defaultModel: 'slim', urls: { classic: './assets/skins/alex-classic.png', slim: './assets/skins/alex-slim.png' } },
+    { name: 'Ari', defaultModel: 'slim', urls: { classic: './assets/skins/ari-classic.png', slim: './assets/skins/ari-slim.png' } },
+    { name: 'Efe', defaultModel: 'classic', urls: { classic: './assets/skins/efe-classic.png', slim: './assets/skins/efe-slim.png' } },
+    { name: 'Kai', defaultModel: 'slim', urls: { classic: './assets/skins/kai-classic.png', slim: './assets/skins/kai-slim.png' } },
+    { name: 'Makena', defaultModel: 'slim', urls: { classic: './assets/skins/makena-classic.png', slim: './assets/skins/makena-slim.png' } },
+    { name: 'Noor', defaultModel: 'classic', urls: { classic: './assets/skins/noor-classic.png', slim: './assets/skins/noor-slim.png' } },
+    { name: 'Sunny', defaultModel: 'classic', urls: { classic: './assets/skins/sunny-classic.png', slim: './assets/skins/sunny-slim.png' } },
+    { name: 'Zuri', defaultModel: 'classic', urls: { classic: './assets/skins/zuri-classic.png', slim: './assets/skins/zuri-slim.png' } }
 ];
 
 const getDefaultSkinUrl = (skin, model) => skin.urls[model === 'slim' ? 'slim' : 'classic'];

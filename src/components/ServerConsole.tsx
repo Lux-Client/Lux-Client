@@ -49,6 +49,7 @@ function ServerConsole({ server, onClose, onServerAction }) {
                         if (status === 'running') setIsConnected(true);
                         else if (status === 'stopped') setIsConnected(false);
                         if (status === 'starting') {
+                            setLogs([]);
                             addLog('system', 'Server is starting...');
                         } else if (status === 'stopping') {
                             addLog('system', 'Server is stopping...');
