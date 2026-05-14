@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import ExtensionSlot from '../components/Extensions/ExtensionSlot';
 import { isFeatureEnabled } from '../config/featureFlags';
 import ToggleBox from '../components/ToggleBox';
 import ConfirmationModal from '../components/ConfirmationModal';
-import PageHeader from '../components/layout/PageHeader';
-import PageContent from '../components/layout/PageContent';
 import { getDefaultStartupValueForMode, getStartupModes, normalizeStartupPageValue } from '../lib/startupPages';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -16,11 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Separator } from '../components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Slider } from '../components/ui/slider';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { getSourceTags } from '../utils/sourceTags';
 import { filterInstancesForMode } from '../utils/instanceTypes';
 import {
+    ArrowLeft,
     Save,
     FolderOpen,
     Download,
@@ -47,7 +48,7 @@ import {
     Compass
 } from 'lucide-react';
 
-function Settings({ mode = 'default', onRestartGuide = null }) {
+function Settings({ mode = 'default', onRestartGuide = null, onClose = null, disableClose = false }) {
     const { t, i18n } = useTranslation();
     const { addNotification } = useNotification();
     const isClientSettings = mode === 'client';
@@ -155,6 +156,8 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
     const [downloadedFilePath, setDownloadedFilePath] = useState(null);
     const [testVersion, setTestVersion] = useState('');
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+    const [activeSettingsTab, setActiveSettingsTab] = useState('experience');
+    const [settingsSearch, setSettingsSearch] = useState('');
     const hasUnsavedChanges = useRef(false);
     const initialSettingsRef = useRef(null);
 
@@ -453,6 +456,16 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
         addNotification(t('guide.restart_guide_started', 'Guide started.'), 'info');
     };
 
+    const handleOverlayClose = () => {
+        if (disableClose) {
+            return;
+        }
+        if (typeof onClose !== 'function') {
+            return;
+        }
+        onClose();
+    };
+
     const addAutoInstallMod = async () => {
         const input = autoInstallModsInput.trim();
         if (!input) {
@@ -614,17 +627,164 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
         }
     };
 
-    return (
-        <div className="flex flex-col h-full">
-            <PageHeader title={t('settings.title')} description={t('settings.desc')}>
-                <Button onClick={handleManualSave} size="sm">
-                    <Save />
-                    <span>{t('settings.save_btn')}</span>
-                </Button>
-            </PageHeader>
+    const settingsSections = React.useMemo(() => ([
+        {
+            id: 'experience',
+            label: t('settings.system.experience', 'Experience'),
+            description: t('settings.system.experience_desc', 'Navigation, language, guides and UI behavior.'),
+            icon: Settings2,
+            keywords: ['language', 'startup', 'guide', 'animation', 'ui', 'experience']
+        },
+        {
+            id: 'minecraft',
+            label: t('settings.system.minecraft', 'Minecraft'),
+            description: t('settings.system.minecraft_desc', 'Java, memory, resolution and instance handling.'),
+            icon: Cpu,
+            keywords: ['java', 'ram', 'memory', 'resolution', 'instance', 'runtime']
+        },
+        {
+            id: 'automation',
+            label: t('settings.system.automation', 'Automation'),
+            description: t('settings.system.automation_desc', 'Integrations, auto-install and compatibility toggles.'),
+            icon: Zap,
+            keywords: ['discord', 'logs', 'mods', 'compatibility', 'optimization', 'automation']
+        },
+        {
+            id: 'cloud',
+            label: t('settings.system.cloud', 'Cloud & Updates'),
+            description: t('settings.system.cloud_desc', 'Backups, sync providers and software updates.'),
+            icon: Cloud,
+            keywords: ['backup', 'cloud', 'update', 'release', 'version', 'sync']
+        },
+        {
+            id: 'advanced',
+            label: t('settings.system.advanced', 'Maintenance'),
+            description: t('settings.system.advanced_desc', 'Reset and recovery tools for troubleshooting.'),
+            icon: FlaskConical,
+            keywords: ['advanced', 'maintenance', 'reset', 'troubleshooting', 'factory']
+        }
+    ]), [t]);
 
-            <PageContent>
-                <div className="space-y-5">
+    const filteredSettingsSections = React.useMemo(() => {
+        const query = settingsSearch.trim().toLowerCase();
+        if (!query) {
+            return settingsSections;
+        }
+
+        return settingsSections.filter((section) => (
+            section.label.toLowerCase().includes(query) ||
+            section.description.toLowerCase().includes(query) ||
+            section.keywords.some((keyword) => keyword.includes(query))
+        ));
+    }, [settingsSearch, settingsSections]);
+
+    useEffect(() => {
+        if (filteredSettingsSections.length === 0) {
+            return;
+        }
+
+        if (!filteredSettingsSections.some((section) => section.id === activeSettingsTab)) {
+            setActiveSettingsTab(filteredSettingsSections[0].id);
+        }
+    }, [activeSettingsTab, filteredSettingsSections]);
+
+    useEffect(() => {
+        if (disableClose || typeof onClose !== 'function') {
+            return;
+        }
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [disableClose, onClose]);
+
+    const settingsOverlay = (
+        <div className="fixed inset-0 z-[120]">
+            <button
+                type="button"
+                aria-label={t('common.close', 'Close')}
+                onClick={disableClose ? undefined : handleOverlayClose}
+                className="absolute inset-0 bg-background/65 backdrop-blur-2xl"
+            />
+            <div
+                className="relative z-10 flex h-full w-full items-center justify-center p-4 md:p-8"
+                onClick={handleOverlayClose}
+            >
+                <div
+                    data-guide-id="settings-overlay"
+                    className="flex h-[74vh] min-h-[560px] w-full max-w-[1100px] overflow-hidden rounded-2xl border border-primary/20 bg-background shadow-[0_24px_80px_rgba(0,0,0,0.5)] ring-1 ring-primary/10"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="flex h-full w-full min-h-0">
+                    <aside className="flex w-[320px] shrink-0 flex-col gap-4 border-r border-border/80 bg-card/50 p-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleOverlayClose}
+                            disabled={disableClose}
+                            className="h-9 w-full justify-start gap-2 border-border/80 bg-background/70"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            <span>{t('common.back', 'Back')}</span>
+                        </Button>
+                        <div>
+                            <p className="text-sm font-semibold text-foreground">{t('settings.system.title', 'Settings Categories')}</p>
+                            <p className="text-xs text-muted-foreground">{t('settings.system.subtitle', 'Wähle links eine Kategorie, rechts siehst du die passenden Einträge.')}</p>
+                        </div>
+                        <Input
+                            value={settingsSearch}
+                            onChange={(event) => setSettingsSearch(event.target.value)}
+                            placeholder={t('settings.system.search_placeholder', 'Kategorien suchen (z.B. Java, Cloud, Update...)')}
+                            className="h-9"
+                        />
+
+                        {filteredSettingsSections.length > 0 ? (
+                            <TabsList className="h-auto w-full flex-col items-stretch gap-2 bg-transparent p-0">
+                                {filteredSettingsSections.map((section) => {
+                                    const Icon = section.icon;
+                                    return (
+                                        <TabsTrigger
+                                            key={section.id}
+                                            value={section.id}
+                                            className="h-auto w-full justify-start rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-left data-[state=active]:border-primary/40 data-[state=active]:bg-primary/10"
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                                                <p className="text-sm font-medium text-foreground">{section.label}</p>
+                                            </div>
+                                        </TabsTrigger>
+                                    );
+                                })}
+                            </TabsList>
+                        ) : (
+                            <p className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+                                {t('settings.system.search_empty', 'Keine Kategorie gefunden.')}
+                            </p>
+                        )}
+
+                    </aside>
+
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                        <div className="flex items-start justify-between gap-4 border-b border-border/80 px-5 py-4">
+                            <div className="min-w-0">
+                                <h1 className="text-lg font-semibold tracking-tight text-foreground">{t('settings.title')}</h1>
+                                <p className="text-sm text-muted-foreground">{t('settings.desc')}</p>
+                            </div>
+                            <Button onClick={handleManualSave} size="sm" className="shrink-0">
+                                <Save />
+                                <span>{t('settings.save_btn')}</span>
+                            </Button>
+                        </div>
+
+                        <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-5 custom-scrollbar">
+                            <TabsContent value="experience" className="mt-0 space-y-5">
 
                     <Card>
                         <CardHeader>
@@ -780,6 +940,7 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                             </div>
                         </CardContent>
                     </Card>
+                        </TabsContent>
 
                     <Dialog open={showJavaModal} onOpenChange={setShowJavaModal}>
                         <DialogContent>
@@ -808,6 +969,7 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                         </DialogContent>
                     </Dialog>
 
+                    <TabsContent value="minecraft" className="mt-0 space-y-5">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -1139,7 +1301,9 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                             </CardContent>
                         </Card>
                     )}
+                    </TabsContent>
 
+                    <TabsContent value="automation" className="mt-0 space-y-5">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -1341,7 +1505,9 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                             />
                         </CardContent>
                     </Card>
+                    </TabsContent>
 
+                    <TabsContent value="cloud" className="mt-0 space-y-5">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -1527,7 +1693,9 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                             )}
                         </CardContent>
                     </Card>
+                    </TabsContent>
 
+                    <TabsContent value="advanced" className="mt-0 space-y-5">
                     <Card>
                         <Accordion type="single" collapsible>
                             <AccordionItem value="advanced" className="border-b-0">
@@ -1650,9 +1818,13 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                             </AccordionItem>
                         </Accordion>
                     </Card>
-                    <ExtensionSlot name="settings.bottom" className="mt-4" />
+                    </TabsContent>
+                            <ExtensionSlot name="settings.bottom" className="mt-4" />
+                        </div>
+                    </div>
+                </Tabs>
                 </div>
-            </PageContent >
+            </div>
 
             {showSoftResetModal && (
                 <ConfirmationModal
@@ -1706,8 +1878,14 @@ function Settings({ mode = 'default', onRestartGuide = null }) {
                     />
                 )
             }
-        </div >
+        </div>
     );
+
+    if (typeof document === 'undefined') {
+        return settingsOverlay;
+    }
+
+    return createPortal(settingsOverlay, document.body);
 }
 
 export default Settings;

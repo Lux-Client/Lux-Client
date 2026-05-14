@@ -441,13 +441,13 @@ function App() {
     };
 
     useEffect(() => {
-        if (currentMode === 'launcher' && currentView !== 'instance-details') {
+        if (currentMode === 'launcher' && currentView !== 'instance-details' && currentView !== 'settings') {
             lastClientView.current = resolveModeView('launcher', currentView, startupPageOptions);
         }
-        if (currentMode === 'server' && currentView !== 'server-details') {
+        if (currentMode === 'server' && currentView !== 'server-details' && currentView !== 'server-settings') {
             lastServerView.current = resolveModeView('server', currentView, startupPageOptions);
         }
-        if (currentMode === 'tools') {
+        if (currentMode === 'tools' && currentView !== 'settings') {
             lastToolsView.current = resolveModeView('tools', currentView, startupPageOptions);
         }
     }, [currentView, currentMode, startupPageOptions]);
@@ -929,6 +929,37 @@ function App() {
         setCurrentView(viewId);
     };
 
+    const handleCloseSettingsOverlay = async () => {
+        let configuredStartPage = typeof appSettings?.startPage === 'string'
+            ? appSettings.startPage
+            : 'launcher:dashboard';
+        try {
+            const settingsRes = await window.electronAPI?.getSettings?.();
+            if (settingsRes?.success && typeof settingsRes.settings?.startPage === 'string') {
+                configuredStartPage = settingsRes.settings.startPage;
+                setAppSettings((prev) => ({ ...prev, startPage: configuredStartPage }));
+            }
+        } catch (e) { }
+
+        const destination = resolveStartupDestination(configuredStartPage, startupPageOptions);
+        const fallbackViewByMode: Record<string, string> = {
+            launcher: 'dashboard',
+            server: 'server-dashboard',
+            client: 'open-client',
+            tools: 'tools-dashboard'
+        };
+        const safeView = destination.view === 'settings'
+            ? resolveModeView(destination.mode, fallbackViewByMode[destination.mode] || 'dashboard', startupPageOptions)
+            : destination.view;
+
+        setSelectedInstance(null);
+        setSelectedServer(null);
+        startTransition(() => {
+            setCurrentMode(destination.mode);
+            setCurrentView(safeView);
+        });
+    };
+
     const handleHistoryNavigate = (direction: 'back' | 'forward') => {
         const nextIndex = direction === 'back'
             ? navigationIndexRef.current - 1
@@ -1096,7 +1127,7 @@ function App() {
             }
 
             if (currentView === 'settings') {
-                return <Settings mode="launcher" onRestartGuide={() => handleRestartGuide('launcher')} />;
+                return <Settings mode="launcher" onRestartGuide={() => handleRestartGuide('launcher')} onClose={handleCloseSettingsOverlay} disableClose={isGuideRunning} />;
             }
 
             if (currentView === 'instance-details' && selectedInstance) {
@@ -1164,7 +1195,7 @@ function App() {
             }
 
             if (currentView === 'settings') {
-                return <Settings mode="client" onRestartGuide={() => handleRestartGuide('client')} />;
+                return <Settings mode="client" onRestartGuide={() => handleRestartGuide('client')} onClose={handleCloseSettingsOverlay} disableClose={isGuideRunning} />;
             }
         }
 
@@ -1174,7 +1205,7 @@ function App() {
             }
 
             if (currentView === 'settings') {
-                return <Settings mode="tools" onRestartGuide={() => handleRestartGuide('tools')} />;
+                return <Settings mode="tools" onRestartGuide={() => handleRestartGuide('tools')} onClose={handleCloseSettingsOverlay} disableClose={isGuideRunning} />;
             }
         }
 

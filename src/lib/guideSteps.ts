@@ -18,7 +18,7 @@ const GUIDE_STEP_MAP: Record<GuideMode, GuideStep[]> = {
         { keyBase: 'launcher_step6', view: 'skins', selector: '[data-guide-id="sidebar-nav-skins"]', requiresSkinsAccess: true },
         { keyBase: 'launcher_step7', view: 'extensions', selector: '[data-guide-id="sidebar-nav-extensions"]' },
         { keyBase: 'launcher_step8', view: 'styling', selector: '[data-guide-id="sidebar-nav-styling"]' },
-        { keyBase: 'launcher_step9', view: 'settings', selector: '[data-guide-id="sidebar-nav-settings"]' }
+        { keyBase: 'launcher_step9', view: 'settings', selector: '[data-guide-id="settings-overlay"]' }
     ],
     server: [
         { keyBase: 'server_step1' },
@@ -36,7 +36,7 @@ const GUIDE_STEP_MAP: Record<GuideMode, GuideStep[]> = {
         { keyBase: 'client_step3', view: 'skins', selector: '[data-guide-id="sidebar-nav-skins"]', requiresSkinsAccess: true },
         { keyBase: 'client_step4', view: 'extensions', selector: '[data-guide-id="sidebar-nav-extensions"]' },
         { keyBase: 'client_step5', view: 'styling', selector: '[data-guide-id="sidebar-nav-styling"]' },
-        { keyBase: 'client_step6', view: 'settings', selector: '[data-guide-id="sidebar-nav-settings"]' }
+        { keyBase: 'client_step6', view: 'settings', selector: '[data-guide-id="settings-overlay"]' }
     ],
     tools: [
         { keyBase: 'tools_step1' },
