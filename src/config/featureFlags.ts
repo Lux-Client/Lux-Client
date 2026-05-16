@@ -4,7 +4,7 @@ export const isDeveloperMode = isElectronDevMode || import.meta.env.DEV;
 
 export const featureFlags = Object.freeze({
     settingsDevelopmentTesting: isDeveloperMode,
-    openClientPage: true
+    openClientPage: false
 });
 
 export function isFeatureEnabled(flagName) {

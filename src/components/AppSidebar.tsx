@@ -76,21 +76,12 @@ function AppSidebar({
     { id: 'styling', label: t('common.styling', 'Styling'), icon: Palette },
   ];
 
-  const clientItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
-    { id: 'open-client', label: t('common.client', 'Client'), icon: Play },
-    { id: 'skins', label: t('common.skins', 'Skins'), icon: User, disabled: isGuest },
-    { id: 'extensions', label: t('common.extensions', 'Extensions'), icon: Puzzle },
-    { id: 'styling', label: t('common.styling', 'Styling'), icon: Palette },
-    { id: 'mods', label: t('instance_details.content.mods', 'Mods'), icon: List },
-  ];
-
   const toolsItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
     { id: 'tools-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutGrid },
   ];
 
   const getMenuItems = () => {
     if (currentMode === 'server') return serverItems;
-    if (currentMode === 'client' && isFeatureEnabled('openClientPage')) return clientItems;
     if (currentMode === 'tools') return toolsItems;
     return launcherItems;
   };

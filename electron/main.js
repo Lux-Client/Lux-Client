@@ -315,9 +315,10 @@ async function checkAndLaunch() {
     const maxRetries = 3;
 
     const performCheck = async () => {
-        if (isDeveloperMode) {
-            console.log('[Main] Skipping update check in dev mode.');
-            sendSplashStatus({ status: 'Searching for updates', detail: 'Developer mode active. Skipping remote update check.' });
+        const isOffline = process.argv.includes('--offline');
+        if (isDeveloperMode || isOffline) {
+            console.log(`[Main] Skipping update check (dev=${isDeveloperMode}, offline=${isOffline}).`);
+            sendSplashStatus({ status: 'Searching for updates', detail: isOffline ? 'Offline mode active. Skipping update check.' : 'Developer mode active. Skipping remote update check.' });
             setTimeout(() => {
                 sendSplashStatus({ status: 'Starting', detail: 'Initializing launcher window...' });
                 setTimeout(launchMain, 1500);

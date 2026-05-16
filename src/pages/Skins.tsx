@@ -1881,6 +1881,14 @@ function Skins({ onLogout, onProfileUpdate }) {
     const [isImportingSkin, setIsImportingSkin] = useState(false);
     const [webglError, setWebglError] = useState(false);
 
+    // Skin editor specific state
+    const [isStartEditorModalOpen, setIsStartEditorModalOpen] = useState(false);
+    const [isSelectingTexture, setIsSelectingTexture] = useState(false);
+    const [editorSessionKey, setEditorSessionKey] = useState(0);
+    const [editorSkinSrc, setEditorSkinSrc] = useState<string>(DEFAULT_SKINS[0].urls.classic);
+    const [editorSkinModel, setEditorSkinModel] = useState<string>('classic');
+    const [editorSelectedName, setEditorSelectedName] = useState<string>('New Skin');
+
     const isWebGLSupported = () => {
         try {
             const canvas = document.createElement('canvas');
@@ -2271,6 +2279,39 @@ function Skins({ onLogout, onProfileUpdate }) {
         addNotification(t('skins.advanced_saved'), 'success');
     };
 
+    const toFileUrl = (filePath: string) => `file:///${`${filePath}`.replace(/\\/g, '/')}`;
+
+    const openFreshEditorSession = (src: string, model: string, name: string) => {
+        setEditorSkinSrc(src);
+        setEditorSkinModel(model);
+        setEditorSelectedName(name);
+        setEditorSessionKey((k) => k + 1);
+        setShowAdvancedEditor(true);
+        setIsStartEditorModalOpen(false);
+    };
+
+    const handleStartWithSteve = () =>
+        openFreshEditorSession(DEFAULT_SKINS[0].urls.classic, 'classic', 'Steve');
+
+    const handleStartWithTexture = async () => {
+        try {
+            setIsSelectingTexture(true);
+            const result = await window.electronAPI.openFileDialog({
+                properties: ['openFile'],
+                filters: [{ name: 'PNG Image', extensions: ['png'] }],
+            });
+            if (result?.canceled || !result?.filePaths?.length) return;
+            const p = `${result.filePaths[0]}`;
+            const base = p.replace(/\\/g, '/').split('/').pop() || '';
+            const skinName = base.replace(/\.[^.]+$/, '') || t('common.skins', 'Skin');
+            openFreshEditorSession(toFileUrl(p), 'classic', skinName);
+        } catch (err: any) {
+            addNotification(t('skins.import_failed', { error: err?.message || 'Unknown' }), 'error');
+        } finally {
+            setIsSelectingTexture(false);
+        }
+    };
+
     return (
         <TooltipProvider>
             <div className="h-full flex overflow-hidden relative">
@@ -2383,11 +2424,39 @@ function Skins({ onLogout, onProfileUpdate }) {
                     </DialogContent>
                 </Dialog>
 
+                <Dialog open={isStartEditorModalOpen} onOpenChange={setIsStartEditorModalOpen}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>{t('tools.start_skin_editor', 'Start Skin Editor')}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                                {t('tools.skin_editor_start_desc', 'Choose how you want to start: with Steve or with your own texture file.')}
+                            </p>
+                            <Button type="button" variant="default" className="w-full justify-start" onClick={handleStartWithSteve}>
+                                <Plus className="h-4 w-4" />
+                                {t('tools.start_with_steve', 'Start with Steve')}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="w-full justify-start"
+                                onClick={handleStartWithTexture}
+                                disabled={isSelectingTexture}
+                            >
+                                {isSelectingTexture ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                                {t('tools.start_with_texture', 'Start with Texture')}
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
                 <AdvancedSkinEditorDialog
+                    key={editorSessionKey}
                     open={showAdvancedEditor}
                     onOpenChange={setShowAdvancedEditor}
-                    skinSrc={getPendingPreviewUrl()}
-                    model={variant}
+                    skinSrc={showAdvancedEditor && editorSkinSrc !== DEFAULT_SKINS[0].urls.classic ? editorSkinSrc : getPendingPreviewUrl()}
+                    model={showAdvancedEditor && editorSkinModel !== 'classic' ? editorSkinModel : variant}
                     onSave={handleSaveAdvancedSkin}
                     onNotify={addNotification}
                     t={t}
@@ -2499,7 +2568,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                             }}
                         >
                             <Paintbrush className="h-4 w-4" />
-                            {t('skins.advanced')}
+                            {t('skins.edit_skin', 'Edit Skin')}
                         </Button>
                     </div>
                 </div>
@@ -2534,6 +2603,16 @@ function Skins({ onLogout, onProfileUpdate }) {
                                         <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                                     </div>
                                     <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{t('skins.add_skin')}</span>
+                                </div>
+
+                                <div
+                                    onClick={() => setIsStartEditorModalOpen(true)}
+                                    className="aspect-[3/4] bg-muted/50 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/15 transition-colors">
+                                        <Paintbrush className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    </div>
+                                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{t('tools.open_skin_editor', 'Create Skin')}</span>
                                 </div>
 
                                 {localSkins.map((skin) => (
