@@ -3,7 +3,7 @@
   "name": "lux",
   "description": "Lux Client",
   "author": "Lux Team <lux@pluginhub.de>",
-  "version": "1.6.22",
+  "version": "1.6.23",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
@@ -26,7 +26,9 @@
     "protocols": [
       {
         "name": "Lux Client",
-        "schemes": ["luxclient"]
+        "schemes": [
+          "luxclient"
+        ]
       }
     ],
     "publish": [
@@ -90,7 +92,9 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "Lux Client",
-            "CFBundleURLSchemes": ["luxclient"]
+            "CFBundleURLSchemes": [
+              "luxclient"
+            ]
           }
         ]
       },
