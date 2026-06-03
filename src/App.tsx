@@ -1370,7 +1370,7 @@ function App() {
                     <div className="w-full max-w-lg rounded-3xl border border-border bg-popover/95 px-8 py-8 text-center shadow-2xl">
                         <p className="text-2xl font-semibold tracking-tight text-foreground">Under Maintenance</p>
                         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                            The application is currently under maintenance.
+                            This tab is currently unavailable, it will be added in a future update.
                         </p>
                         <button
                             type="button"
