@@ -101,7 +101,10 @@
         "saving": "Saving...",
         "select": "Select",
         "unknown_error": "An unknown error occurred",
-        "useful_tools": "Useful Tools"
+        "useful_tools": "Useful Tools",
+        "maintenance_title": "Under Maintenance",
+        "maintenance_description": "This tab is currently unavailable, it will be added in a future update.",
+        "maintenance_back_home": "Back to homepage"
     },
     "client_page": {
         "title": "Open Client",
@@ -704,6 +707,12 @@
             "restart_msg": "A restart is required to apply this change.",
             "restart_title": "Restart Required",
             "title": "Compatibility Settings"
+        },
+        "system": {
+            "title": "Einstellungen",
+            "subtitle": "Wähl links e Kategorie, rechts siehsch d passende Einträge.",
+            "search_placeholder": "Kategorien sueche (z.B. Java, Cloud, Update...)",
+            "search_empty": "Keine Kategorie gfunde."
         }
     },
     "extensions": {
