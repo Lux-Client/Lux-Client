@@ -34,9 +34,21 @@ module.exports = (ipcMain, mainWindow) => {
                 if (platform === 'win32') {
                     asset = assets.find(a => a.name.endsWith('.exe'));
                 } else if (platform === 'linux') {
-                    asset = assets.find(a => a.name.endsWith('.AppImage')) ||
-                        assets.find(a => a.name.endsWith('.deb')) ||
-                        assets.find(a => a.name.endsWith('.rpm'));
+                    if (process.env.APPIMAGE) {
+                        asset = assets.find(a => a.name.endsWith('.AppImage'));
+                    } else if (fs.existsSync('/usr/bin/apt') || fs.existsSync('/usr/bin/apt-get') || fs.existsSync('/usr/bin/dpkg')) {
+                        asset = assets.find(a => a.name.endsWith('.deb')) ||
+                            assets.find(a => a.name.endsWith('.AppImage')) ||
+                            assets.find(a => a.name.endsWith('.rpm'));
+                    } else if (fs.existsSync('/usr/bin/rpm') || fs.existsSync('/usr/bin/dnf')) {
+                        asset = assets.find(a => a.name.endsWith('.rpm')) ||
+                            assets.find(a => a.name.endsWith('.AppImage')) ||
+                            assets.find(a => a.name.endsWith('.deb'));
+                    } else {
+                        asset = assets.find(a => a.name.endsWith('.AppImage')) ||
+                            assets.find(a => a.name.endsWith('.deb')) ||
+                            assets.find(a => a.name.endsWith('.rpm'));
+                    }
                 } else if (platform === 'darwin') {
                     asset = assets.find(a => a.name.endsWith('.zip')) ||
                         assets.find(a => a.name.endsWith('.dmg'));

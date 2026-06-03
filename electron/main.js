@@ -371,10 +371,14 @@ async function checkAndLaunch() {
                 } else if (platform === 'linux') {
                     if (process.env.APPIMAGE) {
                         asset = release.assets.find(a => a.name.endsWith('.AppImage'));
-                    } else if (fs.existsSync('/usr/bin/apt-get') || fs.existsSync('/usr/bin/dpkg')) {
-                        asset = release.assets.find(a => a.name.endsWith('.deb'));
+                    } else if (fs.existsSync('/usr/bin/apt') || fs.existsSync('/usr/bin/apt-get') || fs.existsSync('/usr/bin/dpkg')) {
+                        asset = release.assets.find(a => a.name.endsWith('.deb')) ||
+                            release.assets.find(a => a.name.endsWith('.AppImage')) ||
+                            release.assets.find(a => a.name.endsWith('.rpm'));
                     } else if (fs.existsSync('/usr/bin/rpm') || fs.existsSync('/usr/bin/dnf')) {
-                        asset = release.assets.find(a => a.name.endsWith('.rpm'));
+                        asset = release.assets.find(a => a.name.endsWith('.rpm')) ||
+                            release.assets.find(a => a.name.endsWith('.AppImage')) ||
+                            release.assets.find(a => a.name.endsWith('.deb'));
                     } else {
                         asset = release.assets.find(a => a.name.endsWith('.AppImage') || a.name.endsWith('.deb') || a.name.endsWith('.rpm'));
                     }
