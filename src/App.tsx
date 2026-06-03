@@ -16,6 +16,8 @@ const ServerLibrary = React.lazy(() => import('./pages/ServerLibrary'));
 const InstanceDetails = React.lazy(() => import('./pages/InstanceDetails'));
 
 const ToolsDashboard = React.lazy(() => import('./pages/ToolsDashboard'));
+const Client = React.lazy(() => import('./pages/Client'));
+const ClientMods = React.lazy(() => import('./pages/ClientMods'));
 const Extensions = React.lazy(() => import('./pages/Extensions'));
 const Login = React.lazy(() => import('./pages/Login'));
 const News = React.lazy(() => import('./pages/News'));
@@ -287,6 +289,7 @@ function App() {
     const [isInstallingRequiredJava, setIsInstallingRequiredJava] = useState(false);
     const [requiredJavaInstallError, setRequiredJavaInstallError] = useState('');
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+    const isMaintenanceMode = currentMode === 'client';
     const [guidePromptMode, setGuidePromptMode] = useState<GuideMode | null>(null);
     const [guidePromptDoNotShowAgain, setGuidePromptDoNotShowAgain] = useState(false);
     const [guideMode, setGuideMode] = useState<GuideMode>('launcher');
@@ -1184,6 +1187,32 @@ function App() {
             }
         }
 
+        if (currentMode === 'client') {
+            if (currentView === 'open-client') {
+                return <Client />;
+            }
+
+            if (currentView === 'mods') {
+                return <ClientMods />;
+            }
+
+            if (currentView === 'skins' && !isGuest) {
+                return <Skins onLogout={handleLogout} onProfileUpdate={setUserProfile} />;
+            }
+
+            if (currentView === 'extensions') {
+                return <Extensions />;
+            }
+
+            if (currentView === 'styling') {
+                return <Styling />;
+            }
+
+            if (currentView === 'settings') {
+                return <Settings mode="client" onRestartGuide={() => handleRestartGuide('client')} onClose={handleCloseSettingsOverlay} disableClose={isGuideRunning} />;
+            }
+        }
+
         if (currentView === 'news') {
             return <News />;
         }
@@ -1335,6 +1364,29 @@ function App() {
             )}
 
             <ExtensionSlot name="app.overlay" className="absolute inset-0 pointer-events-none z-[9999] *:pointer-events-auto" />
+
+            {isMaintenanceMode && (
+                <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-background/90 backdrop-blur-xl px-4 py-6">
+                    <div className="w-full max-w-lg rounded-3xl border border-border bg-popover/95 px-8 py-8 text-center shadow-2xl">
+                        <p className="text-2xl font-semibold tracking-tight text-foreground">Under Maintenance</p>
+                        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                            The application is currently under maintenance.
+                        </p>
+                        <button
+                            type="button"
+                            className="mt-6 inline-flex items-center justify-center rounded-full border border-border bg-primary px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-primary/90"
+                            onClick={() => {
+                                setCurrentMode('launcher');
+                                setCurrentView('dashboard');
+                                setSelectedInstance(null);
+                                setSelectedServer(null);
+                            }}
+                        >
+                            Back to homepage
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <CrashModal
                 isOpen={isCrashModalOpen}

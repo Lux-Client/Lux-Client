@@ -142,16 +142,16 @@ function TopBar({
       label: t('common.server', 'Server'),
       icon: Server
     },
-    ...(isClientPageEnabled ? [{
-      value: 'client',
-      label: t('common.client', 'Client'),
-      icon: Gamepad2
-    }] : []),
     {
       value: 'tools',
       label: t('common.useful_tools', 'Useful Tools'),
       icon: Wrench
-    }
+    },
+    ...(isClientPageEnabled ? [{
+      value: 'client',
+      label: t('common.client', 'Client'),
+      icon: Gamepad2
+    }] : [])
   ];
 
   return (
