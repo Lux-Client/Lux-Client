@@ -170,7 +170,7 @@ const SkinPreview3D = ({ src, className, model = 'classic' }: { src?: any; class
                 canvas: canvasRef.current,
                 width: 300,
                 height: 400,
-                skin: src
+                skin: null
             });
             viewer.model = model?.toLowerCase() === 'slim' ? 'slim' : 'classic';
             viewer.zoom = 0.85;
@@ -179,6 +179,19 @@ const SkinPreview3D = ({ src, className, model = 'classic' }: { src?: any; class
             viewer.renderer.setPixelRatio(window.devicePixelRatio);
 
             viewer.playerObject.rotation.y = 0.5;
+
+            resetViewerUnpackState(viewer);
+            viewer.loadSkin(src, { model: model?.toLowerCase() === 'slim' ? 'slim' : 'classic' }).then(() => {
+                resetViewerUnpackState(viewer);
+                ["head", "body", "rightArm", "leftArm", "rightLeg", "leftLeg"].forEach(part => {
+                    if (viewer.playerObject.skin[part]) {
+                        viewer.playerObject.skin[part].innerLayer.visible = true;
+                        viewer.playerObject.skin[part].outerLayer.visible = true;
+                    }
+                });
+            }).catch(err => {
+                console.error("Failed to load skin in SkinPreview3D", err);
+            });
 
             const resizeObserver = new ResizeObserver(entries => {
                 for (let entry of entries) {
@@ -2008,7 +2021,7 @@ function Skins({ onLogout, onProfileUpdate }) {
         return pendingSkin?.url || pendingSkin?.data || currentSkinUrl;
     };
 
-    const loadProfileAndSkin = async () => {
+    const loadProfileAndSkin = async (oldSkinUrl = null, appliedSkin = null, appliedVariant = null) => {
         setIsLoading(true);
         try {
             if (!window.electronAPI?.getProfile) return;
@@ -2030,16 +2043,36 @@ function Skins({ onLogout, onProfileUpdate }) {
                         const skinUrl = res.url;
                         const model = (res.variant || 'classic').toLowerCase();
 
-                        profile.skinUrl = skinUrl;
-                        setCurrentSkinUrl(skinUrl);
-                        setVariant(model);
-                        setOriginalVariant(model);
-                        setCapes(res.capes || []);
+                        // If Mojang API hasn't updated yet and still returns the old URL,
+                        // keep showing the newly applied skin in the preview.
+                        if (oldSkinUrl && skinUrl === oldSkinUrl && appliedSkin) {
+                            console.log("Mojang API has not updated yet, keeping the applied skin preview.");
+                            profile.skinUrl = oldSkinUrl;
+                            setCapes(res.capes || []);
 
-                        const activeCape = (res.capes || []).find(c => c.state === 'ACTIVE');
-                        setActiveCapeId(activeCape ? activeCape.id : null);
+                            const activeCape = (res.capes || []).find(c => c.state === 'ACTIVE');
+                            setActiveCapeId(activeCape ? activeCape.id : null);
 
-                        await updateSkinInViewer(skinUrl, model);
+                            const appliedPreviewUrl = appliedSkin.type === 'default'
+                                ? getDefaultSkinUrl(appliedSkin, appliedVariant)
+                                : (appliedSkin.url || appliedSkin.data || oldSkinUrl);
+
+                            setCurrentSkinUrl(appliedPreviewUrl);
+                            setVariant(appliedVariant);
+                            setOriginalVariant(appliedVariant);
+                            await updateSkinInViewer(appliedPreviewUrl, appliedVariant);
+                        } else {
+                            profile.skinUrl = skinUrl;
+                            setCurrentSkinUrl(skinUrl);
+                            setVariant(model);
+                            setOriginalVariant(model);
+                            setCapes(res.capes || []);
+
+                            const activeCape = (res.capes || []).find(c => c.state === 'ACTIVE');
+                            setActiveCapeId(activeCape ? activeCape.id : null);
+
+                            await updateSkinInViewer(skinUrl, model);
+                        }
                     } else {
                         if (res.authError) {
                             addNotification(t('login.failed') + '. ' + t('common.restart_app'), 'error');
@@ -2178,6 +2211,9 @@ function Skins({ onLogout, onProfileUpdate }) {
 
         setIsLoading(true);
         let res;
+        const oldSkinUrl = currentSkinUrl;
+        const appliedSkin = pendingSkin || (currentSkinUrl ? { type: 'current', url: currentSkinUrl } : null);
+        const appliedVariant = variant;
 
         try {
             if (pendingSkin) {
@@ -2196,7 +2232,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                 addNotification(t('skins.upload_success'), 'success');
                 setPendingSkin(null);
 
-                loadProfileAndSkin();
+                await loadProfileAndSkin(oldSkinUrl, appliedSkin, appliedVariant);
             } else {
                 addNotification(t('skins.upload_failed', { error: res.error }), 'error');
             }
