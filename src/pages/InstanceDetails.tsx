@@ -11,6 +11,42 @@ import BackupManagerModal from '../components/BackupManagerModal';
 import InstanceFileBrowser from '../components/InstanceFileBrowser';
 import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
+
+function RetryableListIcon({ src, className, fallback }) {
+    const [attempt, setAttempt] = useState(0);
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        setAttempt(0);
+        setFailed(false);
+    }, [src]);
+
+    if (!src) return fallback;
+
+    const maxRetries = 3;
+    const retryDelayMs = 650;
+    const cacheBustedSrc = attempt === 0
+        ? src
+        : `${src}${src.includes('?') ? '&' : '?'}_retry=${attempt}`;
+
+    return failed ? fallback : (
+        <img
+            src={cacheBustedSrc}
+            alt=""
+            className={className}
+            onError={() => {
+                if (attempt < maxRetries) {
+                    window.setTimeout(() => {
+                        setAttempt((prev) => prev + 1);
+                    }, retryDelayMs);
+                    return;
+                }
+                setFailed(true);
+            }}
+        />
+    );
+}
+
 function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate, isGuest }) {
     const { t } = useTranslation();
     const isVanilla = !instance.loader || instance.loader.toLowerCase() === 'vanilla';
@@ -1402,11 +1438,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         .map(mod => (
                                             <div key={mod.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
                                                 <div className="flex items-center gap-4">
-                                                    {mod.icon ? (
-                                                        <img src={mod.icon} alt="" className="w-10 h-10 rounded-lg bg-background object-cover" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-xs border border-border">{t('instance.jar_label')}</div>
-                                                    )}
+                                                    <RetryableListIcon
+                                                        src={mod.icon}
+                                                        className="w-10 h-10 rounded-lg bg-background object-cover"
+                                                        fallback={<div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-xs border border-border">{t('instance.jar_label')}</div>}
+                                                    />
                                                     <div>
                                                         <div className={`font-bold ${!mod.enabled ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{mod.title || mod.name}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
@@ -1483,11 +1519,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         .map(pack => (
                                             <div key={pack.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
                                                 <div className="flex items-center gap-4">
-                                                    {pack.icon ? (
-                                                        <img src={pack.icon} alt="" className="w-10 h-10 rounded-lg bg-background object-cover" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-[10px] border border-border text-center leading-tight whitespace-pre-line">{t('instance.res_pack_label')}</div>
-                                                    )}
+                                                    <RetryableListIcon
+                                                        src={pack.icon}
+                                                        className="w-10 h-10 rounded-lg bg-background object-cover"
+                                                        fallback={<div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-[10px] border border-border text-center leading-tight whitespace-pre-line">{t('instance.res_pack_label')}</div>}
+                                                    />
                                                     <div>
                                                         <div className="font-bold text-foreground">{pack.title}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
@@ -1560,11 +1596,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         .map(shader => (
                                             <div key={shader.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
                                                 <div className="flex items-center gap-4">
-                                                    {shader.icon ? (
-                                                        <img src={shader.icon} alt="" className="w-10 h-10 rounded-lg bg-background object-cover" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-mono text-[10px] border border-primary/20 text-center leading-tight whitespace-pre-line">{t('instance.shader_label')}</div>
-                                                    )}
+                                                    <RetryableListIcon
+                                                        src={shader.icon}
+                                                        className="w-10 h-10 rounded-lg bg-background object-cover"
+                                                        fallback={<div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-mono text-[10px] border border-primary/20 text-center leading-tight whitespace-pre-line">{t('instance.shader_label')}</div>}
+                                                    />
                                                     <div>
                                                         <div className="font-bold text-foreground">{shader.title}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">

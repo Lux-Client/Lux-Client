@@ -608,6 +608,14 @@ async function resolveAssetIndexMetadata(runtimeRoot, version, versionId) {
 }
 
 const VERSION_MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
+const ASSET_INDEX_DOWNLOAD_RETRY_COOLDOWN_MS = 5 * 60 * 1000;
+const EXTERNAL_PROFILE_LOOKUP_CACHE_TTL_MS = 60 * 1000;
+const assetIndexDownloadFailureCache = new Map();
+const externalProfileLookupCache = {
+    rootsKey: '',
+    cachedAt: 0,
+    byName: new Map()
+};
 
 async function fetchAssetIndexMetadataFromVersionManifest(version) {
     const targetVersion = String(version || '').trim();
@@ -661,17 +669,89 @@ async function ensureAssetIndexFile(runtimeRoot, assetRoot, version, versionId, 
         return assetIndexId;
     }
 
+    const retryCacheKey = `${indexPath.toLowerCase()}|${indexUrl}`;
+    const now = Date.now();
+    const lastFailure = assetIndexDownloadFailureCache.get(retryCacheKey) || 0;
+    if (lastFailure > 0 && (now - lastFailure) < ASSET_INDEX_DOWNLOAD_RETRY_COOLDOWN_MS) {
+        const remaining = Math.ceil((ASSET_INDEX_DOWNLOAD_RETRY_COOLDOWN_MS - (now - lastFailure)) / 1000);
+        console.warn(`[Launcher] Skipping asset index download retry for ${assetIndexId}.json (${remaining}s cooldown remaining).`);
+        return assetIndexId;
+    }
+
     try {
         await fs.ensureDir(path.dirname(indexPath));
         const axios = require('axios');
         const response = await axios.get(indexUrl, { responseType: 'arraybuffer', timeout: 30000 });
         await fs.writeFile(indexPath, response.data);
+        assetIndexDownloadFailureCache.delete(retryCacheKey);
         console.log(`[Launcher] Downloaded missing asset index ${assetIndexId}.json`);
     } catch (error) {
+        assetIndexDownloadFailureCache.set(retryCacheKey, Date.now());
         console.warn(`[Launcher] Failed to download missing asset index ${assetIndexId}.json: ${error.message}`);
     }
 
     return assetIndexId;
+}
+
+function buildExternalRootsCacheKey(roots) {
+    return roots
+        .map((root) => `${String(root?.source || '').trim().toLowerCase()}::${path.resolve(String(root?.baseDir || '').trim()).toLowerCase()}`)
+        .sort()
+        .join('|');
+}
+
+function appendExternalProfileAlias(map, alias, profile) {
+    const normalized = normalizeExternalRequestName(alias);
+    if (!normalized || map.has(normalized)) return;
+    map.set(normalized, profile);
+}
+
+async function buildExternalProfileLookupIndex(roots) {
+    const index = new Map();
+
+    for (const root of roots) {
+        const source = String(root?.source || '').trim().toLowerCase();
+        const baseDir = String(root?.baseDir || '').trim();
+        if (!source || !baseDir || !await fs.pathExists(baseDir)) continue;
+
+        let entries = [];
+        try {
+            entries = await fs.readdir(baseDir, { withFileTypes: true });
+        } catch (_) {
+            continue;
+        }
+
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+
+            const dirName = String(entry.name || '').trim();
+            if (!dirName) continue;
+
+            const sourceLabel = source === 'curseforge' ? 'curseforge' : 'modrinth';
+            const profile = { source, baseDir, path: path.join(baseDir, dirName) };
+
+            appendExternalProfileAlias(index, dirName, profile);
+            appendExternalProfileAlias(index, `${dirName} (${sourceLabel})`, profile);
+
+            const profileFile = source === 'modrinth'
+                ? path.join(baseDir, dirName, 'profile.json')
+                : path.join(baseDir, dirName, 'minecraftinstance.json');
+
+            if (!await fs.pathExists(profileFile)) continue;
+
+            try {
+                const parsed = await fs.readJson(profileFile);
+                const profileName = String(parsed?.name || '').trim();
+                if (!profileName) continue;
+                appendExternalProfileAlias(index, profileName, profile);
+                appendExternalProfileAlias(index, `${profileName} (${sourceLabel})`, profile);
+            } catch (_) {
+                // Ignore malformed profile metadata.
+            }
+        }
+    }
+
+    return index;
 }
 
 async function readExternalLaunchDetails(externalProfile) {
@@ -997,75 +1077,20 @@ async function findExternalProfileByDisplayName(instanceName) {
     const stripped = normalizeExternalRequestName(stripExternalSuffix(instanceName));
 
     const roots = getExternalLauncherRoots();
-    for (const root of roots) {
-        const { source, baseDir } = root;
-        if (!await fs.pathExists(baseDir)) continue;
+    const rootsKey = buildExternalRootsCacheKey(roots);
+    const now = Date.now();
+    const cacheExpired = (now - externalProfileLookupCache.cachedAt) > EXTERNAL_PROFILE_LOOKUP_CACHE_TTL_MS;
+    const needsRebuild = externalProfileLookupCache.rootsKey !== rootsKey || cacheExpired || externalProfileLookupCache.byName.size === 0;
 
-        let entries = [];
-        try {
-            entries = await fs.readdir(baseDir, { withFileTypes: true });
-        } catch (_) {
-            continue;
-        }
-
-        for (const entry of entries) {
-            if (!entry.isDirectory()) continue;
-
-            const dirName = String(entry.name || '').trim();
-            const dirLower = dirName.toLowerCase();
-            const sourceLabel = source === 'curseforge' ? 'curseforge' : 'modrinth';
-
-            if (
-                dirLower === requested ||
-                dirLower === stripped ||
-                `${dirLower} (${sourceLabel})` === requested
-            ) {
-                return { source, baseDir, path: path.join(baseDir, dirName) };
-            }
-
-            if (source === 'modrinth') {
-                const profilePath = path.join(baseDir, dirName, 'profile.json');
-                if (!await fs.pathExists(profilePath)) continue;
-
-                try {
-                    const profile = await fs.readJson(profilePath);
-                    const profileName = String(profile?.name || '').trim().toLowerCase();
-                    if (!profileName) continue;
-
-                    if (
-                        profileName === requested ||
-                        profileName === stripped ||
-                        `${profileName} (${sourceLabel})` === requested
-                    ) {
-                        return { source, baseDir, path: path.join(baseDir, dirName) };
-                    }
-                } catch (_) {
-                }
-            }
-
-            if (source === 'curseforge') {
-                const profilePath = path.join(baseDir, dirName, 'minecraftinstance.json');
-                if (!await fs.pathExists(profilePath)) continue;
-
-                try {
-                    const profile = await fs.readJson(profilePath);
-                    const profileName = String(profile?.name || '').trim().toLowerCase();
-                    if (!profileName) continue;
-
-                    if (
-                        profileName === requested ||
-                        profileName === stripped ||
-                        `${profileName} (${sourceLabel})` === requested
-                    ) {
-                        return { source, baseDir, path: path.join(baseDir, dirName) };
-                    }
-                } catch (_) {
-                }
-            }
-        }
+    if (needsRebuild) {
+        externalProfileLookupCache.byName = await buildExternalProfileLookupIndex(roots);
+        externalProfileLookupCache.cachedAt = now;
+        externalProfileLookupCache.rootsKey = rootsKey;
     }
 
-    return null;
+    return externalProfileLookupCache.byName.get(requested)
+        || externalProfileLookupCache.byName.get(stripped)
+        || null;
 }
 
 const CRASH_LOG_MAX_CHARS = 400000;
@@ -1321,6 +1346,8 @@ module.exports = (ipcMain, mainWindow) => {
     const launchWorkers = new Map();
     const launchLogBuffers = new Map();
     const launchLogFlushTimers = new Map();
+    const javaDetectionCache = new Map();
+    const JAVA_DETECTION_CACHE_TTL_MS = 5 * 60 * 1000;
 
     const clearLaunchLogBuffer = (instanceName) => {
         const timer = launchLogFlushTimers.get(instanceName);
@@ -1828,20 +1855,40 @@ Add-Type -TypeDefinition $code -Language CSharp
             const execAsync = promisify(exec);
 
             const detectJavaVersion = async (javaBinaryPath) => {
+                const normalizedPath = String(javaBinaryPath || '').trim();
+                const cacheKey = process.platform === 'win32' ? normalizedPath.toLowerCase() : normalizedPath;
+                const cached = javaDetectionCache.get(cacheKey);
+                const now = Date.now();
+
+                if (cached && (now - cached.cachedAt) <= JAVA_DETECTION_CACHE_TTL_MS) {
+                    return { ...cached.result };
+                }
+
                 try {
-                    const { stderr, stdout } = await execAsync(`"${javaBinaryPath}" -version`, { encoding: 'utf8' });
+                    const { stderr, stdout } = await execAsync(`"${javaBinaryPath}" -version`, {
+                        encoding: 'utf8',
+                        windowsHide: true,
+                        timeout: 12000,
+                        maxBuffer: 256 * 1024
+                    });
                     const output = stderr || stdout || '';
                     const versionMatch = output.match(/(?:version|jd[kj])\s*["']?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
                     if (!versionMatch) {
-                        return { success: false, version: 0, output };
+                        const result = { success: false, version: 0, output };
+                        javaDetectionCache.set(cacheKey, { cachedAt: now, result });
+                        return { ...result };
                     }
 
                     let major = Number.parseInt(versionMatch[1], 10);
                     if (major === 1) major = Number.parseInt(versionMatch[2] || '8', 10);
 
-                    return { success: true, version: major, output };
+                    const result = { success: true, version: major, output };
+                    javaDetectionCache.set(cacheKey, { cachedAt: now, result });
+                    return { ...result };
                 } catch (e) {
-                    return { success: false, version: 0, output: '', error: e.message };
+                    const result = { success: false, version: 0, output: '', error: e.message };
+                    javaDetectionCache.set(cacheKey, { cachedAt: now, result });
+                    return { ...result };
                 }
             };
 

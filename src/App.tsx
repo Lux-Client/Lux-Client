@@ -311,6 +311,18 @@ function App() {
         appSettingsRef.current = appSettings;
     }, [appSettings]);
 
+    useEffect(() => {
+        const warmupTimer = window.setTimeout(() => {
+            import('./pages/Settings').catch(() => {
+                // Ignore prefetch failures; lazy loading still handles normal navigation.
+            });
+        }, 1200);
+
+        return () => {
+            window.clearTimeout(warmupTimer);
+        };
+    }, []);
+
     const syncNavigationButtons = React.useCallback(() => {
         const canGoBack = navigationIndexRef.current > 0;
         const canGoForward = navigationIndexRef.current < navigationHistoryRef.current.length - 1;

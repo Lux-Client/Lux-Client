@@ -160,6 +160,10 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
     const [settingsSearch, setSettingsSearch] = useState('');
     const hasUnsavedChanges = useRef(false);
     const initialSettingsRef = useRef(null);
+    const loadedTabDataRef = useRef({
+        minecraft: false,
+        cloud: false
+    });
 
     useEffect(() => {
         const cleanupJava = window.electronAPI.onJavaProgress((data) => {
@@ -197,8 +201,6 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
 
     useEffect(() => {
         loadSettings();
-        loadInstances();
-        loadJavaRuntimes();
         const handleBeforeUnload = (e) => {
             if (hasUnsavedChanges.current) {
                 saveSettings(settings);
@@ -215,6 +217,19 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             }
         };
     }, []);
+
+    useEffect(() => {
+        if (activeSettingsTab === 'minecraft' && !loadedTabDataRef.current.minecraft) {
+            loadedTabDataRef.current.minecraft = true;
+            loadInstances();
+            loadJavaRuntimes();
+        }
+
+        if (activeSettingsTab === 'cloud' && !loadedTabDataRef.current.cloud) {
+            loadedTabDataRef.current.cloud = true;
+            loadCloudStatus();
+        }
+    }, [activeSettingsTab]);
 
     const loadInstances = async () => {
         const list = await window.electronAPI.getInstances();
@@ -270,7 +285,6 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             setSettings(loadedSettings);
             initialSettingsRef.current = loadedSettings;
         }
-        loadCloudStatus();
     };
 
     const loadCloudStatus = async () => {
