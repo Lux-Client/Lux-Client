@@ -101,7 +101,10 @@
         "saving": "Saving...",
         "select": "Select",
         "unknown_error": "An unknown error occurred",
-        "useful_tools": "Useful Tools"
+        "useful_tools": "Useful Tools",
+        "maintenance_title": "Under Maintenance",
+        "maintenance_description": "This tab is currently unavailable, it will be added in a future update.",
+        "maintenance_back_home": "Back to homepage"
     },
     "client_page": {
         "title": "Open Client",
@@ -716,6 +719,12 @@
             "restart_msg": "A restart is required to apply this change.",
             "restart_title": "Restart Required",
             "title": "Compatibility Settings"
+        },
+        "system": {
+            "title": "Settings Categories",
+            "subtitle": "Select a category on the left to view matching entries on the right.",
+            "search_placeholder": "Search categories (e.g. Java, Cloud, Update...)",
+            "search_empty": "No categories found."
         }
     },
     "extensions": {

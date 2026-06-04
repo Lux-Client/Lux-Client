@@ -9,7 +9,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import {
   Home, LayoutGrid, Search, User, Puzzle, Palette, Settings,
-  LogOut, Plus, Play, ChevronLeft, ChevronRight, List
+  LogOut, Plus, Play, ChevronLeft, ChevronRight, List, Gamepad2
 } from 'lucide-react';
 
 function AppSidebar({
@@ -77,11 +77,12 @@ function AppSidebar({
   ];
 
   const clientItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
-    { id: 'open-client', label: t('common.client', 'Client'), icon: Play },
+    { id: 'open-client', label: t('common.client', 'Client'), icon: Gamepad2 },
     { id: 'skins', label: t('common.skins', 'Skins'), icon: User, disabled: isGuest },
     { id: 'extensions', label: t('common.extensions', 'Extensions'), icon: Puzzle },
     { id: 'styling', label: t('common.styling', 'Styling'), icon: Palette },
     { id: 'mods', label: t('instance_details.content.mods', 'Mods'), icon: List },
+    { id: 'settings', label: t('common.settings', 'Settings'), icon: Settings }
   ];
 
   const toolsItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
@@ -90,7 +91,7 @@ function AppSidebar({
 
   const getMenuItems = () => {
     if (currentMode === 'server') return serverItems;
-    if (currentMode === 'client' && isFeatureEnabled('openClientPage')) return clientItems;
+    if (currentMode === 'client') return clientItems;
     if (currentMode === 'tools') return toolsItems;
     return launcherItems;
   };

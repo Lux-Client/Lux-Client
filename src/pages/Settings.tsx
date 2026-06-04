@@ -736,12 +736,12 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                         </Button>
                         <div>
                             <p className="text-sm font-semibold text-foreground">{t('settings.system.title', 'Settings Categories')}</p>
-                            <p className="text-xs text-muted-foreground">{t('settings.system.subtitle', 'Wähle links eine Kategorie, rechts siehst du die passenden Einträge.')}</p>
+                            <p className="text-xs text-muted-foreground">{t('settings.system.subtitle', 'Select a category on the left to view matching entries on the right.')}</p>
                         </div>
                         <Input
                             value={settingsSearch}
                             onChange={(event) => setSettingsSearch(event.target.value)}
-                            placeholder={t('settings.system.search_placeholder', 'Kategorien suchen (z.B. Java, Cloud, Update...)')}
+                            placeholder={t('settings.system.search_placeholder', 'Search categories (e.g. Java, Cloud, Update...)')}
                             className="h-9"
                         />
 
@@ -765,7 +765,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                             </TabsList>
                         ) : (
                             <p className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-                                {t('settings.system.search_empty', 'Keine Kategorie gefunden.')}
+                                {t('settings.system.search_empty', 'No categories found.')}
                             </p>
                         )}
 

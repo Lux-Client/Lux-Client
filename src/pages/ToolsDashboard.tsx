@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { AdvancedSkinEditorDialog } from './Skins';
+
 import { filterInstancesForMode } from '../utils/instanceTypes';
 import {
     Wrench,
@@ -146,15 +146,6 @@ function ToolsDashboard() {
     const [instances, setInstances] = useState<any[]>([]);
     const [selectedInstance, setSelectedInstance] = useState('');
 
-    // skin editor
-    const [isStartEditorModalOpen, setIsStartEditorModalOpen] = useState(false);
-    const [showAdvancedEditor, setShowAdvancedEditor] = useState(false);
-    const [isSelectingTexture, setIsSelectingTexture] = useState(false);
-    const [editorSessionKey, setEditorSessionKey] = useState(0);
-    const [skinSrc, setSkinSrc] = useState<string>(DEFAULT_STEVE.url);
-    const [skinModel, setSkinModel] = useState<string>(DEFAULT_STEVE.model);
-    const [selectedName, setSelectedName] = useState<string>(DEFAULT_STEVE.name);
-
     // compatibility checker
     const [targetLoader, setTargetLoader] = useState('Fabric');
     const [targetVersion, setTargetVersion] = useState('');
@@ -233,55 +224,6 @@ function ToolsDashboard() {
         return () => { compatLogUnsubRef.current?.(); };
     }, []);
 
-
-    const previewLabel = useMemo(() => {
-        if (selectedName === DEFAULT_STEVE.name) return t('tools.steve_default', 'Default: Steve');
-        return t('tools.loaded_skin', 'Loaded: {{name}}', { name: selectedName });
-    }, [selectedName, t]);
-
-    const openFreshEditorSession = (src: string, model: string, name: string) => {
-        setSkinSrc(src);
-        setSkinModel(model);
-        setSelectedName(name);
-        setEditorSessionKey((k) => k + 1);
-        setShowAdvancedEditor(true);
-        setIsStartEditorModalOpen(false);
-    };
-
-    const handleStartWithSteve = () =>
-        openFreshEditorSession(DEFAULT_STEVE.url, DEFAULT_STEVE.model, DEFAULT_STEVE.name);
-
-    const handleStartWithTexture = async () => {
-        try {
-            setIsSelectingTexture(true);
-            const result = await window.electronAPI.openFileDialog({
-                properties: ['openFile'],
-                filters: [{ name: 'PNG Image', extensions: ['png'] }],
-            });
-            if (result?.canceled || !result?.filePaths?.length) return;
-            const p = `${result.filePaths[0]}`;
-            const base = p.replace(/\\/g, '/').split('/').pop() || '';
-            const skinName = base.replace(/\.[^.]+$/, '') || t('common.skins', 'Skin');
-            openFreshEditorSession(toFileUrl(p), 'classic', skinName);
-        } catch (err: any) {
-            addNotification(t('skins.import_failed', { error: err?.message || 'Unknown' }), 'error');
-        } finally {
-            setIsSelectingTexture(false);
-        }
-    };
-
-    const handleSaveAdvancedSkin = async (skin: any, nextModel?: string, savedToPath?: string) => {
-        setSkinModel(nextModel || skin.model || 'classic');
-        setSelectedName(skin.name || t('skins.edited_skin', 'Edited Skin'));
-        if (skin.data) setSkinSrc(skin.data);
-        else if (skin.path) setSkinSrc(toFileUrl(skin.path));
-        addNotification(
-            savedToPath
-                ? `${t('tools.skin_editor_saved', 'Saved from skin editor.')} ${savedToPath}`
-                : t('tools.skin_editor_saved', 'Saved from skin editor.'),
-            'success'
-        );
-    };
 
 
     const handleScanCompatibility = async () => {
@@ -464,48 +406,6 @@ function ToolsDashboard() {
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            {/* dialogs */}
-            <Dialog open={isStartEditorModalOpen} onOpenChange={setIsStartEditorModalOpen}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{t('tools.start_skin_editor', 'Start Skin Editor')}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                        <p className="text-sm text-muted-foreground">
-                            {t('tools.skin_editor_start_desc', 'Choose how you want to start: with Steve or with your own texture file.')}
-                        </p>
-                        <Button type="button" variant="default" className="w-full justify-start" onClick={handleStartWithSteve}>
-                            <RotateCcw className="h-4 w-4" />
-                            {t('tools.start_with_steve', 'Start with Steve')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            className="w-full justify-start"
-                            onClick={handleStartWithTexture}
-                            disabled={isSelectingTexture}
-                        >
-                            {isSelectingTexture ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-                            {t('tools.start_with_texture', 'Start with Texture')}
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <AdvancedSkinEditorDialog
-                key={editorSessionKey}
-                open={showAdvancedEditor}
-                onOpenChange={setShowAdvancedEditor}
-                skinSrc={skinSrc}
-                model={skinModel}
-                onSave={handleSaveAdvancedSkin}
-                onNotify={addNotification}
-                t={t}
-                title={t('tools.skin_editor_title', 'Skin Editor')}
-                debugContext="tools-dashboard"
-                saveBehavior="prompt-location"
-            />
-
             {/* page header */}
             <div className="border-b border-border px-6 py-5 shrink-0">
                 <div className="flex items-center gap-3">
@@ -524,44 +424,6 @@ function ToolsDashboard() {
             </div>
 
             <PageContent>
-                {/* ── Section 1: Skin Editor (no instance required) ──────────── */}
-                <section className="rounded-2xl border border-border bg-card/50 p-5 mb-6">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <Cuboid className="h-4 w-4 text-primary" />
-                                <h2 className="text-base font-semibold text-foreground">
-                                    {t('tools.skin_editor_title', 'Skin Editor')}
-                                </h2>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                {t(
-                                    'tools.skin_editor_desc',
-                                    'Create and edit Minecraft skins — no instance needed. Start with Steve or load your own texture.'
-                                )}
-                            </p>
-                        </div>
-                        <Badge variant="secondary" className="shrink-0">{t('common.new', 'New')}</Badge>
-                    </div>
-                    <div className="rounded-xl border border-border/70 bg-muted/20 p-4 flex items-center justify-between gap-4">
-                        <div>
-                            <p className="text-sm font-medium text-foreground">{previewLabel}</p>
-                            <p className="text-xs text-muted-foreground">
-                                {t('tools.current_model', 'Model: {{model}}', {
-                                    model: skinModel === 'slim' ? t('skins.slim', 'Slim') : t('skins.wide', 'Wide'),
-                                })}
-                            </p>
-                            <Button className="mt-3" onClick={() => setIsStartEditorModalOpen(true)}>
-                                <Wrench className="h-4 w-4" />
-                                {t('tools.open_skin_editor', 'Open Skin Editor')}
-                            </Button>
-                        </div>
-                        <div className="h-20 w-20 rounded-lg border border-border bg-muted/40 overflow-hidden flex items-center justify-center shrink-0">
-                            <img src={skinSrc} alt={selectedName} className="w-full h-full object-contain image-pixelated" />
-                        </div>
-                    </div>
-                </section>
-
                 {/* ── Section 2: Instance selector ───────────────────────────── */}
                 <section className="rounded-xl border border-primary/30 bg-primary/5 px-5 py-4 mb-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary/80 mb-2">

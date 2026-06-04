@@ -14,9 +14,10 @@ const ServerSettings = React.lazy(() => import('./pages/ServerSettings'));
 const ServerSearch = React.lazy(() => import('./pages/ServerSearch'));
 const ServerLibrary = React.lazy(() => import('./pages/ServerLibrary'));
 const InstanceDetails = React.lazy(() => import('./pages/InstanceDetails'));
+
+const ToolsDashboard = React.lazy(() => import('./pages/ToolsDashboard'));
 const Client = React.lazy(() => import('./pages/Client'));
 const ClientMods = React.lazy(() => import('./pages/ClientMods'));
-const ToolsDashboard = React.lazy(() => import('./pages/ToolsDashboard'));
 const Extensions = React.lazy(() => import('./pages/Extensions'));
 const Login = React.lazy(() => import('./pages/Login'));
 const News = React.lazy(() => import('./pages/News'));
@@ -1173,9 +1174,25 @@ function App() {
             }
         }
 
-        if (currentMode === 'client' && isFeatureEnabled('openClientPage')) {
+
+
+        if (currentMode === 'tools') {
+            if (currentView === 'tools-dashboard') {
+                return <ToolsDashboard />;
+            }
+
+            if (currentView === 'settings') {
+                return <Settings mode="tools" onRestartGuide={() => handleRestartGuide('tools')} onClose={handleCloseSettingsOverlay} disableClose={isGuideRunning} />;
+            }
+        }
+
+        if (currentMode === 'client') {
             if (currentView === 'open-client') {
                 return <Client />;
+            }
+
+            if (currentView === 'mods') {
+                return <ClientMods />;
             }
 
             if (currentView === 'skins' && !isGuest) {
@@ -1190,22 +1207,8 @@ function App() {
                 return <Styling />;
             }
 
-            if (currentView === 'mods') {
-                return <ClientMods />;
-            }
-
             if (currentView === 'settings') {
                 return <Settings mode="client" onRestartGuide={() => handleRestartGuide('client')} onClose={handleCloseSettingsOverlay} disableClose={isGuideRunning} />;
-            }
-        }
-
-        if (currentMode === 'tools') {
-            if (currentView === 'tools-dashboard') {
-                return <ToolsDashboard />;
-            }
-
-            if (currentView === 'settings') {
-                return <Settings mode="tools" onRestartGuide={() => handleRestartGuide('tools')} onClose={handleCloseSettingsOverlay} disableClose={isGuideRunning} />;
             }
         }
 
