@@ -13,6 +13,7 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
     const [views, setViews] = useState<Record<string, any[]>>({});
     const [hooks, setHooks] = useState<Record<string, any[]>>({});
     const [injectedStyles, setInjectedStyles] = useState<Record<string, HTMLStyleElement>>({});
+    const [registeredTabs, setRegisteredTabs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { addNotification } = useNotification();
     const createExtensionApi = (extensionId, localPath) => {
@@ -101,6 +102,32 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
                 }
             },
 
+            navigation: {
+                navigate: (view: string) => {
+                    window.dispatchEvent(new CustomEvent('lux:navigate', { detail: { view } }));
+                },
+                registerTab: (config: {
+                    id?: string;
+                    label: string;
+                    icon?: any;
+                    modes?: string[];
+                    component?: any;
+                }) => {
+                    const tabId = `plugin-tab:${extensionId}:${config.id || generateId()}`;
+                    setRegisteredTabs(prev => {
+                        const filtered = prev.filter(t => t.tabId !== tabId);
+                        return [...filtered, { ...config, tabId, extensionId }];
+                    });
+                    if (config.component) {
+                        setViews(prev => ({
+                            ...prev,
+                            [tabId]: [{ id: generateId(), extensionId, component: config.component, api }]
+                        }));
+                    }
+                    return tabId;
+                }
+            },
+
             meta: { id: extensionId, localPath: localPath }
         };
         return api;
@@ -144,6 +171,7 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
             }
             return next;
         });
+        setRegisteredTabs(prev => prev.filter(t => t.extensionId !== extensionId));
         setActiveExtensions(prev => {
             const next = { ...prev };
             delete next[extensionId];
@@ -294,6 +322,7 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
             installedExtensions,
             activeExtensions,
             loading,
+            registeredTabs,
             getViews,
             loadExtension,
             unloadExtension,

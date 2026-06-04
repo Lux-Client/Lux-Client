@@ -21,6 +21,7 @@ const ClientMods = React.lazy(() => import('./pages/ClientMods'));
 const Extensions = React.lazy(() => import('./pages/Extensions'));
 const Login = React.lazy(() => import('./pages/Login'));
 const News = React.lazy(() => import('./pages/News'));
+const Status = React.lazy(() => import('./pages/Status'));
 import { isFeatureEnabled } from './config/featureFlags';
 
 import AppSidebar from './components/AppSidebar';
@@ -44,6 +45,14 @@ import { getGuideDefaultView, getGuideSteps, GuideMode, isGuideMode } from './li
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import i18n, { languageMap } from './i18n';
+
+function PluginTabContent({ viewId }: { viewId: string }) {
+    return (
+        <div className="h-full overflow-y-auto custom-scrollbar p-6">
+            <ExtensionSlot name={viewId} className="h-full" />
+        </div>
+    );
+}
 
 const DEFAULT_PAGE_ANIMATION_PRESET = 'cinematic';
 const PAGE_TRANSITION_PRESETS = {
@@ -310,6 +319,17 @@ function App() {
     useEffect(() => {
         appSettingsRef.current = appSettings;
     }, [appSettings]);
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const { view } = (e as CustomEvent).detail;
+            if (typeof view === 'string') {
+                startTransition(() => setCurrentView(view));
+            }
+        };
+        window.addEventListener('lux:navigate', handler);
+        return () => window.removeEventListener('lux:navigate', handler);
+    }, []);
 
     useEffect(() => {
         const warmupTimer = window.setTimeout(() => {
@@ -1150,6 +1170,10 @@ function App() {
             if (currentView === 'extensions') {
                 return <Extensions />;
             }
+
+            if (currentView === 'status') {
+                return <Status />;
+            }
         }
 
         if (currentMode === 'server') {
@@ -1226,6 +1250,10 @@ function App() {
 
         if (currentView === 'news') {
             return <News />;
+        }
+
+        if (currentView.startsWith('plugin-tab:')) {
+            return <PluginTabContent viewId={currentView} />;
         }
 
         return null;

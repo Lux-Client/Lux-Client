@@ -623,7 +623,8 @@ function createWindow() {
         { name: 'cloudBackup', path: '../backend/handlers/cloudBackup' },
         { name: 'java', path: '../backend/handlers/java' },
         { name: 'external', path: '../backend/handlers/external' },
-        { name: 'updater', path: '../backend/handlers/updater' }
+        { name: 'updater', path: '../backend/handlers/updater' },
+        { name: 'status', path: '../backend/handlers/status' }
     ];
 
     for (const h of handlers) {
@@ -632,7 +633,7 @@ function createWindow() {
         try {
             const handler = require(h.path);
             if (typeof handler === 'function') {
-                if (h.name === 'data' || h.name === 'settings' || h.name === 'java' || h.name === 'external') {
+                if (h.name === 'data' || h.name === 'settings' || h.name === 'java' || h.name === 'external' || h.name === 'status') {
                     handler(ipcMain);
                 } else {
                     handler(ipcMain, mainWindow);

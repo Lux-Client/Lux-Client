@@ -9,8 +9,9 @@ import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import {
   Home, LayoutGrid, Search, User, Puzzle, Palette, Settings,
-  LogOut, Plus, Play, ChevronLeft, ChevronRight, List, Gamepad2
+  LogOut, Plus, Play, ChevronLeft, ChevronRight, List, Gamepad2, Activity
 } from 'lucide-react';
+import { useExtensions } from '../context/ExtensionContext';
 
 function AppSidebar({
   currentView,
@@ -24,6 +25,7 @@ function AppSidebar({
   setIsCollapsed
 }) {
   const { t } = useTranslation();
+  const { registeredTabs } = useExtensions() || { registeredTabs: [] };
   const [recentInstances, setRecentInstances] = useState([]);
   const [settings, setSettings] = useState({ showDisabledFeatures: false });
 
@@ -228,6 +230,12 @@ function AppSidebar({
               {menuItems.map((item) => (
                 <NavItem key={item.id} item={item} />
               ))}
+              {registeredTabs && registeredTabs.filter(tab => !tab.modes || tab.modes.includes(currentMode)).map(tab => (
+                <NavItem
+                  key={tab.tabId}
+                  item={{ id: tab.tabId, label: tab.label, icon: tab.icon || Puzzle }}
+                />
+              ))}
             </div>
 
             {currentMode === 'launcher' && recentInstances.length > 0 && (
@@ -309,6 +317,13 @@ function AppSidebar({
         </ScrollArea>
 
         <div className={cn('mt-auto flex flex-col gap-1.5 py-3', layoutTransitionClass, isCollapsed ? 'px-2.5' : 'px-3')}>
+          <div className={cn('pb-1', layoutTransitionClass, isCollapsed ? 'px-0' : 'px-1')}>
+            <Separator className="opacity-50" />
+          </div>
+          <NavItem item={{ id: 'status', label: t('common.status', 'Status'), icon: Activity }} />
+          <div className={cn('py-1', layoutTransitionClass, isCollapsed ? 'px-0' : 'px-1')}>
+            <Separator className="opacity-50" />
+          </div>
           <NavItem item={{ id: settingsView, label: t('common.settings'), icon: Settings }} />
           <FooterAction icon={LogOut} label={t('common.logout')} onClick={onLogout} destructive />
           <ExtensionSlot name="sidebar.bottom" className="flex flex-col gap-1" />

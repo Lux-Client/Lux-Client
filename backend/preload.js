@@ -378,7 +378,9 @@ const electronAPI = {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('launcher:crash-report', subscription);
         return () => ipcRenderer.removeListener('launcher:crash-report', subscription);
-    }
+    },
+
+    checkServiceStatus: () => ipcRenderer.invoke('status:check'),
 };
 try {
     contextBridge.exposeInMainWorld('electronAPI', electronAPI);
