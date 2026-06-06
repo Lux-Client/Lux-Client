@@ -1,4 +1,4 @@
-const { Auth, mcTokenToolbox } = require('msmc');
+const { Auth, mcTokenToolbox, wrapError } = require('msmc');
 const Store = require('electron-store');
 const store = new Store();
 const { getUserProfile, setUserProfile, getAccounts, setAccounts } = require('../utils/secureProfileStore');
@@ -71,6 +71,9 @@ module.exports = (ipcMain, mainWindow) => {
             });
 
             const token = await xboxManager.getMinecraft();
+            if (typeof token.isDemo === 'function' && token.isDemo()) {
+                throw new Error('This Microsoft account does not own Minecraft Java Edition. Please sign in with an account that owns it.');
+            }
 
             let name, uuid, accessToken;
 
@@ -122,7 +125,19 @@ module.exports = (ipcMain, mainWindow) => {
             return { success: true, profile: { name, uuid } };
         } catch (e) {
             console.error("Login failed:", e);
-            return { success: false, error: e.message };
+            let errorMessage = 'Login failed';
+            if (e instanceof Error && e.message) {
+                errorMessage = e.message;
+            } else if (e && typeof e === 'object') {
+                if (e.ts) {
+                    errorMessage = wrapError(e).message || errorMessage;
+                } else if (e.message) {
+                    errorMessage = e.message;
+                }
+            } else if (typeof e === 'string') {
+                errorMessage = e;
+            }
+            return { success: false, error: errorMessage };
         }
     });
 

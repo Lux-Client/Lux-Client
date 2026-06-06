@@ -42,6 +42,9 @@ function UpdateNotification() {
 
     if (!isVisible) return null;
 
+    const progressPercent = typeof downloadProgress === 'number' ? downloadProgress : downloadProgress?.percent ?? 0;
+    const progressSpeed = typeof downloadProgress === 'object' && downloadProgress !== null ? downloadProgress.bytesPerSecond ?? 0 : 0;
+
     return (
         <div className="fixed bottom-6 left-6 z-[100] w-80 bg-card backdrop-blur-xl border border-border rounded-xl p-4 shadow-2xl animate-in fade-in slide-in-from-left-4 duration-300">
             <div className="flex items-start gap-3">
@@ -68,16 +71,16 @@ function UpdateNotification() {
                         {error ? error : isDownloaded ? `Version ${updateInfo?.version} is ready to install` : `Downloading version ${updateInfo?.version || '...'}`}
                     </p>
 
-                    {!isDownloaded && !error && downloadProgress && (
+                    {!isDownloaded && !error && downloadProgress !== null && (
                         <div className="mt-3">
                             <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-                                <span>{Math.round(downloadProgress.percent)}%</span>
-                                <span>{Math.round(downloadProgress.bytesPerSecond / 1024 / 1024 * 10) / 10} MB/s</span>
+                                <span>{Math.round(progressPercent)}%</span>
+                                <span>{Math.round(progressSpeed / 1024 / 1024 * 10) / 10} MB/s</span>
                             </div>
                             <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-primary transition-all duration-300"
-                                    style={{ width: `${downloadProgress.percent}%` }}
+                                    style={{ width: `${progressPercent}%` }}
                                 ></div>
                             </div>
                         </div>
