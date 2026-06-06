@@ -70,7 +70,16 @@ module.exports = (ipcMain, mainWindow) => {
                 });
             });
 
-            const token = await xboxManager.getMinecraft();
+            let token;
+            try {
+                token = await xboxManager.getMinecraft();
+            } catch (innerError) {
+                if (innerError && innerError.ts === 'error.auth.minecraft.profile' && innerError.response?.status === 404) {
+                    throw new Error('This Microsoft account does not own Minecraft Java Edition. Please sign in with an account that owns it.');
+                }
+                throw innerError;
+            }
+
             if (typeof token.isDemo === 'function' && token.isDemo()) {
                 throw new Error('This Microsoft account does not own Minecraft Java Edition. Please sign in with an account that owns it.');
             }
