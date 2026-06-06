@@ -2131,6 +2131,24 @@ async function installNeoForgeLoader(instanceDir, mcVersion, loaderVersion, onPr
         if (logCallback) logCallback(msg);
     };
     try {
+        // If no loaderVersion given (e.g. during migration), resolve the newest NeoForge build for this MC version.
+        if (!loaderVersion) {
+            if (onProgress) onProgress(3, 'Fetching newest NeoForge version...');
+            try {
+                const all = await fetchMavenVersions('https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml');
+                const shortMc = mcVersion.replace(/^1\./, '');
+                const matches = all.filter(v => v.startsWith(`${mcVersion}-`) || v.startsWith(`${shortMc}.`));
+                if (matches.length > 0) {
+                    loaderVersion = matches[0]; // fetchMavenVersions returns newest-first
+                    log(`Auto-resolved NeoForge version: ${loaderVersion}`);
+                } else {
+                    return { success: false, error: `Could not find a NeoForge version for Minecraft ${mcVersion}` };
+                }
+            } catch (e) {
+                return { success: false, error: `Failed to fetch NeoForge version list: ${e.message}` };
+            }
+        }
+
         if (onProgress) onProgress(5, `Preparing NeoForge ${loaderVersion}`);
         console.log(`Installing NeoForge ${loaderVersion} for MC ${mcVersion}...`);
 
@@ -2248,9 +2266,12 @@ module.exports = (ipcMain, win) => {
         const startBackgroundInstall = async (finalName, config, cleanInstall = false, isMigration = false, migrationOptions = {}) => {
             const dir = path.join(instancesDir, finalName);
             const { version, loader } = config;
+            // During a migration we always want the newest loader build for the *target*
+            // Minecraft version, so ignore the stored (old) loaderVersion/versionId and let
+            // the installer auto-resolve it. A normal (re)install keeps the pinned version.
             // If loaderVersion is missing but versionId contains it (e.g. "1.20.1-forge-47.2.17"), extract it.
-            let existingLoaderVer = config.loaderVersion;
-            if (!existingLoaderVer && config.versionId) {
+            let existingLoaderVer = isMigration ? undefined : config.loaderVersion;
+            if (!isMigration && !existingLoaderVer && config.versionId) {
                 const loaderType = (loader || '').toLowerCase();
                 const vId = String(config.versionId);
                 if (loaderType === 'forge' && vId.includes('-forge-')) {
@@ -2423,7 +2444,10 @@ module.exports = (ipcMain, win) => {
                         const configPath = path.join(dir, 'instance.json');
                         const updatedConfig = await fs.readJson(configPath);
                         updatedConfig.version = resolvedMcVersion;
-                        if (!updatedConfig.versionId || updatedConfig.versionId === version) {
+                        // On migration, reset versionId to the bare MC version so a stale
+                        // loader profile id (e.g. "fabric-loader-0.15.0-1.20.1") can't leak
+                        // through; the loader phase below rewrites it for the new version.
+                        if (isMigration || !updatedConfig.versionId || updatedConfig.versionId === version) {
                             updatedConfig.versionId = resolvedMcVersion;
                         }
                         await fs.writeJson(configPath, updatedConfig, { spaces: 4 });
