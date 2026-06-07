@@ -513,6 +513,7 @@
         "sign_in_button": "Sign in with Microsoft",
         "logging_in": "Logging in...",
         "failed": "Login failed",
+        "no_minecraft_ownership": "This Microsoft account does not own Minecraft Java Edition. Please sign in with an account that owns it.",
         "guest_restriction": "Login required to access this feature"
     },
     "settings": {

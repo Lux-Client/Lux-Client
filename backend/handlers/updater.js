@@ -86,7 +86,7 @@ module.exports = (ipcMain, mainWindow) => {
                 responseType: 'stream'
             });
 
-            const totalLength = response.headers['content-length'];
+            const totalLength = parseInt(response.headers['content-length'], 10) || 0;
             let downloadedLength = 0;
 
             const writer = fs.createWriteStream(targetPath);
@@ -94,8 +94,12 @@ module.exports = (ipcMain, mainWindow) => {
 
             response.data.on('data', (chunk) => {
                 downloadedLength += chunk.length;
-                const progress = totalLength ? (downloadedLength / totalLength) * 100 : 0;
-                mainWindow.webContents.send('updater:progress', progress);
+                const percent = totalLength ? Math.min(100, Math.round((downloadedLength / totalLength) * 100)) : 0;
+                mainWindow.webContents.send('updater:progress', {
+                    percent,
+                    bytesTransferred: downloadedLength,
+                    totalBytes: totalLength
+                });
             });
 
             await new Promise((resolve, reject) => {

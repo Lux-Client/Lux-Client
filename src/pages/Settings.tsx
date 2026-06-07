@@ -170,7 +170,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             setJavaInstallProgress(data);
         });
         const cleanupUpdate = window.electronAPI.onUpdaterProgress((progress) => {
-            setDownloadProgress(progress);
+            setDownloadProgress(typeof progress === 'number' ? progress : progress?.percent ?? 0);
         });
         return () => {
             cleanupJava();

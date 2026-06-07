@@ -5,6 +5,7 @@ import ExtensionSlot from './Extensions/ExtensionSlot';
 import PlayerHead from './PlayerHead';
 import WindowControls from './WindowControls';
 import ActionBar from './ActionBar';
+import { useNotification } from '../context/NotificationContext';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -109,10 +110,18 @@ function TopBar({
     }
   };
 
+  const { addNotification } = useNotification();
+
   const handleAddAccount = async () => {
-    const res = await window.electronAPI.login();
-    if (res.success) {
-      onProfileUpdate(res.profile);
+    try {
+      const res = await window.electronAPI.login();
+      if (res?.success) {
+        onProfileUpdate(res.profile);
+      } else {
+        addNotification(res?.error || t('login.failed'), 'error');
+      }
+    } catch (e) {
+      addNotification(e?.message || t('login.failed'), 'error');
     }
   };
 
