@@ -2,7 +2,8 @@ const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
 const { app } = require('electron');
-const store = require('../storeProxy');const SETTINGS_KEY = 'remoteControl';
+const store = require('../storeProxy');
+const SETTINGS_KEY = 'remoteControl';
 const DEFAULT_PORT = 42819;
 const DEFAULT_HOST = '0.0.0.0';
 const TOKEN_BYTES = 24;
@@ -104,7 +105,6 @@ function readJsonBody(req) {
 module.exports = (ipcMain, mainWindow) => {
     console.log('[RemoteControl] Registering remote control bridge...');
 
-    const store = new Store();
     let config = sanitizeConfig(store.get(SETTINGS_KEY, {}));
     store.set(SETTINGS_KEY, config);
 
