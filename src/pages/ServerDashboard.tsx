@@ -636,9 +636,9 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                             key={server.name}
                             onClick={() => handleServerClick(server)}
                             onContextMenu={(e) => handleContextMenu(e, server)}
-                            className={`group bg-card/40 backdrop-blur-sm border rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-lg hover:shadow-xl hover:shadow-black/50 ${isRunning ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border hover:border-primary/50'}`}
+                            className={`group bg-card/40 backdrop-blur-xs border rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-lg hover:shadow-xl hover:shadow-black/50 ${isRunning ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border hover:border-primary/50'}`}
                         >
-                            <div className="absolute inset-0 bg-gradient-to-br from-muted to-transparent opacity-0 group-hover:opacity-40 transition-opacity"></div>
+                            <div className="absolute inset-0 bg-linear-to-br from-muted to-transparent opacity-0 group-hover:opacity-40 transition-opacity"></div>
 
                             { }
                             <button
@@ -751,7 +751,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
 
             {contextMenu && createPortal(
                 <div
-                    className="fixed bg-card border border-border rounded-lg shadow-2xl py-2 z-[9999] min-w-[180px]"
+                    className="fixed bg-card border border-border rounded-lg shadow-2xl py-2 z-9999 min-w-[180px]"
                     style={{ left: contextMenu.x, top: contextMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -837,7 +837,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
 
             { }
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 p-4">
                     <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-8 shadow-2xl transform transition-all scale-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <h2 className="text-2xl font-bold mb-6 text-foreground text-center">{t('server.create_title')}</h2>
                         <form onSubmit={handleCreate} className="space-y-6">
@@ -867,7 +867,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                         type="text"
                                         value={newServerName}
                                         onChange={(e) => setNewServerName(e.target.value)}
-                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden transition-colors"
                                         placeholder="My Server"
                                     />
                                 </div>
@@ -878,7 +878,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                         type="number"
                                         value={serverPort}
                                         onChange={(e) => setServerPort(e.target.value)}
-                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden transition-colors"
                                         min="1"
                                         max="65535"
                                     />
@@ -890,7 +890,7 @@ function ServerDashboard({ onServerClick, runningInstances = {}, isGuest }) {
                                         type="number"
                                         value={maxPlayers}
                                         onChange={(e) => setMaxPlayers(e.target.value)}
-                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden transition-colors"
                                         min="1"
                                         max="100"
                                     />

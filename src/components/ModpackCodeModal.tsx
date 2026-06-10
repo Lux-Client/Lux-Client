@@ -193,7 +193,7 @@ function ModpackCodeModal({
                                             value={modpackName}
                                             onChange={(e) => setModpackName(e.target.value)}
                                             placeholder="My Awesome Modpack"
-                                            className="w-full bg-card border border-border rounded-xl p-3 text-foreground focus:border-primary outline-none transition-colors"
+                                            className="w-full bg-card border border-border rounded-xl p-3 text-foreground focus:border-primary outline-hidden transition-colors"
                                         />
                                     </div>
 
@@ -319,7 +319,7 @@ function ModpackCodeModal({
                                     onChange={(e) => setCode(e.target.value.slice(0, 8))}
                                     placeholder="e.g. aB3xY7zP"
                                     maxLength={8}
-                                    className="w-full bg-card border border-border rounded-xl p-4 text-foreground font-mono text-center text-3xl tracking-widest focus:border-primary outline-none transition-all shadow-inner"
+                                    className="w-full bg-card border border-border rounded-xl p-4 text-foreground font-mono text-center text-3xl tracking-widest focus:border-primary outline-hidden transition-all shadow-inner"
                                     autoFocus
                                 />
                                 <p className="text-xs text-muted-foreground mt-3 font-bold text-center">

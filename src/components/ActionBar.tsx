@@ -216,7 +216,7 @@ function ActionBar({ open, onOpenChange }) {
               {t('action_bar.title')}
             </SheetTitle>
             <Button
-              variant={isCustomizing ? 'default' : 'outline'}
+              variant={isCustomizing ? 'default' : 'outline-solid'}
               size="sm"
               className="h-7 text-[11px]"
               onClick={() => setIsCustomizing(prev => !prev)}

@@ -1,7 +1,6 @@
 const fs = require('fs-extra');
 const { Client } = require('minecraft-launcher-core');
-const Store = require('electron-store');
-const store = new Store();
+const store = require('../storeProxy');
 const path = require('path');
 const os = require('os');
 const { app, ipcMain, shell, dialog } = require('electron');

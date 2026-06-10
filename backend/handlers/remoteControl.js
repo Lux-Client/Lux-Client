@@ -2,9 +2,7 @@ const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
 const { app } = require('electron');
-const Store = require('electron-store');
-
-const SETTINGS_KEY = 'remoteControl';
+const store = require('../storeProxy');const SETTINGS_KEY = 'remoteControl';
 const DEFAULT_PORT = 42819;
 const DEFAULT_HOST = '0.0.0.0';
 const TOKEN_BYTES = 24;

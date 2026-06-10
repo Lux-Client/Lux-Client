@@ -87,7 +87,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
                 <DialogContent animationVariant="zoom" className="max-w-xl overflow-hidden border-border bg-card p-0 shadow-2xl duration-150">
                     <DialogHeader className="gap-0 border-b border-border bg-muted/30 px-6 py-5 text-left">
                         <div className="flex items-center gap-4 pr-8">
-                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-primary shadow-sm">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-primary shadow-xs">
                                 <LayoutGrid />
                             </div>
                             <div className="flex min-w-0 flex-1 flex-col justify-center">
@@ -153,7 +153,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
 
                             <div className="flex flex-col gap-2">
                                 {sections.map(({ id, title, description, icon: Icon }) => (
-                                    <Card key={id} className="border-border bg-background/70 shadow-sm">
+                                    <Card key={id} className="border-border bg-background/70 shadow-xs">
                                         <CardContent className="flex items-center justify-between gap-3 p-3">
                                             <div className="flex min-w-0 items-center gap-3">
                                                 <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

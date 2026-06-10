@@ -94,7 +94,7 @@ export default function GuideOverlay({
     }
 
     return (
-        <div className="fixed inset-0 z-[10030] pointer-events-none">
+        <div className="fixed inset-0 z-10030 pointer-events-none">
             {spotlightStyle ? (
                 <div
                     className="absolute rounded-2xl border-2 border-primary/75 bg-transparent shadow-[0_0_35px_hsla(var(--primary),0.45)] transition-all duration-200"

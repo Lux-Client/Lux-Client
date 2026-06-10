@@ -291,10 +291,10 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-card w-full max-w-2xl rounded-xl border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
 
-                <div className="p-8 border-b border-border bg-gradient-to-r from-red-500/10 to-transparent">
+                <div className="p-8 border-b border-border bg-linear-to-r from-red-500/10 to-transparent">
                     <div className="flex items-center gap-4 mb-2">
                         <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center text-red-500">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

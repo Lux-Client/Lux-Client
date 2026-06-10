@@ -97,7 +97,7 @@ function InstanceSelector({ instances, value, onChange, label = 'Instance' }: In
                 <select
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/40"
                 >
                     <option value="">— select instance —</option>
                     {(['lux', 'modrinth', 'curseforge'] as const).map((src) => {
@@ -475,7 +475,7 @@ function ToolsDashboard() {
                                             <select
                                                 value={targetLoader}
                                                 onChange={(e) => setTargetLoader(e.target.value)}
-                                                className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                                className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/40"
                                             >
                                                 {LOADER_OPTIONS.map((l) => (
                                                     <option key={l} value={l}>{l}</option>
@@ -489,7 +489,7 @@ function ToolsDashboard() {
                                             <input
                                                 value={targetVersion}
                                                 onChange={(e) => setTargetVersion(e.target.value)}
-                                                className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                                className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/40"
                                                 placeholder="e.g. 1.21.1"
                                             />
                                         </div>

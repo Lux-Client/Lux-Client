@@ -139,7 +139,7 @@ const ThemeMarketplace = () => {
                     <input
                         type="text"
                         placeholder={t('extensions.search')}
-                        className="w-full bg-background border border-border rounded-xl py-3 pl-11 pr-4 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-medium shadow-inner"
+                        className="w-full bg-background border border-border rounded-xl py-3 pl-11 pr-4 text-foreground placeholder-muted-foreground focus:outline-hidden focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-medium shadow-inner"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -158,7 +158,7 @@ const ThemeMarketplace = () => {
                     ) : (
                         installedThemes.map(theme => (
                             <div key={theme.handle} className="p-5 rounded-xl border flex items-center gap-5 transition-all group backdrop-blur-md bg-card border-border">
-                                <div className="w-14 h-14 rounded-full flex flex-shrink-0 relative overflow-hidden shadow-inner border border-border" style={{ backgroundColor: theme.bg }}>
+                                <div className="w-14 h-14 rounded-full flex shrink-0 relative overflow-hidden shadow-inner border border-border" style={{ backgroundColor: theme.bg }}>
                                     <div className="absolute inset-0 right-1/2" style={{ backgroundColor: theme.primary }}></div>
                                     <div className="absolute inset-x-0 bottom-0 h-1/3" style={{ backgroundColor: theme.surface }}></div>
                                 </div>
@@ -259,7 +259,7 @@ const ThemeMarketplace = () => {
                                                             disabled={installing === ext.id}
                                                             className={`px-3 py-1.5 font-bold uppercase tracking-wider text-xs rounded-lg transition-all flex items-center gap-1 ${installing === ext.id
                                                                 ? 'bg-primary/50 text-black/50 cursor-not-allowed'
-                                                                : 'bg-primary hover:bg-primary/90 text-black shadow-lg shadow-sm'
+                                                                : 'bg-primary hover:bg-primary/90 text-black shadow-lg shadow-xs'
                                                                 }`}
                                                         >
                                                             {installing === ext.id ? (

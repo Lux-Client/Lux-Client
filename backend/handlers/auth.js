@@ -1,6 +1,5 @@
 const { Auth, mcTokenToolbox, wrapError } = require('msmc');
-const Store = require('electron-store');
-const store = new Store();
+const store = require('../storeProxy');
 const { getUserProfile, setUserProfile, getAccounts, setAccounts } = require('../utils/secureProfileStore');
 
 const authManager = new Auth('select_account');

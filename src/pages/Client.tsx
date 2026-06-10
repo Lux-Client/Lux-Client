@@ -347,7 +347,7 @@ function Client() {
                     value={selectedVersion}
                     onChange={(event) => setSelectedVersion(event.target.value)}
                     disabled={isLoadingVersions || isBusy || availableVersions.length === 0}
-                    className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary/60"
+                    className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-hidden focus:border-primary/60"
                 >
                     {availableVersions.map((version) => (
                         <option key={version} value={version} className="bg-background">

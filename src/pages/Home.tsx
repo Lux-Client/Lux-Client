@@ -910,7 +910,7 @@ function Home({
               </Card>
             ) : modOfTheDay ? (
               <Card className="border-border overflow-hidden group">
-                <div className="relative w-full h-36 bg-gradient-to-br from-primary/10 to-muted overflow-hidden">
+                <div className="relative w-full h-36 bg-linear-to-br from-primary/10 to-muted overflow-hidden">
                   {modOfTheDay.featured_image ? (
                     <img
                       src={modOfTheDay.featured_image}
@@ -936,12 +936,12 @@ function Home({
                       <Sparkles className="w-12 h-12 text-muted-foreground" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-card via-transparent to-transparent" />
                 </div>
 
                 <CardContent className="p-4">
                   <div className="flex gap-3 mb-3">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       {modOfTheDay.icon_url && (
                         <img
                           src={modOfTheDay.icon_url}
@@ -1130,7 +1130,7 @@ function Home({
                     className="w-full h-44 object-cover"
                   />
                 ) : (
-                  <div className="w-full h-44 bg-gradient-to-br from-primary/10 to-muted flex items-center justify-center">
+                  <div className="w-full h-44 bg-linear-to-br from-primary/10 to-muted flex items-center justify-center">
                     {selectedModpack.icon_url ? (
                       <img
                         src={selectedModpack.icon_url}
@@ -1142,7 +1142,7 @@ function Home({
                     )}{" "}
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-popover via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-popover via-transparent to-transparent" />
               </div>
 
               <div className="px-5 pt-4 pb-5 overflow-y-auto flex-1">

@@ -269,7 +269,7 @@ function ServerConsole({ server, onClose, onServerAction }) {
                     logs.map((log, index) => (
                         <div key={index} className="mb-0.5 hover:bg-accent group font-mono">
                             <span className="text-muted-foreground select-none mr-3 text-xs">[{log.timestamp}]</span>
-                            <span className={`whitespace-pre-wrap break-words ${log.type === 'error' ? 'text-red-400' :
+                            <span className={`whitespace-pre-wrap wrap-break-word ${log.type === 'error' ? 'text-red-400' :
                                 log.type === 'warn' ? 'text-yellow-400' :
                                     log.type === 'success' ? 'text-green-400' :
                                         log.type === 'info' ? 'text-blue-400' :
@@ -294,7 +294,7 @@ function ServerConsole({ server, onClose, onServerAction }) {
                             onChange={(e) => setCommand(e.target.value)}
                             disabled={!isConnected}
                             placeholder={isConnected ? "Enter command... (e.g., help, list, say Hello)" : "Server is offline"}
-                            className="flex-1 bg-transparent p-3 text-foreground focus:outline-none disabled:opacity-50 font-mono"
+                            className="flex-1 bg-transparent p-3 text-foreground focus:outline-hidden disabled:opacity-50 font-mono"
                             autoFocus
                         />
                     </div>

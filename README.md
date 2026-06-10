@@ -104,6 +104,8 @@ Or download the latest installer from the [releases page](https://github.com/Lux
 
 ### For Developers
 
+> **⚠️ Note on React 19:** Please do NOT update `react` and `react-dom` to version 19 just yet. Our UI library (`@radix-ui`) currently lacks native support and has peer dependency conflicts. Wait until Radix officially adds support before trying to upgrade!
+
 #### Prerequisites
 - [Node.js](https://nodejs.org/) (latest LTS)
 - npm or yarn

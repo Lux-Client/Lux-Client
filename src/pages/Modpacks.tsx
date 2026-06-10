@@ -76,7 +76,7 @@ const Modpacks = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search Modpacks..."
-                        className="bg-muted border border-border rounded-xl px-4 py-2 w-64 focus:outline-none focus:border-primary/50 transition-colors"
+                        className="bg-muted border border-border rounded-xl px-4 py-2 w-64 focus:outline-hidden focus:border-primary/50 transition-colors"
                     />
                     <button type="submit" className="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-xl transition-colors">
                         Search

@@ -1258,7 +1258,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 {!isVanilla && (
                                     <button
                                         onClick={() => { setContentView('mods'); setLocalSearchQuery(''); }}
-                                        className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'mods' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                        className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'mods' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
@@ -1268,7 +1268,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 )}
                                 <button
                                     onClick={() => { setContentView('resourcepacks'); setLocalSearchQuery(''); }}
-                                    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'resourcepacks' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'resourcepacks' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1277,7 +1277,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 </button>
                                 <button
                                     onClick={() => { setContentView('shaders'); setLocalSearchQuery(''); }}
-                                    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'shaders' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${contentView === 'shaders' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" />
@@ -1292,20 +1292,20 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         {!isVanilla && (
                                             <button
                                                 onClick={() => { setSearchCategory('mod'); setSearchOffset(0); }}
-                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'mod' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'mod' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-accent-foreground'}`}
                                             >
                                                 {t('instance_details.content.mods')}
                                             </button>
                                         )}
                                         <button
                                             onClick={() => { setSearchCategory('resourcepack'); setSearchOffset(0); }}
-                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'resourcepack' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'resourcepack' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-accent-foreground'}`}
                                         >
                                             {t('instance_details.content.packs_short')}
                                         </button>
                                         <button
                                             onClick={() => { setSearchCategory('shader'); setSearchOffset(0); }}
-                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'shader' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${searchCategory === 'shader' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-accent-foreground'}`}
                                         >
                                             {t('instance_details.content.shaders')}
                                         </button>
@@ -1316,7 +1316,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     <>
                                         <button
                                             onClick={() => { setContentView('search'); setLocalSearchQuery(''); }}
-                                            className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center ${(contentView as string) === 'search' ? 'bg-primary border-primary text-black shadow-lg shadow-sm' : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border'}`}
+                                            className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center ${(contentView as string) === 'search' ? 'bg-primary border-primary text-black shadow-lg shadow-xs' : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border'}`}
                                             title={t('instance_details.actions.add_content')}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1327,7 +1327,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                             <button
                                                 onClick={handleUpdateAll}
                                                 disabled={bulkUpdateStatus?.isRunning}
-                                                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-sm transition-all transform ${bulkUpdateStatus?.isRunning ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
+                                                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-xs transition-all transform ${bulkUpdateStatus?.isRunning ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                             >
                                                 {bulkUpdateStatus?.isRunning ? (
                                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -1372,7 +1372,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                 placeholder={t('instance_details.content.filter_placeholder')}
                                                 value={localSearchQuery}
                                                 onChange={(e) => setLocalSearchQuery(e.target.value)}
-                                                className="bg-muted border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-foreground w-48 focus:w-64 focus:border-primary focus:bg-accent outline-none transition-all shadow-inner"
+                                                className="bg-muted border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-foreground w-48 focus:w-64 focus:border-primary focus:bg-accent outline-hidden transition-all shadow-inner"
                                             />
                                         </div>
                                     </>
@@ -1381,7 +1381,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 {contentView === 'search' && (
                                     <button
                                         onClick={() => { setContentView('mods'); setLocalSearchQuery(''); }}
-                                        className="p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center bg-primary text-black shadow-lg shadow-sm"
+                                        className="p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center bg-primary text-black shadow-lg shadow-xs"
                                         title={t('instance_details.actions.back_to_content')}
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1653,11 +1653,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder={t('instance_details.search.placeholder')}
-                                            className="w-full bg-muted backdrop-blur-md border border-border rounded-xl p-3 pl-11 text-foreground focus:border-primary outline-none shadow-inner transition-all"
+                                            className="w-full bg-muted backdrop-blur-md border border-border rounded-xl p-3 pl-11 text-foreground focus:border-primary outline-hidden shadow-inner transition-all"
                                             autoFocus
                                         />
                                     </div>
-                                    <button type="submit" className="bg-primary hover:bg-primary-hover text-black font-bold px-8 rounded-xl border border-transparent transition-all shadow-lg shadow-sm">{t('instance_details.search.search_btn')}</button>
+                                    <button type="submit" className="bg-primary hover:bg-primary-hover text-black font-bold px-8 rounded-xl border border-transparent transition-all shadow-lg shadow-xs">{t('instance_details.search.search_btn')}</button>
                                 </form>
 
                                 <div className="flex justify-between items-center mb-4">
@@ -1668,13 +1668,13 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         <div className="flex bg-muted p-1 rounded-xl border border-border">
                                             <button
                                                 onClick={() => setProvider('modrinth')}
-                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'modrinth' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'modrinth' ? 'bg-primary text-black shadow-xs' : 'text-muted-foreground hover:text-accent-foreground'}`}
                                             >
                                                 Modrinth
                                             </button>
                                             <button
                                                 onClick={() => setProvider('curseforge')}
-                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'curseforge' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'curseforge' ? 'bg-primary text-black shadow-xs' : 'text-muted-foreground hover:text-accent-foreground'}`}
                                             >
                                                 CurseForge
                                             </button>
@@ -1728,7 +1728,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleInstall(result); }}
                                                     disabled={installationStatus[result.project_id] === 'installing' || installationStatus[result.project_id] === 'success'}
-                                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all border border-border flex items-center gap-2 ${installationStatus[result.project_id] === 'success' ? 'bg-emerald-500 text-white shadow-sm' :
+                                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all border border-border flex items-center gap-2 ${installationStatus[result.project_id] === 'success' ? 'bg-emerald-500 text-white shadow-xs' :
                                                         installationStatus[result.project_id] === 'failed' ? 'bg-red-500/20 text-red-500' :
                                                             installationStatus[result.project_id] === 'installing' ? 'bg-muted text-muted-foreground cursor-wait' :
                                                                 'bg-muted hover:bg-primary hover:text-black text-foreground'
@@ -1809,7 +1809,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                             {world.hasIcon ? (
                                                 <img src={world.iconData} alt="" className="w-full h-full object-cover transition-transform duration-500" />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-900/20 to-blue-900/20 text-white/10 group-hover:text-white/20 transition-colors">
+                                                <div className="w-full h-full flex items-center justify-center text-5xl bg-linear-to-br from-green-900/20 to-blue-900/20 text-white/10 group-hover:text-white/20 transition-colors">
                                                     🌍
                                                 </div>
                                             )}
@@ -1993,7 +1993,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             </div >
 
             {showUnsavedFileModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-120 flex items-center justify-center p-4">
                     <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
                         <h3 className="text-xl font-bold text-foreground mb-2">
                             {t('instance_details.files.unsaved_title', 'Unsaved changes')}
@@ -2058,7 +2058,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             { }
             {
                 selectedProject && (
-                    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setSelectedProject(null)}>
+                    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-xs" onClick={() => setSelectedProject(null)}>
                         <div className="bg-popover w-full max-w-3xl max-h-[80vh] rounded-xl border border-border flex flex-col overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
                             { }
                             <div className="p-6 border-b border-border flex items-center gap-4">
@@ -2119,7 +2119,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             { }
             {
                 showPreviewModal && previewProject && (
-                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-200 flex items-center justify-center p-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
                         <div className="bg-card w-full max-w-5xl h-[85vh] rounded-xl border border-border shadow-2xl flex flex-col overflow-hidden animate-scale-in">
                             { }
                             <div className="p-6 border-b border-border flex justify-between items-start bg-background">
@@ -2160,7 +2160,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                     className="w-full h-full object-cover transition-transform duration-500"
                                                 />
                                                 {img.title && (
-                                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/70 backdrop-blur-sm text-xs text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/70 backdrop-blur-xs text-xs text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                         {img.title}
                                                     </div>
                                                 )}
@@ -2191,8 +2191,8 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     }}
                                     disabled={installationStatus[previewProject.project_id] === 'installing' || installationStatus[previewProject.project_id] === 'success'}
                                     className={`font-bold px-8 py-3 rounded-xl transition-all shadow-lg flex items-center gap-2 ${installationStatus[previewProject.project_id] === 'success'
-                                        ? 'bg-emerald-500 text-white shadow-sm'
-                                        : 'bg-primary text-black shadow-sm hover:bg-primary-hover'
+                                        ? 'bg-emerald-500 text-white shadow-xs'
+                                        : 'bg-primary text-black shadow-xs hover:bg-primary-hover'
                                         }`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -2210,7 +2210,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             {
                 lightboxIndex !== -1 && previewProject && previewProject.gallery && (
                     <div
-                        className="fixed inset-0 bg-black/95 z-[210] flex items-center justify-center animate-fade-in backdrop-blur-xl select-none"
+                        className="fixed inset-0 bg-black/95 z-210 flex items-center justify-center animate-fade-in backdrop-blur-xl select-none"
                         onClick={() => setLightboxIndex(-1)}
                     >
                         { }
@@ -2225,7 +2225,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
                         { }
                         <button
-                            className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-sm group"
+                            className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-xs group"
                             onClick={handlePrevImage}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2233,7 +2233,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                             </svg>
                         </button>
                         <button
-                            className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-sm group"
+                            className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-xs group"
                             onClick={handleNextImage}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2242,7 +2242,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         </button>
 
                         { }
-                        <div className="absolute top-6 left-6 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
+                        <div className="absolute top-6 left-6 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-xs">
                             {lightboxIndex + 1} / {previewProject.gallery.length}
                         </div>
 
@@ -2270,7 +2270,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             { }
             {
                 worldToDelete && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-100 flex items-center justify-center p-4">
                         <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
                             <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center text-3xl mb-4 mx-auto">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2305,7 +2305,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             { }
             {
                 modToDelete && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-100 flex items-center justify-center p-4">
                         <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
                             <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center text-3xl mb-4 mx-auto">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

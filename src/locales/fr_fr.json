@@ -15,7 +15,7 @@
         "res_pack_label": "PACK\nRES",
         "shader_label": "Shader",
         "lightbox_image": "Image de la galerie",
-        "open_folder": "Open folder"
+        "open_folder": "Ouvrir le dossier"
     },
     "common": {
         "dashboard": "Tableau de bord",
@@ -92,38 +92,38 @@
         "applying": "Application...",
         "launching": "Démarrage...",
         "open_launcher": "Open Launcher",
-        "add": "Add",
-        "done": "Done",
-        "forward": "Forward",
-        "navigate": "Navigate",
-        "new": "New",
-        "reset": "Reset",
-        "saving": "Saving...",
-        "select": "Select",
-        "unknown_error": "An unknown error occurred",
-        "useful_tools": "Useful Tools",
-        "maintenance_title": "Under Maintenance",
-        "maintenance_description": "This tab is currently unavailable, it will be added in a future update.",
-        "maintenance_back_home": "Back to homepage"
+        "add": "Ajouté",
+        "done": "Fini",
+        "forward": "Avancé",
+        "navigate": "Navigée",
+        "new": "Nouveau",
+        "reset": "Remettre a zero",
+        "saving": "Sauvegarde ...",
+        "select": "Selectionner",
+        "unknown_error": "Une erreur inconnue est survenu",
+        "useful_tools": "Outils pratique",
+        "maintenance_title": "En maintenance",
+        "maintenance_description": "Cette onglet est actuellement indisponible.",
+        "maintenance_back_home": "Retour a l'acceuil"
     },
     "client_page": {
-        "title": "Open Client",
-        "description": "Select a version and start playing.",
+        "title": "Ouvrir le client",
+        "description": "Choississer une version est jouée",
         "version": "Version",
-        "loading_versions": "Loading versions...",
-        "installed_state": "Installed",
-        "not_installed_state": "Not installed",
-        "install": "Install",
-        "update": "Update",
-        "installed": "Client installed.",
-        "updated": "Updates installed.",
-        "auto_mods_installed": "{{count}} configured mods installed.",
-        "launching": "Starting client...",
+        "loading_versions": "Chargement des versions...",
+        "installed_state": "Installée",
+        "not_installed_state": "Non installé",
+        "install": "Telecharger",
+        "update": "Mis a jour",
+        "installed": "Client installée.",
+        "updated": "Mise a jour installée.",
+        "auto_mods_installed": "{{count}} mods préconfigurer installée.",
+        "launching": "Démarrage du client ...",
         "errors": {
-            "load_versions": "Could not load versions.",
-            "install": "Installation failed: {{error}}",
-            "play": "Could not start client: {{error}}",
-            "update": "Update failed: {{error}}"
+            "load_versions": "Impossible de charger les versions",
+            "install": "L'installation échoué: {{error}}",
+            "play": "Impossible de démarrer le client: {{error}}",
+            "update": "Echec de la mise à jour: {{error}}"
         }
     },
     "action_bar": {
@@ -145,11 +145,11 @@
         "no_targets": "Aucune cible disponible",
         "image": "Image",
         "add": "Ajouter",
-        "remove": "Remove",
-        "add_to_actionbar": "Add to Actionbar",
-        "added": "Added to Actionbar",
-        "remove_from_actionbar": "Remove from Actionbar",
-        "removed": "Removed from Actionbar"
+        "remove": "Enlever",
+        "add_to_actionbar": "Rajouter a la barre d'action",
+        "added": "Ajoutée !",
+        "remove_from_actionbar": "Enlevée de la barre d'action.",
+        "removed": "Enlevée avec succes"
     },
     "home": {
         "welcome_back": "Bon retour !",
@@ -165,8 +165,8 @@
         "everything_place": "Chaque chose à sa place.",
         "save_layout": "Enregistrer la disposition",
         "by_author": "par {{author}}",
-        "drag_to_reorder": "Drag to reorder",
-        "welcome_back_name": "Welcome back, {{name}}!"
+        "drag_to_reorder": "Déplacer pour réaranger.",
+        "welcome_back_name": "Bon retour, {{name}}!"
     },
     "dashboard": {
         "title": "Bibliothèque",
@@ -196,8 +196,8 @@
             "export": "Exporter",
             "folder": "Ouvrir le dossier",
             "delete": "Supprimer",
-            "move_to_folder": "Move to folder",
-            "remove_from_folder": "Remove from folder"
+            "move_to_folder": "Déplacer dans le dossier",
+            "remove_from_folder": "Enlever du dossier"
         },
         "version": "Version",
         "dev_builds": "Versions de développement",
@@ -214,30 +214,30 @@
         "create_failed": "Échec de la création de l'instance : {{error}}",
         "pixel_editor_btn": "Éditeur de Pixels",
         "export_choice": {
-            "title": "Export Instance",
-            "description": "Choose how you want to export this instance.",
-            "code": "Export as Code",
-            "file": "Export as .mcpack file",
-            "partial_load_warning": "Some content could not be read and will be skipped.",
-            "target_prefix": "Export as"
+            "title": "Exporter l'Instance",
+            "description": "Choississer comment exporter cette instance.",
+            "code": "Exporter en tant que code",
+            "file": "Exporter en format .mcpack",
+            "partial_load_warning": "Une partie du contenue n'a pas pu être lu et a été ignorée.",
+            "target_prefix": "Exporté sous"
         },
-        "click_to_upload_icon": "Click to upload icon",
+        "click_to_upload_icon": "Appuyer pour envoyer l'icone.",
         "folder_modal": {
-            "help": "Select a destination for the instance folder.",
-            "path": "Folder path",
-            "title": "Move to Folder",
-            "title_multi": "Move Selected Instances"
+            "help": "Selectionner le dossier de destination.",
+            "path": "Chemin du dossier",
+            "title": "Déplacer dans le dossier",
+            "title_multi": "Déplacer les instances sélectionner"
         },
-        "launch_game": "Launch Game",
+        "launch_game": "Démarrer le jeu",
         "selection": {
-            "clear": "Clear selection",
-            "count": "{{count}} selected",
-            "done": "Done",
-            "enable": "Enable selection",
-            "move_to_folder": "Move selected to folder",
-            "not_selectable": "Not selectable",
-            "select_all": "Select all",
-            "toggle": "Toggle selection"
+            "clear": "Effacer la selection",
+            "count": "{{count}} selectionner",
+            "done": "Fini",
+            "enable": "Allumé la seletion",
+            "move_to_folder": "Deplacer les objects sélectionner dans le dossier",
+            "not_selectable": "Non choisissable",
+            "select_all": "Selectioner tous",
+            "toggle": "Activer l'outils de sélection"
         }
     },
     "instance_details": {

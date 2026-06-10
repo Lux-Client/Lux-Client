@@ -43,7 +43,7 @@ A collection of potential improvements for Lux, organized by category.
 - [ ] **Notifications center** - Consolidated notification history
 
 ### Account & Social
-- [ ] **Multi-account quick switch** - Seamless switching between Microsoft accounts
+- [x] **Multi-account quick switch** - Seamless switching between Microsoft accounts
 - [ ] **Profile switching** - Separate skins/settings per Minecraft profile
 - [ ] **Launcher badges** - Show notification badges for updates/new mods
 
@@ -74,7 +74,7 @@ A collection of potential improvements for Lux, organized by category.
 - [ ] **Quick launch bar** - Favorite instances pinned to top
 - [ ] **Auto-updater for instances** - Option to auto-update modpacks on launch
 - [ ] **Recent activity feed** - Dashboard showing playtime, recent launches, etc.
-- [ ] **Offline mode indicator** - Clear visual state when network is unavailable
+- [x] **Offline mode indicator** - Clear visual state when network is unavailable
 - [ ] **Migration wizard** - Import data from other launchers (PrismLauncher, GDLauncher's format)
 
 ---
@@ -100,7 +100,7 @@ A collection of potential improvements for Lux, organized by category.
 
 ## Integrations
 
-- [ ] **Modrinth API v2** - Update to latest API with new features
+- [x] **Modrinth API v2** - Update to latest API with new features
 - [ ] **CurseForge API improvements** - Better search, more metadata
 - [ ] **Plaza modpack support** - Add third modpack source
 - [ ] **Discord presence** - Enhanced Rich Presence with instance details

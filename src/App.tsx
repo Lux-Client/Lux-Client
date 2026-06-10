@@ -1343,7 +1343,7 @@ function App() {
 
                         <main className="flex-1 overflow-hidden flex flex-col relative">
                             {isPending && (
-                                <div className="absolute top-0 left-0 w-full h-0.5 z-[100] overflow-hidden bg-muted">
+                                <div className="absolute top-0 left-0 w-full h-0.5 z-100 overflow-hidden bg-muted">
                                     <div className="h-full bg-primary/60 animate-progress-fast"></div>
                                 </div>
                             )}
@@ -1393,16 +1393,16 @@ function App() {
             />
 
             {appVersion && (
-                <div className="absolute bottom-1 left-1 z-[9999] text-muted-foreground font-mono text-[10px] opacity-30 pointer-events-none select-none">
+                <div className="absolute bottom-1 left-1 z-9999 text-muted-foreground font-mono text-[10px] opacity-30 pointer-events-none select-none">
                     v{appVersion}
                 </div>
             )}
 
             {!userProfile && !isGuest && (
-                <WindowControls isMaximized={isMaximized} className="fixed top-4 right-4 z-[10001] rounded-xl border border-border bg-popover/80 p-1 backdrop-blur-md" />
+                <WindowControls isMaximized={isMaximized} className="fixed top-4 right-4 z-10001 rounded-xl border border-border bg-popover/80 p-1 backdrop-blur-md" />
             )}
 
-            <ExtensionSlot name="app.overlay" className="absolute inset-0 pointer-events-none z-[9999] *:pointer-events-auto" />
+            <ExtensionSlot name="app.overlay" className="absolute inset-0 pointer-events-none z-9999 *:pointer-events-auto" />
 
             <CrashModal
                 isOpen={isCrashModalOpen}

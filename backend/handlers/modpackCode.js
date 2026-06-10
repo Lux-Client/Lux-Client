@@ -31,8 +31,7 @@ module.exports = (ipcMain, win) => {
         try {
             const { name, mods, resourcePacks, shaders, instanceVersion, instanceLoader, instanceName } = data;
 
-            const Store = require('electron-store');
-            const store = new Store();
+            const store = require('../storeProxy');
             const profile = getUserProfile(store);
             const ownerUuid = profile ? profile.uuid : null;
 
@@ -98,8 +97,7 @@ module.exports = (ipcMain, win) => {
     ipcMain.handle('modpack:list-codes', async () => {
         console.log('[ModpackCode-Handler] 📋 modpack:list-codes AUFGERUFEN');
         try {
-            const Store = require('electron-store');
-            const store = new Store();
+            const store = require('../storeProxy');
             const profile = getUserProfile(store);
             if (!profile) return { success: false, error: 'Not logged in' };
 
@@ -115,8 +113,7 @@ module.exports = (ipcMain, win) => {
     ipcMain.handle('modpack:delete-code', async (event, code) => {
         console.log('[ModpackCode-Handler] 🗑️ modpack:delete-code AUFGERUFEN:', code);
         try {
-            const Store = require('electron-store');
-            const store = new Store();
+            const store = require('../storeProxy');
             const profile = getUserProfile(store);
             if (!profile) return { success: false, error: 'Not logged in' };
 

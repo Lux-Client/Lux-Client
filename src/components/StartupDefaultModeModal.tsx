@@ -87,7 +87,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
     };
 
     return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
+        <div className="fixed inset-0 z-10000 flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsla(var(--primary),0.15),transparent_24%)]" />
             <Card className="relative w-full max-w-3xl overflow-hidden border-border/70 bg-card/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-300">
                 <CardContent className="p-6 sm:p-8">
@@ -109,7 +109,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
 
                     {selectedOption && (
                         <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-background/55 p-5 sm:p-6">
-                            <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-90', visual.accentClass)} />
+                            <div className={cn('pointer-events-none absolute inset-0 bg-linear-to-br opacity-90', visual.accentClass)} />
                             <div className="relative space-y-5">
                                 <div className={cn('h-28 rounded-2xl border border-border/60 shadow-inner', visual.previewClass)} />
                                 <div className="flex items-start justify-between gap-4">
@@ -139,7 +139,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
                                             <SelectTrigger className="w-full rounded-xl border-border/70 bg-background/80">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="z-[10001]">
+                                            <SelectContent className="z-10001">
                                                 {options.map((option) => (
                                                     <SelectItem key={option.id} value={option.id}>
                                                         {t(option.titleKey, option.titleFallback)}
@@ -161,7 +161,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
                                             <SelectTrigger className="w-full rounded-xl border-border/70 bg-background/80">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="z-[10001]">
+                                            <SelectContent className="z-10001">
                                                 {selectedOption.pages.map((page) => (
                                                     <SelectItem key={page.value} value={page.value}>
                                                         {t(page.labelKey, page.labelFallback)}

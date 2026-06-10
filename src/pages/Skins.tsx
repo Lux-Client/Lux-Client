@@ -1629,7 +1629,7 @@ export const AdvancedSkinEditorDialog = ({
                                 <div className="flex gap-2">
                                     <Button
                                         type="button"
-                                        variant={editorModel === 'classic' ? 'default' : 'outline'}
+                                        variant={editorModel === 'classic' ? 'default' : 'outline-solid'}
                                         size="sm"
                                         onClick={() => setEditorModel('classic')}
                                         className="flex-1"
@@ -1638,7 +1638,7 @@ export const AdvancedSkinEditorDialog = ({
                                     </Button>
                                     <Button
                                         type="button"
-                                        variant={editorModel === 'slim' ? 'default' : 'outline'}
+                                        variant={editorModel === 'slim' ? 'default' : 'outline-solid'}
                                         size="sm"
                                         onClick={() => setEditorModel('slim')}
                                         className="flex-1"
@@ -1681,7 +1681,7 @@ export const AdvancedSkinEditorDialog = ({
                                                     <TooltipTrigger asChild>
                                                         <Button
                                                             type="button"
-                                                            variant={tool === entry.id ? 'default' : 'outline'}
+                                                            variant={tool === entry.id ? 'default' : 'outline-solid'}
                                                             size="sm"
                                                             onClick={() => setTool(entry.id)}
                                                             className="flex-1"
@@ -1701,7 +1701,7 @@ export const AdvancedSkinEditorDialog = ({
 
                                 <Button
                                     type="button"
-                                    variant={dragMode ? 'default' : 'outline'}
+                                    variant={dragMode ? 'default' : 'outline-solid'}
                                     size="sm"
                                     onClick={() => setDragMode(prev => !prev)}
                                     className="w-full"
@@ -1719,16 +1719,16 @@ export const AdvancedSkinEditorDialog = ({
                             <div className="space-y-2">
                                 <Label>{t('skins.mirror_mode')}</Label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <Button type="button" variant={mirrorMode === 'none' ? 'default' : 'outline'} size="sm" onClick={() => setMirrorMode('none')}>
+                                    <Button type="button" variant={mirrorMode === 'none' ? 'default' : 'outline-solid'} size="sm" onClick={() => setMirrorMode('none')}>
                                         {t('skins.mirror_none')}
                                     </Button>
-                                    <Button type="button" variant={mirrorMode === 'x' ? 'default' : 'outline'} size="sm" onClick={() => setMirrorMode('x')}>
+                                    <Button type="button" variant={mirrorMode === 'x' ? 'default' : 'outline-solid'} size="sm" onClick={() => setMirrorMode('x')}>
                                         {t('skins.mirror_left_right')}
                                     </Button>
-                                    <Button type="button" variant={mirrorMode === 'y' ? 'default' : 'outline'} size="sm" onClick={() => setMirrorMode('y')}>
+                                    <Button type="button" variant={mirrorMode === 'y' ? 'default' : 'outline-solid'} size="sm" onClick={() => setMirrorMode('y')}>
                                         {t('skins.mirror_top_bottom')}
                                     </Button>
-                                    <Button type="button" variant={mirrorMode === 'xy' ? 'default' : 'outline'} size="sm" onClick={() => setMirrorMode('xy')}>
+                                    <Button type="button" variant={mirrorMode === 'xy' ? 'default' : 'outline-solid'} size="sm" onClick={() => setMirrorMode('xy')}>
                                         {t('skins.mirror_both')}
                                     </Button>
                                 </div>
@@ -1739,7 +1739,7 @@ export const AdvancedSkinEditorDialog = ({
                                 <div className="grid grid-cols-2 gap-2">
                                     <Button
                                         type="button"
-                                        variant={paintLayer === 'inner' ? 'default' : 'outline'}
+                                        variant={paintLayer === 'inner' ? 'default' : 'outline-solid'}
                                         size="sm"
                                         onClick={() => setPaintLayer('inner')}
                                     >
@@ -1747,7 +1747,7 @@ export const AdvancedSkinEditorDialog = ({
                                     </Button>
                                     <Button
                                         type="button"
-                                        variant={paintLayer === 'outer' ? 'default' : 'outline'}
+                                        variant={paintLayer === 'outer' ? 'default' : 'outline-solid'}
                                         size="sm"
                                         onClick={() => setPaintLayer('outer')}
                                     >
@@ -2362,7 +2362,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto pr-1">
                             <div
                                 onClick={() => handleSetCape(null)}
-                                className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all ${activeCapeId === null ? 'border-primary bg-primary/10' : 'border-border hover:border-muted-foreground/50 bg-muted/50'}`}
+                                className={`aspect-3/4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all ${activeCapeId === null ? 'border-primary bg-primary/10' : 'border-border hover:border-muted-foreground/50 bg-muted/50'}`}
                             >
                                 <X className="h-6 w-6 text-muted-foreground mb-2" />
                                 <span className="text-sm font-medium text-muted-foreground">{t('skins.no_cape')}</span>
@@ -2372,7 +2372,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 <div
                                     key={cape.id}
                                     onClick={() => handleSetCape(cape.id)}
-                                    className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all relative overflow-hidden ${activeCapeId === cape.id ? 'border-primary bg-primary/10' : 'border-border hover:border-muted-foreground/50 bg-muted/50'}`}
+                                    className={`aspect-3/4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all relative overflow-hidden ${activeCapeId === cape.id ? 'border-primary bg-primary/10' : 'border-border hover:border-muted-foreground/50 bg-muted/50'}`}
                                 >
                                     <div className="h-1/2 w-full p-2 flex items-center justify-center">
                                         <CapePreview src={cape.url} />
@@ -2499,7 +2499,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                     debugContext="skins-page"
                 />
 
-                <div className="w-1/3 min-w-[300px] bg-card/50 backdrop-blur-sm border-r border-border flex flex-col items-center justify-center relative p-6">
+                <div className="w-1/3 min-w-[300px] bg-card/50 backdrop-blur-xs border-r border-border flex flex-col items-center justify-center relative p-6">
                     <div className={`relative w-full h-[400px] flex items-center justify-center transition-opacity duration-300 ${isSkinLoaded || webglError ? 'opacity-100' : 'opacity-0'}`}>
                         <div className="pointer-events-none absolute left-1/2 -top-7 z-10 -translate-x-1/2">
                             <div
@@ -2526,7 +2526,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 </p>
                             </div>
                         ) : (
-                            <canvas ref={canvasRef} className="cursor-move outline-none" />
+                            <canvas ref={canvasRef} className="cursor-move outline-hidden" />
                         )}
                     </div>
 
@@ -2633,7 +2633,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                 <div
                                     onClick={() => handleAddSkinModalChange(true)}
-                                    className="aspect-[3/4] bg-muted/50 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
+                                    className="aspect-3/4 bg-muted/50 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
                                 >
                                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/15 transition-colors">
                                         <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -2643,7 +2643,7 @@ function Skins({ onLogout, onProfileUpdate }) {
 
                                 <div
                                     onClick={() => setIsStartEditorModalOpen(true)}
-                                    className="aspect-[3/4] bg-muted/50 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
+                                    className="aspect-3/4 bg-muted/50 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
                                 >
                                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/15 transition-colors">
                                         <Paintbrush className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -2656,7 +2656,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                         <ContextMenuTrigger>
                                             <div
                                                 onClick={() => handleSelectLocalSkin(skin)}
-                                                className={`aspect-[3/4] bg-card rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.id === skin.id ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-border'}`}
+                                                className={`aspect-3/4 bg-card rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.id === skin.id ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-border'}`}
                                             >
                                                 <div className="p-3 flex items-center justify-center h-full bg-muted/30">
                                                     {!webglError ? (
@@ -2665,7 +2665,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                                         <SkinPreview src={skin.data || `file://${skin.path}`} />
                                                     )}
                                                 </div>
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <div className="flex items-center gap-1">
                                                         {editingSkinId === skin.id ? (
                                                             <Input
@@ -2756,7 +2756,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                     <div
                                         key={skin.name}
                                         onClick={() => handleSelectDefaultSkin(skin)}
-                                        className={`aspect-[3/4] bg-card rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.name === skin.name ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-border'}`}
+                                        className={`aspect-3/4 bg-card rounded-lg overflow-hidden relative cursor-pointer border-2 transition-all group ${pendingSkin?.name === skin.name ? 'border-primary ring-1 ring-primary/25' : 'border-transparent hover:border-border'}`}
                                     >
                                         <div className="p-3 flex items-center justify-center h-full bg-muted/30">
                                             {!webglError ? (
@@ -2765,7 +2765,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                                 <SkinPreview src={getDefaultSkinUrl(skin, skin.defaultModel)} model={skin.defaultModel} />
                                             )}
                                         </div>
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <span className="text-foreground text-xs font-medium truncate">
                                                 {skin.name}
                                             </span>

@@ -720,7 +720,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
     }, [disableClose, onClose]);
 
     const settingsOverlay = (
-        <div className="fixed inset-0 z-[120]">
+        <div className="fixed inset-0 z-120">
             <button
                 type="button"
                 aria-label={t('common.close', 'Close')}

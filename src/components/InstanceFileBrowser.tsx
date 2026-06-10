@@ -819,7 +819,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                                 }
                             }}
                             placeholder={t('instance_details.files.search_placeholder', 'Search in file...')}
-                            className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none"
+                            className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-hidden"
                         />
                         <span className="text-xs text-muted-foreground min-w-[72px] text-right">
                             {searchMatches.length === 0
@@ -850,7 +850,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                 )}
 
                 <div ref={editorShellRef} className="relative flex-1 min-h-0 bg-background">
-                    <div className="absolute inset-y-0 right-0 z-10 w-5 border-l border-border/60 bg-background/80 backdrop-blur-sm">
+                    <div className="absolute inset-y-0 right-0 z-10 w-5 border-l border-border/60 bg-background/80 backdrop-blur-xs">
                         <div className="relative h-full w-full">
                             <div
                                 className="absolute left-1/2 w-2 -translate-x-1/2 rounded-full border border-primary/25 bg-primary/10"
@@ -881,8 +881,8 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                             onValueChange={setEditingContent}
                             highlight={() => highlightedNodes}
                             textareaId="instance-file-editor"
-                            textareaClassName="outline-none whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-                            preClassName="!m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+                            textareaClassName="outline-hidden whitespace-pre-wrap wrap-break-word wrap-anywhere"
+                            preClassName="m-0! whitespace-pre-wrap wrap-break-word wrap-anywhere"
                             padding={16}
                             style={{
                                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace',
@@ -914,7 +914,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                 </div>
 
                 {showLeaveEditorModal && (
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-10 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-xs z-10 flex items-center justify-center p-4">
                         <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl">
                             <h3 className="text-xl font-bold text-foreground mb-2">
                                 {t('instance_details.files.unsaved_title', 'Unsaved changes')}
@@ -989,7 +989,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         placeholder={t('instance_details.files.folder_name_placeholder', 'Folder name')}
-                        className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none"
+                        className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-hidden"
                     />
                     <button
                         onClick={handleCreateFolder}

@@ -308,7 +308,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={t('server_search.placeholder', { type: projectType === 'mod' ? t('server_search.mods') : t('server_search.plugins') })}
-                    className="flex-1 bg-background border border-border rounded-xl p-4 text-foreground focus:border-primary outline-none shadow-inner"
+                    className="flex-1 bg-background border border-border rounded-xl p-4 text-foreground focus:border-primary outline-hidden shadow-inner"
                 />
                 <button
                     type="submit"
@@ -325,7 +325,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                 <select
                     value={sortMethod}
                     onChange={(e) => setSortMethod(e.target.value)}
-                    className="bg-card border-none rounded-lg px-4 py-2 text-foreground outline-none appearance-none cursor-pointer focus:outline-none focus:border-none focus:ring-0"
+                    className="bg-card border-none rounded-lg px-4 py-2 text-foreground outline-hidden appearance-none cursor-pointer focus:outline-hidden focus:border-none focus:ring-0"
                 >
                     <option value="relevance">{t('search.relevance')}</option>
                     <option value="downloads">{t('search.downloads')}</option>
@@ -406,7 +406,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                     <span className="text-muted-foreground font-mono text-sm uppercase tracking-wider">
                         {t('search.page_of', { current: Math.floor(offset / limit) + 1 })}
                     </span>
-                    <div className="h-4 w-[1px] bg-border" />
+                    <div className="h-4 w-px bg-border" />
                     <span className="text-muted-foreground text-xs">
                         {t('search.page_of_total', { total: Math.ceil(totalHits / limit) })}
                     </span>
@@ -423,7 +423,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
             { }
             {
                 showInstallModal && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
                         <div className="bg-card w-full max-w-md rounded-xl p-6 border border-border shadow-md animate-scale-in">
                             <h2 className="text-2xl font-bold mb-4">{t('server_search.install_title', { title: selectedMod?.title })}</h2>
 
@@ -432,7 +432,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                                 <select
                                     value={selectedServer}
                                     onChange={(e) => setSelectedServer(e.target.value)}
-                                    className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary outline-none appearance-none"
+                                    className="w-full bg-background border border-border rounded-xl p-3 text-foreground focus:border-primary outline-hidden appearance-none"
                                 >
                                     {servers && servers.map(inst => (
                                         <option key={inst.name} value={inst.name}>{inst.name} ({inst.software} {inst.version})</option>
@@ -463,7 +463,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
             { }
             {
                 showPreviewModal && previewProject && (
-                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fade-in">
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-60 flex items-center justify-center p-4 animate-fade-in">
                         <div className="bg-card w-full max-w-5xl h-[85vh] rounded-xl border border-border shadow-2xl flex flex-col overflow-hidden animate-scale-in">
                             { }
                             <div className="p-6 border-b border-border flex justify-between items-start bg-background/50">
@@ -504,7 +504,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                                                     className="w-full h-full object-cover transition-transform duration-500"
                                                 />
                                                 {img.title && (
-                                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/70 backdrop-blur-sm text-xs text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/70 backdrop-blur-xs text-xs text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                         {img.title}
                                                     </div>
                                                 )}
@@ -537,7 +537,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                                     disabled={installedIds.has(previewProject.id)}
                                     className={`font-bold px-8 py-3 rounded-xl transition-all shadow-lg flex items-center gap-2 ${installedIds.has(previewProject.id)
                                         ? 'bg-[#10b981] text-white shadow-[#10b981]/20'
-                                        : 'bg-primary text-black shadow-sm hover:bg-primary-hover'
+                                        : 'bg-primary text-black shadow-xs hover:bg-primary-hover'
                                         }`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -555,7 +555,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
             {
                 lightboxIndex !== -1 && previewProject && previewProject.gallery && (
                     <div
-                        className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center animate-fade-in backdrop-blur-xl select-none"
+                        className="fixed inset-0 bg-black/95 z-70 flex items-center justify-center animate-fade-in backdrop-blur-xl select-none"
                         onClick={() => setLightboxIndex(-1)}
                     >
                         { }
@@ -570,7 +570,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
 
                         { }
                         <button
-                            className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-sm group"
+                            className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-xs group"
                             onClick={handlePrevImage}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -578,7 +578,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                             </svg>
                         </button>
                         <button
-                            className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-sm group"
+                            className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors z-50 backdrop-blur-xs group"
                             onClick={handleNextImage}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -587,7 +587,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                         </button>
 
                         { }
-                        <div className="absolute top-6 left-6 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
+                        <div className="absolute top-6 left-6 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-xs">
                             {lightboxIndex + 1} / {previewProject.gallery.length}
                         </div>
 

@@ -8,7 +8,7 @@ function ReinstallModal({ instanceName, onClose, onConfirm }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/80 z-60 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in duration-200">
             <div className="bg-card w-full max-w-md rounded-xl border border-border shadow-2xl overflow-hidden">
                 <div className="p-6">
                     <h3 className="text-xl font-bold text-foreground mb-2">Reinstall Instance</h3>

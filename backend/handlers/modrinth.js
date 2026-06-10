@@ -74,6 +74,31 @@ const normalizeModrinthProjectId = (projectId) => {
     return projectId;
 };
 
+const normalizeModrinthGallery = (gallery) => {
+    if (!Array.isArray(gallery)) return [];
+
+    return gallery
+        .map((item) => {
+            if (typeof item === 'string') {
+                const url = item.trim();
+                return url ? { url, title: '' } : null;
+            }
+
+            if (item && typeof item === 'object') {
+                const url = String(item?.url || item?.image_url || item?.thumbnail || '').trim();
+                if (!url) return null;
+
+                return {
+                    url,
+                    title: String(item?.title || item?.name || '').trim()
+                };
+            }
+
+            return null;
+        })
+        .filter(Boolean);
+};
+
 const toPluginPortalProjectId = (projectId) => `${PLUGIN_PORTAL_PROJECT_PREFIX}${projectId}`;
 
 const isPluginPortalProjectId = (projectId) => {
@@ -1709,7 +1734,8 @@ module.exports = (ipcMain, win) => {
                     modrinthResults = (data.hits || []).map((hit, rank) => ({
                         ...hit,
                         source: 'modrinth',
-                        __providerRank: rank
+                        __providerRank: rank,
+                        gallery: normalizeModrinthGallery(hit.gallery)
                     }));
                     modrinthTotalHits = Number(data.total_hits || 0);
                     modrinthOffset = Number(data.offset ?? normalizedOffset);
@@ -2140,6 +2166,7 @@ module.exports = (ipcMain, win) => {
                 headers: { 'User-Agent': USER_AGENT }
             });
             const project = response.data;
+            project.gallery = normalizeModrinthGallery(project.gallery);
 
             const mappedCurseForgeProjectId = modrinthToCurseForgeProjectMap.get(normalizedProjectId);
             if (mappedCurseForgeProjectId) {
