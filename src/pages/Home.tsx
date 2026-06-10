@@ -129,7 +129,7 @@ function Home({
     focusMode: false,
   });
 
-  const shouldShowLibraryVisibleInstance = (instance, activeSettings = {}) => {
+  const shouldShowLibraryVisibleInstance = (instance: any, activeSettings: any = {}) => {
     const isExternal =
       String(instance?.instanceType || "").toLowerCase() === "external";
     if (!isExternal) {

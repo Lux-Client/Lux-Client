@@ -163,6 +163,7 @@ interface ElectronAPI {
   createServerDirectory: (serverName: string, relativePath: string) => Promise<any>;
   renameServerFile: (serverName: string, oldPath: string, newPath: string) => Promise<any>;
   getServerStatus: (name: string) => Promise<any>;
+  checkServiceStatus: () => Promise<any>;
   getServerConsole: (name: string) => Promise<any>;
   clearServerConsole: (name: string) => Promise<any>;
   getOfflinePlayers: (name: string) => Promise<any>;
