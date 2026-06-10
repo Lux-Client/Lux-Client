@@ -28,6 +28,15 @@ export const filterInstancesForMode = (instances: any, mode?: string) => {
   return safeInstances;
 };
 
+export const getMostUsedInstanceByPlaytime = (instances: any, mode?: string) => {
+  const filteredInstances = filterInstancesForMode(instances, mode);
+
+  return filteredInstances
+    .filter((instance) => instance && typeof instance.playtime === 'number')
+    .sort((a, b) => (b.playtime || 0) - (a.playtime || 0))
+    .shift();
+};
+
 export const getOpenClientCreateOptions = () => ({
   instanceType: OPEN_CLIENT_INSTANCE_TYPE,
 });

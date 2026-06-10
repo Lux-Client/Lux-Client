@@ -134,6 +134,7 @@ interface ElectronAPI {
   onLoginSuccess: (callback: IpcCallback) => UnsubscribeFn;
   onThemeUpdated: (callback: IpcCallback) => UnsubscribeFn;
   onSettingsUpdated: (callback: IpcCallback) => UnsubscribeFn;
+  onTrayAction: (callback: (action: string, payload?: any) => void) => UnsubscribeFn;
   onJavaProgress: (callback: IpcCallback) => UnsubscribeFn;
   onJavaRequired: (callback: IpcCallback) => UnsubscribeFn;
   onWindowStateChange: (callback: IpcCallback) => UnsubscribeFn;

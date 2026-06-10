@@ -23,6 +23,7 @@ const Login = React.lazy(() => import('./pages/Login'));
 const News = React.lazy(() => import('./pages/News'));
 const Status = React.lazy(() => import('./pages/Status'));
 import { isFeatureEnabled } from './config/featureFlags';
+import { filterInstancesForMode, getMostUsedInstanceByPlaytime } from './utils/instanceTypes';
 
 import AppSidebar from './components/AppSidebar';
 import TopBar from './components/TopBar';
@@ -577,6 +578,8 @@ function App() {
             setAppSettings(newSettings);
         });
 
+
+
         const removeStatusListener = window.electronAPI?.onInstanceStatus(({ instanceName, status, loader, version }) => {
             setRunningInstances(prev => {
                 const next = { ...prev };
@@ -652,7 +655,7 @@ function App() {
             setJavaRequirement(data || null);
         });
 
-        const removeInstallFromMarketplaceListener = window.electronAPI?.onInstallFromMarketplace?.(async (payload) => {
+        const removeInstallFromMarketplaceListener = (window.electronAPI as any)?.onInstallFromMarketplace?.(async (payload) => {
             if (!payload?.url) return;
             console.log('[App] Install from marketplace deep link:', payload);
 
@@ -700,6 +703,34 @@ function App() {
             if (removeInstallFromMarketplaceListener) removeInstallFromMarketplaceListener();
         };
     }, [startupPageOptions]);
+
+    useEffect(() => {
+        const removeTrayActionListener = window.electronAPI?.onTrayAction?.((action) => {
+            if (action === 'open-settings') {
+                setSelectedInstance(null);
+                setSelectedServer(null);
+                startTransition(() => {
+                    setCurrentMode('launcher');
+                    setCurrentView('settings');
+                });
+                return;
+            }
+
+            if (action === 'open-library') {
+                setSelectedInstance(null);
+                setSelectedServer(null);
+                startTransition(() => {
+                    setCurrentMode('launcher');
+                    setCurrentView('library');
+                });
+                return;
+            }
+        });
+
+        return () => {
+            if (removeTrayActionListener) removeTrayActionListener();
+        };
+    }, []);
 
     const handleCloseJavaRequiredModal = () => {
         if (isInstallingRequiredJava) return;
@@ -1066,7 +1097,7 @@ function App() {
         appSettings.hasSelectedThemeMode === true &&
         appSettings.hasSelectedStartupMode === false;
     const canAccessSkins = Boolean(userProfile) && !isGuest;
-    const guideSteps = React.useMemo(() => getGuideSteps(guideMode, { canAccessSkins }), [guideMode, canAccessSkins]);
+    const guideSteps = getGuideSteps(guideMode, { canAccessSkins });
     const isGuidePromptBlockedBySetup =
         isInitialLoading ||
         isLoginView ||

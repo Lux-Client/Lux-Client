@@ -110,7 +110,8 @@
       "category": "Game",
       "icon": "resources/icon.png",
       "executableName": "lux",
-      "artifactName": "${productName}-setup.${ext}"
+      "artifactName": "${productName}-setup.${ext}",
+      "compression": "maximum"
     }
   },
   "dependencies": {

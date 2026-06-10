@@ -992,6 +992,29 @@ app.whenReady().then(() => {
                 }
             },
             {
+                label: 'Open Library', click: () => {
+                    if (mainWindow) {
+                        if (mainWindow.isMinimized()) mainWindow.restore();
+                        mainWindow.show();
+                        mainWindow.focus();
+                        mainWindow.webContents.send('tray:action', 'open-library');
+                    }
+                }
+            },
+            {
+                label: 'App Settings', click: () => {
+                    if (mainWindow) {
+                        if (mainWindow.isMinimized()) mainWindow.restore();
+                        mainWindow.show();
+                        mainWindow.focus();
+                        mainWindow.webContents.send('tray:action', 'open-settings');
+                    }
+                }
+            },
+            {
+                type: 'separator'
+            },
+            {
                 label: 'Quit', click: () => {
                     isQuiting = true;
                     app.quit();

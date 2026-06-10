@@ -208,6 +208,11 @@ const electronAPI = {
         ipcRenderer.on('settings:updated', subscription);
         return () => ipcRenderer.removeListener('settings:updated', subscription);
     },
+    onTrayAction: (callback) => {
+        const subscription = (_event, action, payload) => callback(action, payload);
+        ipcRenderer.on('tray:action', subscription);
+        return () => ipcRenderer.removeListener('tray:action', subscription);
+    },
     onJavaProgress: (callback) => {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('java:progress', subscription);
