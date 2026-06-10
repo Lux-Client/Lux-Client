@@ -111,7 +111,10 @@
       "icon": "resources/icon.png",
       "executableName": "lux",
       "artifactName": "${productName}-setup.${ext}",
-      "compression": "maximum"
+      "syncDesktopName": true
+    },
+    "deb": {
+      "compression": "xz"
     }
   },
   "dependencies": {
