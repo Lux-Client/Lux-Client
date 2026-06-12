@@ -1090,6 +1090,7 @@
         "check_manually": "Bitte überprüfe die Datei latest.log manuell.",
         "applying_fix": "Fix wird angewendet: {{fix}}...",
         "fix_success": "Fix erfolgreich angewendet! Versuche das Spiel erneut zu starten.",
+        "relaunch": "Neu starten",
         "fix_error": "Fehler beim Anwenden des Fixes: {{error}}",
         "fix_exception": "Ausnahmefehler beim Anwenden des Fixes: {{error}}",
         "fix_all_outdated": "Alle veralteten Mods aktualisieren",

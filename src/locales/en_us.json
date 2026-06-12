@@ -1091,6 +1091,7 @@
         "check_manually": "Please check the latest.log file manually.",
         "applying_fix": "Applying fix: {{fix}}...",
         "fix_success": "Fix applied successfully! Try launching again.",
+        "relaunch": "Relaunch",
         "fix_error": "Failed to apply fix: {{error}}",
         "fix_exception": "Error applying fix: {{error}}",
         "fix_all_outdated": "Fix all outdated mods",

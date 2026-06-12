@@ -1078,6 +1078,7 @@
         "mod_issues_detected": "Incompatible mods were detected. Use Auto Fix to install compatible versions.",
         "applying_fix": "Applying fix: {{fix}}...",
         "fix_success": "Fix applied successfully! Try launching again.",
+        "relaunch": "Neu starte",
         "fix_error": "Failed to apply fix: {{error}}",
         "fix_exception": "Error applying fix: {{error}}",
         "fix_all_outdated": "Fix all outdated mods",

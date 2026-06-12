@@ -4616,6 +4616,101 @@ module.exports = (ipcMain, win) => {
             }
         });
 
+        // Smart memory increase used by the crash analyzer's "increase_memory" fix.
+        // Reads the *effective* current allocation (instance override -> global settings -> launcher default),
+        // raises it by a step, and caps it against the system's physical RAM so we never set an unbootable value.
+        ipcMain.handle('instance:increase-memory', async (_, instanceName) => {
+            try {
+                const configPath = path.join(instancesDir, instanceName, 'instance.json');
+                if (!await fs.pathExists(configPath)) {
+                    return { success: false, error: 'Instance not found' };
+                }
+                const config = await fs.readJson(configPath);
+
+                // Launcher default when neither the instance nor global settings define a value.
+                let globalMax = 4096;
+                try {
+                    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+                    if (await fs.pathExists(settingsPath)) {
+                        const saved = await fs.readJson(settingsPath);
+                        if (Number.isFinite(Number(saved.maxMemory)) && Number(saved.maxMemory) > 0) {
+                            globalMax = Number(saved.maxMemory);
+                        }
+                    }
+                } catch (_) { }
+
+                const currentMax = Number.isFinite(Number(config.maxMemory)) && Number(config.maxMemory) > 0
+                    ? Number(config.maxMemory)
+                    : globalMax;
+
+                // Cap: leave ~2GB headroom for the OS and never exceed 70% of total RAM.
+                const totalMb = Math.floor(os.totalmem() / (1024 * 1024));
+                const cap = Math.max(2048, Math.min(totalMb - 2048, Math.floor(totalMb * 0.7)));
+
+                const STEP = 2048;
+                const newMax = Math.min(currentMax + STEP, cap);
+
+                if (newMax <= currentMax) {
+                    return {
+                        success: false,
+                        alreadyMax: true,
+                        currentMemory: currentMax,
+                        systemMemory: totalMb,
+                        error: `RAM is already at the safe maximum for this system (${currentMax} MB allocated, ${totalMb} MB total). Close other programs or add more RAM.`
+                    };
+                }
+
+                config.maxMemory = newMax;
+                if (Number.isFinite(Number(config.minMemory)) && Number(config.minMemory) > newMax) {
+                    config.minMemory = newMax;
+                }
+                await withBusyFsRetry(() => fs.writeJson(configPath, config, { spaces: 4 }));
+                invalidateMergedInstancesCache();
+                return { success: true, previousMemory: currentMax, newMemory: newMax };
+            } catch (e) {
+                if (isBusyFsError(e)) {
+                    return { success: false, error: 'Instance files are currently busy/locked. Stop the instance and try again.' };
+                }
+                return { success: false, error: e.message };
+            }
+        });
+
+        // Disable the offending mod for the crash analyzer's "disable_mod" fix (e.g. mixin failures).
+        // Matches the mod id captured from the log against an enabled jar's filename and renames it to .disabled.
+        ipcMain.handle('instance:disable-mod-by-name', async (_, instanceName, modName) => {
+            try {
+                const target = String(modName || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+                if (target.length < 3) {
+                    return { success: false, error: 'Mod name from the crash log was too generic to match safely.' };
+                }
+
+                const modsDir = path.join(instancesDir, instanceName, 'mods');
+                if (!await fs.pathExists(modsDir)) {
+                    return { success: false, error: 'Mods folder not found' };
+                }
+
+                const files = await fs.readdir(modsDir);
+                // Only consider currently-enabled jars.
+                const jars = files.filter(f => f.toLowerCase().endsWith('.jar'));
+                const match = jars.find(f => {
+                    const normalized = f.toLowerCase().replace(/\.jar$/, '').replace(/[^a-z0-9]+/g, '');
+                    return normalized.includes(target);
+                });
+
+                if (!match) {
+                    return { success: false, error: `Could not find a matching mod file for "${modName}".` };
+                }
+
+                await withBusyFsRetry(() => fs.rename(path.join(modsDir, match), path.join(modsDir, match + '.disabled')));
+                return { success: true, disabledFile: match };
+            } catch (e) {
+                if (isBusyFsError(e)) {
+                    return { success: false, error: 'Mod file is busy/locked. Stop the instance and try again.' };
+                }
+                return { success: false, error: e.message };
+            }
+        });
+
         ipcMain.handle('instance:delete-mod', async (_, instanceName, modFileName, projectType = 'mod') => {
             try {
                 let folder = 'mods';

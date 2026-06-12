@@ -7,6 +7,7 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
     const [issues, setIssues] = useState([]);
     const [isApplyingFix, setIsApplyingFix] = useState(false);
     const [fixStatus, setFixStatus] = useState(null);
+    const [fixApplied, setFixApplied] = useState(false);
 
     useEffect(() => {
         if (!isOpen || !crashData) return;
@@ -14,6 +15,7 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
         // Always reset status when a new crash report is shown
         setFixStatus(null);
         setIsApplyingFix(false);
+        setFixApplied(false);
         setIssues([]);
 
         let cancelled = false;
@@ -71,6 +73,7 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
         if (!isOpen) {
             setFixStatus(null);
             setIsApplyingFix(false);
+            setFixApplied(false);
             setIssues([]);
         }
     }, [isOpen]);
@@ -154,12 +157,29 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
             return { success: false, error: `No matching mod found for "${requestedModName}".` };
         }
 
+        const normalizedTarget = normalizeToken(requestedModName).replace(/[^a-z0-9]+/g, '');
+        if (normalizedTarget.length < 3) {
+            return { success: false, error: `Dependency name "${requestedModName}" is too generic to resolve automatically. Please install it manually.` };
+        }
+
         const sortedCandidates = [...searchRes.results].sort(
             (a, b) => scoreProjectMatch(b, requestedModName) - scoreProjectMatch(a, requestedModName)
         );
         const selectedProject = sortedCandidates[0];
         if (!selectedProject?.project_id) {
             return { success: false, error: 'No valid project ID returned by search.' };
+        }
+
+        // Guard against installing the wrong mod: only auto-install on a confident match.
+        // An exact slug/title/id match is ideal; otherwise require a strong name-based score
+        // (both title and slug containing the dependency id), not just a popularity bonus.
+        const isExactMatch = [selectedProject.slug, selectedProject.title, selectedProject.project_id]
+            .some((value) => normalizeToken(value).replace(/[^a-z0-9]+/g, '') === normalizedTarget);
+        if (!isExactMatch && scoreProjectMatch(selectedProject, requestedModName) < 80) {
+            return {
+                success: false,
+                error: `Could not confidently identify the mod for "${requestedModName}". Please install it manually to avoid installing the wrong mod.`
+            };
         }
 
         const versionsRes = await window.electronAPI.getModVersions(
@@ -210,10 +230,18 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
 
         try {
             let res: any = { success: false, error: 'Unknown fix action' };
+            let successMessage = t('crash.fix_success');
             switch (issue.fixAction) {
-                case 'increase_memory':
-                    res = await window.electronAPI.updateInstanceConfig(crashData.instanceName, { maxMemory: 4096 });
+                case 'increase_memory': {
+                    // Smart increase: the backend reads the effective current allocation and caps it
+                    // against system RAM, so this no longer no-ops on instances that already have 4 GB.
+                    const memRes = await window.electronAPI.increaseInstanceMemory(crashData.instanceName);
+                    res = memRes || { success: false, error: 'No response from memory handler' };
+                    if (memRes?.success) {
+                        successMessage = `${t('crash.fix_success')} (${memRes.previousMemory} MB → ${memRes.newMemory} MB)`;
+                    }
                     break;
+                }
                 case 'fix_java_version':
                     res = await window.electronAPI.reinstallInstance(crashData.instanceName, 'java');
                     break;
@@ -223,6 +251,25 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                 case 'install_compatible_mod':
                     res = await autoInstallCompatibleMod(issue);
                     break;
+                case 'disable_mod': {
+                    // Mixin/transformer failures: disable the offending mod identified in the log.
+                    const modName = issue.capturedGroups?.[0];
+                    if (modName) {
+                        const disableRes = await window.electronAPI.disableModByName(crashData.instanceName, modName);
+                        if (disableRes?.success) {
+                            res = { success: true };
+                            successMessage = `${t('crash.fix_success')} (${disableRes.disabledFile})`;
+                        } else {
+                            // No confident match — open the mods folder so the user can disable it by hand.
+                            await window.electronAPI.openInstanceFolder(crashData.instanceName);
+                            res = { success: false, error: disableRes?.error || 'Could not disable the mod automatically. The mods folder has been opened.' };
+                        }
+                    } else {
+                        await window.electronAPI.openInstanceFolder(crashData.instanceName);
+                        res = { success: false, error: 'No specific mod was identified in the log. The mods folder has been opened so you can disable the offending mod.' };
+                    }
+                    break;
+                }
                 case 'reset_config':
                     res = await window.electronAPI.resetInstanceConfig(crashData.instanceName);
                     break;
@@ -251,7 +298,8 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
             }
 
             if (res.success) {
-                setFixStatus({ type: 'success', message: t('crash.fix_success') });
+                setFixStatus({ type: 'success', message: successMessage });
+                setFixApplied(true);
                 if (onFixApplied) onFixApplied();
             } else {
                 setFixStatus({ type: 'error', message: t('crash.fix_error', { error: res.error || t('common.unknown_error', 'Unknown error') }) });
@@ -283,11 +331,23 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
 
         if (failCount === 0) {
             setFixStatus({ type: 'success', message: t('crash.status.all_updated_success', { count: successCount }) });
+            setFixApplied(true);
             if (onFixApplied) onFixApplied();
         } else {
             setFixStatus({ type: 'error', message: t('crash.status.some_updated_failed', { success: successCount, failed: failCount }) });
         }
         setIsApplyingFix(false);
+    };
+
+    const handleRelaunch = async () => {
+        const instanceName = crashData?.instanceName;
+        if (!instanceName) return;
+        onClose();
+        try {
+            await window.electronAPI.launchGame(instanceName);
+        } catch (err) {
+            console.error('[CrashModal] Relaunch failed:', err);
+        }
     };
 
     return (
@@ -407,6 +467,15 @@ const CrashModal = ({ isOpen, onClose, crashData, onFixApplied }) => {
                 </div>
 
                 <div className="p-8 border-t border-border flex gap-4">
+                    {fixApplied && (
+                        <button
+                            onClick={handleRelaunch}
+                            disabled={isApplyingFix}
+                            className="flex-1 px-6 py-3 bg-primary text-black rounded-xl font-bold transition-all disabled:opacity-50 hover:scale-[1.01] active:scale-[0.99] shadow-md"
+                        >
+                            {t('crash.relaunch', 'Relaunch')}
+                        </button>
+                    )}
                     <button
                         onClick={onClose}
                         className="flex-1 px-6 py-3 bg-muted hover:bg-accent rounded-xl text-foreground font-bold transition-colors"
