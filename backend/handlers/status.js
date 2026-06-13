@@ -9,10 +9,10 @@ const SERVICES = [
         url: 'https://session.minecraft.net/'
     },
     {
-        id: 'authserver',
-        name: 'Mojang Auth Server',
-        description: 'Legacy Mojang authentication',
-        url: 'https://authserver.mojang.com/'
+        id: 'luxserver',
+        name: 'Lux Server',
+        description: 'Lux Extensions/Themes/Instance Codes',
+        url: 'https://lux.pluginhub.de/'
     },
     {
         id: 'api',
