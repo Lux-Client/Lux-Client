@@ -47,6 +47,8 @@ interface ElectronAPI {
   uploadInstanceFile: (instanceName: string, relativePath: string, localFilePath: string) => Promise<any>;
   createInstanceDirectory: (instanceName: string, relativePath: string) => Promise<any>;
   toggleMod: (instanceName: string, fileName: string) => Promise<any>;
+  disableModByName: (instanceName: string, modName: string) => Promise<any>;
+  increaseInstanceMemory: (instanceName: string) => Promise<any>;
   deleteMod: (instanceName: string, fileName: string, type?: string) => Promise<any>;
   getWorlds: (instanceName: string) => Promise<any>;
   openWorldFolder: (instanceName: string, folderName: string) => Promise<any>;

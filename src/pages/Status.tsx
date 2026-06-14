@@ -15,7 +15,7 @@ interface Service {
 
 const PLACEHOLDER_SERVICES: Service[] = [
     { id: 'session', name: 'Minecraft Session', description: 'Game session authentication', url: '', status: 'checking' },
-    { id: 'authserver', name: 'Mojang Auth Server', description: 'Legacy Mojang authentication', url: '', status: 'checking' },
+    { id: 'luxserver', name: 'Lux Server', description: 'Lux Extensions/Themes/Instance Codes', url: '', status: 'checking' },
     { id: 'api', name: 'Mojang API', description: 'Profile and player data', url: '', status: 'checking' },
     { id: 'textures', name: 'Texture Server', description: 'Minecraft skins and capes', url: '', status: 'checking' },
     { id: 'services', name: 'Minecraft Services', description: 'Xbox Live / Microsoft auth', url: '', status: 'checking' },
