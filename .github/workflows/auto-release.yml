@@ -124,6 +124,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Compress Linux artifacts
+        if: matrix.id == 'appimage' || matrix.id == 'deb' || matrix.id == 'rpm'
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for f in release/*.{AppImage,deb,rpm}; do
+            if [[ -f "$f" ]]; then
+              zip -j "${f}.zip" "$f"
+              rm "$f"
+            fi
+          done
+
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -131,6 +143,9 @@ jobs:
           path: |
             release/*.exe
             release/*.dmg
+            release/*.AppImage.zip
+            release/*.deb.zip
+            release/*.rpm.zip
             release/*.AppImage
             release/*.deb
             release/*.rpm
@@ -166,7 +181,7 @@ jobs:
               release_id: releaseId,
               per_page: 100
             });
-            const installerExts = ['.exe', '.dmg', '.AppImage', '.deb', '.rpm'];
+            const installerExts = ['.exe', '.dmg', '.AppImage', '.deb', '.rpm', '.zip'];
             const toDelete = assets.filter(a => installerExts.some(ext => a.name.endsWith(ext)));
             for (const asset of toDelete) {
               core.info(`Deleting old asset: ${asset.name}`);
@@ -206,6 +221,9 @@ jobs:
           gh release upload "$TAG" \
             release-artifacts/*.exe \
             release-artifacts/*.dmg \
+            release-artifacts/*.AppImage.zip \
+            release-artifacts/*.deb.zip \
+            release-artifacts/*.rpm.zip \
             release-artifacts/*.AppImage \
             release-artifacts/*.deb \
             release-artifacts/*.rpm \

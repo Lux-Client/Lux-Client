@@ -46,18 +46,12 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - name: Set Electron cache dirs
-        shell: bash
-        run: |
-          echo "ELECTRON_CACHE_DIR=$HOME/.cache/electron" >> "$GITHUB_ENV"
-          echo "ELECTRON_BUILDER_CACHE_DIR=$HOME/.cache/electron-builder" >> "$GITHUB_ENV"
-
       - name: Cache Electron downloads
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.ELECTRON_CACHE_DIR }}
-            ${{ env.ELECTRON_BUILDER_CACHE_DIR }}
+            ~/.cache/electron
+            ~/.cache/electron-builder
           key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json', 'package.json') }}
           restore-keys: |
             ${{ runner.os }}-electron-
@@ -97,6 +91,17 @@ jobs:
             fi
           done
 
+      - name: Compress RPM
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for f in release/*.rpm; do
+            if [[ -f "$f" ]]; then
+              zip -j "${f}.zip" "$f"
+              rm "$f"
+            fi
+          done
+
       - name: Check release artifacts exist
         id: relcheck
         shell: bash
@@ -111,7 +116,7 @@ jobs:
         if: steps.relcheck.outputs.has_release == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: release-rpm-${{ env.SHORT_SHA }}
+          name: release-rpm-${{ github.sha }}
           path: release/
           if-no-files-found: error
           compression-level: 6
