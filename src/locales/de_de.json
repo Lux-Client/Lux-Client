@@ -267,6 +267,7 @@
             "export_code": "Als Code exportieren",
             "backup_manager": "Backup-Manager",
             "reinstall": "Instanz neu installieren",
+            "reinstall_started": "Neuinstallation gestartet",
             "check_updates": "Nach Updates suchen",
             "update_all": "Alles aktualisieren",
             "add_content": "Inhalt hinzufügen",

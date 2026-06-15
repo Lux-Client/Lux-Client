@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Dropdown from '../components/Dropdown';
 import InstanceSettingsModal from '../components/InstanceSettingsModal';
+import ReinstallModal from '../components/ReinstallModal';
 import ModpackCodeModal from '../components/ModpackCodeModal';
 import { useNotification } from '../context/NotificationContext';
 import { Analytics } from '../services/Analytics';
@@ -92,6 +93,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const isLaunching = status === 'launching';
     const isInstalling = status === 'installing';
     const [showSettings, setShowSettings] = useState(false);
+    const [showReinstall, setShowReinstall] = useState(false);
     const [selectedProject, setSelectedProject] = useState(null);
     const [projectVersions, setProjectVersions] = useState([]);
     const [loadingVersions, setLoadingVersions] = useState(false);
@@ -1221,8 +1223,8 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 </button>
                                 <button
                                     onClick={() => {
-                                        window.electronAPI.reinstallInstance(instance.name);
                                         setShowMenu(false);
+                                        setShowReinstall(true);
                                     }}
                                     className="w-full text-left px-4 py-3 hover:bg-accent flex items-center gap-3 transition-colors text-yellow-500"
                                 >
@@ -2035,6 +2037,29 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         onClose={() => setShowSettings(false)}
                         onSave={handleSettingsSave}
                         onDelete={onBack}
+                    />
+                )
+            }
+
+            { }
+            {
+                showReinstall && (
+                    <ReinstallModal
+                        instance={instance}
+                        onClose={() => setShowReinstall(false)}
+                        onConfirm={async (type, options) => {
+                            setShowReinstall(false);
+                            try {
+                                const res = await window.electronAPI.reinstallInstance(instance.name, type, options);
+                                if (res?.success) {
+                                    addNotification(t('instance_details.actions.reinstall_started', 'Reinstall started'), 'success');
+                                } else {
+                                    addNotification('Reinstall failed: ' + (res?.error || 'Unknown error'), 'error');
+                                }
+                            } catch (e) {
+                                addNotification('Reinstall error: ' + e.message, 'error');
+                            }
+                        }}
                     />
                 )
             }

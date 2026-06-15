@@ -2469,19 +2469,43 @@ module.exports = (ipcMain, win) => {
                             try {
                                 sendProgress(35, 'Auto-installing Fabric API...');
                                 const fabricApiId = 'P7dR8mSH';
-                                const fapiRes = await axios.get(`https://api.modrinth.com/v2/project/${fabricApiId}/version`, {
-                                    params: {
-                                        loaders: JSON.stringify(['fabric']),
-                                        game_versions: JSON.stringify(resolvedVersionAliases)
-                                    }
-                                });
+                                const pinnedFabricApiVersionId = migrationOptions?.pinnedFabricApiVersionId;
 
-                                if (fapiRes.data && fapiRes.data.length > 0) {
-                                    const latest = fapiRes.data[0];
-                                    const file = latest.files.find(f => f.primary) || latest.files[0];
+                                let fabricApiVersion = null;
+                                if (pinnedFabricApiVersionId) {
+                                    // Custom reinstall: install the exact Fabric API build the user picked.
+                                    const pinnedRes = await axios.get(`https://api.modrinth.com/v2/version/${pinnedFabricApiVersionId}`);
+                                    fabricApiVersion = pinnedRes.data || null;
+                                } else {
+                                    const fapiRes = await axios.get(`https://api.modrinth.com/v2/project/${fabricApiId}/version`, {
+                                        params: {
+                                            loaders: JSON.stringify(['fabric']),
+                                            game_versions: JSON.stringify(resolvedVersionAliases)
+                                        }
+                                    });
+                                    if (fapiRes.data && fapiRes.data.length > 0) {
+                                        fabricApiVersion = fapiRes.data[0];
+                                    }
+                                }
+
+                                if (fabricApiVersion) {
+                                    const file = fabricApiVersion.files.find(f => f.primary) || fabricApiVersion.files[0];
                                     const modsDir = path.join(dir, 'mods');
                                     await fs.ensureDir(modsDir);
                                     const dest = path.join(modsDir, file.filename);
+
+                                    // When pinning a specific build, remove any previously installed
+                                    // Fabric API jar so the chosen version is the only one present.
+                                    if (pinnedFabricApiVersionId && await fs.pathExists(modsDir)) {
+                                        const existingMods = await fs.readdir(modsDir);
+                                        for (const existing of existingMods) {
+                                            if (existing === file.filename) continue;
+                                            if (/^fabric[-_]?api.*\.jar$/i.test(existing)) {
+                                                await fs.remove(path.join(modsDir, existing));
+                                                appendLog(`Removed previous Fabric API: ${existing}`);
+                                            }
+                                        }
+                                    }
 
                                     if (!await fs.pathExists(dest)) {
                                         appendLog(`Downloading Fabric API compatible with ${resolvedMcVersion}...`);
@@ -4001,9 +4025,9 @@ module.exports = (ipcMain, win) => {
         });
 
         console.log('Registering instance:reinstall handler...');
-        ipcMain.handle('instance:reinstall', async (_, instanceName, type = 'soft') => {
+        ipcMain.handle('instance:reinstall', async (_, instanceName, type = 'soft', options = {}) => {
             try {
-                console.log(`[Instance Reinstall] ${instanceName}, type: ${type}`);
+                console.log(`[Instance Reinstall] ${instanceName}, type: ${type}`, options || {});
                 await writeInstanceActionLog('reinstall-instance', {
                     instanceName,
                     reinstallType: type
@@ -4015,6 +4039,22 @@ module.exports = (ipcMain, win) => {
                 if (!await fs.pathExists(configPath)) return { success: false, error: 'Config missing' };
 
                 const config = await fs.readJson(configPath);
+
+                // Custom reinstall: pin a specific loader version (and optionally a
+                // specific Fabric API build). It otherwise behaves like a soft reinstall
+                // (re-downloads game files, keeps mods/saves/configs).
+                const installOptions = {};
+                if (type === 'custom' && options) {
+                    if (options.loaderVersion) {
+                        config.loaderVersion = options.loaderVersion;
+                        // Drop the stored versionId so the installer re-resolves it for the
+                        // pinned loader build instead of reusing the old profile id.
+                        delete config.versionId;
+                    }
+                    if (options.fabricApiVersion) {
+                        installOptions.pinnedFabricApiVersionId = options.fabricApiVersion;
+                    }
+                }
 
                 config.status = 'installing';
                 await fs.writeJson(configPath, config, { spaces: 4 });
@@ -4028,7 +4068,7 @@ module.exports = (ipcMain, win) => {
                         await fs.remove(path.join(dir, file));
                     }
                 }
-                await startBackgroundInstall(instanceName, config, type === 'hard');
+                await startBackgroundInstall(instanceName, config, type === 'hard', false, installOptions);
 
                 return { success: true };
 

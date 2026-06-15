@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
+import { useAnimationsEnabled } from '../hooks/useAnimationsEnabled';
 import ReinstallModal from './ReinstallModal';
 import ConfirmationModal from './ConfirmationModal';
 import Dropdown from './Dropdown';
@@ -9,6 +10,7 @@ import ToggleBox from './ToggleBox';
 function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDelete }) {
     const { t } = useTranslation();
     const { addNotification } = useNotification();
+    const animationsEnabled = useAnimationsEnabled();
     const [activeTab, setActiveTab] = useState('general');
     const [config, setConfig] = useState({ ...instance });
     const [loading, setLoading] = useState(false);
@@ -189,11 +191,11 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
         }
     };
 
-    const handleReinstall = async (type) => {
+    const handleReinstall = async (type, options) => {
         setShowReinstall(false);
         setLoading(true);
         try {
-            const res = await window.electronAPI.reinstallInstance(instance.name, type);
+            const res = await window.electronAPI.reinstallInstance(instance.name, type, options);
             if (res.success) {
                 addNotification('Reinstall started', 'success');
                 onClose();
@@ -213,8 +215,8 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={onClose}>
-                <div ref={modalRef} className="bg-popover w-full max-w-4xl h-[600px] rounded-xl border border-border flex overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className={`fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm ${animationsEnabled ? 'animate-in fade-in duration-200' : ''}`} onClick={onClose}>
+                <div ref={modalRef} className={`bg-popover w-full max-w-4xl h-[600px] rounded-xl border border-border flex overflow-hidden shadow-2xl ${animationsEnabled ? 'animate-in zoom-in-95 slide-in-from-bottom-3 duration-300' : ''}`} onClick={(e) => e.stopPropagation()}>
 
                     { }
                     <div className="w-64 bg-card border-r border-border p-4 flex flex-col gap-2">
@@ -537,7 +539,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
 
             {showReinstall && (
                 <ReinstallModal
-                    instanceName={instance.name}
+                    instance={instance}
                     onClose={() => setShowReinstall(false)}
                     onConfirm={handleReinstall}
                 />

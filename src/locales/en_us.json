@@ -267,6 +267,7 @@
             "export_code": "Export as Code",
             "backup_manager": "Backup Manager",
             "reinstall": "Reinstall Instance",
+            "reinstall_started": "Reinstall started",
             "check_updates": "Check for Updates",
             "update_all": "Update All",
             "add_content": "Add Content",
