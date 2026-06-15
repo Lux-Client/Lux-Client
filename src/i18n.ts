@@ -16,6 +16,7 @@ import ru_ru from './locales/ru_ru.json';
 import sk_sk from './locales/sk_sk.json';
 import sl_si from './locales/sl_si.json';
 import sv_se from './locales/sv_se.json';
+import el_gr from './locales/el_gr.json';
 
 i18n
     .use(initReactI18next)
@@ -35,7 +36,8 @@ i18n
             ru_ru: { translation: ru_ru },
             sk_sk: { translation: sk_sk },
             sl_si: { translation: sl_si },
-            sv_se: { translation: sv_se }
+            sv_se: { translation: sv_se },
+            el_gr: { translation: el_gr }
         },
         lng: 'en_us',
         fallbackLng: 'en_us',

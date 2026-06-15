@@ -892,6 +892,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                         <SelectItem value="sk_sk">{t('settings.general.slovak')}</SelectItem>
                                         <SelectItem value="sl_si">{t('settings.general.slovenian')}</SelectItem>
                                         <SelectItem value="sv_se">{t('settings.general.swedish')}</SelectItem>
+                                        <SelectItem value="el_gr">{t('settings.general.greek')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
