@@ -213,7 +213,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={onClose}>
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8 backdrop-blur-xs" onClick={onClose}>
                 <div ref={modalRef} className="bg-popover w-full max-w-4xl h-[600px] rounded-xl border border-border flex overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
                     { }
@@ -293,7 +293,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                             type="text"
                                             value={config.name || ''}
                                             onChange={(e) => handleChange('name', e.target.value)}
-                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors"
                                         />
                                         <p className="text-xs text-muted-foreground">{t('instance_settings.general.rename_note')}</p>
                                         {isInstanceBusy && (
@@ -306,7 +306,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                             {activeTab === 'installation' && (
                                 <div className="space-y-6">
                                     <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg text-primary text-sm flex items-start gap-3">
-                                        <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <svg className="w-5 h-5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         <div className="space-y-1">
                                             <p className="font-bold">{t('instance_settings.installation.migration_title')}</p>
                                             <p className="text-xs opacity-80">{t('instance_settings.installation.migration_desc')}</p>
@@ -378,7 +378,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                                 type="number"
                                                 value={config.resolutionWidth || 854}
                                                 onChange={(e) => handleChange('resolutionWidth', parseInt(e.target.value))}
-                                                className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -387,7 +387,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                                 type="number"
                                                 value={config.resolutionHeight || 480}
                                                 onChange={(e) => handleChange('resolutionHeight', parseInt(e.target.value))}
-                                                className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors"
                                             />
                                         </div>
                                     </div>
@@ -404,7 +404,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                                 value={config.javaPath || ''}
                                                 onChange={(e) => handleChange('javaPath', e.target.value)}
                                                 placeholder={t('instance_settings.java.path_placeholder')}
-                                                className="flex-1 bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
+                                                className="flex-1 bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors placeholder:text-muted-foreground"
                                             />
                                         </div>
                                     </div>
@@ -418,7 +418,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                                     type="number"
                                                     value={config.minMemory || 1024}
                                                     onChange={(e) => handleChange('minMemory', parseInt(e.target.value))}
-                                                    className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                    className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors"
                                                 />
                                             </div>
                                             <div>
@@ -427,7 +427,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                                     type="number"
                                                     value={config.maxMemory || 4096}
                                                     onChange={(e) => handleChange('maxMemory', parseInt(e.target.value))}
-                                                    className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors"
+                                                    className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors"
                                                 />
                                             </div>
                                         </div>
@@ -438,7 +438,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                             <select
                                                 value={config.javaProfile || 'default'}
                                                 onChange={(e) => handleChange('javaProfile', e.target.value)}
-                                                className="w-full bg-card border border-border rounded p-3 text-sm focus:border-primary outline-none appearance-none cursor-pointer hover:bg-accent transition-colors"
+                                                className="w-full bg-card border border-border rounded p-3 text-sm focus:border-primary outline-hidden appearance-none cursor-pointer hover:bg-accent transition-colors"
                                             >
                                                 <option value="default">{t('common.disabled')} / Inherit Global</option>
                                                 <option value="performance">Performance (Aikar's Flags)</option>
@@ -470,7 +470,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                             value={config.preLaunchHook || ''}
                                             onChange={(e) => handleChange('preLaunchHook', e.target.value)}
                                             placeholder={t('instance_settings.hooks.placeholder')}
-                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
+                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors placeholder:text-muted-foreground"
                                         />
                                         <p className="text-xs text-muted-foreground">{t('instance_settings.hooks.pre_launch_desc')}</p>
                                     </div>
@@ -481,7 +481,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
                                             value={config.postExitHook || ''}
                                             onChange={(e) => handleChange('postExitHook', e.target.value)}
                                             placeholder={t('instance_settings.hooks.placeholder')}
-                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-none transition-colors placeholder:text-muted-foreground"
+                                            className="w-full bg-card border border-border rounded p-3 focus:border-primary outline-hidden transition-colors placeholder:text-muted-foreground"
                                         />
                                         <p className="text-xs text-muted-foreground">{t('instance_settings.hooks.post_exit_desc')}</p>
                                     </div>
@@ -556,7 +556,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
 
             {showMigrationReview && (
                 <div
-                    className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-6 backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/80 z-60 flex items-center justify-center p-6 backdrop-blur-xs"
                     onClick={() => setShowMigrationReview(false)}
                 >
                     <div

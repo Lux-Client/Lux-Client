@@ -256,7 +256,7 @@ const FileBrowser = ({ serverName }) => {
                         </button>
                         <span className="font-medium text-foreground truncate">{selectedFile.name}</span>
                         {isReadOnly && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-muted-foreground border border-border uppercase tracking-wider backdrop-blur-sm">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-muted-foreground border border-border uppercase tracking-wider backdrop-blur-xs">
                                 {t('common.readonly')}
                             </span>
                         )}
@@ -301,7 +301,7 @@ const FileBrowser = ({ serverName }) => {
                         value={editingContent}
                         onChange={(e) => setEditingContent(e.target.value)}
                         readOnly={isReadOnly}
-                        className={`w-full h-full bg-black/40 text-foreground font-mono text-sm p-4 rounded-xl border border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none resize-none custom-scrollbar ${isReadOnly ? 'opacity-80 cursor-default' : ''}`}
+                        className={`w-full h-full bg-black/40 text-foreground font-mono text-sm p-4 rounded-xl border border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-hidden resize-none custom-scrollbar ${isReadOnly ? 'opacity-80 cursor-default' : ''}`}
                         spellCheck="false"
                     />
                 </div>
@@ -348,7 +348,7 @@ const FileBrowser = ({ serverName }) => {
                                     if (e.key === 'Enter') handleCreateFolder();
                                     if (e.key === 'Escape') setIsCreatingFolder(false);
                                 }}
-                                className="bg-transparent border-none outline-none text-sm text-foreground w-32"
+                                className="bg-transparent border-none outline-hidden text-sm text-foreground w-32"
                                 placeholder={t('server_details.files.folder_name')}
                             />
                             <button onClick={handleCreateFolder} className="p-1 text-primary transition-transform">

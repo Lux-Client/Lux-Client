@@ -1,13 +1,11 @@
 const fs = require('fs-extra');
 const axios = require('axios');
-const Store = require('electron-store');
+const store = require('../storeProxy');
 const { app, shell, BrowserWindow } = require('electron');
 const path = require('path');
 
 const envPath = app.isPackaged ? path.join(process.resourcesPath, '.env') : path.join(app.getAppPath(), '.env');
 require('dotenv').config({ path: envPath });
-
-const store = new Store();
 
 const PROVIDERS = {
     GOOGLE_DRIVE: {

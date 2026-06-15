@@ -32,7 +32,7 @@ export default function LanguageSelectionModal({ onSelect }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
+        <div className="fixed inset-0 z-10000 flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsla(var(--primary),0.16),transparent_24%),radial-gradient(circle_at_bottom_left,hsla(var(--primary),0.1),transparent_22%)]" />
             <Card className="relative w-full max-w-4xl overflow-hidden border-border/70 bg-card/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-300">
                 <CardContent className="p-6 sm:p-8">
@@ -65,7 +65,7 @@ export default function LanguageSelectionModal({ onSelect }) {
                                     className={cn(
                                         'group flex items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200',
                                         isCurrent
-                                            ? 'border-primary/50 bg-primary/10 shadow-sm'
+                                            ? 'border-primary/50 bg-primary/10 shadow-xs'
                                             : 'border-border/70 bg-background/55 hover:border-primary/35 hover:bg-accent/40'
                                     )}
                                 >

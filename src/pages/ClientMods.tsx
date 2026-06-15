@@ -548,7 +548,7 @@ function ClientMods() {
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         placeholder={t('client_mods.search_placeholder', 'Search Fabric mods...')}
-                        className="flex-1 min-w-[220px] bg-muted border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
+                        className="flex-1 min-w-[220px] bg-muted border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-hidden focus:border-primary/60"
                     />
 
                     <select
@@ -557,7 +557,7 @@ function ClientMods() {
                             setVersionFilter(event.target.value);
                             setOffset(0);
                         }}
-                        className="bg-muted border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
+                        className="bg-muted border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-hidden focus:border-primary/60"
                     >
                         <option value="all">{t('client_mods.all_versions', 'All Versions')}</option>
                         {availableVersions.map((version) => (
@@ -571,7 +571,7 @@ function ClientMods() {
                             setSortMethod(event.target.value);
                             setOffset(0);
                         }}
-                        className="bg-muted border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/60"
+                        className="bg-muted border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-hidden focus:border-primary/60"
                     >
                         <option value="relevance">{t('search.relevance', 'Relevance')}</option>
                         <option value="downloads">{t('search.downloads', 'Downloads')}</option>

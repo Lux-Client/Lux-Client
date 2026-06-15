@@ -136,6 +136,7 @@ interface ElectronAPI {
   onLoginSuccess: (callback: IpcCallback) => UnsubscribeFn;
   onThemeUpdated: (callback: IpcCallback) => UnsubscribeFn;
   onSettingsUpdated: (callback: IpcCallback) => UnsubscribeFn;
+  onTrayAction: (callback: (action: string, payload?: any) => void) => UnsubscribeFn;
   onJavaProgress: (callback: IpcCallback) => UnsubscribeFn;
   onJavaRequired: (callback: IpcCallback) => UnsubscribeFn;
   onWindowStateChange: (callback: IpcCallback) => UnsubscribeFn;
@@ -164,6 +165,7 @@ interface ElectronAPI {
   createServerDirectory: (serverName: string, relativePath: string) => Promise<any>;
   renameServerFile: (serverName: string, oldPath: string, newPath: string) => Promise<any>;
   getServerStatus: (name: string) => Promise<any>;
+  checkServiceStatus: () => Promise<any>;
   getServerConsole: (name: string) => Promise<any>;
   clearServerConsole: (name: string) => Promise<any>;
   getOfflinePlayers: (name: string) => Promise<any>;

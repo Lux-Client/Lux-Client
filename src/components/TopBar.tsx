@@ -18,7 +18,7 @@ import {
 } from './ui/dropdown-menu';
 import {
   Search, ChevronDown, ChevronLeft, ChevronRight, Newspaper, Rocket,
-  Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap, Wrench
+  Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap, Wrench, WifiOff
 } from 'lucide-react';
 
 type TopBarProps = {
@@ -62,6 +62,18 @@ function TopBar({
   const [accounts, setAccounts] = useState([]);
   const [liveSkin, setLiveSkin] = useState(null);
   const [actionBarOpen, setActionBarOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const updateOnlineStatus = () => setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
+  }, []);
 
   useEffect(() => {
     if (userProfile?.access_token) {
@@ -164,7 +176,7 @@ function TopBar({
   ];
 
   return (
-    <div className="h-16 w-full titlebar flex items-center justify-between px-3 lg:px-5 border-b border-border bg-background/80 backdrop-blur-md flex-none relative z-[60]">
+    <div className="h-16 w-full titlebar flex items-center justify-between px-3 lg:px-5 border-b border-border bg-background/80 backdrop-blur-md flex-none relative z-60">
       <div className="flex items-center gap-1.5 lg:gap-2.5 no-drag shrink-0">
         <div className="w-10 h-10 bg-primary/15 rounded-xl flex items-center justify-center text-primary font-bold text-base border border-primary/20 overflow-hidden">
           <img src="./icon.png" alt="Lux" className="w-full h-full object-cover" />
@@ -229,7 +241,7 @@ function TopBar({
                         className={cn(
                           "h-8 w-8 rounded-lg px-0",
                           currentMode === value
-                            ? "bg-muted text-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                            ? "bg-muted text-foreground shadow-xs hover:bg-muted hover:text-foreground"
                             : "text-muted-foreground"
                         )}
                       >
@@ -344,6 +356,20 @@ function TopBar({
         <DropdownMenu onOpenChange={(open) => open && loadAccounts()}>
           <DropdownMenuTrigger asChild>
             <button className="flex h-10 items-center gap-1.5 lg:gap-2 rounded-xl px-1.5 lg:px-2.5 py-1.5 hover:bg-accent transition-colors">
+              {!isOnline && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-destructive/10 text-destructive shrink-0">
+                        <WifiOff className="h-4 w-4" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>{t('common.offline', 'Offline')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               {userProfile ? (
                 <>
                   <PlayerHead

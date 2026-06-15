@@ -30,7 +30,7 @@ export default function GuidePromptModal({
     const { t } = useTranslation();
 
     return (
-        <div className="fixed inset-0 z-[10020] flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
+        <div className="fixed inset-0 z-10020 flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsla(var(--primary),0.18),transparent_24%),radial-gradient(circle_at_bottom_left,hsla(var(--primary),0.1),transparent_22%)]" />
             <Card className="relative w-full max-w-2xl overflow-hidden border-border/70 bg-card/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-300">
                 <CardContent className="p-6 sm:p-8">

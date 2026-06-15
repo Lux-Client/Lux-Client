@@ -1,9 +1,23 @@
-const { Auth, mcTokenToolbox, wrapError } = require('msmc');
-const Store = require('electron-store');
-const store = new Store();
+const { Auth, validate, wrapError } = require('msmc');
+const store = require('../storeProxy');
 const { getUserProfile, setUserProfile, getAccounts, setAccounts } = require('../utils/secureProfileStore');
 
 const authManager = new Auth('select_account');
+
+function isTokenExpiryValid(exp) {
+    if (typeof validate === 'function') {
+        try {
+            return validate({ exp });
+        } catch {
+            // fallback to manual expiry check
+        }
+    }
+
+    if (typeof exp === 'number') {
+        return Date.now() < exp * 1000;
+    }
+    return false;
+}
 
 module.exports = (ipcMain, mainWindow) => {
     ipcMain.handle('auth:login', async () => {
@@ -156,10 +170,9 @@ module.exports = (ipcMain, mainWindow) => {
 
         try {
 
-            const isLocalValid = mcTokenToolbox.validate({ exp: profile.exp });
+            const isLocalValid = isTokenExpiryValid(profile.exp);
 
             if (isLocalValid) {
-
                 try {
                     const { getCachedProfile } = require('../utils/profileCache');
                     await getCachedProfile(profile.access_token);
@@ -167,13 +180,12 @@ module.exports = (ipcMain, mainWindow) => {
                 } catch (e) {
                     if (e.response?.status === 401) {
                         console.log("Token locally valid but rejected by Mojang, needing refresh.");
-
                     } else {
-
                         return { success: true };
                     }
                 }
             }
+
             if (profile.refresh_token) {
                 console.log("Session expired, attempting refresh for", profile.name);
                 const xboxManager = await authManager.refresh(profile.refresh_token);

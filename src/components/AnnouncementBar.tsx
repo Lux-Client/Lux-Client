@@ -76,7 +76,7 @@ const AnnouncementBar = () => {
     return (
         <div className="flex items-center justify-center px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full shadow-lg max-w-[400px] overflow-hidden">
             <div className="flex items-center gap-2 overflow-hidden truncate whitespace-nowrap text-sm font-medium">
-                <span className="flex-shrink-0">📢</span>
+                <span className="shrink-0">📢</span>
                 <div className="truncate">
                     {parseMinecraftColors(announcement)}
                 </div>

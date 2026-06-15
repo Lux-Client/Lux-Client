@@ -4,7 +4,7 @@ function SliderControl({ label, value, min = 0, max = 100, step = 1, unit = '', 
     return (
         <div className="space-y-2">
             <div className="flex justify-between items-center gap-2 flex-wrap">
-                <label className="text-sm font-medium text-muted-foreground min-w-0 break-words">
+                <label className="text-sm font-medium text-muted-foreground min-w-0 wrap-break-word">
                     {label}
                 </label>
                 <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">

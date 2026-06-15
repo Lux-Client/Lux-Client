@@ -1,243 +1,417 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@font-face {
-  font-family: 'Minecraft';
-  src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
+@plugin 'tailwindcss-animate';
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+
+  --color-surface: var(--surface-color);
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --font-sans: var(--launcher-font), system-ui, sans-serif;
+  --font-mono: JetBrains Mono, monospace;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.15s ease-out;
+  --animate-fade-out: fade-out 0.15s ease-out;
+  --animate-slide-in: slide-in-from-left 0.2s ease-out;
+  --animate-slide-up: slide-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes slide-in-from-left {
+    from {
+      transform: translateX(-8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      transform: translateY(4px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 }
 
-@font-face {
-  font-family: 'Minecraft';
-  src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-@font-face {
-  font-family: 'Minecraft';
-  src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-Italic.ttf') format('truetype');
-  font-weight: 400;
-  font-style: italic;
+@utility global-primary-glow {
+  box-shadow: 0 0 calc(20px * var(--global-glow-intensity, 0))
+    rgba(var(--primary-color-rgb), calc(0.3 * var(--global-glow-intensity, 0)));
 }
 
-@font-face {
-  font-family: 'Minecraft';
-  src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-BoldItalic.ttf') format('truetype');
-  font-weight: 700;
-  font-style: italic;
+@utility bg-card {
+  background-color: rgba(
+    var(--surface-color-rgb, 28, 28, 28),
+    var(--panel-opacity, 0.85)
+  ) !important;
+  backdrop-filter: blur(var(--glass-blur, 10px)) !important;
 }
 
-@font-face {
-  font-family: 'Minecraft Five';
-  src: url('/assets/fonts/MinecraftFive/MinecraftFive-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
+@utility bg-popover {
+  background-color: rgba(
+    var(--background-dark-color-rgb, 11, 11, 11),
+    var(--panel-opacity, 0.85)
+  ) !important;
+  backdrop-filter: blur(var(--glass-blur, 10px)) !important;
 }
 
-@font-face {
-  font-family: 'Minecraft Five';
-  src: url('/assets/fonts/MinecraftFive/MinecraftFive-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
+@utility bg-sidebar {
+  background-color: rgba(
+    var(--background-dark-color-rgb, 11, 11, 11),
+    var(--panel-opacity, 0.85)
+  ) !important;
+  backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+  box-shadow: 2px 0 calc(20px * var(--sidebar-glow-intensity, 0))
+    rgba(var(--primary-color-rgb), calc(0.4 * var(--sidebar-glow-intensity, 0))) !important;
 }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-Thin.ttf') format('truetype');
-  font-weight: 100;
-  font-style: normal;
-}
+@layer utilities {
+  @font-face {
+    font-family: 'Minecraft';
+    src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-Regular.ttf')
+      format('truetype');
+    font-weight: 400;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Inter';
-  src: url('/assets/fonts/Inter/Inter-Variable.ttf') format('truetype');
-  font-weight: 100 900;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Minecraft';
+    src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-Bold.ttf')
+      format('truetype');
+    font-weight: 700;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Montserrat';
-  src: url('/assets/fonts/Montserrat/Montserrat-Variable.ttf') format('truetype');
-  font-weight: 100 900;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Minecraft';
+    src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-Italic.ttf')
+      format('truetype');
+    font-weight: 400;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Roboto';
-  src: url('/assets/fonts/Roboto/Roboto-Variable.ttf') format('truetype');
-  font-weight: 100 900;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Minecraft';
+    src: url('/assets/fonts/MinecraftDefault/MinecraftDefault-BoldItalic.ttf')
+      format('truetype');
+    font-weight: 700;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Geist';
-  src: url('/assets/fonts/Geist/Geist-Variable.ttf') format('truetype');
-  font-weight: 100 900;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Minecraft Five';
+    src: url('/assets/fonts/MinecraftFive/MinecraftFive-Regular.ttf')
+      format('truetype');
+    font-weight: 400;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'JetBrains Mono';
-  src: url('/assets/fonts/JetBrainsMono/JetBrainsMono-Variable.ttf') format('truetype');
-  font-weight: 100 800;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Minecraft Five';
+    src: url('/assets/fonts/MinecraftFive/MinecraftFive-Bold.ttf')
+      format('truetype');
+    font-weight: 700;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'JetBrains Mono';
-  src: url('/assets/fonts/JetBrainsMono/JetBrainsMono-VariableItalic.ttf') format('truetype');
-  font-weight: 100 800;
-  font-style: italic;
-}
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-Thin.ttf') format('truetype');
+    font-weight: 100;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Open Sans';
-  src: url('/assets/fonts/OpenSans/OpenSans-Variable.ttf') format('truetype');
-  font-weight: 300 800;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Inter';
+    src: url('/assets/fonts/Inter/Inter-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Open Sans';
-  src: url('/assets/fonts/OpenSans/OpenSans-VariableItalic.ttf') format('truetype');
-  font-weight: 300 800;
-  font-style: italic;
-}
+  @font-face {
+    font-family: 'Montserrat';
+    src: url('/assets/fonts/Montserrat/Montserrat-Variable.ttf')
+      format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Nunito';
-  src: url('/assets/fonts/Nunito/Nunito-Variable.ttf') format('truetype');
-  font-weight: 200 1000;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Roboto';
+    src: url('/assets/fonts/Roboto/Roboto-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Nunito';
-  src: url('/assets/fonts/Nunito/Nunito-VariableItalic.ttf') format('truetype');
-  font-weight: 200 1000;
-  font-style: italic;
-}
+  @font-face {
+    font-family: 'Geist';
+    src: url('/assets/fonts/Geist/Geist-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Outfit';
-  src: url('/assets/fonts/Outfit/Outfit-Variable.ttf') format('truetype');
-  font-weight: 100 900;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: url('/assets/fonts/JetBrainsMono/JetBrainsMono-Variable.ttf')
+      format('truetype');
+    font-weight: 100 800;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-Light.ttf') format('truetype');
-  font-weight: 300;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: url('/assets/fonts/JetBrainsMono/JetBrainsMono-VariableItalic.ttf')
+      format('truetype');
+    font-weight: 100 800;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-LightItalic.ttf') format('truetype');
-  font-weight: 300;
-  font-style: italic;
-}
+  @font-face {
+    font-family: 'Open Sans';
+    src: url('/assets/fonts/OpenSans/OpenSans-Variable.ttf') format('truetype');
+    font-weight: 300 800;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Open Sans';
+    src: url('/assets/fonts/OpenSans/OpenSans-VariableItalic.ttf')
+      format('truetype');
+    font-weight: 300 800;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-Italic.ttf') format('truetype');
-  font-weight: 400;
-  font-style: italic;
-}
+  @font-face {
+    font-family: 'Nunito';
+    src: url('/assets/fonts/Nunito/Nunito-Variable.ttf') format('truetype');
+    font-weight: 200 1000;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Nunito';
+    src: url('/assets/fonts/Nunito/Nunito-VariableItalic.ttf')
+      format('truetype');
+    font-weight: 200 1000;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-MediumItalic.ttf') format('truetype');
-  font-weight: 500;
-  font-style: italic;
-}
+  @font-face {
+    font-family: 'Outfit';
+    src: url('/assets/fonts/Outfit/Outfit-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Ubuntu';
-  src: url('/assets/fonts/Ubuntu/Ubuntu-BoldItalic.ttf') format('truetype');
-  font-weight: 700;
-  font-style: italic;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-LightItalic.ttf') format('truetype');
+    font-weight: 300;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-ExtraLight.ttf') format('truetype');
-  font-weight: 200;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-Light.ttf') format('truetype');
-  font-weight: 300;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-MediumItalic.ttf') format('truetype');
+    font-weight: 500;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-SemiBold.ttf') format('truetype');
-  font-weight: 600;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Ubuntu';
+    src: url('/assets/fonts/Ubuntu/Ubuntu-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-ExtraBold.ttf') format('truetype');
-  font-weight: 800;
-  font-style: normal;
-}
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-ExtraLight.ttf') format('truetype');
+    font-weight: 200;
+    font-style: normal;
+  }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/assets/fonts/Poppins/Poppins-Black.ttf') format('truetype');
-  font-weight: 900;
-  font-style: normal;
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+  }
 }
 
 @layer base {
@@ -301,314 +475,313 @@
   }
 }
 
-.titlebar {
-  -webkit-app-region: drag;
-}
-
-.no-drag {
-  -webkit-app-region: no-drag;
-}
-
-.image-pixelated {
-  image-rendering: pixelated;
-  image-rendering: -moz-pixelated;
-  image-rendering: crisp-edges;
-  -ms-interpolation-mode: nearest-neighbor;
-}
-
-.sidebar-shell-transition {
-  transition-duration: 500ms;
-  transition-property: width;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sidebar-layout-transition {
-  transition-duration: 500ms;
-  transition-property: padding-left, padding-right, margin-left, margin-right, width, height, transform, opacity, max-width, max-height;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sidebar-toggle-transition {
-  transition-duration: 500ms;
-  transition-property: right, color, background-color, transform;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.page-transition-root {
-  position: relative;
-  isolation: isolate;
-  min-height: 0;
-}
-
-.page-transition-stage {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  will-change: transform, opacity, filter;
-  transform-origin: center top;
-}
-
-.page-transition-stage::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(var(--primary-color-rgb), 0.06), transparent 22%);
-  opacity: 0;
-  animation: page-transition-sheen 320ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.page-transition-stage[data-page-animation='none']::before,
-.page-transition-stage[data-page-animation='fade']::before {
-  animation: none;
-  opacity: 0;
-}
-
-.page-transition-stage[data-page-animation='glide']::before {
-  background: linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.04), rgba(var(--primary-color-rgb), 0.12), transparent 60%);
-}
-
-.page-transition-stage[data-page-animation='zoom']::before {
-  background: radial-gradient(circle at top center, rgba(var(--primary-color-rgb), 0.12), transparent 58%);
-}
-
-.page-transition-stage[data-page-animation='lift']::before {
-  background: linear-gradient(180deg, rgba(var(--primary-color-rgb), 0.1), transparent 26%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-  .sidebar-shell-transition,
-  .sidebar-layout-transition,
-  .sidebar-toggle-transition,
-  .page-transition-stage,
-  .page-transition-stage::before,
-  .dialog-content-zoom[data-state='open'],
-  .dialog-content-zoom[data-state='closed'] {
-    transition: none;
-    animation: none;
-  }
-}
-
-@keyframes page-transition-sheen {
-  0% {
-    opacity: 0;
-  }
-
-  35% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes dialog-zoom-in-place-in {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.94);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes dialog-zoom-in-place-out {
-  0% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.96);
-  }
-}
-
-.dialog-content-zoom {
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-  will-change: transform, opacity;
-}
-
-.dialog-content-zoom[data-state='open'] {
-  animation: dialog-zoom-in-place-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.dialog-content-zoom[data-state='closed'] {
-  animation: dialog-zoom-in-place-out 120ms cubic-bezier(0.4, 0, 1, 1);
-}
-
-@keyframes progress-fast {
-  0% {
-    transform: translateX(-100%);
-    width: 30%;
-    opacity: 0.3;
-  }
-
-  50% {
-    transform: translateX(0%);
-    width: 60%;
-    opacity: 1;
-  }
-
-  100% {
-    transform: translateX(100%);
-    width: 30%;
-    opacity: 0.3;
-  }
-}
-
-.animate-progress-fast {
-  animation: progress-fast 1.5s ease-in-out infinite;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.3);
-}
-
-::-webkit-scrollbar-button {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-[data-sonner-toaster] {
-  font-family: var(--launcher-font), system-ui, sans-serif !important;
-}
-
-[data-sonner-toast][data-styled='true'] {
-  background: hsl(var(--popover)) !important;
-  color: hsl(var(--popover-foreground)) !important;
-  border: 1px solid hsl(var(--border)) !important;
-  border-radius: var(--radius) !important;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45) !important;
-}
-
-[data-sonner-toast][data-styled='true'] [data-title] {
-  color: hsl(var(--foreground)) !important;
-  font-size: 0.875rem !important;
-  font-weight: 600 !important;
-}
-
-[data-sonner-toast][data-styled='true'] [data-description] {
-  color: hsl(var(--muted-foreground)) !important;
-  font-size: 0.75rem !important;
-}
-
-[data-sonner-toast][data-styled='true'] [data-button][data-action='true'] {
-  background: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
-}
-
-[data-sonner-toast][data-styled='true'] [data-button][data-cancel='true'] {
-  background: hsl(var(--secondary)) !important;
-  color: hsl(var(--secondary-foreground)) !important;
-}
-
-[data-sonner-toast][data-type='success'][data-styled='true'] {
-  border-color: rgba(16, 185, 129, 0.35) !important;
-}
-
-[data-sonner-toast][data-type='error'][data-styled='true'] {
-  border-color: rgba(239, 68, 68, 0.35) !important;
-}
-
-[data-sonner-toast][data-type='info'][data-styled='true'] {
-  border-color: rgba(59, 130, 246, 0.35) !important;
-}
-
-[data-sonner-toast][data-type='warning'][data-styled='true'] {
-  border-color: rgba(245, 158, 11, 0.35) !important;
-}
-
-input[type="range"].slider-thumb::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: hsl(var(--primary));
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-input[type="range"].slider-thumb::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: hsl(var(--primary));
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
-}
-
-input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 6px;
-}
-
-input[type="color"]::-moz-color-swatch {
-  border: none;
-  border-radius: 6px;
-}
-
-.glass-panel {
-  background-color: rgba(var(--surface-color-rgb, 28, 28, 28), var(--panel-opacity));
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid hsl(var(--border));
-}
-
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
-}
-
 @layer utilities {
-  .global-primary-glow {
-    box-shadow: 0 0 calc(20px * var(--global-glow-intensity, 0)) rgba(var(--primary-color-rgb), calc(0.3 * var(--global-glow-intensity, 0)));
-  }
-}
-
-@layer components {
-  .bg-card {
-    background-color: rgba(var(--surface-color-rgb, 28, 28, 28), var(--panel-opacity, 0.85)) !important;
-    backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+  .titlebar {
+    -webkit-app-region: drag;
   }
 
-  .bg-popover {
-    background-color: rgba(var(--background-dark-color-rgb, 11, 11, 11), var(--panel-opacity, 0.85)) !important;
-    backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+  .no-drag {
+    -webkit-app-region: no-drag;
   }
 
-  .bg-sidebar {
-    background-color: rgba(var(--background-dark-color-rgb, 11, 11, 11), var(--panel-opacity, 0.85)) !important;
-    backdrop-filter: blur(var(--glass-blur, 10px)) !important;
-    box-shadow: 2px 0 calc(20px * var(--sidebar-glow-intensity, 0)) rgba(var(--primary-color-rgb), calc(0.4 * var(--sidebar-glow-intensity, 0))) !important;
+  .image-pixelated {
+    image-rendering: pixelated;
+    image-rendering: -moz-pixelated;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+  }
+
+  .sidebar-shell-transition {
+    transition-duration: 500ms;
+    transition-property: width;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .sidebar-layout-transition {
+    transition-duration: 500ms;
+    transition-property:
+      padding-left, padding-right, margin-left, margin-right, width, height,
+      transform, opacity, max-width, max-height;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .sidebar-toggle-transition {
+    transition-duration: 500ms;
+    transition-property: right, color, background-color, transform;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .page-transition-root {
+    position: relative;
+    isolation: isolate;
+    min-height: 0;
+  }
+
+  .page-transition-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    will-change: transform, opacity, filter;
+    transform-origin: center top;
+  }
+
+  .page-transition-stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(var(--primary-color-rgb), 0.06),
+      transparent 22%
+    );
+    opacity: 0;
+    animation: page-transition-sheen 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .page-transition-stage[data-page-animation='none']::before,
+  .page-transition-stage[data-page-animation='fade']::before {
+    animation: none;
+    opacity: 0;
+  }
+
+  .page-transition-stage[data-page-animation='glide']::before {
+    background: linear-gradient(
+      90deg,
+      rgba(var(--primary-color-rgb), 0.04),
+      rgba(var(--primary-color-rgb), 0.12),
+      transparent 60%
+    );
+  }
+
+  .page-transition-stage[data-page-animation='zoom']::before {
+    background: radial-gradient(
+      circle at top center,
+      rgba(var(--primary-color-rgb), 0.12),
+      transparent 58%
+    );
+  }
+
+  .page-transition-stage[data-page-animation='lift']::before {
+    background: linear-gradient(
+      180deg,
+      rgba(var(--primary-color-rgb), 0.1),
+      transparent 26%
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar-shell-transition,
+    .sidebar-layout-transition,
+    .sidebar-toggle-transition,
+    .page-transition-stage,
+    .page-transition-stage::before,
+    .dialog-content-zoom[data-state='open'],
+    .dialog-content-zoom[data-state='closed'] {
+      transition: none;
+      animation: none;
+    }
+  }
+
+  @keyframes page-transition-sheen {
+    0% {
+      opacity: 0;
+    }
+
+    35% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes dialog-zoom-in-place-in {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.94);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  @keyframes dialog-zoom-in-place-out {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.96);
+    }
+  }
+
+  .dialog-content-zoom {
+    transform: translate(-50%, -50%);
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+
+  .dialog-content-zoom[data-state='open'] {
+    animation: dialog-zoom-in-place-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dialog-content-zoom[data-state='closed'] {
+    animation: dialog-zoom-in-place-out 120ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  @keyframes progress-fast {
+    0% {
+      transform: translateX(-100%);
+      width: 30%;
+      opacity: 0.3;
+    }
+
+    50% {
+      transform: translateX(0%);
+      width: 60%;
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateX(100%);
+      width: 30%;
+      opacity: 0.3;
+    }
+  }
+
+  .animate-progress-fast {
+    animation: progress-fast 1.5s ease-in-out infinite;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+
+  ::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  [data-sonner-toaster] {
+    font-family: var(--launcher-font), system-ui, sans-serif !important;
+  }
+
+  [data-sonner-toast][data-styled='true'] {
+    background: hsl(var(--popover)) !important;
+    color: hsl(var(--popover-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  [data-sonner-toast][data-styled='true'] [data-title] {
+    color: hsl(var(--foreground)) !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+  }
+
+  [data-sonner-toast][data-styled='true'] [data-description] {
+    color: hsl(var(--muted-foreground)) !important;
+    font-size: 0.75rem !important;
+  }
+
+  [data-sonner-toast][data-styled='true'] [data-button][data-action='true'] {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  [data-sonner-toast][data-styled='true'] [data-button][data-cancel='true'] {
+    background: hsl(var(--secondary)) !important;
+    color: hsl(var(--secondary-foreground)) !important;
+  }
+
+  [data-sonner-toast][data-type='success'][data-styled='true'] {
+    border-color: rgba(16, 185, 129, 0.35) !important;
+  }
+
+  [data-sonner-toast][data-type='error'][data-styled='true'] {
+    border-color: rgba(239, 68, 68, 0.35) !important;
+  }
+
+  [data-sonner-toast][data-type='info'][data-styled='true'] {
+    border-color: rgba(59, 130, 246, 0.35) !important;
+  }
+
+  [data-sonner-toast][data-type='warning'][data-styled='true'] {
+    border-color: rgba(245, 158, 11, 0.35) !important;
+  }
+
+  input[type='range'].slider-thumb::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  input[type='range'].slider-thumb::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  input[type='color']::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  input[type='color']::-webkit-color-swatch {
+    border: none;
+    border-radius: 6px;
+  }
+
+  input[type='color']::-moz-color-swatch {
+    border: none;
+    border-radius: 6px;
+  }
+
+  .glass-panel {
+    background-color: rgba(
+      var(--surface-color-rgb, 28, 28, 28),
+      var(--panel-opacity)
+    );
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid hsl(var(--border));
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 }

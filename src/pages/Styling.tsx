@@ -1075,7 +1075,7 @@ function Styling() {
                         ) : (
                           <>
                             <ImageIcon className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                            <span className="text-[10px] font-medium text-muted-foreground uppercase text-center break-words px-4">
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase text-center wrap-break-word px-4">
                               {t("styling.select_media")}
                             </span>
                           </>

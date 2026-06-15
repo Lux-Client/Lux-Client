@@ -27,7 +27,7 @@ function News() {
         <div className="h-full overflow-y-auto custom-scrollbar p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-foreground tracking-tight">{t('common.news', 'News')}</h1>
-                <div className="h-[1px] flex-1 bg-border ml-4"></div>
+                <div className="h-px flex-1 bg-border ml-4"></div>
             </div>
 
             {newsItems.length === 0 ? (

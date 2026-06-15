@@ -9,7 +9,7 @@ const AgreementModal = ({ onAccept, onDecline }) => {
     const [isChecked, setIsChecked] = useState(false);
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-background/70 p-6 backdrop-blur-xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsla(var(--primary),0.14),transparent_24%)]" />
             <Card className="relative w-full max-w-2xl overflow-hidden border-border/70 bg-card/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-6 duration-300">
                 <CardContent className="p-6 sm:p-8">

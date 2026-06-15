@@ -793,7 +793,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                                             className="w-full h-full object-cover transition-transform duration-500"
                                         />
                                         {img.title && (
-                                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/70 backdrop-blur-sm text-xs text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/70 backdrop-blur-xs text-xs text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                 {img.title}
                                             </div>
                                         )}
@@ -835,7 +835,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
 
             {lightboxIndex !== -1 && previewProject && previewProject.gallery && (
                 <div
-                    className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center backdrop-blur-xl select-none"
+                    className="fixed inset-0 bg-black/95 z-70 flex items-center justify-center backdrop-blur-xl select-none"
                     onClick={() => setLightboxIndex(-1)}
                 >
                     <Button
@@ -850,7 +850,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute left-6 top-1/2 -translate-y-1/2 z-50 rounded-full bg-black/50 hover:bg-white/10 text-white h-12 w-12 backdrop-blur-sm"
+                        className="absolute left-6 top-1/2 -translate-y-1/2 z-50 rounded-full bg-black/50 hover:bg-white/10 text-white h-12 w-12 backdrop-blur-xs"
                         onClick={handlePrevImage}
                     >
                         <ChevronLeft className="h-6 w-6" />
@@ -858,13 +858,13 @@ function Search({ initialCategory, onCategoryConsumed }) {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute right-6 top-1/2 -translate-y-1/2 z-50 rounded-full bg-black/50 hover:bg-white/10 text-white h-12 w-12 backdrop-blur-sm"
+                        className="absolute right-6 top-1/2 -translate-y-1/2 z-50 rounded-full bg-black/50 hover:bg-white/10 text-white h-12 w-12 backdrop-blur-xs"
                         onClick={handleNextImage}
                     >
                         <ChevronRight className="h-6 w-6" />
                     </Button>
 
-                    <div className="absolute top-6 left-6 text-white text-sm font-medium bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                    <div className="absolute top-6 left-6 text-white text-sm font-medium bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-xs">
                         {lightboxIndex + 1} / {previewProject.gallery.length}
                     </div>
 

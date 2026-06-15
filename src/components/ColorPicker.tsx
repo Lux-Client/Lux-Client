@@ -3,7 +3,7 @@ import React from 'react';
 function ColorPicker({ label, value, onChange }) {
     return (
         <div className="flex items-center justify-between group flex-wrap gap-2">
-            <label className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors min-w-0 break-words">
+            <label className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors min-w-0 wrap-break-word">
                 {label}
             </label>
             <div className="relative">

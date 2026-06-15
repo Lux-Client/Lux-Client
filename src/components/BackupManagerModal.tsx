@@ -168,7 +168,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                 </div>
                 {!isCloudRestricted && (
                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-primary border-primary' : 'border-border group-hover:border-border'}`}>
-                        {isSelected && <CheckIcon className="h-4 w-4 text-black stroke-[3]" />}
+                        {isSelected && <CheckIcon className="h-4 w-4 text-black stroke-3" />}
                     </div>
                 )}
             </div>
@@ -181,7 +181,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-100 flex items-center justify-center p-4">
              <div className="bg-card border border-border rounded-xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center mb-6">
                     <div>
@@ -221,13 +221,13 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                          <div className="flex bg-background p-1 rounded-xl border border-border mb-4">
                             <button
                                 onClick={() => { setType('local'); setSelectedItems([]); }}
-                                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${type === 'local' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${type === 'local' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-accent-foreground'}`}
                             >
                                 Local Storage
                             </button>
                             <button
                                 onClick={() => { setType('cloud'); setSelectedItems([]); }}
-                                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${type === 'cloud' ? 'bg-primary text-black shadow-lg shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${type === 'cloud' ? 'bg-primary text-black shadow-lg shadow-xs' : 'text-muted-foreground hover:text-accent-foreground'}`}
                             >
                                 Cloud Storage
                             </button>
@@ -263,7 +263,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                                 placeholder={`Search for ${mode === 'backup' ? 'worlds' : 'backups'}...`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                 className="w-full bg-muted border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-foreground focus:border-primary outline-none transition-all"
+                                 className="w-full bg-muted border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-foreground focus:border-primary outline-hidden transition-all"
                             />
                         </div>
 
@@ -292,7 +292,7 @@ const BackupManagerModal = ({ instance, onClose, worlds, onBackupStatusChange }:
                             <button
                                 onClick={handleAction}
                                 disabled={selectedItems.length === 0 || loading}
-                                 className={`flex-1 px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg ${selectedItems.length === 0 || loading ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary text-black shadow-sm'}`}
+                                 className={`flex-1 px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg ${selectedItems.length === 0 || loading ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary text-black shadow-xs'}`}
                             >
                                 {loading ? 'Processing...' : `${mode === 'backup' ? 'Create' : 'Restore'} ${selectedItems.length} Item(s)`}
                             </button>

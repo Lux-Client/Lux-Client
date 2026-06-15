@@ -13,7 +13,7 @@ function ThemeExportModal({ onClose, onExport, presetData }: { onClose: any; onE
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/80 z-60 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in duration-200">
             <div className="bg-card w-full max-w-md rounded-xl border border-border shadow-2xl overflow-hidden">
                 <form onSubmit={handleExport}>
                     <div className="p-6">
@@ -30,7 +30,7 @@ function ThemeExportModal({ onClose, onExport, presetData }: { onClose: any; onE
                                 <input
                                     type="text"
                                     autoFocus
-                                    className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-all font-medium"
+                                    className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground focus:outline-hidden focus:border-primary/50 transition-all font-medium"
                                     placeholder={t('styling.enter_name', 'My Awesome Theme')}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}

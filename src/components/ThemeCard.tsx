@@ -51,7 +51,7 @@ function ThemeCard({ theme, onApply, onDelete, isCustom = false, isActive = fals
             </div>
 
             { }
-            <div className="bg-card backdrop-blur-sm p-3 border-t border-border">
+            <div className="bg-card backdrop-blur-xs p-3 border-t border-border">
                 <div className="flex items-center justify-between">
                     <div className="flex min-w-0 items-center gap-2 pr-2">
                         <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors truncate">

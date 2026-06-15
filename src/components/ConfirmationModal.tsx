@@ -21,7 +21,7 @@ function ConfirmationModal({ title, message, onConfirm, onCancel, confirmText = 
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={onCancel}>{cancelText}</AlertDialogCancel>
                     <AlertDialogAction
-                        className={isDangerous ? 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90' : undefined}
+                        className={isDangerous ? 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90' : undefined}
                         onClick={onConfirm}
                     >
                         {confirmText}

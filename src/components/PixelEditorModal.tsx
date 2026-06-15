@@ -327,7 +327,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
 
             <div className="flex gap-2 w-full justify-center">
               <Button
-                variant={currentTool === 'brush' ? 'default' : 'outline'}
+                variant={currentTool === 'brush' ? 'default' : 'outline-solid'}
                 size="icon"
                 onClick={() => setCurrentTool('brush')}
                 title={t('pixel_editor.brush')}
@@ -335,7 +335,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 <Paintbrush className="w-4 h-4" />
               </Button>
               <Button
-                variant={currentTool === 'eraser' ? 'default' : 'outline'}
+                variant={currentTool === 'eraser' ? 'default' : 'outline-solid'}
                 size="icon"
                 onClick={() => setCurrentTool('eraser')}
                 title={t('pixel_editor.eraser')}
@@ -343,7 +343,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 <Eraser className="w-4 h-4" />
               </Button>
               <Button
-                variant={currentTool === 'fill' ? 'default' : 'outline'}
+                variant={currentTool === 'fill' ? 'default' : 'outline-solid'}
                 size="icon"
                 onClick={() => setCurrentTool('fill')}
                 title={t('pixel_editor.fill')}
@@ -423,7 +423,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 {palette.map((color, i) => (
                   <button
                     key={i}
-                    className="h-8 w-full rounded-md border border-border shadow-sm transition-transform hover:scale-105 active:scale-95"
+                    className="h-8 w-full rounded-md border border-border shadow-xs transition-transform hover:scale-105 active:scale-95"
                     style={{ backgroundColor: color }}
                     onClick={() => setCurrentColor(color)}
                   />

@@ -149,7 +149,7 @@ function AppSidebar({
         onClick={() => !item.disabled && setView(item.id)}
         data-guide-id={`sidebar-nav-${item.id}`}
         className={cn(
-          'group relative flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold outline-none focus:outline-none focus-visible:outline-none',
+          'group relative flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold outline-hidden focus:outline-hidden focus-visible:outline-hidden',
           layoutTransitionClass,
           isCollapsed ? 'px-2.5' : 'px-4',
           isActive
@@ -179,7 +179,7 @@ function AppSidebar({
       <button
         onClick={onClick}
         className={cn(
-          'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold outline-none focus:outline-none focus-visible:outline-none',
+          'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold outline-hidden focus:outline-hidden focus-visible:outline-hidden',
           layoutTransitionClass,
           isCollapsed ? 'px-2.5' : 'px-4',
           destructive
@@ -203,7 +203,7 @@ function AppSidebar({
         className={cn(
           'relative z-50 flex h-full flex-col overflow-hidden border-r border-border bg-sidebar',
           shellTransitionClass,
-          isCollapsed ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-width-expanded)]'
+          isCollapsed ? 'w-(--sidebar-width)' : 'w-(--sidebar-width-expanded)'
         )}
       >
         <div
@@ -215,7 +215,7 @@ function AppSidebar({
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={cn(
-              'sidebar-toggle-transition rounded-xl p-2 text-muted-foreground hover:bg-accent hover:text-foreground outline-none focus:outline-none focus-visible:outline-none',
+              'sidebar-toggle-transition rounded-xl p-2 text-muted-foreground hover:bg-accent hover:text-foreground outline-hidden focus:outline-hidden focus-visible:outline-hidden',
               isCollapsed ? 'mx-auto' : ''
             )}
           >
@@ -261,7 +261,7 @@ function AppSidebar({
                         key={inst.name}
                         onClick={() => onInstanceClick && onInstanceClick(inst)}
                         className={cn(
-                          'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground outline-none focus:outline-none focus-visible:outline-none',
+                          'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground outline-hidden focus:outline-hidden focus-visible:outline-hidden',
                           layoutTransitionClass,
                           isCollapsed ? 'px-2.5' : 'px-4'
                         )}
@@ -299,7 +299,7 @@ function AppSidebar({
                   <button
                     onClick={() => onCreateInstance && onCreateInstance()}
                     className={cn(
-                      'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 outline-none focus:outline-none focus-visible:outline-none',
+                      'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 outline-hidden focus:outline-hidden focus-visible:outline-hidden',
                       layoutTransitionClass,
                       isCollapsed ? 'px-2.5' : 'px-4'
                     )}

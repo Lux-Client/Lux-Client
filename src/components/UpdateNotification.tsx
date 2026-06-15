@@ -46,7 +46,7 @@ function UpdateNotification() {
     const progressSpeed = typeof downloadProgress === 'object' && downloadProgress !== null ? downloadProgress.bytesPerSecond ?? 0 : 0;
 
     return (
-        <div className="fixed bottom-6 left-6 z-[100] w-80 bg-card backdrop-blur-xl border border-border rounded-xl p-4 shadow-2xl animate-in fade-in slide-in-from-left-4 duration-300">
+        <div className="fixed bottom-6 left-6 z-100 w-80 bg-card backdrop-blur-xl border border-border rounded-xl p-4 shadow-2xl animate-in fade-in slide-in-from-left-4 duration-300">
             <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-xl ${isDownloaded ? 'bg-primary/20 text-primary' : error ? 'bg-red-500/20 text-red-500' : 'bg-blue-500/20 text-blue-400'}`}>
                     {isDownloaded ? (
@@ -89,7 +89,7 @@ function UpdateNotification() {
                     {isDownloaded && (
                         <button
                             onClick={() => window.electronAPI.restartAndInstall()}
-                            className="mt-4 w-full bg-primary text-black font-bold py-2 rounded-xl text-xs transition-colors shadow-sm"
+                            className="mt-4 w-full bg-primary text-black font-bold py-2 rounded-xl text-xs transition-colors shadow-xs"
                         >
                             Restart and Install
                         </button>

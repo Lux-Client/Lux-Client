@@ -1374,7 +1374,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                             <select
                                 value={banDuration}
                                 onChange={(e) => setBanDuration(e.target.value)}
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                             >
                                 <option value="permanent">Permanent</option>
                                 <option value="1h">1 Hour</option>
@@ -1394,7 +1394,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={banReason}
                                 onChange={(e) => setBanReason(e.target.value)}
                                 placeholder="Enter ban reason..."
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                             />
                         </div>
 
@@ -1431,7 +1431,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="number"
                                     value={teleportCoordinates.x}
                                     onChange={(e) => setTeleportCoordinates(prev => ({ ...prev, x: parseInt(e.target.value) || 0 }))}
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                 />
                             </div>
                             <div>
@@ -1440,7 +1440,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="number"
                                     value={teleportCoordinates.y}
                                     onChange={(e) => setTeleportCoordinates(prev => ({ ...prev, y: parseInt(e.target.value) || 64 }))}
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                 />
                             </div>
                             <div>
@@ -1449,7 +1449,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="number"
                                     value={teleportCoordinates.z}
                                     onChange={(e) => setTeleportCoordinates(prev => ({ ...prev, z: parseInt(e.target.value) || 0 }))}
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                 />
                             </div>
                         </div>
@@ -1508,7 +1508,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={giveItem.item}
                                 onChange={(e) => setGiveItem(prev => ({ ...prev, item: e.target.value }))}
                                 placeholder="e.g., minecraft:diamond, diamond_sword"
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                             />
                         </div>
 
@@ -1520,7 +1520,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 max="64"
                                 value={giveItem.amount}
                                 onChange={(e) => setGiveItem(prev => ({ ...prev, amount: parseInt(e.target.value) || 1 }))}
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                             />
                         </div>
 
@@ -1557,7 +1557,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={whitelistPlayer}
                                 onChange={(e) => setWhitelistPlayer(e.target.value)}
                                 placeholder="Enter player name..."
-                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                             />
                         </div>
 
@@ -1824,7 +1824,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 value={command}
                                 onChange={(e) => setCommand(e.target.value)}
                                 placeholder="Enter command... (with or without /)"
-                                className="flex-1 bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                className="flex-1 bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden transition-colors"
                                 disabled={!isRunning}
                                 autoFocus
                             />
@@ -2066,7 +2066,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     <h3 className="font-semibold text-blue-200">CPU Usage</h3>
                                     <span className="text-xs text-muted-foreground">max 100%</span>
                                 </div>
-                                <div className="h-64 rounded-lg border border-blue-500/20 bg-gradient-to-b from-blue-500/10 to-transparent p-2">
+                                <div className="h-64 rounded-lg border border-blue-500/20 bg-linear-to-b from-blue-500/10 to-transparent p-2">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={telemetryChartData} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                                             <defs>
@@ -2096,7 +2096,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     <h3 className="font-semibold text-emerald-200">Memory Usage</h3>
                                     <span className="text-xs text-muted-foreground">max {Math.round(memoryMax)} MB</span>
                                 </div>
-                                <div className="h-64 rounded-lg border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-transparent p-2">
+                                <div className="h-64 rounded-lg border border-emerald-500/20 bg-linear-to-b from-emerald-500/10 to-transparent p-2">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={telemetryChartData} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                                             <defs>
@@ -2126,7 +2126,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     <h3 className="font-semibold text-amber-200">Player Count</h3>
                                     <span className="text-xs text-muted-foreground">max {maxPlayers}</span>
                                 </div>
-                                <div className="h-64 rounded-lg border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-transparent p-2">
+                                <div className="h-64 rounded-lg border border-amber-500/20 bg-linear-to-b from-amber-500/10 to-transparent p-2">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={telemetryChartData} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                                             <defs>
@@ -2176,7 +2176,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     type="text"
                                     placeholder="Search players..."
                                     onChange={(e) => setPlayerSearch(e.target.value)}
-                                    className="bg-background border border-border rounded-lg px-4 py-1.5 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="bg-background border border-border rounded-lg px-4 py-1.5 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                 />
                             </div>
                         </div>
@@ -2636,7 +2636,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             placeholder={getServerContentType() === 'plugin'
                                                 ? `Search ${getContentLabelPlural()} on Plugin Portal (Modrinth, Hangar, SpigotMC)...`
                                                 : `Search ${getContentLabelPlural()} on Modrinth / CurseForge...`}
-                                            className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                            className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                         />
                                         <button
                                             onClick={() => searchMods(modSearch)}
@@ -2693,7 +2693,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                                         loadModVersions(result);
                                                                     }
                                                                 }}
-                                                                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                                             >
                                                                 <option value="">
                                                                     {loadingVersions.has(result.project_id) ? 'Loading versions...' : 'Select version...'}
@@ -2767,7 +2767,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['max-players'] ?? '20'}
                                                 onChange={(e) => updateProperty('max-players', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -2776,7 +2776,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="text"
                                                 value={serverProperties['motd'] ?? 'A Minecraft Server'}
                                                 onChange={(e) => updateProperty('motd', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -2785,7 +2785,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['server-port'] ?? '25565'}
                                                 onChange={(e) => updateProperty('server-port', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -2794,7 +2794,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['view-distance'] ?? '10'}
                                                 onChange={(e) => updateProperty('view-distance', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -2803,7 +2803,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['simulation-distance'] ?? '10'}
                                                 onChange={(e) => updateProperty('simulation-distance', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -2812,7 +2812,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['spawn-protection'] ?? '16'}
                                                 onChange={(e) => updateProperty('spawn-protection', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                     </div>
@@ -2827,7 +2827,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             <select
                                                 value={serverProperties['difficulty'] || 'easy'}
                                                 onChange={(e) => updateProperty('difficulty', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             >
                                                 <option value="peaceful">Peaceful</option>
                                                 <option value="easy">Easy</option>
@@ -2840,7 +2840,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             <select
                                                 value={serverProperties['gamemode'] || 'survival'}
                                                 onChange={(e) => updateProperty('gamemode', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             >
                                                 <option value="survival">Survival</option>
                                                 <option value="creative">Creative</option>
@@ -2854,7 +2854,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="text"
                                                 value={serverProperties['level-name'] ?? 'world'}
                                                 onChange={(e) => updateProperty('level-name', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -2863,7 +2863,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="text"
                                                 value={serverProperties['level-seed'] || ''}
                                                 onChange={(e) => updateProperty('level-seed', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                                 placeholder="Leave empty for random"
                                             />
                                         </div>
@@ -2872,7 +2872,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                             <select
                                                 value={serverProperties['op-permission-level'] || '4'}
                                                 onChange={(e) => updateProperty('op-permission-level', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             >
                                                 <option value="1">1 - Bypass user protection</option>
                                                 <option value="2">2 - Use /clear, /difficulty, /effect, /gamemode, /gamerule, /give, /setblock, /tellraw</option>
@@ -2963,7 +2963,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['network-compression-threshold'] ?? '256'}
                                                 onChange={(e) => updateProperty('network-compression-threshold', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                     </div>
@@ -2997,7 +2997,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['player-idle-timeout'] ?? '0'}
                                                 onChange={(e) => updateProperty('player-idle-timeout', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                     </div>
@@ -3094,7 +3094,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['max-tick-time'] ?? '60000'}
                                                 onChange={(e) => updateProperty('max-tick-time', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -3103,7 +3103,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['rcon.port'] ?? '25575'}
                                                 onChange={(e) => updateProperty('rcon.port', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                         <div>
@@ -3112,7 +3112,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                 type="number"
                                                 value={serverProperties['query.port'] ?? '25565'}
                                                 onChange={(e) => updateProperty('query.port', e.target.value)}
-                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                             />
                                         </div>
                                     </div>
@@ -3148,7 +3148,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                     value={pluginConfigSearch}
                                     onChange={(e) => setPluginConfigSearch(e.target.value)}
                                     placeholder={`Search ${configEntityLabel}...`}
-                                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                 />
 
                                 <div className="rounded-lg border border-border/70 bg-background/40 p-3">
@@ -3225,7 +3225,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                                 const nextValue = e.target.value;
                                                                 updatePluginFieldValue(field.key, nextValue === '' ? '' : Number(nextValue));
                                                             }}
-                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                                         />
                                                     )}
 
@@ -3234,7 +3234,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                             type="text"
                                                             value={field.value ?? ''}
                                                             onChange={(e) => updatePluginFieldValue(field.key, e.target.value)}
-                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                                         />
                                                     )}
 
@@ -3242,7 +3242,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                         <select
                                                             value={field.value ?? field.options?.[0] ?? ''}
                                                             onChange={(e) => updatePluginFieldValue(field.key, e.target.value)}
-                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-hidden"
                                                         >
                                                             {(field.options || []).map((option) => (
                                                                 <option key={option} value={option}>{option}</option>
