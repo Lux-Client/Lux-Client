@@ -1,6 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
+import { playSound } from '../lib/soundManager';
 
 const NotificationContext = createContext<any>(null);
 
@@ -18,6 +19,7 @@ export function useNotification() {
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const addNotification = (message, type = 'info', duration = 3000) => {
         const showNotification = notificationHandlers[type] || toast;
+        playSound(type === 'error' ? 'error' : 'notification');
         return showNotification(message, {
             duration: duration > 0 ? duration : Number.POSITIVE_INFINITY
         });

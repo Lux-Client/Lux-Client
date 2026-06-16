@@ -111,6 +111,8 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
         startPage: 'dashboard',
         pageAnimationsEnabled: true,
         pageAnimationPreset: 'cinematic',
+        soundEffectsEnabled: false,
+        soundEffectsVolume: 0.5,
         showModrinthInstancesInLibrary: true,
         showCurseforgeInstancesInLibrary: true,
         javaProfile: 'default',
@@ -647,7 +649,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             label: t('settings.system.experience', 'Experience'),
             description: t('settings.system.experience_desc', 'Navigation, language, guides and UI behavior.'),
             icon: Settings2,
-            keywords: ['language', 'startup', 'guide', 'animation', 'ui', 'experience']
+            keywords: ['language', 'startup', 'guide', 'animation', 'ui', 'experience', 'sound', 'audio', 'volume']
         },
         {
             id: 'minecraft',
@@ -932,6 +934,35 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                     </button>
                                                 );
                                             })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-4">
+                                <ToggleBox
+                                    checked={settings.soundEffectsEnabled || false}
+                                    onChange={(val) => handleChange('soundEffectsEnabled', val)}
+                                    label={t('settings.general.sound.title', 'Sound Effects')}
+                                    description={t('settings.general.sound.desc', 'Play short sound effects for clicks and notifications across the launcher.')}
+                                />
+
+                                {settings.soundEffectsEnabled && (
+                                    <div className="rounded-xl border border-border bg-muted/20 p-4">
+                                        <Label className="mb-2 block text-foreground">{t('settings.general.sound.volume', 'Volume')}</Label>
+                                        <Slider
+                                            min={0}
+                                            max={1}
+                                            step={0.05}
+                                            value={[settings.soundEffectsVolume ?? 0.5]}
+                                            onValueChange={(value) => handleChange('soundEffectsVolume', value[0])}
+                                        />
+                                        <div className="flex justify-between text-xs text-muted-foreground mt-2 font-mono">
+                                            <span>0%</span>
+                                            <span className="text-primary font-bold">{Math.round((settings.soundEffectsVolume ?? 0.5) * 100)}%</span>
+                                            <span>100%</span>
                                         </div>
                                     </div>
                                 )}

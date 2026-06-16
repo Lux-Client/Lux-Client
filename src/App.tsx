@@ -45,6 +45,7 @@ import { getGuideDefaultView, getGuideSteps, GuideMode, isGuideMode } from './li
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import i18n, { languageMap } from './i18n';
+import { playSound, setSoundSettings } from './lib/soundManager';
 
 function PluginTabContent({ viewId }: { viewId: string }) {
     return (
@@ -318,7 +319,25 @@ function App() {
 
     useEffect(() => {
         appSettingsRef.current = appSettings;
+        setSoundSettings({
+            enabled: appSettings.soundEffectsEnabled === true,
+            volume: typeof appSettings.soundEffectsVolume === 'number' ? appSettings.soundEffectsVolume : 0.5
+        });
     }, [appSettings]);
+
+    useEffect(() => {
+        const handleInteractionSound = (e: MouseEvent) => {
+            const target = e.target as HTMLElement | null;
+            if (!target) return;
+            const interactive = target.closest(
+                'button, [role="button"], a[href], input[type="checkbox"], input[type="radio"], select'
+            ) as HTMLButtonElement | HTMLInputElement | HTMLSelectElement | null;
+            if (!interactive || interactive.disabled) return;
+            playSound('click');
+        };
+        document.addEventListener('click', handleInteractionSound, true);
+        return () => document.removeEventListener('click', handleInteractionSound, true);
+    }, []);
 
     useEffect(() => {
         const handler = (e: Event) => {

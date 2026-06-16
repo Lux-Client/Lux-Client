@@ -548,6 +548,11 @@
                     "lift_desc": "Content rises in and leaves upward with more motion."
                 }
             },
+            "sound": {
+                "title": "Sound Effects",
+                "desc": "Play short sound effects for clicks and notifications across the launcher.",
+                "volume": "Volume"
+            },
             "select_language": "Pick Language",
             "english": "English (US)",
             "english_uk": "English (UK)",

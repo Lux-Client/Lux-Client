@@ -547,6 +547,11 @@
                     "lift_desc": "Inhalte steigen sichtbar ein und nach oben aus."
                 }
             },
+            "sound": {
+                "title": "Soundeffekte",
+                "desc": "Spielt kurze Soundeffekte bei Klicks und Benachrichtigungen im gesamten Launcher ab.",
+                "volume": "Lautstärke"
+            },
             "select_language": "Sprache auswählen",
             "english": "Englisch (US)",
             "english_uk": "Englisch (UK)",
