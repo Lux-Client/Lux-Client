@@ -51,6 +51,16 @@ async function startLaunch(instanceName, opts) {
             return;
         }
 
+        proc.on('close', (code, signal) => {
+            sendMessage('close', { code, signal });
+            process.exit(0);
+        });
+
+        proc.on('exit', (code, signal) => {
+            sendMessage('close', { code, signal });
+            process.exit(0);
+        });
+
         sendMessage('spawn', { pid: proc.pid });
     } catch (error) {
         sendMessage('launch-error', { error: error?.message || 'Unknown launch error in worker' });

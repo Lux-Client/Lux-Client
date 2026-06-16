@@ -20,7 +20,8 @@ const languages = [
     { code: 'sv_se', name: 'Svenska', flag: '🇸🇪' },
     { code: 'sk_sk', name: 'Slovenčina', flag: '🇸🇰' },
     { code: 'sl_si', name: 'Slovenščina', flag: '🇸🇮' },
-    { code: 'ro_ro', name: 'Română', flag: '🇷🇴' }
+    { code: 'ro_ro', name: 'Română', flag: '🇷🇴' },
+    { code: 'el_gr', name: 'Ελληνικά', flag: '🇬🇷' }
 ];
 
 export default function LanguageSelectionModal({ onSelect }) {
