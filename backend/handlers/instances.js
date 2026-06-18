@@ -1987,6 +1987,29 @@ async function fetchMavenVersions(metadataUrl) {
         return [];
     }
 }
+// Resolve a usable Java binary for running loader installers.
+// The launcher manages its own runtimes under userData/runtimes, but the
+// system may have no `java` on PATH at all. Prefer a managed runtime and fall
+// back to the bare `java` command.
+async function resolveInstallerJava() {
+    const javaBinName = process.platform === 'win32' ? 'java.exe' : 'java';
+    try {
+        const runtimesDir = path.join(app.getPath('userData'), 'runtimes');
+        if (await fs.pathExists(runtimesDir)) {
+            const dirs = await fs.readdir(runtimesDir);
+            // Newest runtime first so newer installs prefer a newer JDK.
+            dirs.sort().reverse();
+            for (const dir of dirs) {
+                const candidate = path.join(runtimesDir, dir, 'bin', javaBinName);
+                if (await fs.pathExists(candidate)) return candidate;
+            }
+        }
+    } catch (e) {
+        console.warn('[Installer] Failed to scan managed runtimes for Java:', e.message);
+    }
+    return 'java';
+}
+
 async function runInstaller(installerPath, instanceDir, onProgress, logCallback) {
     const profilePath = path.join(instanceDir, 'launcher_profiles.json');
     if (!await fs.pathExists(profilePath)) {
@@ -2018,9 +2041,35 @@ async function runInstaller(installerPath, instanceDir, onProgress, logCallback)
         if (logCallback) logCallback(msg);
     };
 
+    const javaBin = await resolveInstallerJava();
+
     return new Promise((resolve, reject) => {
-        console.log(`Running installer: java -jar "${installerPath}" --installClient "${instanceDir}"`);
-        const child = spawn('java', ['-jar', installerPath, '--installClient', instanceDir]);
+        console.log(`Running installer: "${javaBin}" -jar "${installerPath}" --installClient "${instanceDir}"`);
+        log(`Using Java: ${javaBin}`);
+
+        let settled = false;
+        const finish = (fn, arg) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            fn(arg);
+        };
+
+        let child;
+        try {
+            child = spawn(javaBin, ['-jar', installerPath, '--installClient', instanceDir]);
+        } catch (e) {
+            return reject(new Error(`Failed to start Java installer process: ${e.message}`));
+        }
+
+        // Kill a stalled installer instead of hanging forever (e.g. no output, frozen download).
+        const INSTALLER_TIMEOUT_MS = 10 * 60 * 1000;
+        const timer = setTimeout(() => {
+            log('[Installer ERROR]: Installer timed out after 10 minutes, terminating...');
+            try { child.kill('SIGKILL'); } catch (_) {}
+            finish(reject, new Error('Installer timed out after 10 minutes'));
+        }, INSTALLER_TIMEOUT_MS);
+
         const instanceName = path.basename(instanceDir);
         if (activeTasks.has(instanceName)) {
             activeTasks.get(instanceName).child = child;
@@ -2038,9 +2087,20 @@ async function runInstaller(installerPath, instanceDir, onProgress, logCallback)
         });
         child.stderr.on('data', (data) => log(`[Installer ERROR]: ${data.toString().trim()}`));
 
+        // Without this handler a failure to spawn Java (e.g. not on PATH -> ENOENT)
+        // emits an unhandled 'error' event and the Promise never settles, leaving
+        // the install hung forever at "Running Forge Installer".
+        child.on('error', (err) => {
+            const hint = err && err.code === 'ENOENT'
+                ? ' (Java executable not found — is a Java runtime installed?)'
+                : '';
+            log(`[Installer ERROR]: Failed to launch Java: ${err.message}${hint}`);
+            finish(reject, new Error(`Failed to launch Java installer: ${err.message}${hint}`));
+        });
+
         child.on('close', (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`Installer exited with code ${code}`));
+            if (code === 0) finish(resolve);
+            else finish(reject, new Error(`Installer exited with code ${code}`));
         });
     });
 }
