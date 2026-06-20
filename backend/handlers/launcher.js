@@ -2052,7 +2052,12 @@ Add-Type -TypeDefinition $code -Language CSharp
 
             const normalizedLoader = String(config.loader || '').toLowerCase();
 
-            if (normalizedLoader === 'forge') {
+            // Forge for MC 1.17+ launches via the Java module system (cpw.mods.bootstraplauncher.BootstrapLauncher).
+            // Forge for MC 1.13–1.16.5 uses cpw.mods.modlauncher.Launcher and must NOT receive the JPMS module-path args.
+            const forgeMcParsed = parseMinecraftVersionForJava(config.version);
+            const usesModernForge = forgeMcParsed.major >= 17;
+
+            if (normalizedLoader === 'forge' && usesModernForge) {
                 // Keep Forge bootstrap arguments aligned with official Forge version JSON to avoid JPMS conflicts.
                 const bootstrapJar = await resolveLatestLibraryJar(librariesDir, ['cpw', 'mods'], 'bootstraplauncher');
                 const secureJarPath = await resolveLatestLibraryJar(librariesDir, ['cpw', 'mods'], 'securejarhandler');
@@ -2121,6 +2126,25 @@ Add-Type -TypeDefinition $code -Language CSharp
 
                 appendUniqueCustomArgs(opts, forgeArgs);
                 console.log("Added Forge JVM arguments");
+            } else if (normalizedLoader === 'forge') {
+                // Legacy Forge (MC 1.13–1.16.5): no JPMS module-path args. The mod loader runs through
+                // cpw.mods.modlauncher.Launcher (or net.minecraft.launchwrapper.Launch on very old builds).
+                // Only reject if the version profile is plain vanilla (vanilla client main class).
+                const forgeVersionJsonPath = path.join(versionDir, `${config.versionId}.json`);
+                if (await fs.pathExists(forgeVersionJsonPath)) {
+                    try {
+                        const forgeVersionJson = await fs.readJson(forgeVersionJsonPath);
+                        const mainClass = String(forgeVersionJson.mainClass || '');
+                        if (mainClass.includes('net.minecraft.client.main')) {
+                            activeLaunches.delete(instanceName);
+                            return {
+                                success: false,
+                                error: `Forge is not fully installed for this instance (version profile is vanilla). Please reinstall the instance.`
+                            };
+                        }
+                    } catch (_) { /* ignore JSON parse errors */ }
+                }
+                console.log("Using legacy Forge launch (no JPMS arguments)");
             }
 
             if (normalizedLoader === 'neoforge') {
