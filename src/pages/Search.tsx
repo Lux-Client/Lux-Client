@@ -75,6 +75,9 @@ function Search({ initialCategory, onCategoryConsumed }) {
     const [showDependencyModal, setShowDependencyModal] = useState(false);
     const [pendingDependencies, setPendingDependencies] = useState([]);
     const [resolvedForInstance, setResolvedForInstance] = useState(null);
+    const [availableVersions, setAvailableVersions] = useState([]);
+    const [selectedVersionId, setSelectedVersionId] = useState('');
+    const [loadingVersions, setLoadingVersions] = useState(false);
     const [jumpPopover, setJumpPopover] = useState(null);
     const [jumpValue, setJumpValue] = useState('');
     const liveSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -255,6 +258,52 @@ function Search({ initialCategory, onCategoryConsumed }) {
         }
     };
 
+    const getInstallLoaders = (mod, instance) => {
+        if (!instance) return [];
+        if (mod?.project_type === 'shader' || mod?.project_type === 'resourcepack' || !instance.loader || instance.loader.toLowerCase() === 'vanilla') {
+            return [];
+        }
+        return [instance.loader];
+    };
+
+    useEffect(() => {
+        if (!showInstallModal || !selectedMod || !selectedInstance || projectType === 'modpack') {
+            setAvailableVersions([]);
+            setSelectedVersionId('');
+            return;
+        }
+
+        const instance = instances.find(i => i.name === selectedInstance);
+        if (!instance) return;
+
+        let cancelled = false;
+        const loadVersions = async () => {
+            setLoadingVersions(true);
+            setAvailableVersions([]);
+            setSelectedVersionId('');
+            try {
+                const res = await window.electronAPI.getModVersions(
+                    selectedMod.project_id,
+                    getInstallLoaders(selectedMod, instance),
+                    [instance.version],
+                    selectedMod.curseforge_project_id || null
+                );
+                if (cancelled) return;
+                if (res?.success && Array.isArray(res.versions) && res.versions.length > 0) {
+                    setAvailableVersions(res.versions);
+                    setSelectedVersionId(res.versions[0].id);
+                }
+            } catch (e) {
+                if (!cancelled) console.error("Failed to load mod versions", e);
+            } finally {
+                if (!cancelled) setLoadingVersions(false);
+            }
+        };
+
+        loadVersions();
+        return () => { cancelled = true; };
+    }, [showInstallModal, selectedMod, selectedInstance, projectType]);
+
     const handleNext = () => {
         if (offset + limit < totalHits) setOffset(offset + limit);
     };
@@ -370,19 +419,24 @@ function Search({ initialCategory, onCategoryConsumed }) {
         setInstalling(true);
         try {
             addNotification(t('search.resolving_deps', { title: selectedMod.title }), 'info');
-            const loaders = (selectedMod.project_type === 'shader' || selectedMod.project_type === 'resourcepack' || !instance.loader || instance.loader.toLowerCase() === 'vanilla')
-                ? []
-                : [instance.loader];
+            const loaders = getInstallLoaders(selectedMod, instance);
 
-            const res = await window.electronAPI.getModVersions(
-                selectedMod.project_id,
-                loaders,
-                [instance.version],
-                selectedMod.curseforge_project_id || null
-            );
+            // Prefer the version the user explicitly picked; otherwise fall back to the
+            // latest compatible version (e.g. if the version list is still loading).
+            let version = availableVersions.find(v => v.id === selectedVersionId);
+            if (!version) {
+                const res = await window.electronAPI.getModVersions(
+                    selectedMod.project_id,
+                    loaders,
+                    [instance.version],
+                    selectedMod.curseforge_project_id || null
+                );
+                if (res.success && res.versions.length > 0) {
+                    version = res.versions[0];
+                }
+            }
 
-            if (res.success && res.versions.length > 0) {
-                const version = res.versions[0];
+            if (version) {
                 const depRes = await window.electronAPI.resolveDependencies(version.id, loaders, [instance.version]);
 
                 if (depRes.success && depRes.dependencies.length > 1) {
@@ -734,27 +788,65 @@ function Search({ initialCategory, onCategoryConsumed }) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{t('search.install_title', { title: selectedMod?.title })}</DialogTitle>
-                        <DialogDescription>{t('search.select_instance')}</DialogDescription>
+                        <DialogDescription>{t('search.install_choose')}</DialogDescription>
                     </DialogHeader>
-                    <Select value={selectedInstance} onValueChange={setSelectedInstance}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {instances.map(inst => (
-                                <SelectItem key={inst.name} value={inst.name}>
-                                    {inst.name} ({inst.loader} {inst.version})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="space-y-3">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">{t('search.select_instance')}</label>
+                            <Select value={selectedInstance} onValueChange={setSelectedInstance}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {instances.map(inst => (
+                                        <SelectItem key={inst.name} value={inst.name}>
+                                            {inst.name} ({inst.loader} {inst.version})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">{t('search.select_version')}</label>
+                            <Select
+                                value={selectedVersionId}
+                                onValueChange={setSelectedVersionId}
+                                disabled={loadingVersions || availableVersions.length === 0}
+                            >
+                                <SelectTrigger className="w-full">
+                                    {loadingVersions ? (
+                                        <span className="flex items-center text-muted-foreground">
+                                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                            {t('search.loading_versions')}
+                                        </span>
+                                    ) : availableVersions.length === 0 ? (
+                                        <span className="text-muted-foreground">{t('search.no_versions')}</span>
+                                    ) : (
+                                        <SelectValue />
+                                    )}
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableVersions.map((version, idx) => (
+                                        <SelectItem key={version.id} value={version.id}>
+                                            <span className="flex items-center gap-2">
+                                                <span className="truncate">{version.version_number}</span>
+                                                <span className="text-xs text-muted-foreground uppercase">{version.version_type}</span>
+                                                {idx === 0 && <span className="text-xs text-primary">({t('search.latest')})</span>}
+                                            </span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setShowInstallModal(false)}>
                             {t('common.cancel')}
                         </Button>
                         <Button
                             onClick={handleInstall}
-                            disabled={installing || !selectedInstance}
+                            disabled={installing || !selectedInstance || loadingVersions || availableVersions.length === 0}
                             className={instanceInstalledIds.has(selectedMod?.project_id) ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
                         >
                             {installing && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
