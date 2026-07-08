@@ -1076,6 +1076,59 @@ async function discoverExternalProfiles() {
     return results;
 }
 
+// Walks a folder looking for at least one real file, stopping at the first
+// hit. Used to tell a genuinely empty leftover folder (safe to ignore) apart
+// from one that still holds actual instance data (mods, saves, configs...)
+// whose instance.json went missing or got corrupted.
+async function folderHasAnyFile(dir, depthLimit = 6) {
+    const stack = [{ current: dir, depth: 0 }];
+    while (stack.length) {
+        const { current, depth } = stack.pop();
+        let entries;
+        try {
+            entries = await fs.readdir(current, { withFileTypes: true });
+        } catch (_) {
+            continue;
+        }
+        for (const entry of entries) {
+            if (entry.isFile()) return true;
+            if (entry.isDirectory() && depth < depthLimit) {
+                stack.push({ current: path.join(current, entry.name), depth: depth + 1 });
+            }
+        }
+    }
+    return false;
+}
+
+// Regenerates a minimal instance.json for a folder that still contains real
+// data but lost its config (missing or corrupt file, e.g. from an interrupted
+// write). This keeps the instance from silently disappearing from the list.
+async function recoverMissingInstanceConfig(instanceDir, fallbackName) {
+    let created = Date.now();
+    try {
+        const stat = await fs.stat(instanceDir);
+        created = stat.birthtimeMs || stat.ctimeMs || created;
+    } catch (_) {
+    }
+
+    const recoveredConfig = {
+        name: fallbackName,
+        version: '',
+        loader: 'vanilla',
+        loaderVersion: null,
+        versionId: '',
+        icon: null,
+        created,
+        playtime: 0,
+        lastPlayed: null,
+        status: 'needs-repair',
+        recovered: true
+    };
+
+    await fs.writeJson(path.join(instanceDir, 'instance.json'), recoveredConfig, { spaces: 4 });
+    return recoveredConfig;
+}
+
 async function getMergedInstances() {
     instancesDir = resolvePrimaryInstancesDir();
     const baseDirs = getAllInstanceDirsSync();
@@ -1087,11 +1140,40 @@ async function getMergedInstances() {
 
         const dirs = await fs.readdir(baseDir);
         for (const dir of dirs) {
-            const configPath = path.join(baseDir, dir, 'instance.json');
-            if (!await fs.pathExists(configPath)) continue;
+            const instanceDir = path.join(baseDir, dir);
+            const configPath = path.join(instanceDir, 'instance.json');
+
+            if (!await fs.pathExists(configPath)) {
+                let stat;
+                try {
+                    stat = await fs.stat(instanceDir);
+                } catch (_) {
+                    continue;
+                }
+                if (!stat.isDirectory()) continue;
+                if (!await folderHasAnyFile(instanceDir)) continue;
+
+                try {
+                    console.warn(`[Instances] Missing instance.json for "${dir}" but folder has data - regenerating a repairable entry.`);
+                    await recoverMissingInstanceConfig(instanceDir, dir);
+                } catch (e) {
+                    console.error(`[Instances] Failed to auto-repair missing config for ${dir}:`, e.message);
+                    continue;
+                }
+            }
 
             try {
-                const config = await fs.readJson(configPath);
+                let config;
+                try {
+                    config = await fs.readJson(configPath);
+                } catch (parseError) {
+                    if (!await folderHasAnyFile(instanceDir)) throw parseError;
+
+                    console.warn(`[Instances] Corrupt instance.json for "${dir}" - regenerating a repairable entry.`);
+                    const backupPath = path.join(instanceDir, `instance.json.corrupt-${Date.now()}.bak`);
+                    await fs.move(configPath, backupPath, { overwrite: true }).catch(() => {});
+                    config = await recoverMissingInstanceConfig(instanceDir, dir);
+                }
                 const instanceType = typeof config?.instanceType === 'string' ? config.instanceType.trim().toLowerCase() : '';
                 const loader = String(config?.loader || '').trim().toLowerCase();
                 const instanceName = String(config?.name || dir).trim().toLowerCase();
@@ -5909,6 +5991,24 @@ module.exports = (ipcMain, win) => {
             console.log('[Maintenance] Soft reset triggered');
             try {
                 const userData = app.getPath('userData');
+
+                // Preserve the pointer to a custom instances folder (if configured).
+                // settings.json gets wiped below, but the instances it points to may
+                // live outside userData - losing the pointer would make those
+                // instances vanish from the list even though their data is untouched.
+                let preservedInstancesPath = '';
+                try {
+                    const settingsPath = path.join(userData, 'settings.json');
+                    if (await fs.pathExists(settingsPath)) {
+                        const currentSettings = await fs.readJson(settingsPath);
+                        preservedInstancesPath = normalizeFolderPathValue(
+                            currentSettings?.instancesPath || currentSettings?.instancePath || ''
+                        );
+                    }
+                } catch (e) {
+                    console.warn('[Maintenance] Could not read settings.json before soft reset:', e.message);
+                }
+
                 const items = await fs.readdir(userData);
 
                 for (const item of items) {
@@ -5924,6 +6024,16 @@ module.exports = (ipcMain, win) => {
                         } else {
                             console.error(`[Maintenance] Failed to remove ${item}:`, err);
                         }
+                    }
+                }
+
+                if (preservedInstancesPath) {
+                    try {
+                        await fs.writeJson(path.join(userData, 'settings.json'), {
+                            instancesPath: preservedInstancesPath
+                        }, { spaces: 4 });
+                    } catch (e) {
+                        console.error('[Maintenance] Failed to restore custom instances path after soft reset:', e.message);
                     }
                 }
 
