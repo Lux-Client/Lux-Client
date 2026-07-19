@@ -1284,7 +1284,7 @@
         "remove": "Remove",
         "removed_instances": "Removed from instances",
         "search_placeholder": "Search mods...",
-        "search_results": "{{count}} results found",
+        "search_results": "Sökresultat",
         "select_all": "Select all",
         "select_version_first": "Select a version first",
         "selected_versions": "Selected versions",

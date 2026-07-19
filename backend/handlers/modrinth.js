@@ -18,6 +18,45 @@ const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../uti
 const modrinthToCurseForgeProjectMap = new Map();
 const pluginPortalPluginCache = new Map();
 
+// Modrinth calls used to hang indefinitely (axios has no default timeout), which froze the
+// "installing…" flow and icon/version loading whenever the API got slow. Fail fast instead.
+const MODRINTH_TIMEOUT = 12000;
+
+// Serve-last-known-good cache: project and version metadata rarely changes minute to minute,
+// so when Modrinth is slow or erroring we hand back the previous good response instead of
+// spinning or failing. Entries are refreshed on every successful call.
+const FRESH_TTL_MS = 5 * 60 * 1000;
+const responseCache = new Map();
+
+const getCached = (key) => {
+    const entry = responseCache.get(key);
+    if (!entry) return null;
+    return { data: entry.data, fresh: (Date.now() - entry.at) < FRESH_TTL_MS };
+};
+
+const setCached = (key, data) => {
+    responseCache.set(key, { data, at: Date.now() });
+};
+
+// Try the network; on any failure fall back to the last cached value if we have one, so a
+// Modrinth outage degrades to slightly stale data rather than a broken UI.
+const withCache = async (key, fetcher) => {
+    const cached = getCached(key);
+    if (cached && cached.fresh) return { data: cached.data, stale: false };
+
+    try {
+        const data = await fetcher();
+        setCached(key, data);
+        return { data, stale: false };
+    } catch (error) {
+        if (cached) {
+            console.warn(`[Modrinth:Cache] Serving stale data for ${key}: ${error.message}`);
+            return { data: cached.data, stale: true };
+        }
+        throw error;
+    }
+};
+
 const PLUGIN_PORTAL_PLATFORM_PRIORITY = ['MODRINTH', 'HANGAR', 'SPIGOTMC'];
 
 const CURSEFORGE_CLASS_BY_PROJECT_TYPE = {
@@ -1524,7 +1563,8 @@ const installModInternal = async (win, { instanceName, serverSafeName, projectId
                                     loaders: JSON.stringify([loader]),
                                     game_versions: JSON.stringify([version])
                                 },
-                                headers: { 'User-Agent': USER_AGENT }
+                                headers: { 'User-Agent': USER_AGENT },
+                                timeout: MODRINTH_TIMEOUT
                             });
 
                             if (res.data && res.data.length > 0) {
@@ -1590,11 +1630,11 @@ const resolveDependenciesInternal = async (versionId, loaders = [], gameVersions
         while (queue.length > 0) {
             const currentId = queue.shift();
             if (visited.has(currentId)) continue;
-            const vRes = await axios.get(`${MODRINTH_API}/version/${currentId}`, { headers: { 'User-Agent': USER_AGENT } });
+            const vRes = await axios.get(`${MODRINTH_API}/version/${currentId}`, { headers: { 'User-Agent': USER_AGENT }, timeout: MODRINTH_TIMEOUT });
             const version = vRes.data;
             if (!resolved.has(version.project_id)) {
 
-                const pRes = await axios.get(`${MODRINTH_API}/project/${version.project_id}`, { headers: { 'User-Agent': USER_AGENT } });
+                const pRes = await axios.get(`${MODRINTH_API}/project/${version.project_id}`, { headers: { 'User-Agent': USER_AGENT }, timeout: MODRINTH_TIMEOUT });
                 resolved.set(version.project_id, {
                     projectId: version.project_id,
                     versionId: version.id,
@@ -1624,7 +1664,8 @@ const resolveDependenciesInternal = async (versionId, loaders = [], gameVersions
                             try {
                                 const vListRes = await axios.get(`${MODRINTH_API}/project/${dep.project_id}/version`, {
                                     params,
-                                    headers: { 'User-Agent': USER_AGENT }
+                                    headers: { 'User-Agent': USER_AGENT },
+                                    timeout: MODRINTH_TIMEOUT
                                 });
                                 if (vListRes.data && vListRes.data.length > 0) {
                                     queue.push(vListRes.data[0].id);
@@ -1703,7 +1744,8 @@ module.exports = (ipcMain, win) => {
                 try {
                     const response = await axios.get(`${MODRINTH_API}/search`, {
                         params,
-                        headers: { 'User-Agent': USER_AGENT }
+                        headers: { 'User-Agent': USER_AGENT },
+                        timeout: MODRINTH_TIMEOUT
                     });
                     const data = response.data;
                     modrinthResults = (data.hits || []).map((hit, rank) => ({
@@ -2020,11 +2062,15 @@ module.exports = (ipcMain, win) => {
             const explicitFallbackCurseForgeProjectId = normalizeCurseForgeProjectId(fallbackCurseForgeProjectId);
             if (loaders.length) params.loaders = JSON.stringify(loaders);
             if (gameVersions.length) params.game_versions = JSON.stringify(gameVersions);
-            const response = await axios.get(`${MODRINTH_API}/project/${normalizedProjectId}/version`, {
-                params,
-                headers: { 'User-Agent': USER_AGENT }
+            const versionsCacheKey = `versions:${normalizedProjectId}:${params.loaders || ''}:${params.game_versions || ''}`;
+            const { data: modrinthVersions } = await withCache(versionsCacheKey, async () => {
+                const response = await axios.get(`${MODRINTH_API}/project/${normalizedProjectId}/version`, {
+                    params,
+                    headers: { 'User-Agent': USER_AGENT },
+                    timeout: MODRINTH_TIMEOUT
+                });
+                return Array.isArray(response?.data) ? response.data : [];
             });
-            const modrinthVersions = Array.isArray(response?.data) ? response.data : [];
             if (modrinthVersions.length > 0) {
                 return { success: true, versions: modrinthVersions };
             }
@@ -2136,37 +2182,45 @@ module.exports = (ipcMain, win) => {
             }
 
             const normalizedProjectId = normalizeModrinthProjectId(projectId);
-            const response = await axios.get(`${MODRINTH_API}/project/${normalizedProjectId}`, {
-                headers: { 'User-Agent': USER_AGENT }
-            });
-            const project = response.data;
+            // Enrich inside the cached fetcher so a cache hit skips the extra team/icon calls
+            // entirely, and a stale serve returns the fully hydrated project.
+            const { data: project } = await withCache(`project:${normalizedProjectId}`, async () => {
+                const response = await axios.get(`${MODRINTH_API}/project/${normalizedProjectId}`, {
+                    headers: { 'User-Agent': USER_AGENT },
+                    timeout: MODRINTH_TIMEOUT
+                });
+                const fetched = response.data;
 
-            const mappedCurseForgeProjectId = modrinthToCurseForgeProjectMap.get(normalizedProjectId);
-            if (mappedCurseForgeProjectId) {
-                project.curseforge_project_id = mappedCurseForgeProjectId;
-                if (!project.icon_url) {
+                const mappedCurseForgeProjectId = modrinthToCurseForgeProjectMap.get(normalizedProjectId);
+                if (mappedCurseForgeProjectId) {
+                    fetched.curseforge_project_id = mappedCurseForgeProjectId;
+                    if (!fetched.icon_url) {
+                        try {
+                            const curseForgeProject = await getCurseForgeProject(mappedCurseForgeProjectId);
+                            fetched.icon_url = curseForgeProject?.logo?.url || curseForgeProject?.logo?.thumbnailUrl || fetched.icon_url || null;
+                        } catch (fallbackError) {
+                            console.warn('[Modrinth:GetProject] Could not hydrate icon from CurseForge:', fallbackError.message);
+                        }
+                    }
+                }
+
+                if (fetched.team) {
                     try {
-                        const curseForgeProject = await getCurseForgeProject(mappedCurseForgeProjectId);
-                        project.icon_url = curseForgeProject?.logo?.url || curseForgeProject?.logo?.thumbnailUrl || project.icon_url || null;
-                    } catch (fallbackError) {
-                        console.warn('[Modrinth:GetProject] Could not hydrate icon from CurseForge:', fallbackError.message);
+                        const teamRes = await axios.get(`${MODRINTH_API}/team/${fetched.team}/members`, {
+                            headers: { 'User-Agent': USER_AGENT },
+                            timeout: MODRINTH_TIMEOUT
+                        });
+                        if (teamRes.data && teamRes.data.length > 0) {
+                            const owner = teamRes.data.find(m => m.role === 'Owner') || teamRes.data[0];
+                            fetched.author = owner.user.username;
+                        }
+                    } catch (e) {
+                        console.error("Modrinth Get Team Error:", e.message);
                     }
                 }
-            }
 
-            if (project.team) {
-                try {
-                    const teamRes = await axios.get(`${MODRINTH_API}/team/${project.team}/members`, {
-                        headers: { 'User-Agent': USER_AGENT }
-                    });
-                    if (teamRes.data && teamRes.data.length > 0) {
-                        const owner = teamRes.data.find(m => m.role === 'Owner') || teamRes.data[0];
-                        project.author = owner.user.username;
-                    }
-                } catch (e) {
-                    console.error("Modrinth Get Team Error:", e.message);
-                }
-            }
+                return fetched;
+            });
 
             return { success: true, project };
         } catch (e) {

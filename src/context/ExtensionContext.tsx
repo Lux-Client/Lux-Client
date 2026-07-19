@@ -14,6 +14,7 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
     const [hooks, setHooks] = useState<Record<string, any[]>>({});
     const [injectedStyles, setInjectedStyles] = useState<Record<string, HTMLStyleElement>>({});
     const [registeredTabs, setRegisteredTabs] = useState<any[]>([]);
+    const [settingsSections, setSettingsSections] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { addNotification } = useNotification();
     const createExtensionApi = (extensionId, localPath) => {
@@ -46,6 +47,32 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
                     }
                     styleEl.textContent = css;
                     setInjectedStyles(prev => ({ ...prev, [extensionId]: styleEl }));
+                }
+            },
+
+            settings: {
+                register: (config: {
+                    id?: string;
+                    label?: string;
+                    component: any;
+                }) => {
+                    if (!config || !config.component) {
+                        console.warn(`[Extension:${extensionId}] settings.register needs a component`);
+                        return null;
+                    }
+
+                    const sectionId = `${extensionId}:${config.id || 'default'}`;
+                    setSettingsSections(prev => {
+                        const filtered = prev.filter(section => section.sectionId !== sectionId);
+                        return [...filtered, {
+                            sectionId,
+                            extensionId,
+                            label: config.label || null,
+                            component: config.component,
+                            api
+                        }];
+                    });
+                    return sectionId;
                 }
             },
 
@@ -172,6 +199,7 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
             return next;
         });
         setRegisteredTabs(prev => prev.filter(t => t.extensionId !== extensionId));
+        setSettingsSections(prev => prev.filter(s => s.extensionId !== extensionId));
         setActiveExtensions(prev => {
             const next = { ...prev };
             delete next[extensionId];
@@ -323,6 +351,7 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
             activeExtensions,
             loading,
             registeredTabs,
+            settingsSections,
             getViews,
             loadExtension,
             unloadExtension,

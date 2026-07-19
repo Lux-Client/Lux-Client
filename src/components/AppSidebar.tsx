@@ -84,7 +84,8 @@ function AppSidebar({
     { id: 'extensions', label: t('common.extensions', 'Extensions'), icon: Puzzle },
     { id: 'styling', label: t('common.styling', 'Styling'), icon: Palette },
     { id: 'mods', label: t('instance_details.content.mods', 'Mods'), icon: List },
-    { id: 'settings', label: t('common.settings', 'Settings'), icon: Settings }
+    // Settings is rendered once at the bottom of the sidebar for every mode; listing it here
+    // too made it appear twice in client mode.
   ];
 
   const toolsItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
@@ -230,7 +231,12 @@ function AppSidebar({
               {menuItems.map((item) => (
                 <NavItem key={item.id} item={item} />
               ))}
-              {registeredTabs && registeredTabs.filter(tab => !tab.modes || tab.modes.includes(currentMode)).map(tab => (
+              {registeredTabs && registeredTabs.filter(tab => {
+                // An extension opts into specific modes by passing a non-empty modes array.
+                // Anything else — omitted, empty, or malformed — means "show everywhere".
+                if (!Array.isArray(tab.modes) || tab.modes.length === 0) return true;
+                return tab.modes.includes(currentMode);
+              }).map(tab => (
                 <NavItem
                   key={tab.tabId}
                   item={{ id: tab.tabId, label: tab.label, icon: tab.icon || Puzzle }}

@@ -38,10 +38,12 @@ function StatusDot({ status }: { status: ServiceStatus }) {
 }
 
 function StatusBadge({ status }: { status: ServiceStatus }) {
+    // These states reflect network reachability only — a reachable server can still have a
+    // broken auth/login backend, which this check cannot see. Labels say so honestly.
     if (status === 'checking') return <span className="text-xs text-muted-foreground">Checking…</span>;
-    if (status === 'operational') return <span className="text-xs font-medium text-emerald-500">Operational</span>;
-    if (status === 'degraded') return <span className="text-xs font-medium text-amber-500">Degraded</span>;
-    return <span className="text-xs font-medium text-red-500">Down</span>;
+    if (status === 'operational') return <span className="text-xs font-medium text-emerald-500">Reachable</span>;
+    if (status === 'degraded') return <span className="text-xs font-medium text-amber-500">Server errors</span>;
+    return <span className="text-xs font-medium text-red-500">Unreachable</span>;
 }
 
 function ServiceCard({ service }: { service: Service }) {
@@ -107,11 +109,11 @@ function Status() {
     const overallLabel = isChecking
         ? 'Checking…'
         : allOk
-        ? 'All Systems Operational'
+        ? 'All Systems Reachable'
         : hasDown
-        ? 'Service Disruption'
+        ? 'Servers Unreachable'
         : hasDegraded
-        ? 'Partial Outage'
+        ? 'Server Errors'
         : 'Checking…';
 
     const overallColor = allOk
@@ -130,7 +132,7 @@ function Status() {
                 <div>
                     <h1 className="text-2xl font-bold text-foreground tracking-tight">Service Status</h1>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                        Minecraft and Mojang server availability
+                        Minecraft and Mojang server reachability
                     </p>
                 </div>
                 <div className="flex items-center gap-2.5 flex-wrap">
@@ -153,9 +155,17 @@ function Status() {
                 <p className="text-xs text-muted-foreground mb-4">
                     Last checked: {new Date(checkedAt).toLocaleTimeString()}
                     {' · '}
-                    {operational}/{services.length} services operational
+                    {operational}/{services.length} services reachable
                 </p>
             )}
+
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span>
+                    This only checks whether each server responds. A reachable server can still have a
+                    broken login or auth backend, so “Reachable” does not guarantee that sign-in works.
+                </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {services.map(service => (

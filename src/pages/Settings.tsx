@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import ExtensionSlot from '../components/Extensions/ExtensionSlot';
+import { useExtensions } from '../context/ExtensionContext';
 import { isFeatureEnabled } from '../config/featureFlags';
 import ToggleBox from '../components/ToggleBox';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -33,6 +34,7 @@ import {
     Info,
     AlertTriangle,
     FlaskConical,
+    Puzzle,
     Search,
     Plus,
     X,
@@ -48,9 +50,38 @@ import {
     Compass
 } from 'lucide-react';
 
+// An extension crashing must not take the whole settings page down with it.
+class ExtensionSettingsBoundary extends React.Component<{ children: React.ReactNode; name: string }, { hasError: boolean }> {
+    constructor(props: { children: React.ReactNode; name: string }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error: any, errorInfo: any) {
+        console.error(`[Extension:${this.props.name}] Settings render error:`, error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4 text-xs text-muted-foreground">
+                    {this.props.name} could not render its settings.
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
 function Settings({ mode = 'default', onRestartGuide = null, onClose = null, disableClose = false }) {
     const { t, i18n } = useTranslation();
     const { addNotification } = useNotification();
+    const { settingsSections: extensionSettings = [], installedExtensions = [] } = useExtensions() || {};
     const isClientSettings = mode === 'client';
     const startupPageOptions = {
         openClientEnabled: isFeatureEnabled('openClientPage')
@@ -678,8 +709,35 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             description: t('settings.system.advanced_desc', 'Reset and recovery tools for troubleshooting.'),
             icon: FlaskConical,
             keywords: ['advanced', 'maintenance', 'reset', 'troubleshooting', 'factory']
+        },
+        // Only offered once an extension actually registers settings, so the tab never sits empty.
+        ...(extensionSettings.length > 0 ? [{
+            id: 'extensions',
+            label: t('settings.system.extensions', 'Extensions'),
+            description: t('settings.system.extensions_desc', 'Settings provided by your installed extensions.'),
+            icon: Puzzle,
+            keywords: ['extension', 'extensions', 'plugin', 'addon', ...extensionSettings.map((section) => String(section.extensionId))]
+        }] : [])
+    ]), [t, extensionSettings]);
+
+    // Extensions register per section; group them so each extension gets one labelled block.
+    const extensionSettingGroups = React.useMemo(() => {
+        const byExtension = new Map();
+
+        for (const section of extensionSettings) {
+            if (!byExtension.has(section.extensionId)) {
+                const manifest = installedExtensions.find((ext) => ext.id === section.extensionId);
+                byExtension.set(section.extensionId, {
+                    extensionId: section.extensionId,
+                    name: (manifest && manifest.name) || section.extensionId,
+                    sections: []
+                });
+            }
+            byExtension.get(section.extensionId).sections.push(section);
         }
-    ]), [t]);
+
+        return Array.from(byExtension.values());
+    }, [extensionSettings, installedExtensions]);
 
     const filteredSettingsSections = React.useMemo(() => {
         const query = settingsSearch.trim().toLowerCase();
@@ -1864,6 +1922,37 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                         </Accordion>
                     </Card>
                     </TabsContent>
+
+                    {extensionSettingGroups.length > 0 && (
+                        <TabsContent value="extensions" className="mt-0 space-y-5">
+                            {extensionSettingGroups.map((group) => (
+                                <div key={group.extensionId} className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <Puzzle className="h-3.5 w-3.5 text-primary" />
+                                            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                                {t('settings.extensions.section_label', 'Extension')}
+                                            </span>
+                                            <span className="text-sm font-semibold text-foreground">{group.name}</span>
+                                        </div>
+                                        <Separator className="shrink" />
+                                    </div>
+
+                                    {group.sections.map((section) => {
+                                        const Component = section.component;
+                                        return (
+                                            <ExtensionSettingsBoundary key={section.sectionId} name={group.name}>
+                                                {section.label && (
+                                                    <p className="mb-2 text-xs font-medium text-muted-foreground">{section.label}</p>
+                                                )}
+                                                <Component api={section.api} />
+                                            </ExtensionSettingsBoundary>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </TabsContent>
+                    )}
                             <ExtensionSlot name="settings.bottom" className="mt-4" />
                         </div>
                     </div>
