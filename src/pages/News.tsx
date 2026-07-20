@@ -40,12 +40,22 @@ function News() {
                             className="group cursor-pointer bg-card border border-border rounded-xl p-3 hover:bg-card transition-colors"
                             onClick={() => item.link && window.electronAPI.openExternal(item.link)}
                         >
-                            <OptimizedImage
-                                src={item.image}
-                                alt={item.title}
-                                className="h-40 w-full object-cover bg-card rounded-xl border border-border mb-3 overflow-hidden"
-                                fallback={<div className="h-40 w-full bg-card rounded-xl" />}
-                            />
+                            {item.image ? (
+                                <OptimizedImage
+                                    src={item.image}
+                                    alt={item.title}
+                                    className="h-40 w-full object-cover bg-card rounded-xl border border-border mb-3 overflow-hidden"
+                                    fallback={
+                                        <div className="h-40 w-full flex items-center justify-center bg-card rounded-xl border border-border mb-3">
+                                            <img src="./icon.png" alt="" className="h-16 w-16 object-contain opacity-60" />
+                                        </div>
+                                    }
+                                />
+                            ) : (
+                                <div className="h-40 w-full flex items-center justify-center bg-card rounded-xl border border-border mb-3">
+                                    <img src="./icon.png" alt="" className="h-16 w-16 object-contain opacity-60" />
+                                </div>
+                            )}
                             <div className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
                                 {item.title}
                             </div>

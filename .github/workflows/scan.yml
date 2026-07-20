@@ -92,6 +92,7 @@ jobs:
           TIMEOUT="$(echo "$RESP" | jq -r '.data.attributes.stats.timeout // 0')"
           FAILURE="$(echo "$RESP" | jq -r '.data.attributes.stats.failure // 0')"
           TYPE_UNSUPPORTED="$(echo "$RESP" | jq -r '.data.attributes.stats."type-unsupported" // 0')"
+          SHA256="$(echo "$RESP" | jq -r '.meta.file_info.sha256 // empty')"
 
           echo "malicious=$MALICIOUS" >> "$GITHUB_OUTPUT"
           echo "suspicious=$SUSPICIOUS" >> "$GITHUB_OUTPUT"
@@ -99,6 +100,7 @@ jobs:
           echo "timeout=$TIMEOUT" >> "$GITHUB_OUTPUT"
           echo "failure=$FAILURE" >> "$GITHUB_OUTPUT"
           echo "type_unsupported=$TYPE_UNSUPPORTED" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
 
       - name: Publish results
         shell: bash
@@ -107,6 +109,7 @@ jobs:
 
           FILE="${{ steps.prep.outputs.file }}"
           ID="${{ steps.vt.outputs.analysis_id }}"
+          SHA256="${{ steps.vt.outputs.sha256 }}"
 
           MAL="${{ steps.vt.outputs.malicious }}"
           SUS="${{ steps.vt.outputs.suspicious }}"
@@ -114,6 +117,15 @@ jobs:
           TMO="${{ steps.vt.outputs.timeout }}"
           FAI="${{ steps.vt.outputs.failure }}"
           UNS="${{ steps.vt.outputs.type_unsupported }}"
+
+          # Prefer the permanent hash-based report; it stays reachable long after the
+          # analysis job itself expires. Fall back to the analysis-id link if VirusTotal
+          # didn't return a hash for some reason.
+          if [ -n "$SHA256" ]; then
+            REPORT_URL="https://www.virustotal.com/gui/file/$SHA256"
+          else
+            REPORT_URL="https://www.virustotal.com/gui/file-analysis/$ID"
+          fi
 
           {
             echo "## VirusTotal Scan Results"
@@ -130,6 +142,8 @@ jobs:
             echo "| Type unsupported | $UNS |"
             echo ""
             echo "**Analysis ID:** \`$ID\`"
+            echo ""
+            echo "**Full report:** [View on VirusTotal]($REPORT_URL)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail if malicious detections found
