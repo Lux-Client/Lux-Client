@@ -487,7 +487,7 @@ function Dashboard({
         modpackData.name,
         modpackData.instanceVersion || modpackData.version,
         modpackData.instanceLoader || modpackData.loader,
-        null,
+        modpackData.icon || null,
       );
 
       if (createRes.success) {

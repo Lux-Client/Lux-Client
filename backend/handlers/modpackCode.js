@@ -2,7 +2,7 @@ const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
-const { app } = require('electron');
+const { app, net } = require('electron');
 const { installModInternal } = require('./modrinth');
 const { resolvePrimaryInstancesDir } = require('../utils/instances-path');
 const { getUserProfile } = require('../utils/secureProfileStore');
@@ -20,6 +20,42 @@ function calculateSha1(filePath) {
     });
 }
 
+// The server re-validates and re-encodes whatever we send (that's the real trust
+// boundary, since it's what gets redistributed to other users), but there's no reason
+// to ship a multi-megabyte icon when we don't have to — cap it here too and fail soft.
+const ICON_EXPORT_MAX_BYTES = 4 * 1024 * 1024;
+
+async function resolveIconForExport(iconValue) {
+    if (!iconValue || typeof iconValue !== 'string') return undefined;
+    try {
+        if (iconValue.startsWith('data:image/')) {
+            const approxBytes = Math.floor(iconValue.length * 0.75);
+            if (approxBytes > ICON_EXPORT_MAX_BYTES) {
+                console.warn('[ModpackCode-Handler] Instance icon too large to export, skipping.');
+                return undefined;
+            }
+            return iconValue;
+        }
+        if (iconValue.startsWith('app-media://') || iconValue.startsWith('http://') || iconValue.startsWith('https://')) {
+            const response = await net.fetch(iconValue);
+            if (!response.ok) return undefined;
+            const arrayBuffer = await response.arrayBuffer();
+            if (arrayBuffer.byteLength === 0 || arrayBuffer.byteLength > ICON_EXPORT_MAX_BYTES) {
+                console.warn('[ModpackCode-Handler] Instance icon too large to export, skipping.');
+                return undefined;
+            }
+            const buffer = Buffer.from(arrayBuffer);
+            const contentType = response.headers.get('content-type') || '';
+            const mime = contentType.startsWith('image/') ? contentType : 'image/png';
+            return `data:${mime};base64,${buffer.toString('base64')}`;
+        }
+    } catch (e) {
+        console.warn('[ModpackCode-Handler] Failed to resolve instance icon for export:', e.message);
+    }
+    // Anything else (e.g. an emoji fallback string) isn't a real image to send.
+    return undefined;
+}
+
 module.exports = (ipcMain, win) => {
     console.log('[ModpackCode-Handler] 🔌 Registriere Handler...');
 
@@ -29,7 +65,7 @@ module.exports = (ipcMain, win) => {
     ipcMain.handle('modpack:export-code', async (event, data) => {
         console.log('[ModpackCode-Handler] 📤 Export handler AUFGERUFEN', data);
         try {
-            const { name, mods, resourcePacks, shaders, instanceVersion, instanceLoader, instanceName } = data;
+            const { name, mods, resourcePacks, shaders, instanceVersion, instanceLoader, instanceName, icon } = data;
 
             const Store = require('electron-store');
             const store = new Store();
@@ -44,6 +80,7 @@ module.exports = (ipcMain, win) => {
                     console.log('[ModpackCode-Handler] ✅ Keybinds (options.txt) included in export');
                 }
             }
+            const resolvedIcon = await resolveIconForExport(icon);
             const exportData = {
                 name: name || 'My Modpack',
                 mods: mods?.map(m => ({
@@ -70,6 +107,7 @@ module.exports = (ipcMain, win) => {
                 instanceVersion,
                 instanceLoader,
                 keybinds: optionsContent,
+                icon: resolvedIcon,
                 ownerUuid
             };
             const response = await axios.post(`${SERVER_URL}/api/modpack/save`, exportData, {

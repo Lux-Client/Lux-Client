@@ -965,7 +965,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 modpackData.name,
                 modpackData.instanceVersion || modpackData.version,
                 modpackData.instanceLoader || modpackData.loader,
-                null
+                modpackData.icon || null
             );
 
             if (createRes.success) {

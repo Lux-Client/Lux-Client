@@ -77,7 +77,8 @@ function ModpackCodeModal({
                 resourcePacks: selectedTypes.resourcePacks ? resourcePacks : [],
                 shaders: selectedTypes.shaders ? shaders : [],
                 instanceVersion: instanceData?.version,
-                instanceLoader: instanceData?.loader
+                instanceLoader: instanceData?.loader,
+                icon: instanceData?.icon || null
             };
 
             const result = await window.electronAPI.exportModpackAsCode(exportData);
