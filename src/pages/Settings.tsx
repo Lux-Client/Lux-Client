@@ -130,6 +130,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
         resolutionWidth: 854,
         resolutionHeight: 480,
         enableDiscordRPC: true,
+        analyticsEnabled: true,
         autoUploadLogs: true,
         showDisabledFeatures: false,
         optimization: false,
@@ -1041,6 +1042,23 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                     {t('guide.restart_guide')}
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Shield className="h-4 w-4 text-muted-foreground" />
+                                {t('settings.privacy.title', 'Privacy')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-0">
+                            <ToggleBox
+                                checked={settings.analyticsEnabled !== false}
+                                onChange={(val) => handleChange('analyticsEnabled', val)}
+                                label={t('settings.privacy.analytics_toggle', 'Share anonymous usage data')}
+                                description={t('settings.privacy.analytics_toggle_desc', 'Lets Lux count active players and downloads (e.g. whether you\'re currently playing, and what you download). Turn this off to stop sending that data entirely.')}
+                            />
                         </CardContent>
                     </Card>
                         </TabsContent>

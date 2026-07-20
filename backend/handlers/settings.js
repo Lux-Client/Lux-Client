@@ -7,6 +7,7 @@ module.exports = (ipcMain) => {
     const fontsDir = path.join(app.getPath('userData'), 'fonts');
 
     const defaultSettings = {
+        analyticsEnabled: true,
         analyticsMachineId: '',
         javaPath: '',
         minMemory: 1024,

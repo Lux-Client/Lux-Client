@@ -594,6 +594,7 @@ function App() {
 
         const removeSettingsListener = window.electronAPI.onSettingsUpdated?.((newSettings) => {
             setAppSettings(newSettings);
+            Analytics.setEnabled(newSettings.analyticsEnabled !== false);
         });
 
         const removeStatusListener = window.electronAPI?.onInstanceStatus(({ instanceName, status, loader, version }) => {

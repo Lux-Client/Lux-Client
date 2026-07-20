@@ -555,6 +555,11 @@
             "startup_section": "Startup Section",
             "startup_subpage": "Startup Subpage"
         },
+        "privacy": {
+            "title": "Datenschutz",
+            "analytics_toggle": "Anonymi Nutzigsdate teile",
+            "analytics_toggle_desc": "Erlaubt Lux z'zelle wie viel Lüt grad zocked und was aktiv abegladen wird (also ob du grad spielsch und was du abelädsch). Schalt das us, für das Sende vo dene Date komplett z'stoppe."
+        },
         "java": {
             "title": "Java-Laufziitumgebig",
             "path": "Java-Pfad",

@@ -10,6 +10,7 @@ class AnalyticsService {
     private machineId: string;
     private forcePollingForSession: boolean;
     private initializingPromise: Promise<void> | null;
+    private enabled: boolean;
 
     constructor() {
         this.socket = null;
@@ -20,6 +21,22 @@ class AnalyticsService {
         this.machineId = '';
         this.forcePollingForSession = false;
         this.initializingPromise = null;
+        // Optimistic default — corrected against the real setting before any
+        // socket is opened in init(), so nothing can be sent before we know.
+        this.enabled = true;
+    }
+
+    private async readEnabledSetting(): Promise<boolean> {
+        try {
+            if (!window?.electronAPI?.getSettings) return true;
+            const res = await window.electronAPI.getSettings();
+            if (res?.success && res.settings) {
+                // Opt-out model: absent/undefined means "not yet decided", default to on.
+                return res.settings.analyticsEnabled !== false;
+            }
+        } catch (e) {
+        }
+        return true;
     }
 
     private buildSocketOptions() {
@@ -168,14 +185,43 @@ class AnalyticsService {
     init(serverUrl = 'https://lux.pluginhub.de') {
         if (this.socket || this.initializingPromise) return;
 
-        console.log('[Analytics] Initializing connection to', serverUrl);
         this.serverUrl = serverUrl;
 
         const connect = async () => {
+            this.enabled = await this.readEnabledSetting();
+            if (!this.enabled) {
+                console.log('[Analytics] Disabled by user preference — not connecting.');
+                return;
+            }
+            console.log('[Analytics] Initializing connection to', serverUrl);
             this.machineId = await this.getOrCreateMachineId();
             this.createSocket();
         };
 
+        this.initializingPromise = connect()
+            .finally(() => {
+                this.initializingPromise = null;
+            });
+    }
+
+    // Called whenever the user flips the "share usage data" toggle in Settings,
+    // so opting out (or back in) takes effect immediately without an app restart.
+    setEnabled(enabled: boolean) {
+        if (this.enabled === enabled) return;
+        this.enabled = enabled;
+
+        if (!enabled) {
+            console.log('[Analytics] Disabled by user — disconnecting.');
+            this.destroySocket();
+            return;
+        }
+
+        console.log('[Analytics] Re-enabled by user — connecting.');
+        if (this.socket || this.initializingPromise) return;
+        const connect = async () => {
+            this.machineId = this.machineId || await this.getOrCreateMachineId();
+            this.createSocket();
+        };
         this.initializingPromise = connect()
             .finally(() => {
                 this.initializingPromise = null;
@@ -188,7 +234,7 @@ class AnalyticsService {
     }
 
     register() {
-        if (!this.socket || !this.machineId) return;
+        if (!this.enabled || !this.socket || !this.machineId) return;
         const data: any = {
             version: this.clientVersion,
             os: this.os,
@@ -202,6 +248,7 @@ class AnalyticsService {
     }
 
     updateStatus(isPlaying: boolean, instanceName: string | null = null, metadata: any = {}) {
+        if (!this.enabled) return;
         if (!this.socket) {
             console.warn('[Analytics] Update status skipped: No socket');
             return;
@@ -221,6 +268,7 @@ class AnalyticsService {
     }
 
     trackServerCreation(software: string, version: string) {
+        if (!this.enabled) return;
         if (!this.socket) {
             console.warn('[Analytics] Track server creation skipped: No socket');
             return;
@@ -234,6 +282,7 @@ class AnalyticsService {
     }
 
     trackInstanceCreation(software: string, version: string) {
+        if (!this.enabled) return;
         if (!this.socket) {
             console.warn('[Analytics] Track instance creation skipped: No socket');
             return;
@@ -247,7 +296,7 @@ class AnalyticsService {
     }
 
     trackDownload(type: string, name: string, id: string) {
-        if (!this.socket) return;
+        if (!this.enabled || !this.socket) return;
 
         this.socket.emit('track-download', {
             type,

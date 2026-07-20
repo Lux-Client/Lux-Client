@@ -573,6 +573,11 @@
             "startup_section": "Startup Section",
             "startup_subpage": "Startup Subpage"
         },
+        "privacy": {
+            "title": "Datenschutz",
+            "analytics_toggle": "Anonyme Nutzungsdaten teilen",
+            "analytics_toggle_desc": "Ermöglicht es Lux, aktive Spieler und Downloads zu zählen (z. B. ob du gerade spielst und was du herunterlädst). Schalte dies aus, um das Senden dieser Daten vollständig zu stoppen."
+        },
         "java": {
             "title": "Java-Laufzeitumgebung",
             "path": "Java-Pfad",
