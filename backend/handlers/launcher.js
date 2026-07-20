@@ -1419,6 +1419,15 @@ module.exports = (ipcMain, mainWindow) => {
         if (process.platform !== 'win32') return;
 
         const { exec } = require('child_process');
+        const safePid = Number.parseInt(pid, 10);
+        if (!Number.isFinite(safePid) || safePid <= 0) return;
+
+        // `title` must never be spliced into the PowerShell script as literal text — a value
+        // containing e.g. `$(...)` would be executed as a live PowerShell subexpression inside
+        // the double-quoted string below. Base64 only contains [A-Za-z0-9+/=], none of which
+        // are PowerShell-significant, so decoding it at runtime is injection-proof regardless
+        // of what the title actually contains.
+        const titleB64 = Buffer.from(String(title ?? ''), 'utf16le').toString('base64');
         const script = `
 $code = @"
 using System;
@@ -1472,7 +1481,8 @@ public class TitleFixer {
 "@
 
 Add-Type -TypeDefinition $code -Language CSharp
-[TitleFixer]::Run(${pid}, "${title.replace(/"/g, '`"')}")
+$targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String("${titleB64}"))
+[TitleFixer]::Run(${safePid}, $targetTitle)
         `;
 
         const b64 = Buffer.from(script, 'utf16le').toString('base64');

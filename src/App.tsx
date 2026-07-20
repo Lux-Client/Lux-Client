@@ -47,6 +47,17 @@ import { useTranslation } from 'react-i18next';
 import i18n, { languageMap } from './i18n';
 import { playSound, setSoundSettings } from './lib/soundManager';
 
+// luxclient://install deep links can be crafted by anyone and aren't limited to our own
+// site — only ever install marketplace content that was actually fetched from here.
+const TRUSTED_MARKETPLACE_ORIGIN = 'https://lux.pluginhub.de';
+function isTrustedMarketplaceUrl(url: string): boolean {
+    try {
+        return new URL(url).origin === TRUSTED_MARKETPLACE_ORIGIN;
+    } catch {
+        return false;
+    }
+}
+
 function PluginTabContent({ viewId }: { viewId: string }) {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar p-6">
@@ -675,6 +686,23 @@ function App() {
         const removeInstallFromMarketplaceListener = window.electronAPI?.onInstallFromMarketplace?.(async (payload) => {
             if (!payload?.url) return;
             console.log('[App] Install from marketplace deep link:', payload);
+
+            // luxclient://install links can be crafted by anyone, not just our own site — a
+            // malicious link could point `url` at an attacker-hosted package. Only ever fetch
+            // from the real marketplace origin, and always ask before installing anything,
+            // the same way we already do for locally opened .luxextension files.
+            if (!isTrustedMarketplaceUrl(payload.url)) {
+                console.error('[App] Blocked install-from-marketplace: untrusted URL', payload.url);
+                alert(`Blocked an install request from an untrusted source:\n\n${payload.url}\n\nOnly links from ${TRUSTED_MARKETPLACE_ORIGIN} are allowed.`);
+                return;
+            }
+
+            const itemLabel = payload.name || payload.identifier || 'this item';
+            const kindLabel = payload.type === 'theme' ? 'theme' : 'extension';
+            const confirmed = window.confirm(
+                `Install the ${kindLabel} "${itemLabel}"?\n\nSource: ${payload.url}\n\nOnly continue if you trust where this link came from.`
+            );
+            if (!confirmed) return;
 
             if (payload.type === 'theme') {
                 startTransition(() => {
