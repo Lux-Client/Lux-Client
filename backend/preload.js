@@ -383,6 +383,11 @@ const electronAPI = {
     },
 
     checkServiceStatus: () => ipcRenderer.invoke('status:check'),
+
+    remoteGetConfig: () => ipcRenderer.invoke('remote:get-config'),
+    remoteSetConfig: (config) => ipcRenderer.invoke('remote:set-config', config),
+    remoteGetToken: () => ipcRenderer.invoke('remote:get-token'),
+    remoteRegenerateToken: () => ipcRenderer.invoke('remote:regenerate-token'),
 };
 try {
     contextBridge.exposeInMainWorld('electronAPI', electronAPI);

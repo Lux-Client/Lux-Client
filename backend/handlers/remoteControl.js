@@ -6,9 +6,17 @@ const Store = require('electron-store');
 
 const SETTINGS_KEY = 'remoteControl';
 const DEFAULT_PORT = 42819;
-const DEFAULT_HOST = '0.0.0.0';
+const LOOPBACK_HOST = '127.0.0.1';
+const ANY_HOST = '0.0.0.0';
 const TOKEN_BYTES = 24;
 const MAX_BODY_SIZE_BYTES = 10 * 1024 * 1024;
+
+// Bumped whenever the stored config needs to be forced back to safe defaults.
+// v1 shipped enabled-by-default on 0.0.0.0; those installs get disabled and re-tokened once.
+const SECURITY_REVISION = 1;
+
+const AUTH_FAIL_LIMIT = 10;
+const AUTH_FAIL_WINDOW_MS = 60 * 1000;
 
 function createToken() {
     return crypto.randomBytes(TOKEN_BYTES).toString('hex');
@@ -30,6 +38,20 @@ function getLocalIpv4Addresses() {
     return Array.from(new Set(addresses));
 }
 
+function getOwnHostnames() {
+    const names = new Set(['localhost', '127.0.0.1', '::1']);
+    const interfaces = os.networkInterfaces();
+
+    for (const infoList of Object.values(interfaces)) {
+        for (const info of infoList || []) {
+            if (!info?.address) continue;
+            names.add(String(info.address).toLowerCase().split('%')[0]);
+        }
+    }
+
+    return names;
+}
+
 function sanitizeConfig(config) {
     const rawPort = Number.parseInt(config?.port, 10);
     const port = Number.isInteger(rawPort) && rawPort >= 1024 && rawPort <= 65535
@@ -41,14 +63,30 @@ function sanitizeConfig(config) {
         : createToken();
 
     return {
-        enabled: config?.enabled !== false,
+        // Opt-in: the bridge exposes server consoles and files, so it stays off
+        // until the user turns it on for a companion app.
+        enabled: config?.enabled === true,
+        // Binding beyond loopback is a second, separate decision.
+        allowLan: config?.allowLan === true,
         port,
-        token
+        token,
+        securityRevision: SECURITY_REVISION
     };
 }
 
+function timingSafeEquals(a, b) {
+    const bufA = Buffer.from(String(a), 'utf8');
+    const bufB = Buffer.from(String(b), 'utf8');
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+}
+
 function jsonResponse(res, statusCode, payload) {
-    res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.writeHead(statusCode, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff'
+    });
     res.end(JSON.stringify(payload));
 }
 
@@ -59,6 +97,18 @@ function parseAuthToken(req) {
     }
 
     return '';
+}
+
+function parseHostname(hostHeader) {
+    if (!hostHeader) return '';
+
+    if (hostHeader.startsWith('[')) {
+        const end = hostHeader.indexOf(']');
+        return end === -1 ? '' : hostHeader.slice(1, end).toLowerCase();
+    }
+
+    const colon = hostHeader.indexOf(':');
+    return (colon === -1 ? hostHeader : hostHeader.slice(0, colon)).toLowerCase();
 }
 
 function readJsonBody(req) {
@@ -107,10 +157,43 @@ module.exports = (ipcMain, mainWindow) => {
     console.log('[RemoteControl] Registering remote control bridge...');
 
     const store = new Store();
-    let config = sanitizeConfig(store.get(SETTINGS_KEY, {}));
+    const storedConfig = store.get(SETTINGS_KEY, {});
+
+    let config;
+    if (storedConfig?.securityRevision !== SECURITY_REVISION) {
+        // Pre-hardening installs had the bridge listening on every interface with a
+        // token that was printed to the log, so that token is treated as burned.
+        config = sanitizeConfig({ port: storedConfig?.port, enabled: false, allowLan: false });
+        console.warn('[RemoteControl] Applying security defaults: bridge disabled, pairing token regenerated.');
+    } else {
+        config = sanitizeConfig(storedConfig);
+    }
     store.set(SETTINGS_KEY, config);
 
     let server = null;
+    const authFailures = new Map();
+
+    const clientKey = (req) => req.socket?.remoteAddress || 'unknown';
+
+    const isRateLimited = (req) => {
+        const entry = authFailures.get(clientKey(req));
+        if (!entry) return false;
+        if (Date.now() > entry.resetAt) {
+            authFailures.delete(clientKey(req));
+            return false;
+        }
+        return entry.count >= AUTH_FAIL_LIMIT;
+    };
+
+    const recordAuthFailure = (req) => {
+        const key = clientKey(req);
+        const entry = authFailures.get(key);
+        if (!entry || Date.now() > entry.resetAt) {
+            authFailures.set(key, { count: 1, resetAt: Date.now() + AUTH_FAIL_WINDOW_MS });
+            return;
+        }
+        entry.count += 1;
+    };
 
     const invokeHandler = async (channel, args = []) => {
         const handlers = ipcMain?._invokeHandlers;
@@ -141,33 +224,48 @@ module.exports = (ipcMain, mainWindow) => {
         });
     };
 
-    const setCorsHeaders = (res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    // Rejects requests that reached us through an attacker-controlled DNS name
+    // pointing at 127.0.0.1 (DNS rebinding).
+    const isHostAllowed = (req) => {
+        const hostname = parseHostname(req.headers.host || '');
+        if (!hostname) return false;
+        return getOwnHostnames().has(hostname);
     };
 
     const isAuthorized = (req) => {
         const token = parseAuthToken(req);
-        return token.length > 0 && token === config.token;
+        return token.length > 0 && timingSafeEquals(token, config.token);
     };
 
-    const getPublicInfo = () => ({
+    // Unauthenticated discovery payload. Deliberately holds nothing that
+    // fingerprints the machine - no version, no interface addresses.
+    const getDiscoveryInfo = () => ({
+        app: 'LuxClient',
+        remoteEnabled: config.enabled,
+        requiresAuth: true
+    });
+
+    const getPrivateInfo = () => ({
         app: 'LuxClient',
         version: app.getVersion(),
         remoteEnabled: config.enabled,
+        allowLan: config.allowLan,
         port: config.port,
-        addresses: getLocalIpv4Addresses(),
+        addresses: config.allowLan ? getLocalIpv4Addresses() : [],
         requiresAuth: true,
         timestamp: Date.now()
     });
 
     const handleRequest = async (req, res) => {
-        setCorsHeaders(res);
-
         if (req.method === 'OPTIONS') {
-            res.writeHead(204);
-            res.end();
+            // No CORS headers anywhere: the companion app is a native client and
+            // browsers have no business reading these responses.
+            jsonResponse(res, 403, { success: false, error: 'Cross-origin requests are not supported' });
+            return;
+        }
+
+        if (!isHostAllowed(req)) {
+            jsonResponse(res, 403, { success: false, error: 'Invalid host' });
             return;
         }
 
@@ -179,23 +277,34 @@ module.exports = (ipcMain, mainWindow) => {
             return;
         }
 
-        if (req.method === 'GET' && (parts[2] === 'ping' || parts[2] === 'info')) {
-            jsonResponse(res, 200, { success: true, data: getPublicInfo() });
+        if (req.method === 'GET' && parts[2] === 'ping') {
+            jsonResponse(res, 200, { success: true, data: getDiscoveryInfo() });
+            return;
+        }
+
+        if (isRateLimited(req)) {
+            jsonResponse(res, 429, { success: false, error: 'Too many failed attempts' });
             return;
         }
 
         if (!isAuthorized(req)) {
+            recordAuthFailure(req);
             jsonResponse(res, 401, { success: false, error: 'Unauthorized' });
             return;
         }
 
         const body = await readJsonBody(req);
 
+        if (req.method === 'GET' && parts.length === 3 && parts[2] === 'info') {
+            jsonResponse(res, 200, { success: true, data: getPrivateInfo() });
+            return;
+        }
+
         if (req.method === 'GET' && parts.length === 3 && parts[2] === 'session') {
             jsonResponse(res, 200, {
                 success: true,
                 data: {
-                    ...getPublicInfo(),
+                    ...getPrivateInfo(),
                     tokenHint: `${config.token.slice(0, 4)}...${config.token.slice(-4)}`
                 }
             });
@@ -215,9 +324,12 @@ module.exports = (ipcMain, mainWindow) => {
         }
 
         if (req.method === 'PATCH' && parts.length === 4 && parts[2] === 'session' && parts[3] === 'enabled') {
-            config = sanitizeConfig({ ...config, enabled: body.enabled !== false });
+            config = sanitizeConfig({ ...config, enabled: body.enabled === true });
             store.set(SETTINGS_KEY, config);
             jsonResponse(res, 200, { success: true, data: { enabled: config.enabled } });
+            if (!config.enabled) {
+                setImmediate(stopServer);
+            }
             return;
         }
 
@@ -526,11 +638,12 @@ module.exports = (ipcMain, mainWindow) => {
             return;
         }
 
+        const host = config.allowLan ? ANY_HOST : LOOPBACK_HOST;
+
         server = http.createServer((req, res) => {
             handleRequest(req, res).catch((error) => {
                 console.error('[RemoteControl] Request error:', error);
                 if (!res.headersSent) {
-                    setCorsHeaders(res);
                     jsonResponse(res, 500, {
                         success: false,
                         error: error?.message || 'Internal server error'
@@ -543,11 +656,14 @@ module.exports = (ipcMain, mainWindow) => {
             console.error('[RemoteControl] Server error:', error);
         });
 
-        server.listen(config.port, DEFAULT_HOST, () => {
-            const addresses = getLocalIpv4Addresses();
-            console.log(`[RemoteControl] Listening on ${DEFAULT_HOST}:${config.port}`);
-            console.log(`[RemoteControl] Local network addresses: ${addresses.join(', ') || 'none'}`);
-            console.log(`[RemoteControl] Pairing token: ${config.token}`);
+        server.listen(config.port, host, () => {
+            console.log(`[RemoteControl] Listening on ${host}:${config.port}`);
+            if (config.allowLan) {
+                const addresses = getLocalIpv4Addresses();
+                console.log(`[RemoteControl] Reachable from the local network: ${addresses.join(', ') || 'none'}`);
+            }
+            // The token is never logged - it is shown in the settings UI on request.
+            console.log('[RemoteControl] Pairing token available in Settings.');
         });
     };
 
@@ -555,8 +671,57 @@ module.exports = (ipcMain, mainWindow) => {
         if (!server) return;
         server.close();
         server = null;
+        authFailures.clear();
         console.log('[RemoteControl] Remote bridge stopped.');
     };
+
+    const applyConfig = (next) => {
+        config = sanitizeConfig(next);
+        store.set(SETTINGS_KEY, config);
+        stopServer();
+        startServer();
+        return config;
+    };
+
+    ipcMain.handle('remote:get-config', async () => ({
+        success: true,
+        data: {
+            enabled: config.enabled,
+            allowLan: config.allowLan,
+            port: config.port,
+            running: !!server,
+            addresses: config.allowLan ? getLocalIpv4Addresses() : []
+        }
+    }));
+
+    ipcMain.handle('remote:set-config', async (_event, next) => {
+        const updated = applyConfig({
+            ...config,
+            enabled: next?.enabled === true,
+            allowLan: next?.allowLan === true,
+            port: next?.port
+        });
+
+        return {
+            success: true,
+            data: {
+                enabled: updated.enabled,
+                allowLan: updated.allowLan,
+                port: updated.port,
+                running: !!server,
+                addresses: updated.allowLan ? getLocalIpv4Addresses() : []
+            }
+        };
+    });
+
+    // Kept separate from get-config so the token is only handed out when the
+    // user explicitly asks to see or pair it.
+    ipcMain.handle('remote:get-token', async () => ({ success: true, data: { token: config.token } }));
+
+    ipcMain.handle('remote:regenerate-token', async () => {
+        const updated = applyConfig({ ...config, token: createToken() });
+        return { success: true, data: { token: updated.token } };
+    });
 
     startServer();
 

@@ -1,34 +1,67 @@
 const fs = require('fs-extra');
 const axios = require('axios');
+const crypto = require('crypto');
 const Store = require('electron-store');
 const { app, shell, BrowserWindow } = require('electron');
 const path = require('path');
 
-const envPath = app.isPackaged ? path.join(process.resourcesPath, '.env') : path.join(app.getAppPath(), '.env');
-require('dotenv').config({ path: envPath });
+// OAuth client identifiers, injected at build time (see .github/workflows/*.yml).
+// A desktop app cannot hold a secret - anything shipped in the binary can be read
+// back out of it - so security here comes from PKCE instead: every login derives a
+// one-time code_verifier that never leaves this machine, which makes an intercepted
+// authorization code worthless on its own.
+//
+// Dropbox is a public PKCE client and has no secret at all.
+// Google still requires a client_secret at the token endpoint even for "Desktop app"
+// clients; their own docs note it "is obviously not treated as a secret" in that
+// context. This MUST be a Desktop app client - a Web application client's secret is
+// genuinely confidential and must never be shipped.
+let injectedClients = {};
+try {
+    injectedClients = require('../generated/oauthClients');
+} catch {
+    // Local development: read from a .env in the repo root. That file is never
+    // packaged, so this path does not exist in a released build.
+    require('dotenv').config({ path: path.join(app.getAppPath(), '.env') });
+}
 
 const store = new Store();
 
 const PROVIDERS = {
     GOOGLE_DRIVE: {
         name: 'Google Drive',
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        clientId: injectedClients.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
+        clientSecret: injectedClients.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET,
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenUrl: 'https://oauth2.googleapis.com/token',
-        scope: 'https://www.googleapis.com/auth/drive.file openid profile email'
+        scope: 'https://www.googleapis.com/auth/drive.file openid profile email',
+        authParams: { access_type: 'offline', prompt: 'consent' }
     },
     DROPBOX: {
         name: 'Dropbox',
-        clientId: process.env.DROPBOX_CLIENT_ID,
-        clientSecret: process.env.DROPBOX_CLIENT_SECRET,
+        clientId: injectedClients.DROPBOX_CLIENT_ID || process.env.DROPBOX_CLIENT_ID,
+        clientSecret: null,
         authUrl: 'https://www.dropbox.com/oauth2/authorize',
         tokenUrl: 'https://api.dropboxapi.com/oauth2/token',
-        scope: ''
+        scope: '',
+        authParams: { token_access_type: 'offline' }
     }
 };
 
 const REDIRECT_URI = 'https://localhost/callback';
+
+function base64Url(buffer) {
+    return buffer.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+function createPkcePair() {
+    const verifier = base64Url(crypto.randomBytes(32));
+    const challenge = base64Url(crypto.createHash('sha256').update(verifier).digest());
+    return { verifier, challenge };
+}
 
 class CloudBackupHandler {
     constructor(ipcMain, mainWindow) {
@@ -110,6 +143,12 @@ class CloudBackupHandler {
     async login(providerId) {
         const provider = PROVIDERS[providerId];
         if (!provider) return { success: false, error: 'Invalid provider' };
+        if (!provider.clientId) {
+            return { success: false, error: `${provider.name} is not configured in this build` };
+        }
+
+        const pkce = createPkcePair();
+        const state = base64Url(crypto.randomBytes(16));
 
         return new Promise((resolve) => {
             const authWin = new BrowserWindow({
@@ -122,13 +161,21 @@ class CloudBackupHandler {
                 }
             });
 
-            let url = `${provider.authUrl}?client_id=${provider.clientId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code`;
+            const authParams = new URLSearchParams({
+                client_id: provider.clientId,
+                redirect_uri: REDIRECT_URI,
+                response_type: 'code',
+                code_challenge: pkce.challenge,
+                code_challenge_method: 'S256',
+                state,
+                ...(provider.authParams || {})
+            });
 
             if (provider.scope) {
-                url += `&scope=${encodeURIComponent(provider.scope)}`;
+                authParams.set('scope', provider.scope);
             }
 
-            authWin.loadURL(url);
+            authWin.loadURL(`${provider.authUrl}?${authParams.toString()}`);
             authWin.show();
 
             const handleCallback = async (url) => {
@@ -143,9 +190,17 @@ class CloudBackupHandler {
                         return;
                     }
 
+                    // Guards against a callback that did not originate from the
+                    // request we just started.
+                    if (urlParams.get('state') !== state) {
+                        resolve({ success: false, error: 'Authentication failed: state mismatch' });
+                        authWin.close();
+                        return;
+                    }
+
                     if (code) {
                         try {
-                            const tokens = await this.exchangeCodeForTokens(providerId, code);
+                            const tokens = await this.exchangeCodeForTokens(providerId, code, pkce.verifier);
                             const user = await this.getUserInfo(providerId, tokens.access_token);
 
                             const cloudSettings = store.get('cloud_backups') || {};
@@ -179,14 +234,19 @@ class CloudBackupHandler {
         });
     }
 
-    async exchangeCodeForTokens(providerId, code) {
+    async exchangeCodeForTokens(providerId, code, codeVerifier) {
         const provider = PROVIDERS[providerId];
         const params = new URLSearchParams();
         params.append('client_id', provider.clientId);
-        params.append('client_secret', provider.clientSecret);
         params.append('code', code);
+        params.append('code_verifier', codeVerifier);
         params.append('redirect_uri', REDIRECT_URI);
         params.append('grant_type', 'authorization_code');
+
+        // Only Google still demands one; Dropbox is a public PKCE client.
+        if (provider.clientSecret) {
+            params.append('client_secret', provider.clientSecret);
+        }
 
         const response = await axios.post(provider.tokenUrl, params);
         return response.data;
@@ -221,9 +281,12 @@ class CloudBackupHandler {
         const provider = PROVIDERS[providerId];
         const params = new URLSearchParams();
         params.append('client_id', provider.clientId);
-        params.append('client_secret', provider.clientSecret);
         params.append('refresh_token', providerData.tokens.refresh_token);
         params.append('grant_type', 'refresh_token');
+
+        if (provider.clientSecret) {
+            params.append('client_secret', provider.clientSecret);
+        }
 
         try {
             const response = await axios.post(provider.tokenUrl, params);

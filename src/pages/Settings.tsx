@@ -169,6 +169,9 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
         ONEDRIVE: { loggedIn: false, user: null }
     });
 
+    const [remoteConfig, setRemoteConfig] = useState({ enabled: false, allowLan: false, port: 42819, running: false, addresses: [] });
+    const [remoteToken, setRemoteToken] = useState(null);
+
     const [showSoftResetModal, setShowSoftResetModal] = useState(false);
     const [showFactoryResetModal, setShowFactoryResetModal] = useState(false);
     const [showRestartModal, setShowRestartModal] = useState(false);
@@ -211,6 +214,58 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             cleanupUpdate();
         };
     }, []);
+
+    useEffect(() => {
+        window.electronAPI.remoteGetConfig?.()
+            .then((result) => {
+                if (result?.success) setRemoteConfig(result.data);
+            })
+            .catch(() => { /* bridge unavailable, leave defaults */ });
+    }, []);
+
+    const updateRemoteConfig = async (patch) => {
+        const next = { ...remoteConfig, ...patch };
+        // Turning the bridge off also drops the LAN grant, so re-enabling later
+        // starts from loopback again instead of silently reopening the network.
+        if (patch.enabled === false) next.allowLan = false;
+
+        try {
+            const result = await window.electronAPI.remoteSetConfig(next);
+            if (result?.success) {
+                setRemoteConfig(result.data);
+                if (!result.data.enabled) setRemoteToken(null);
+            } else {
+                addNotification(result?.error || 'Failed to update remote access', 'error');
+            }
+        } catch (e) {
+            addNotification(`Error: ${e.message}`, 'error');
+        }
+    };
+
+    const handleShowRemoteToken = async () => {
+        if (remoteToken) {
+            setRemoteToken(null);
+            return;
+        }
+        try {
+            const result = await window.electronAPI.remoteGetToken();
+            if (result?.success) setRemoteToken(result.data.token);
+        } catch (e) {
+            addNotification(`Error: ${e.message}`, 'error');
+        }
+    };
+
+    const handleRegenerateRemoteToken = async () => {
+        try {
+            const result = await window.electronAPI.remoteRegenerateToken();
+            if (result?.success) {
+                setRemoteToken(result.data.token);
+                addNotification(t('settings.remote.token_regenerated', 'Pairing token regenerated. Paired devices must be re-paired.'), 'success');
+            }
+        } catch (e) {
+            addNotification(`Error: ${e.message}`, 'error');
+        }
+    };
 
     const handleInstallJava = async (version) => {
         setShowJavaModal(false);
@@ -1059,6 +1114,68 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                 label={t('settings.privacy.analytics_toggle', 'Share anonymous usage data')}
                                 description={t('settings.privacy.analytics_toggle_desc', 'Lets Lux count active players and downloads (e.g. whether you\'re currently playing, and what you download). Turn this off to stop sending that data entirely.')}
                             />
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-muted-foreground" />
+                                {t('settings.remote.title', 'Remote access')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-0">
+                            <ToggleBox
+                                checked={remoteConfig.enabled === true}
+                                onChange={(val) => updateRemoteConfig({ enabled: val })}
+                                label={t('settings.remote.enable_toggle', 'Allow companion app access')}
+                                description={t('settings.remote.enable_toggle_desc', 'Lets a paired companion app control instances and servers over a local connection. Off by default because it exposes server consoles and files.')}
+                            />
+
+                            {remoteConfig.enabled && (
+                                <>
+                                    <ToggleBox
+                                        checked={remoteConfig.allowLan === true}
+                                        onChange={(val) => updateRemoteConfig({ allowLan: val })}
+                                        label={t('settings.remote.lan_toggle', 'Reachable from your local network')}
+                                        description={t('settings.remote.lan_toggle_desc', 'Off: only apps on this computer can connect. On: any device on your network can reach the bridge. Only enable this on networks you trust.')}
+                                    />
+
+                                    {remoteConfig.allowLan && remoteConfig.addresses?.length > 0 && (
+                                        <p className="text-xs text-muted-foreground pt-1">
+                                            {t('settings.remote.addresses', 'Reachable at')}:{' '}
+                                            <span className="font-mono">
+                                                {remoteConfig.addresses.map((addr) => `${addr}:${remoteConfig.port}`).join(', ')}
+                                            </span>
+                                        </p>
+                                    )}
+
+                                    <Separator className="my-4" />
+
+                                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                                        <div className="flex-1 min-w-[200px]">
+                                            <Label className="text-foreground">{t('settings.remote.token', 'Pairing token')}</Label>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {t('settings.remote.token_desc', 'Required by the companion app to connect. Treat it like a password.')}
+                                            </p>
+                                            {remoteToken && (
+                                                <p className="text-xs font-mono mt-2 break-all select-all">{remoteToken}</p>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button variant="outline" size="sm" onClick={handleShowRemoteToken}>
+                                                {remoteToken
+                                                    ? t('settings.remote.hide_token', 'Hide')
+                                                    : t('settings.remote.show_token', 'Show')}
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={handleRegenerateRemoteToken}>
+                                                <RefreshCw className="h-3.5 w-3.5" />
+                                                {t('settings.remote.regenerate_token', 'Regenerate')}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                         </TabsContent>

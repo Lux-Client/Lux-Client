@@ -107,13 +107,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefer-offline --no-audit --no-fund
 
-      - name: Create .env file for build
+      - name: Inject OAuth client identifiers
         shell: bash
-        run: |
-          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
-          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
-          echo "DROPBOX_CLIENT_ID=${{ secrets.DROPBOX_CLIENT_ID }}" >> .env
-          echo "DROPBOX_CLIENT_SECRET=${{ secrets.DROPBOX_CLIENT_SECRET }}" >> .env
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DROPBOX_CLIENT_ID: ${{ secrets.DROPBOX_CLIENT_ID }}
+        run: node scripts/write-oauth-clients.js
 
       - name: Build
         run: npm run build

@@ -205,6 +205,11 @@ interface ElectronAPI {
   onExtensionMessage: (extId: string, channel: string, callback: (...args: any[]) => void) => UnsubscribeFn;
   fetchMarketplace: () => Promise<any>;
 
+  remoteGetConfig: () => Promise<any>;
+  remoteSetConfig: (config: { enabled?: boolean; allowLan?: boolean; port?: number }) => Promise<any>;
+  remoteGetToken: () => Promise<any>;
+  remoteRegenerateToken: () => Promise<any>;
+
   cloudLogin: (providerId: string) => Promise<any>;
   cloudLogout: (providerId: string) => Promise<any>;
   cloudGetStatus: () => Promise<any>;

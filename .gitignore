@@ -13,6 +13,9 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+
+# Build-time injected OAuth client identifiers (scripts/write-oauth-clients.js)
+backend/generated/
 neoforge_profile.json
 check_syntax.js
 debug_forge_profile.js
