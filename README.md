@@ -11,25 +11,25 @@
     </em>
   </p>
 
-  <div>
-    <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-appimage.yml">
-      <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-appimage.yml&label=AppImage&logo=linux&variant=outline" alt="AppImage Build" />
-    </a>
-    <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-deb.yml">
-      <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-deb.yml&label=DEB&logo=debian&variant=outline" alt="DEB Build" />
-    </a>
-    <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-rpm.yml">
-      <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-rpm.yml&label=RPM&logo=redhat&variant=outline" alt="RPM Build" />
-    </a>
-    <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-win.yml">
-      <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-win.yml&label=Windows&logo=windows&variant=outline" alt="Windows Build" />
-    </a>
-    <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/scan.yml">
-      <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=scan.yml&label=VirusTotal&logo=virustotal&variant=outline" alt="VirusTotal Scan" />
-    </a>
-    <a href="https://github.com/Lux-Client/LuxClient/releases">
-      <img src="https://shieldcn.dev/github/release/Lux-Client/LuxClient.svg?label=Release&variant=outline" alt="Release" />
-    </a>
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+      <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-appimage.yml">
+        <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-appimage.yml&label=AppImage&logo=linux&variant=outline" alt="AppImage Build" />
+      </a>
+      <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-deb.yml">
+        <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-deb.yml&label=DEB&logo=debian&variant=outline" alt="DEB Build" />
+      </a>
+      <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-rpm.yml">
+        <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-rpm.yml&label=RPM&logo=redhat&variant=outline" alt="RPM Build" />
+      </a>
+      <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/build-win.yml">
+        <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=build-win.yml&label=Windows&logo=windows&variant=outline" alt="Windows Build" />
+      </a>
+      <a href="https://github.com/Lux-Client/LuxClient/actions/workflows/scan.yml">
+        <img src="https://shieldcn.dev/github/ci/Lux-Client/LuxClient.svg?workflow=scan.yml&label=VirusTotal&logo=virustotal&variant=outline" alt="VirusTotal Scan" />
+      </a>
+      <a href="https://github.com/Lux-Client/LuxClient/releases">
+        <img src="https://shieldcn.dev/github/release/Lux-Client/LuxClient.svg?label=Release&variant=outline" alt="Release" />
+      </a>
   </div>
 
 </div>
