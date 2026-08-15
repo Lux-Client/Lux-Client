@@ -7,6 +7,58 @@ const { createWriteStream } = require('fs');
 const { spawn } = require('child_process');
 const readline = require('readline');
 const { getProcessStats } = require('../utils/process-utils');
+const { resolveServerJava } = require('../utils/java-resolver');
+
+// Reads the launcher's global settings.json so servers honor the Java runtime the user picked
+// in Lux settings — the old code hardcoded 'java' and ignored it entirely.
+const readLauncherJavaPath = async () => {
+    try {
+        const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+        const settings = await fs.readJson(settingsPath);
+        return typeof settings.javaPath === 'string' ? settings.javaPath.trim() : '';
+    } catch (_) {
+        return '';
+    }
+};
+
+const readServerDefaultJava = async () => {
+    try {
+        const settingsPath = path.join(app.getPath('userData'), 'serverSettings.json');
+        const settings = await fs.readJson(settingsPath);
+        return {
+            javaPath: typeof settings.defaultJavaPath === 'string' ? settings.defaultJavaPath.trim() : '',
+            javaArgs: typeof settings.defaultJavaArgs === 'string' ? settings.defaultJavaArgs.trim() : ''
+        };
+    } catch (_) {
+        return { javaPath: '', javaArgs: '' };
+    }
+};
+
+// Splits a JVM argument string into individual args, honoring double quotes anywhere in a
+// token (e.g. -Dpath="a b c" or a bare "a b c") so args with spaces stay as one element when
+// handed to spawn(). Quotes are consumed, not kept.
+const parseJvmArgs = (raw) => {
+    const value = String(raw || '').trim();
+    if (!value) return [];
+
+    const tokens = [];
+    let current = '';
+    let inQuotes = false;
+    let hasToken = false;
+
+    for (const ch of value) {
+        if (ch === '"') { inQuotes = !inQuotes; hasToken = true; continue; }
+        if (/\s/.test(ch) && !inQuotes) {
+            if (hasToken) { tokens.push(current); current = ''; hasToken = false; }
+            continue;
+        }
+        current += ch;
+        hasToken = true;
+    }
+    if (hasToken) tokens.push(current);
+
+    return tokens;
+};
 const serverProcesses = new Map();
 const serverStatsIntervals = new Map();
 
@@ -1126,16 +1178,34 @@ eula=false
             config.status = 'starting';
             await fs.writeJson(configPath, config, { spaces: 2 });
 
-            const javaPath = 'java';
+            // Resolve Java: per-server override → global launcher setting → server default →
+            // auto-detected compatible runtime → bare 'java'. Fixes servers ignoring the runtime
+            // configured in Lux settings.
+            const globalJavaPath = await readLauncherJavaPath();
+            const serverDefaults = await readServerDefaultJava();
+            const javaResolution = await resolveServerJava({
+                mcVersion: config.version,
+                candidatePaths: [config.javaPath, globalJavaPath, serverDefaults.javaPath],
+                autoDetect: true
+            });
+            const javaPath = javaResolution.path;
+
+            const memory = parseInt(config.memory, 10) || 1024;
+            const customArgs = parseJvmArgs(config.javaArgs || serverDefaults.javaArgs);
+            const hasXmx = customArgs.some((arg) => /^-Xm[xs]/i.test(arg));
             const javaArgs = [
-                `-Xms${config.memory}M`,
-                `-Xmx${config.memory}M`,
+                ...(hasXmx ? [] : [`-Xms${memory}M`, `-Xmx${memory}M`]),
+                ...customArgs,
                 '-jar',
                 'server.jar',
                 'nogui'
             ];
 
-            console.log(`[Servers] Starting server ${name} with: ${javaPath} ${javaArgs.join(' ')}`);
+            console.log(`[Servers] Starting server ${name} with Java (${javaResolution.source}, needs ${javaResolution.requiredVersion}+): ${javaPath} ${javaArgs.join(' ')}`);
+
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                serverConsoleBuffers.get(name)?.push?.(`[Lux] Using Java: ${javaPath} (${javaResolution.source})`);
+            }
 
             const serverProcess = spawn(javaPath, javaArgs, {
                 cwd: serverDir,
@@ -1788,7 +1858,9 @@ eula=false
         defaultMemory: '4096',
         defaultPort: '25565',
         defaultMaxPlayers: '20',
-        autoop: false
+        autoop: false,
+        defaultJavaPath: '',
+        defaultJavaArgs: ''
     };
 
     ipcMain.handle('server:get-settings', async () => {

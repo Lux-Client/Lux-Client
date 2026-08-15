@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import LoadingOverlay from '../components/LoadingOverlay';
+import ServerJavaFields from '../components/ServerJavaFields';
 import { Compass } from 'lucide-react';
 
 function ServerSettings({ onRestartGuide = null }) {
@@ -16,14 +17,27 @@ function ServerSettings({ onRestartGuide = null }) {
         defaultMemory: '4096',
         defaultPort: '25565',
         defaultMaxPlayers: '20',
-        autoop: false
+        autoop: false,
+        defaultJavaPath: '',
+        defaultJavaArgs: ''
     });
+    const [runtimes, setRuntimes] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         loadSettings();
+        loadRuntimes();
     }, []);
+
+    const loadRuntimes = async () => {
+        try {
+            const result = await window.electronAPI.getJavaRuntimes();
+            if (result?.success) setRuntimes(result.runtimes || []);
+        } catch (e) {
+            // Non-fatal: the field falls back to a plain text input.
+        }
+    };
 
     const loadSettings = async () => {
         setIsLoading(true);
@@ -245,6 +259,20 @@ function ServerSettings({ onRestartGuide = null }) {
                             </label>
                         </div>
                     </div>
+                </div>
+
+                <div className="bg-card/40 backdrop-blur-sm border border-border rounded-xl p-6">
+                    <h2 className="text-lg font-bold text-foreground mb-1">{t('server.java.defaults_title', 'Java')}</h2>
+                    <p className="text-muted-foreground text-sm mb-4">
+                        {t('server.java.defaults_desc', 'Applies to all servers unless a server overrides it in its own settings.')}
+                    </p>
+                    <ServerJavaFields
+                        runtimes={runtimes}
+                        javaPath={settings.defaultJavaPath || ''}
+                        javaArgs={settings.defaultJavaArgs || ''}
+                        onJavaPathChange={(v) => handleChange('defaultJavaPath', v)}
+                        onJavaArgsChange={(v) => handleChange('defaultJavaArgs', v)}
+                    />
                 </div>
 
                 <div className="bg-card/40 backdrop-blur-sm border border-primary/20 rounded-xl p-6">

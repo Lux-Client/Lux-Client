@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import LoadingOverlay from '../components/LoadingOverlay';
 import FileBrowser from '../components/FileBrowser';
+import ServerSettingsModal from '../components/ServerSettingsModal';
 import { getSourceTags } from '../utils/sourceTags';
 
 function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGuest }) {
@@ -29,6 +30,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
     });
     const [currentStatus, setCurrentStatus] = useState(server.status || 'stopped');
     const [activeTab, setActiveTab] = useState('console');
+    const [showServerSettings, setShowServerSettings] = useState(false);
     const [playitCode, setPlayitCode] = useState(null);
     const [playitChecked, setPlayitChecked] = useState(false);
     const [playitAvailable, setPlayitAvailable] = useState(false);
@@ -726,6 +728,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
             loadPluginConfigs();
         }
     }, [activeTab, server.name]);
+
 
     useEffect(() => {
         if (activeTab === 'mods') {
@@ -1657,6 +1660,13 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                             </button>
                         </>
                     )}
+                    <button
+                        onClick={() => setShowServerSettings(true)}
+                        className="p-2 rounded-lg bg-card hover:bg-accent text-foreground border border-border transition-colors"
+                        title={t('server_settings.open', { defaultValue: 'Server settings' })}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
                 </div>
             </div>
 
@@ -3280,6 +3290,15 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                     </div>
                 )}
             </div>
+
+            {showServerSettings && (
+                <ServerSettingsModal
+                    server={server}
+                    serverStatus={currentStatus}
+                    onClose={() => setShowServerSettings(false)}
+                    onSaved={(config) => { if (onServerUpdate && config) onServerUpdate(config); }}
+                />
+            )}
         </div>
     );
 }

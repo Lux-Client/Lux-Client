@@ -1012,6 +1012,7 @@
             "properties": "Eigenschaften",
             "files": "Dateien",
             "config": "Config",
+            "settings": "Einstellungen",
             "plugins": "Plugins"
         },
         "performance": {
