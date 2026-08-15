@@ -36,6 +36,13 @@ function ServerJavaFields({
     const inputClass = 'w-full bg-background border border-border rounded-xl px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors';
     const labelClass = 'block text-muted-foreground text-sm font-bold mb-2 uppercase tracking-wide';
 
+    // process.platform is a main-process global and is undefined in the renderer; use the
+    // platform exposed through the preload bridge instead.
+    const isWindows = typeof window !== 'undefined' && window.electronAPI?.platform === 'win32';
+    const pathPlaceholder = isWindows
+        ? 'C:\\Program Files\\Java\\jdk-21\\bin\\java.exe'
+        : '/usr/lib/jvm/jdk-21/bin/java';
+
     return (
         <div className="grid grid-cols-1 gap-4">
             <div>
@@ -69,7 +76,7 @@ function ServerJavaFields({
                         type="text"
                         value={javaPath.trim()}
                         onChange={(e) => onJavaPathChange(e.target.value)}
-                        placeholder={process.platform === 'win32' ? 'C:\\\\Program Files\\\\Java\\\\jdk-21\\\\bin\\\\java.exe' : '/usr/lib/jvm/jdk-21/bin/java'}
+                        placeholder={pathPlaceholder}
                         className={inputClass}
                         spellCheck={false}
                     />
