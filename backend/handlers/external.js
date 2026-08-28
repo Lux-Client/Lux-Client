@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { shell } = require('electron');
 const fs = require('fs-extra');
 

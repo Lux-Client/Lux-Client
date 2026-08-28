@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "nursery": "warn"
+  },
+  "plugins": [
+    "react",
+    "typescript",
+    "unicorn"
+  ],
+  "rules": {
+    "no-console": "warn",
+    "no-debugger": "error",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-control-regex": "off",
+    "no-case-declarations": "off",
+    "no-useless-catch": "off",
+    "no-useless-escape": "off",
+    "react/no-unescaped-entities": "off"
+  },
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "release",
+    "**/*.d.ts",
+    "backend",
+    "electron"
+  ]
+}

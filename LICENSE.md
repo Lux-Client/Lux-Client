@@ -1,6 +1,6 @@
-# PolyForm Shield License 1.0.0
+# PolyForm Perimeter License 1.0.1
 
-<https://polyformproject.org/licenses/shield/1.0.0>
+<https://polyformproject.org/licenses/perimeter/1.0.1>
 
 ## Acceptance
 
@@ -14,18 +14,18 @@ The licensor grants you a copyright license for the
 software to do everything you might do with the software
 that would otherwise infringe the licensor's copyright
 in it for any permitted purpose.  However, you may
-only distribute the software according to [Distribution
-License](#distribution-license) and make changes or new works
-based on the software according to [Changes and New Works
-License](#changes-and-new-works-license).
+only distribute the software according to Distribution
+License and make changes or new works
+based on the software according to Changes and New Works
+License.
 
 ## Distribution License
 
 The licensor grants you an additional copyright license
 to distribute copies of the software.  Your license
 to distribute covers distributing the software with
-changes and new works permitted by [Changes and New Works
-License](#changes-and-new-works-license).
+changes and new works permitted by Changes and New Works
+License.
 
 ## Notices
 
@@ -51,49 +51,19 @@ to license, that you would infringe by using the software.
 
 ## Noncompete
 
-Any purpose is a permitted purpose, except for providing any
-product that competes with the software or any product the
-licensor or any of its affiliates provides using the software.
+Any purpose is a permitted purpose, except for providing to
+others any product that competes with the software.
 
 ## Competition
 
-Goods and services compete even when they provide functionality
-through different kinds of interfaces or for different technical
-platforms.  Applications can compete with services, libraries
-with plugins, frameworks with development tools, and so on,
-even if they're written in different programming languages
-or for different computer architectures.  Goods and services
-compete even when provided free of charge.  If you market a
-product as a practical substitute for the software or another
-product, it definitely competes.
-
-## New Products
-
-If you are using the software to provide a product that does
-not compete, but the licensor or any of its affiliates brings
-your product into competition by providing a new version of
-the software or another product using the software, you may
-continue using versions of the software available under these
-terms beforehand to provide your competing product, but not
-any later versions.
-
-## Discontinued Products
-
-You may begin using the software to compete with a product
-or service that the licensor or any of its affiliates has
-stopped providing, unless the licensor includes a plain-text
-line beginning with `Licensor Line of Business:` with the
-software that mentions that line of business.  For example:
-
-> Licensor Line of Business: YoyodyneCMS Content Management
-System (http://example.com/cms)
-
-## Sales of Business
-
-If the licensor or any of its affiliates sells a line of
-business developing the software or using the software
-to provide a product, the buyer can also enforce
-[Noncompete](#noncompete) for that product.
+If you use this software to market a product as a substitute
+for the functionality or value of the software, it competes
+with the software. A product may compete regardless how it is
+designed or deployed. For example, a product may compete even
+if it provides its functionality via any kind of interface
+(including services, libraries or plug-ins), even if it is
+ported to a different platform or programming language, and
+even if it is provided free of charge.
 
 ## Fair Use
 
@@ -146,12 +116,8 @@ terms.
 
 **Your company** is any legal entity, sole proprietorship,
 or other kind of organization that you work for, plus all
-its affiliates.
-
-**Affiliates** means the other organizations than an
-organization has control over, is under the control of, or is
-under common control with.
-
+organizations that have control over, are under the control
+of, or are under common control with that organization.
 **Control** means ownership of substantially all the assets of
 an entity, or the power to direct its management and policies
 by vote, contract, or otherwise.  Control can be direct or
@@ -162,3 +128,5 @@ software under these terms.
 
 **Use** means anything you do with the software requiring one
 of your licenses.
+
+&copy; PolyForm Project Inc.

@@ -3,7 +3,7 @@
 ## Frontend
 
 - **Framework**: React 18 + Vite 7
-- **Language**: TypeScript 5
+- **Language**: TypeScript 7
 - **Styling**: Tailwind CSS 3
 - **Animation**: Framer Motion 12
 - **UI Components**: Radix UI (multiple packages)
@@ -12,35 +12,34 @@
 - **3D**: skinview3d (Minecraft skin viewer)
 - **Notifications**: Sonner
 
-## Backend (Embedded Express)
+## Backend (Electron Main Process)
 
 - **Runtime**: Electron 40
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Rate Limiting**: express-rate-limit
-- **CSRF Protection**: csrf-csrf
+- **Language**: JavaScript (TypeScript for renderer)
 - **HTTP Client**: Axios
 - **File Handling**: adm-zip, archiver, jszip, fs-extra
+- **IPC**: Native Electron IPC
 
 ## Desktop
 
 - **Build Tool**: electron-builder
 - **State Storage**: electron-store
 - **Auto Updates**: electron-updater
-- **Discord RPC**: discord-rpc
+- **Discord RPC**: @xhayper/discord-rpc
 
 ## Minecraft Integration
 
 - **Launcher Core**: minecraft-launcher-core
 - **Auth**: msmc
 - **NBT Parsing**: prismarine-nbt
-- **CurseForge API**: mc-curseforge-api
-- **IPC**: ipc-event-emitter
 - **Process Management**: pidtree, pidusage
 
 ## Dev Tools
 
-- **Linting**: ESLint 9
-- **Type Checking**: TypeScript
+- **Package Manager**: pnpm 11
+- **Linting**: Oxlint (via Ultracite)
+- **Formatting**: Oxfmt (via Ultracite)
+- **Type Checking**: TypeScript 7
+- **Code Quality**: Ultracite, eslint-plugin-sonarjs, eslint-plugin-github, oxlint-plugin-react-doctor
 - **PostCSS**: Autoprefixer
 - **i18n**: i18next, react-i18next

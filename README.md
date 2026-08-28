@@ -36,6 +36,10 @@
 
 ---
 
+> **Note:** Lux is **source-available**, not open source. It is licensed under the [PolyForm Perimeter License](LICENSE.md), which permits use, modification, and distribution, but prohibits providing any product that competes with the software. See [LICENSE.md](LICENSE.md) for full terms.
+
+---
+
 ## Features
 
 ### Instance & Modpack Management
@@ -105,39 +109,42 @@ Or download the latest installer from the [releases page](https://github.com/Lux
 ### For Developers
 
 #### Prerequisites
-- [Node.js](https://nodejs.org/) (latest LTS)
-- npm or yarn
+- [Node.js](https://nodejs.org/) (v22+)
+- [pnpm](https://pnpm.io/) (v11+)
 
 #### Setup
 ```bash
 git clone https://github.com/Lux-Client/LuxClient.git
 cd LuxClient
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 #### Scripts
 | Command | Description |
 |---|---|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build the frontend |
-| `npm run lint` | Lint all source files |
-| `npm run typecheck` | Run TypeScript type checking |
-| `npm run dist` | Build for production (platform-specific) |
+| `pnpm dev` | Start development server with hot reload |
+| `pnpm build` | Build the frontend |
+| `pnpm lint` | Lint all source files with Oxlint |
+| `pnpm format` | Format all files with Oxfmt |
+| `pnpm typecheck` | Run TypeScript type checking |
+| `pnpm check` | Run all checks via Ultracite |
+| `pnpm fix` | Auto-fix lint and format issues |
+| `pnpm dist` | Build for production (platform-specific) |
 
 ---
 
 ## Architecture
 
 ```
-electron/main.js       Electron main process (window, IPC, updates)
-backend/handlers/      IPC handlers (auth, instances, servers, skins, ...)
-src/                   React frontend
-  pages/               Route components (Dashboard, Skins, Settings, ...)
-  components/          Reusable UI components
-  context/             React context providers
-  locales/             15 translation files
-  lib/                 Utilities and helpers
+electron/main.ts     Electron main process (window, IPC, updates)
+backend/handlers/    IPC handlers (auth, instances, servers, skins, ...)
+src/                 React frontend
+  pages/             Route components (Dashboard, Skins, Settings, ...)
+  components/        Reusable UI components
+  context/           React context providers
+  locales/           15 translation files
+  lib/               Utilities and helpers
 ```
 
 Built with **Vite** for fast builds, **Framer Motion** for animations, and **Radix UI** primitives for accessibility.
@@ -149,6 +156,7 @@ Built with **Vite** for fast builds, **Framer Motion** for animations, and **Rad
 - **Electron** — Desktop runtime
 - **React** — UI framework
 - **Vite** — Build tooling
+- **TypeScript** — Type safety
 - **Tailwind CSS** — Utility-first styling
 - **Framer Motion** — Animations
 - **Radix UI** — Accessible component primitives
@@ -156,12 +164,16 @@ Built with **Vite** for fast builds, **Framer Motion** for animations, and **Rad
 - **i18next** — Internationalization (15 locales)
 - **minecraft-launcher-core** — Java process management
 - **electron-updater** — Auto-updates
+- **Ultracite** — Code quality toolchain (Oxlint + Oxfmt)
+- **pnpm** — Fast, disk-efficient package manager
 
 ---
 
 ## License
 
-[PolyForm Shield License 1.0.0](LICENSE.md) — not an open-source license. See `LICENSE.md` for details.
+Lux is **source-available** under the [PolyForm Perimeter License 1.0.1](LICENSE.md).
+
+This is **not** an open-source license. You may use, modify, and distribute the software, but you may not provide any product that competes with Lux. See [LICENSE.md](LICENSE.md) for full terms.
 
 ---
 

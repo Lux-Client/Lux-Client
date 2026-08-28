@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 function compareVersions(v1, v2) {
     if (!v1 || !v2) return 0;

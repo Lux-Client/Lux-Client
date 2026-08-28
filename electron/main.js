@@ -1,8 +1,9 @@
 const { app, BrowserWindow, ipcMain, protocol, net, Menu, Tray, nativeImage, screen, shell } = require('electron');
 const fs = require('fs-extra');
 const path = require('path');
-const crypto = require('crypto');
 const pkg = require('../package.json');
+const { isPathInside } = require('../backend/utils/path-safety');
+const { calculateFileSha256, resolveExpectedReleaseSha256 } = require('../backend/utils/hash-utils');
 
 if (process.platform === 'linux' && process.env.XDG_CURRENT_DESKTOP === 'COSMIC') {
     process.env.XDG_CURRENT_DESKTOP = 'Unity';
@@ -206,64 +207,6 @@ async function clearUpdateAttemptState() {
     }
 }
 
-async function calculateFileSha256(filePath) {
-    return new Promise((resolve, reject) => {
-        const hash = crypto.createHash('sha256');
-        const stream = fs.createReadStream(filePath);
-        stream.on('data', (chunk) => hash.update(chunk));
-        stream.on('end', () => resolve(hash.digest('hex')));
-        stream.on('error', reject);
-    });
-}
-
-function parseSha256FromText(content, targetFileName) {
-    const normalizedTarget = String(targetFileName || '').trim().toLowerCase();
-    const lines = String(content || '').split(/\r?\n/);
-
-    for (const lineRaw of lines) {
-        const line = lineRaw.trim();
-        if (!line) continue;
-
-        const directHash = line.match(/^([a-f0-9]{64})$/i);
-        if (directHash) return directHash[1].toLowerCase();
-
-        const match = line.match(/^([a-f0-9]{64})\s+\*?(.+)$/i);
-        if (!match) continue;
-
-        const fileNameInLine = path.basename(match[2].trim()).toLowerCase();
-        if (fileNameInLine === normalizedTarget) {
-            return match[1].toLowerCase();
-        }
-    }
-
-    return null;
-}
-
-async function resolveExpectedReleaseSha256(axios, release, assetName) {
-    const assets = Array.isArray(release?.assets) ? release.assets : [];
-    const targetName = String(assetName || '').trim().toLowerCase();
-
-    const sidecarAsset = assets.find((a) => {
-        const name = String(a?.name || '').toLowerCase();
-        return name === `${targetName}.sha256` || name === `${targetName}.sha256.txt`;
-    });
-
-    if (sidecarAsset?.browser_download_url) {
-        const response = await axios.get(sidecarAsset.browser_download_url, { timeout: 10000, responseType: 'text' });
-        const hash = parseSha256FromText(response.data, assetName);
-        if (hash) return hash;
-    }
-
-    const checksumsAsset = assets.find((a) => /sha256sums(\.txt)?$/i.test(String(a?.name || '')) || /checksums?(\.txt)?$/i.test(String(a?.name || '')));
-    if (checksumsAsset?.browser_download_url) {
-        const response = await axios.get(checksumsAsset.browser_download_url, { timeout: 10000, responseType: 'text' });
-        const hash = parseSha256FromText(response.data, assetName);
-        if (hash) return hash;
-    }
-
-    return null;
-}
-
 function createSplashWindow() {
     const cursor = screen.getCursorScreenPoint();
     const display = screen.getDisplayNearestPoint(cursor);
@@ -428,14 +371,10 @@ async function checkAndLaunch() {
                     });
 
                     const expectedSha256 = await resolveExpectedReleaseSha256(axios, release, asset.name);
-                    if (expectedSha256) {
-                        const actualSha256 = await calculateFileSha256(targetPath);
-                        if (actualSha256 !== expectedSha256) {
-                            await fs.remove(targetPath);
-                            throw new Error('Update verification failed: checksum mismatch');
-                        }
-                    } else {
-                        console.warn('[Updater] No checksum file found for this release – skipping SHA256 verification.');
+                    const actualSha256 = await calculateFileSha256(targetPath);
+                    if (actualSha256 !== expectedSha256) {
+                        await fs.remove(targetPath);
+                        throw new Error('Update verification failed: checksum mismatch');
                     }
 
                     sendSplashStatus({ status: 'Update downloaded, installing...', detail: 'Starting installer...' });
@@ -795,9 +734,7 @@ function setupAppMediaProtocol() {
             const resolvedPath = path.resolve(decodedPath);
 
             const userDataPath = app.getPath('userData');
-            const isInside = process.platform === 'win32'
-                ? resolvedPath.toLowerCase().startsWith(userDataPath.toLowerCase())
-                : resolvedPath.startsWith(userDataPath);
+            const isInside = isPathInside(userDataPath, resolvedPath);
 
             if (!isInside) {
                 console.error(`[Main] Blocked app-media attempt to access path outside userData: ${resolvedPath}`);

@@ -16,6 +16,6 @@
     "allowJs": true,
     "types": ["node"]
   },
-  "include": ["src", "src/types"],
-  "exclude": ["node_modules", "dist", "release", "backend", "electron", "main", "scripts"]
+  "include": ["src", "src/types", "backend", "electron", "scripts"],
+  "exclude": ["node_modules", "dist", "release"]
 }

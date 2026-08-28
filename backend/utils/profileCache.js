@@ -1,3 +1,4 @@
+// @ts-nocheck
 const axios = require('axios');
 const cache = new Map();
 const CACHE_TTL = 60 * 1000;

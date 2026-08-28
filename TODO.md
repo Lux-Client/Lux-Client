@@ -4,6 +4,31 @@ A collection of potential improvements for Lux, organized by category.
 
 ---
 
+## Infrastructure
+
+### Monorepo Migration (moonrepo)
+- [ ] **Migrate to monorepo with moonrepo** — Restructure into `packages/` (shared libs), `apps/desktop` (Electron), `apps/web` (future web client)
+- [ ] **Shared package: `@lux/ui`** — Extract reusable UI components into a shared package
+- [ ] **Shared package: `@lux/types`** — Extract TypeScript types/interfaces into a shared package
+- [ ] **Shared package: `@lux/utils`** — Extract shared utility functions
+- [ ] **Shared package: `@lux/i18n`** — Extract i18n configuration and locale files
+- [ ] **moonrepo pipeline** — Configure build/test/lint pipelines with caching and dependency graphs
+
+### Package Cleanup & Upgrades
+- [ ] **Replace `concurrently`** — Use pnpm's built-in `--parallel` or `pnpm -r run` for parallel script execution
+- [ ] **Replace `cross-env`** — Use Node.js 22+ built-in `process.env` or `node --env-file=.env` instead
+- [ ] **Replace `rimraf`** — Use Node.js built-in `fs.rm(path, { recursive: true })` or `rm -rf` in scripts
+- [ ] **Replace `wait-on`** — Use a simpler health-check loop or pnpm's `--wait` flag
+- [ ] **Evaluate `mc-curseforge-api`** — Deprecated; consider migrating to direct CurseForge API calls or a maintained alternative
+- [ ] **Evaluate `ipc-event-emitter`** — Consider replacing with native Electron IPC patterns
+- [ ] **Evaluate `discord-rpc`** — Consider using Discord Game SDK or a maintained fork
+- [ ] **Update `electron-store`** — Migrate to v9+ with atomic writes support
+- [ ] **Remove `dotenv`** — Electron apps don't need dotenv; use `app.getPath()` for paths
+- [ ] **Update React 18 → 19** — When ecosystem support stabilizes (ref-as-prop, compiler)
+- [ ] **Update Tailwind CSS 3 → 4** — When migration tooling is mature
+
+---
+
 ## Performance
 
 - [ ] **Lazy loading for instance list** - Virtualize large instance collections to reduce initial render time

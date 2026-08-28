@@ -1,10 +1,11 @@
+// @ts-nocheck
 const { app } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 
 let DiscordRPC = null;
 try {
-    DiscordRPC = require('discord-rpc');
+    DiscordRPC = require('@xhayper/discord-rpc');
 } catch (e) {
     console.error('Failed to load discord-rpc module', e);
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
