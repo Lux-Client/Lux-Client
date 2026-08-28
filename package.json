@@ -34,8 +34,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "LuxClient",
-        "repo": "LuxClient"
+        "owner": "Lux-Client",
+        "repo": "Lux-Client"
       }
     ],
     "files": [
