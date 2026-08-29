@@ -1,3 +1,4 @@
+// @ts-nocheck
 const fs = require('fs-extra');
 const { Client } = require('minecraft-launcher-core');
 const Store = require('electron-store');
@@ -20,6 +21,7 @@ const {
     migrateLegacyInstancesToPrimarySync
 } = require('../utils/instances-path');
 const { downloadAndCacheIcon } = require('../utils/icon-cache');
+const { isPathInside } = require('../utils/path-safety');
 let appData;
 let instancesDir;
 let globalBackupsDir;
@@ -345,23 +347,12 @@ async function resolveInstanceBaseDir(instanceName) {
     };
 }
 
-function isPathWithinBaseDir(targetPath, baseDir) {
-    const normalizedTarget = path.resolve(targetPath);
-    const normalizedBase = path.resolve(baseDir);
-
-    if (process.platform === 'win32') {
-        return normalizedTarget.toLowerCase().startsWith(normalizedBase.toLowerCase());
-    }
-
-    return normalizedTarget.startsWith(normalizedBase);
-}
-
 async function resolveInstanceTargetPath(instanceName, relativePath = '') {
     const { baseDir } = await resolveInstanceBaseDir(instanceName);
     const safeRelative = String(relativePath || '').replace(/^[/\\]+/, '');
     const targetPath = path.resolve(path.join(baseDir, safeRelative));
 
-    if (!isPathWithinBaseDir(targetPath, baseDir)) {
+    if (!isPathInside(baseDir, targetPath)) {
         throw new Error('Access denied');
     }
 

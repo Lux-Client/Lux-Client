@@ -4,16 +4,18 @@ This document outlines the coding conventions and best practices for the Lux cli
 
 ## General
 
-- **Language**: TypeScript is used throughout the frontend (`src/`) and backend (`backend/`, `electron/`)
+- **Language**: TypeScript for frontend (`src/`); JavaScript for backend (`backend/`, `electron/`)
 - **No comments**: Do not add comments unless explicitly requested
-- **ESLint**: All code must pass `npm run lint`
-- **TypeScript**: All code must pass `npm run typecheck`
+- **Linting**: All code must pass `pnpm lint` (Oxlint via Ultracite)
+- **Formatting**: All code must pass `pnpm format:check` (Oxfmt via Ultracite)
+- **Type Checking**: All code must pass `pnpm typecheck`
+- **Source-available**: Lux is source-available under the PolyForm Perimeter license, not open source
 
 ## File Naming
 
 - React components: `PascalCase.tsx` (e.g., `SettingsPage.tsx`)
 - Utilities and hooks: `camelCase.ts` (e.g., `useSettings.ts`)
-- Config files: `camelCase.js` or `kebab-case.js`
+- Config files: `camelCase.ts` or `kebab-case.js`
 - Test files: `*.test.ts` or `*.spec.ts`
 
 ## React Components
@@ -21,10 +23,9 @@ This document outlines the coding conventions and best practices for the Lux cli
 ### Component Structure
 
 ```tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
 import {
     Save,
     Download,
@@ -90,13 +91,12 @@ interface ThemeSettings {
 
 - Use `any` sparingly and only when absolutely necessary
 - Prefer `unknown` and type narrowing when possible
-- ESLint rule `@typescript-eslint/no-explicit-any` is currently off, but avoid using it
 
 ## Settings System
 
 ### Backend (Node.js)
 
-Settings are stored in `backend/handlers/settings.js`:
+Settings are stored in `backend/handlers/settings.ts`:
 
 ```javascript
 const defaultSettings = {
@@ -315,11 +315,14 @@ ipcMain.handle('settings:get', async () => {
 
 ```bash
 # Lint
-npm run lint
+pnpm lint
+
+# Format check
+pnpm format:check
 
 # Type check
-npm run typecheck
+pnpm typecheck
 
-# Both
-npm run lint && npm run typecheck
+# All checks
+pnpm check
 ```

@@ -1,0 +1,6 @@
+allowBuilds:
+  core-js: set this to true or false
+  electron: true
+  electron-winstaller: set this to true or false
+  esbuild: true
+  register-scheme: set this to true or false

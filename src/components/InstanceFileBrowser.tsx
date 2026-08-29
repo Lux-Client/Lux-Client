@@ -9,7 +9,8 @@ import React, {
 import { useTranslation } from 'react-i18next';
 import YAML from 'js-yaml';
 import Prism from 'prismjs';
-import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/themes/prism-tomorrow.css';import { Folder, File } from "@gravity-ui/icons";
+
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-markup';
@@ -1033,7 +1034,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                                     onClick={() => (file.isDirectory ? handleOpenFolder(file.name) : handleOpenFile(file))}
                                     className="min-w-0 flex-1 text-left"
                                 >
-                                    <div className="text-sm text-foreground truncate">{file.isDirectory ? `📁 ${file.name}` : `📄 ${file.name}`}</div>
+                                    <div className="text-sm text-foreground truncate flex items-center gap-1.5">{file.isDirectory ? <><Folder className="h-4 w-4 flex-shrink-0" />{file.name}</> : <><File className="h-4 w-4 flex-shrink-0" />{file.name}</>}</div>
                                     <div className="text-[11px] text-muted-foreground">{file.isDirectory ? t('instance_details.files.folder', 'Folder') : `${Math.round((Number(file.size) || 0) / 1024)} KB`}</div>
                                 </button>
                                 <button

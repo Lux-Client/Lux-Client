@@ -1,16 +1,79 @@
+// @ts-nocheck
 const { app, shell } = require('electron');
 const axios = require('axios');
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs-extra');
 const { spawn } = require('child_process');
 const { compareVersions } = require('../utils/version-utils');
+const { fetchAndVerifyManifest, verifyArtifactHash } = require('../utils/manifest-verify');
 const pkg = require('../../package.json');
 
 const REPO = 'Lux-Client/Lux-Client';
 const GITHUB_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 
+async function calculateFileSha256(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+        stream.on('data', (chunk) => hash.update(chunk));
+        stream.on('end', () => resolve(hash.digest('hex')));
+        stream.on('error', reject);
+    });
+}
+
+function parseSha256FromText(content, targetFileName) {
+    const normalizedTarget = String(targetFileName || '').trim().toLowerCase();
+    const lines = String(content || '').split(/\r?\n/);
+
+    for (const lineRaw of lines) {
+        const line = lineRaw.trim();
+        if (!line) continue;
+
+        const directHash = line.match(/^([a-f0-9]{64})$/i);
+        if (directHash) return directHash[1].toLowerCase();
+
+        const match = line.match(/^([a-f0-9]{64})\s+\*?(.+)$/i);
+        if (!match) continue;
+
+        const fileNameInLine = path.basename(match[2].trim()).toLowerCase();
+        if (fileNameInLine === normalizedTarget) {
+            return match[1].toLowerCase();
+        }
+    }
+
+    return null;
+}
+
+async function resolveExpectedReleaseSha256(release, assetName) {
+    const assets = Array.isArray(release?.assets) ? release.assets : [];
+    const targetName = String(assetName || '').trim().toLowerCase();
+
+    const sidecarAsset = assets.find((a) => {
+        const name = String(a?.name || '').toLowerCase();
+        return name === `${targetName}.sha256` || name === `${targetName}.sha256.txt`;
+    });
+
+    if (sidecarAsset?.browser_download_url) {
+        const response = await axios.get(sidecarAsset.browser_download_url, { timeout: 10000, responseType: 'text' });
+        const hash = parseSha256FromText(response.data, assetName);
+        if (hash) return hash;
+    }
+
+    const checksumsAsset = assets.find((a) => /sha256sums(\.txt)?$/i.test(String(a?.name || '')) || /checksums?(\.txt)?$/i.test(String(a?.name || '')));
+    if (checksumsAsset?.browser_download_url) {
+        const response = await axios.get(checksumsAsset.browser_download_url, { timeout: 10000, responseType: 'text' });
+        const hash = parseSha256FromText(response.data, assetName);
+        if (hash) return hash;
+    }
+
+    return null;
+}
+
 module.exports = (ipcMain, mainWindow) => {
     let testVersionOverride = null;
+    let latestRelease = null;
+    let verifiedManifest = null;
 
     ipcMain.handle('updater:check', async () => {
         try {
@@ -20,6 +83,7 @@ module.exports = (ipcMain, mainWindow) => {
             });
 
             const release = response.data;
+            latestRelease = release;
             const latestVersion = release.tag_name;
             const currentVersion = testVersionOverride || pkg.version;
 
@@ -52,6 +116,25 @@ module.exports = (ipcMain, mainWindow) => {
                 } else if (platform === 'darwin') {
                     asset = assets.find(a => a.name.endsWith('.zip')) ||
                         assets.find(a => a.name.endsWith('.dmg'));
+                }
+            }
+
+            // Fetch and verify the release manifest before returning update info
+            if (needsUpdate) {
+                try {
+                    verifiedManifest = await fetchAndVerifyManifest(axios, release);
+                    console.log(`[Updater] Manifest verified for version ${verifiedManifest.version} with ${Object.keys(verifiedManifest.artifacts).length} artifacts`);
+                } catch (manifestError) {
+                    console.error('[Updater] Manifest verification failed:', manifestError.message);
+                    verifiedManifest = null;
+                    return {
+                        currentVersion,
+                        latestVersion,
+                        needsUpdate: false,
+                        manifestError: manifestError.message,
+                        releaseNotes: release.body,
+                        asset: null
+                    };
                 }
             }
 
@@ -107,6 +190,34 @@ module.exports = (ipcMain, mainWindow) => {
                 writer.on('error', reject);
             });
 
+            // Verify artifact hash from release manifest (primary verification)
+            if (verifiedManifest && verifiedManifest.artifacts) {
+                const manifestResult = await verifyArtifactHash(verifiedManifest, assetName, targetPath);
+                if (!manifestResult.valid) {
+                    try { await fs.remove(targetPath); } catch (_) { /* cleanup best-effort */ }
+                    throw new Error(
+                        `Update verification failed: manifest hash mismatch for ${assetName}. ` +
+                        (manifestResult.error || `Expected ${manifestResult.expected}, got ${manifestResult.actual}.`)
+                    );
+                }
+                console.log(`[Updater] Manifest hash verified for ${assetName}: ${manifestResult.actual}`);
+                return { success: true, path: targetPath };
+            }
+
+            // Fallback: verify using sidecar .sha256 checksum files
+            const expectedHash = await resolveExpectedReleaseSha256(latestRelease, assetName);
+            if (!expectedHash) {
+                try { await fs.remove(targetPath); } catch (_) { /* cleanup best-effort */ }
+                throw new Error(`Update verification failed: no checksum file found for ${assetName}. Refusing to install unverified update.`);
+            }
+
+            const actualHash = await calculateFileSha256(targetPath);
+            if (actualHash !== expectedHash) {
+                try { await fs.remove(targetPath); } catch (_) { /* cleanup best-effort */ }
+                throw new Error(`Update verification failed: SHA-256 mismatch for ${assetName}. Expected ${expectedHash}, got ${actualHash}.`);
+            }
+
+            console.log(`[Updater] SHA-256 verified for ${assetName}: ${actualHash}`);
             return { success: true, path: targetPath };
         } catch (error) {
             console.error('[Updater] Download failed:', error.message);

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Compass, MoveRight, X } from 'lucide-react';
+import { Compass, ArrowRight, Xmark } from "@gravity-ui/icons";
 import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -126,7 +126,7 @@ export default function GuideOverlay({
                             onClick={onSkip}
                             aria-label={t('common.close', 'Close')}
                         >
-                            <X className="h-4 w-4" />
+                            <Xmark className="h-4 w-4" />
                         </Button>
                     </div>
 
@@ -154,7 +154,7 @@ export default function GuideOverlay({
                             ) : (
                                 <Button onClick={onNext}>
                                     {t('guide.next')}
-                                    <MoveRight className="h-4 w-4" />
+                                    <ArrowRight className="h-4 w-4" />
                                 </Button>
                             )}
                         </div>

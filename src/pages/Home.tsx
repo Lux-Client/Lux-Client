@@ -25,24 +25,75 @@ import {
   Play,
   Square,
   Clock,
-  GripVertical,
-  Settings2,
-  Loader2,
+  Grip,
+  Gear,
+  ArrowRotateLeft,
   Box,
   Globe,
   Sparkles,
-  Download,
+  ArrowDownToLine,
   Heart,
-  ExternalLink,
-  RefreshCw,
+  Link,
+  ArrowRotateRight,
   ChevronRight,
-  Package,
-  MoreVertical,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
+  EllipsisVertical,
+  ArrowsExpand,
+  ChevronsCollapseToLine,
+} from "@gravity-ui/icons";
 
-function Home({
+function SectionCard({
+  sectionClass,
+  dragHandlers,
+  onToggleWidth,
+  isEditing,
+  title,
+  icon: Icon,
+  action,
+  children,
+}) {
+  const { t } = useTranslation();
+  const isHalf = sectionClass.includes("col-span-6");
+
+  return (
+    <div className={sectionClass} draggable={isEditing} {...dragHandlers}>
+      {isEditing && (
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-medium px-2 py-0.5 rounded-full z-10">
+          <Grip className="w-3 h-3" />
+          {t("home.drag_to_reorder", "Drag to reorder")}
+        </div>
+      )}
+      {isEditing && (
+        <div className="absolute top-1.5 right-1.5 z-20">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[10px] gap-1"
+            onClick={onToggleWidth}
+          >
+            {isHalf ? (
+              <ArrowsExpand className="w-3 h-3" />
+            ) : (
+              <ChevronsCollapseToLine className="w-3 h-3" />
+            )}
+            {isHalf ? "Half" : "Full"}
+          </Button>
+        </div>
+      )}
+      <div className="rounded-xl border border-border bg-card/60 overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60">
+          <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Icon className="h-4 w-4" />
+          </div>
+          <h2 className="truncate text-sm font-semibold text-foreground">{title}</h2>
+          {action && <div className="ml-auto shrink-0">{action}</div>}
+        </div>
+        <div className="p-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function House({
   onInstanceClick,
   runningInstances = {},
   activeDownloads = {},
@@ -130,24 +181,17 @@ function Home({
   });
 
   const shouldShowLibraryVisibleInstance = (instance, activeSettings = {}) => {
-    const isExternal =
-      String(instance?.instanceType || "").toLowerCase() === "external";
+    const isExternal = String(instance?.instanceType || "").toLowerCase() === "external";
     if (!isExternal) {
       return true;
     }
 
     const source = String(instance?.externalSource || "").toLowerCase();
-    if (
-      source === "modrinth" &&
-      activeSettings?.showModrinthInstancesInLibrary === false
-    ) {
+    if (source === "modrinth" && activeSettings?.showModrinthInstancesInLibrary === false) {
       return false;
     }
 
-    if (
-      source === "curseforge" &&
-      activeSettings?.showCurseforgeInstancesInLibrary === false
-    ) {
+    if (source === "curseforge" && activeSettings?.showCurseforgeInstancesInLibrary === false) {
       return false;
     }
 
@@ -160,18 +204,16 @@ function Home({
     loadModpacks();
     loadDashSettings();
 
-    const removeListener = window.electronAPI.onInstanceStatus(
-      ({ instanceName, status }) => {
-        if (
-          status === "stopped" ||
-          status === "ready" ||
-          status === "error" ||
-          status === "deleted"
-        ) {
-          loadInstances();
-        }
-      },
-    );
+    const removeListener = window.electronAPI.onInstanceStatus(({ instanceName, status }) => {
+      if (
+        status === "stopped" ||
+        status === "ready" ||
+        status === "error" ||
+        status === "deleted"
+      ) {
+        loadInstances();
+      }
+    });
 
     const cleanupSettings = window.electronAPI.onSettingsUpdated?.((s) => {
       setSettings(s);
@@ -192,8 +234,7 @@ function Home({
       if (res.success) {
         setSettings(res.settings);
         let settings = res.settings.dashboard || {};
-        const animationsExaggerated =
-          res.settings.animationsExaggerated || false;
+        const animationsExaggerated = res.settings.animationsExaggerated || false;
         const focusMode = res.settings.focusMode || false;
 
         if (!settings.layout) {
@@ -243,10 +284,7 @@ function Home({
             ...res.settings,
             dashboard: settings,
           });
-        } else if (
-          settings.layout &&
-          !settings.layout.find((l) => l.id === "mod-of-the-day")
-        ) {
+        } else if (settings.layout && !settings.layout.find((l) => l.id === "mod-of-the-day")) {
           settings.layout.splice(2, 0, {
             id: "mod-of-the-day",
             visible: true,
@@ -343,8 +381,8 @@ function Home({
       } catch (e) {}
     }
 
-    const launcherInstances = filterInstancesForMode(list, "launcher").filter(
-      (instance) => shouldShowLibraryVisibleInstance(instance, effectiveSettings || {}),
+    const launcherInstances = filterInstancesForMode(list, "launcher").filter((instance) =>
+      shouldShowLibraryVisibleInstance(instance, effectiveSettings || {}),
     );
     setInstances(launcherInstances);
     if (launcherInstances.length > 0) {
@@ -372,8 +410,7 @@ function Home({
       }
 
       allWorlds.sort(
-        (a: any, b: any) =>
-          new Date(b.lastPlayed).getTime() - new Date(a.lastPlayed).getTime(),
+        (a: any, b: any) => new Date(b.lastPlayed).getTime() - new Date(a.lastPlayed).getTime(),
       );
       setRecentWorlds(allWorlds.slice(0, 3));
     } else {
@@ -452,9 +489,7 @@ function Home({
     const installStateKey = Object.keys(activeDownloads).find(
       (k) => k.toLowerCase() === instance.name.toLowerCase(),
     );
-    const installState = installStateKey
-      ? activeDownloads[installStateKey]
-      : null;
+    const installState = installStateKey ? activeDownloads[installStateKey] : null;
     const isInstalling = !!installState;
     const isLaunching = status === "launching";
     const isPending = pendingLaunches[instance.name];
@@ -539,537 +574,468 @@ function Home({
   const renderSection = (section) => {
     if (!section.visible && !isEditing) return null;
 
-    const sectionIndex = dashSettings.layout.findIndex(
-      (s) => s.id === section.id,
-    );
+    const sectionIndex = dashSettings.layout.findIndex((s) => s.id === section.id);
 
-    const sectionClass = `transition-all duration-200 ${
-      isEditing
-        ? "relative ring-1 ring-primary/20 bg-primary/5 rounded-lg p-3 cursor-move group/section"
-        : ""
-    } ${section.width === 6 ? "col-span-6" : "col-span-12"} ${
-      !section.visible ? "opacity-30" : ""
-    }`;
+    const sectionClass = [
+      "transition-all duration-200",
+      isEditing ? "relative ring-1 ring-primary/20 bg-primary/5 rounded-lg p-3 cursor-move" : "",
+      section.width === 6 ? "col-span-6" : "col-span-12",
+      !section.visible ? "opacity-30" : "",
+    ].join(" ");
 
-    return (
-      <div
-        key={section.id}
-        className={sectionClass}
-        draggable={isEditing}
-        onDragStart={(e) => handleDragStart(e, sectionIndex)}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDrop={(e) => handleDrop(e, sectionIndex)}
-      >
-        {isEditing && (
-          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-medium px-2 py-0.5 rounded-full z-10">
-            <GripVertical className="w-3 h-3" />{" "}
-            {t("home.drag_to_reorder", "Drag to reorder")}{" "}
-          </div>
-        )}
-        {isEditing && (
-          <div className="absolute top-1.5 right-1.5 z-20">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-[10px] gap-1"
-              onClick={() => toggleWidth(sectionIndex)}
-            >
-              {section.width === 12 ? (
-                <Minimize2 className="w-3 h-3" />
-              ) : (
-                <Maximize2 className="w-3 h-3" />
-              )}
-              {section.width === 12 ? "Full" : "Half"}
-            </Button>
-          </div>
-        )}
-        {section.id === "recent-instances" && recentInstances.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              {t("home.jump_back_in")}{" "}
-            </h2>
-            <div className="space-y-1">
-              {recentInstances.map((instance) => {
-                const liveStatus = runningInstances[instance.name];
-                const installStateKey = Object.keys(activeDownloads).find(
-                  (k) => k.toLowerCase() === instance.name.toLowerCase(),
-                );
-                const installState = installStateKey
-                  ? activeDownloads[installStateKey]
-                  : null;
-                const isInstalling = !!installState;
-                const status = isInstalling ? "installing" : liveStatus;
-                const isRunning = status === "running";
-                const isLaunching = status === "launching";
-                const isPending = pendingLaunches[instance.name];
+    const dragProps = {
+      onDragStart: (e) => handleDragStart(e, sectionIndex),
+      onDragEnd: handleDragEnd,
+      onDragOver: handleDragOver,
+      onDrop: (e) => handleDrop(e, sectionIndex),
+    };
 
-                return (
-                  <div
-                    key={instance.name}
-                    onClick={() => onInstanceClick(instance)}
-                    className="group flex items-center gap-3 rounded-lg px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
-                      {instance.icon &&
-                      (instance.icon.startsWith("data:") ||
-                        instance.icon.startsWith("app-media://")) ? (
-                        <img
-                          src={instance.icon}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Box className="w-5 h-5 text-muted-foreground" />
-                      )}{" "}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {instance.name}{" "}
-                        </span>
-                        {isRunning && (
-                          <Badge
-                            variant="default"
-                            className="text-[10px] px-1.5 py-0 h-4"
-                          >
-                            {t("common.running")}{" "}
-                          </Badge>
-                        )}{" "}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                        {instance.lastPlayed && (
-                          <span>
-                            {t("home.played_ago", {
-                              time: formatTimeAgo(instance.lastPlayed),
-                            })}
-                          </span>
-                        )}
-                        <span className="text-border">·</span>
-                        <span className="capitalize">
-                          {instance.loader || "Vanilla"}
-                        </span>
-                        <span>{instance.version}</span>
-                      </div>
-                    </div>
-                    <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground mr-2">
-                      <Clock className="w-3 h-3" />
-                      <span>{formatPlaytime(instance.playtime)}</span>
-                    </div>
-                    <Button
-                      variant={isRunning ? "destructive" : "ghost"}
-                      size="sm"
-                      className="h-8 gap-1.5 shrink-0"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        handleLaunch(ev, instance);
-                      }}
-                      disabled={isInstalling || isLaunching || isPending}
-                    >
-                      {isRunning ? (
-                        <>
-                          <Square className="w-3.5 h-3.5" />{" "}
-                          {t("common.stop")}{" "}
-                        </>
-                      ) : isInstalling || isLaunching || isPending ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
-                          {isInstalling
-                            ? t("common.installing")
-                            : t("common.starting")}{" "}
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3.5 h-3.5" />{" "}
-                          {t("common.play")}{" "}
-                        </>
-                      )}{" "}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onInstanceClick(instance);
-                      }}
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
+    let title = "";
+    let Icon = Box;
+    let action = null;
+    let content = null;
+
+    if (section.id === "recent-instances") {
+      title = t("home.jump_back_in", "Jump back in");
+      Icon = Play;
+      content =
+        recentInstances.length > 0 ? (
+          <div className="space-y-1">
+            {recentInstances.map((instance) => {
+              const liveStatus = runningInstances[instance.name];
+              const installStateKey = Object.keys(activeDownloads).find(
+                (k) => k.toLowerCase() === instance.name.toLowerCase(),
+              );
+              const installState = installStateKey ? activeDownloads[installStateKey] : null;
+              const isInstalling = !!installState;
+              const status = isInstalling ? "installing" : liveStatus;
+              const isRunning = status === "running";
+              const isLaunching = status === "launching";
+              const isPending = pendingLaunches[instance.name];
+
+              return (
+                <div
+                  key={instance.name}
+                  onClick={() => onInstanceClick(instance)}
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
+                    {instance.icon &&
+                    (instance.icon.startsWith("data:") ||
+                      instance.icon.startsWith("app-media://")) ? (
+                      <img src={instance.icon} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Box className="w-5 h-5 text-muted-foreground" />
+                    )}{" "}
                   </div>
-                );
-              })}{" "}
-            </div>
-          </div>
-        )}{" "}
-        {section.id === "recent-worlds" && recentWorlds.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              {t("home.recent_worlds")}{" "}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {recentWorlds.map((world, idx) => {
-                const inst = instances.find(
-                  (i) => i.name === world.instanceName,
-                );
-                const status = inst ? runningInstances[inst.name] : null;
-                const isRunning = status === "running";
-                const isLaunching = status === "launching";
-                const isInstalling = status === "installing";
-                const isPending = pendingLaunches[world.instanceName];
-
-                return (
-                  <Card
-                    key={`${world.instanceName}-${world.name}-${idx}`}
-                    className="group cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent border-border"
-                    onClick={() => {
-                      if (inst) onInstanceClick(inst);
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {instance.name}{" "}
+                      </span>
+                      {isRunning && (
+                        <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4">
+                          {t("common.running")}{" "}
+                        </Badge>
+                      )}{" "}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                      {instance.lastPlayed && (
+                        <span>
+                          {t("home.played_ago", {
+                            time: formatTimeAgo(instance.lastPlayed),
+                          })}
+                        </span>
+                      )}
+                      <span className="text-border">·</span>
+                      <span className="capitalize">{instance.loader || "Vanilla"}</span>
+                      <span>{instance.version}</span>
+                    </div>
+                  </div>
+                  <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground mr-2">
+                    <Clock className="w-3 h-3" />
+                    <span>{formatPlaytime(instance.playtime)}</span>
+                  </div>
+                  <Button
+                    variant={isRunning ? "destructive" : "ghost"}
+                    size="sm"
+                    className="h-8 gap-1.5 shrink-0"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      handleLaunch(ev, instance);
+                    }}
+                    disabled={isInstalling || isLaunching || isPending}
+                  >
+                    {isRunning ? (
+                      <>
+                        <Square className="w-3.5 h-3.5" /> {t("common.stop")}{" "}
+                      </>
+                    ) : isInstalling || isLaunching || isPending ? (
+                      <>
+                        <ArrowRotateLeft className="w-3.5 h-3.5 animate-spin" />{" "}
+                        {isInstalling ? t("common.installing") : t("common.starting")}{" "}
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5" /> {t("common.play")}{" "}
+                      </>
+                    )}{" "}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onInstanceClick(instance);
                     }}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2.5 mb-2.5">
-                        <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
-                          {world.instanceIcon &&
-                          (world.instanceIcon.startsWith("data:") ||
-                            world.instanceIcon.startsWith("app-media://")) ? (
-                            <img
-                              src={world.instanceIcon}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Box className="w-3.5 h-3.5 text-muted-foreground" />
-                          )}{" "}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {world.name}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground truncate">
-                            {world.instanceName}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <Globe className="w-3 h-3" />
-                          <span>
-                            {formatTimeAgo(
-                              new Date(world.lastPlayed).getTime(),
-                            )}
-                          </span>
-                        </div>
-                        <Button
-                          variant={isRunning ? "destructive" : "ghost"}
-                          size="sm"
-                          className="h-6 text-xs gap-1 px-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isRunning) {
-                              window.electronAPI.killGame(world.instanceName);
-                              return;
-                            }
-                            if (isInstalling || isLaunching || isPending)
-                              return;
-
-                            setPendingLaunches((prev) => ({
-                              ...prev,
-                              [world.instanceName]: true,
-                            }));
-                            window.electronAPI
-                              .launchGame(world.instanceName, {
-                                world: world.name,
-                              })
-                              .then((r) => {
-                                if (!r.success) console.error(r.error);
-                              })
-                              .catch((err) => console.error(err))
-                              .finally(() => {
-                                setPendingLaunches((prev) => {
-                                  const n = {
-                                    ...prev,
-                                  };
-                                  delete n[world.instanceName];
-                                  return n;
-                                });
-                              });
-                          }}
-                          disabled={isInstalling || isLaunching || isPending}
-                        >
-                          {isRunning
-                            ? t("common.stop")
-                            : isInstalling || isLaunching || isPending
-                              ? t("common.starting")
-                              : t("common.play")}{" "}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}{" "}
-            </div>
-          </div>
-        )}{" "}
-        {section.id === "modpacks" && (
-          <div className="mb-8">
-            <button
-              onClick={() => onNavigateSearch && onNavigateSearch("modpack")}
-              className="flex items-center gap-1.5 mb-3 group/link cursor-pointer"
-            >
-              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider group-hover/link:text-foreground transition-colors">
-                {t("home.discover_modpack")}{" "}
-              </h2>
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover/link:text-foreground group-hover/link:translate-x-0.5 transition-all" />
-            </button>
-            {loadingModpacks ? (
-              <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} className="border-border">
-                    <Skeleton className="aspect-video w-full rounded-t-lg" />
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
-                        <div className="flex-1">
-                          <Skeleton className="h-4 w-24 mb-1" />
-                          <Skeleton className="h-3 w-16" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}{" "}
-              </div>
-            ) : (
-              <div
-                className={`grid gap-2 ${
-                  section.width === 6
-                    ? "grid-cols-1 md:grid-cols-2"
-                    : "grid-cols-2 md:grid-cols-3"
-                }`}
-              >
-                {modpacks.map((pack) => (
-                  <Card
-                    key={pack.project_id}
-                    className="group cursor-pointer transition-colors hover:bg-accent/30 border-border overflow-hidden"
-                    onClick={() => setSelectedModpack(pack)}
-                  >
-                    <div className="aspect-video w-full overflow-hidden bg-muted">
-                      {pack.gallery?.[0] ? (
-                        <img
-                          src={pack.gallery[0]}
-                          alt=""
-                          className="w-full h-full object-cover transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-8 h-8 text-muted-foreground" />
-                        </div>
-                      )}{" "}
-                    </div>
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        {pack.icon_url && (
-                          <img
-                            src={pack.icon_url}
-                            alt=""
-                            className="w-7 h-7 rounded-md shrink-0 border border-border"
-                          />
-                        )}
-                        <div className="min-w-0">
-                          <h3 className="text-sm font-medium text-foreground truncate">
-                            {pack.title}{" "}
-                          </h3>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            {t("home.by_author", { author: pack.author })}{" "}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}{" "}
-              </div>
-            )}{" "}
-          </div>
-        )}{" "}
-        {section.id === "mod-of-the-day" && (
-          <div className="mb-8">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              {t("home.mod_of_the_day")}{" "}
-            </h2>
-            {loadingModOfTheDay ? (
-              <Card className="border-border overflow-hidden">
-                <Skeleton className="w-full h-36" />
-                <CardContent className="p-4">
-                  <div className="flex gap-3">
-                    <Skeleton className="w-12 h-12 rounded-lg shrink-0" />
-                    <div className="flex-1">
-                      <Skeleton className="h-4 w-32 mb-2" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : modOfTheDay ? (
-              <Card className="border-border overflow-hidden group">
-                <div className="relative w-full h-36 bg-gradient-to-br from-primary/10 to-muted overflow-hidden">
-                  {modOfTheDay.featured_image ? (
-                    <img
-                      src={modOfTheDay.featured_image}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  ) : modOfTheDay.gallery && modOfTheDay.gallery.length > 0 ? (
-                    <img
-                      src={modOfTheDay.gallery[0].url}
-                      alt={modOfTheDay.gallery[0].title || ""}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : modOfTheDay.icon_url ? (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <img
-                        src={modOfTheDay.icon_url}
-                        alt=""
-                        className="w-16 h-16 rounded-xl"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Sparkles className="w-12 h-12 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                    <EllipsisVertical className="w-4 h-4" />
+                  </Button>
                 </div>
+              );
+            })}{" "}
+          </div>
+        ) : null;
+    } else if (section.id === "recent-worlds") {
+      title = t("home.recent_worlds", "Recent Worlds");
+      Icon = Globe;
+      content =
+        recentWorlds.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {recentWorlds.map((world, idx) => {
+              const inst = instances.find((i) => i.name === world.instanceName);
+              const status = inst ? runningInstances[inst.name] : null;
+              const isRunning = status === "running";
+              const isLaunching = status === "launching";
+              const isInstalling = status === "installing";
+              const isPending = pendingLaunches[world.instanceName];
 
-                <CardContent className="p-4">
-                  <div className="flex gap-3 mb-3">
-                    <div className="flex-shrink-0">
-                      {modOfTheDay.icon_url && (
-                        <img
-                          src={modOfTheDay.icon_url}
-                          alt=""
-                          className="w-10 h-10 rounded-lg border border-border"
-                        />
-                      )}{" "}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-sm font-semibold text-foreground truncate">
-                          {modOfTheDay.title}{" "}
-                        </h3>
-                        <span className="text-xs text-muted-foreground">
-                          {t("home.by_author", {
-                            author: modOfTheDay.author,
-                          })}{" "}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                        <div className="flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          <span>{formatDownloads(modOfTheDay.downloads)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-3 h-3" />
-                          <span>{formatDownloads(modOfTheDay.followers)}</span>
-                        </div>
-                        {modOfTheDay.updated && (
-                          <span>
-                            {formatTimeAgo(
-                              new Date(modOfTheDay.updated).getTime(),
-                            )}
-                          </span>
+              return (
+                <Card
+                  key={`${world.instanceName}-${world.name}-${idx}`}
+                  className="group cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent border-border"
+                  onClick={() => {
+                    if (inst) onInstanceClick(inst);
+                  }}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2.5 mb-2.5">
+                      <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
+                        {world.instanceIcon &&
+                        (world.instanceIcon.startsWith("data:") ||
+                          world.instanceIcon.startsWith("app-media://")) ? (
+                          <img
+                            src={world.instanceIcon}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Box className="w-3.5 h-3.5 text-muted-foreground" />
                         )}{" "}
                       </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">{world.name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {world.instanceName}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <Globe className="w-3 h-3" />
+                        <span>{formatTimeAgo(new Date(world.lastPlayed).getTime())}</span>
+                      </div>
+                      <Button
+                        variant={isRunning ? "destructive" : "ghost"}
+                        size="sm"
+                        className="h-6 text-xs gap-1 px-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isRunning) {
+                            window.electronAPI.killGame(world.instanceName);
+                            return;
+                          }
+                          if (isInstalling || isLaunching || isPending) return;
 
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {modOfTheDay.loaders?.map((loader) => (
-                      <Badge
-                        key={loader}
-                        variant="default"
-                        className="text-[10px] capitalize"
+                          setPendingLaunches((prev) => ({
+                            ...prev,
+                            [world.instanceName]: true,
+                          }));
+                          window.electronAPI
+                            .launchGame(world.instanceName, {
+                              world: world.name,
+                            })
+                            .then((r) => {
+                              if (!r.success) console.error(r.error);
+                            })
+                            .catch((err) => console.error(err))
+                            .finally(() => {
+                              setPendingLaunches((prev) => {
+                                const n = {
+                                  ...prev,
+                                };
+                                delete n[world.instanceName];
+                                return n;
+                              });
+                            });
+                        }}
+                        disabled={isInstalling || isLaunching || isPending}
                       >
-                        {loader}{" "}
-                      </Badge>
-                    ))}
-                    {modOfTheDay.categories?.slice(0, 4).map((cat) => (
-                      <Badge
-                        key={cat}
-                        variant="secondary"
-                        className="text-[10px] capitalize"
-                      >
-                        {cat.replace(/-/g, " ")}{" "}
-                      </Badge>
-                    ))}{" "}
-                  </div>
-
-                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                    {modOfTheDay.description || "No description available"}{" "}
-                  </p>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="flex-1 h-8 text-xs"
-                      asChild
-                    >
-                      <a
-                        href={`https://modrinth.com/mod/${modOfTheDay.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="w-3 h-3 mr-1.5" />
-                        Modrinth
-                      </a>
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="flex-1 h-8 text-xs"
-                      onClick={loadNewModOfTheDay}
-                    >
-                      <RefreshCw className="w-3 h-3 mr-1.5" />{" "}
-                      {t("home.other_mod")}{" "}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    {t("home.failed_to_load_mod")}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+                        {isRunning
+                          ? t("common.stop")
+                          : isInstalling || isLaunching || isPending
+                            ? t("common.starting")
+                            : t("common.play")}{" "}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}{" "}
           </div>
-        )}
-      </div>
+        ) : null;
+    } else if (section.id === "modpacks") {
+      title = t("home.discover_modpack", "Discover Modpacks");
+      Icon = Box;
+      action = (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1 text-muted-foreground hover:text-foreground"
+          onClick={() => onNavigateSearch && onNavigateSearch("modpack")}
+        >
+          {t("home.browse_all", "Browse all")}
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Button>
+      );
+      content = loadingModpacks ? (
+        <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="border-border">
+              <Skeleton className="aspect-video w-full rounded-t-lg" />
+              <CardContent className="p-3">
+                <div className="flex items-start gap-2">
+                  <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-24 mb-1" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}{" "}
+        </div>
+      ) : (
+        <div
+          className={`grid gap-2 ${
+            section.width === 6 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2 md:grid-cols-3"
+          }`}
+        >
+          {modpacks.map((pack) => (
+            <Card
+              key={pack.project_id}
+              className="group cursor-pointer transition-colors hover:bg-accent/50 border-border overflow-hidden"
+              onClick={() => setSelectedModpack(pack)}
+            >
+              <div className="aspect-video w-full overflow-hidden bg-muted">
+                {pack.gallery?.[0] ? (
+                  <img
+                    src={pack.gallery[0]}
+                    alt=""
+                    className="w-full h-full object-cover transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Box className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}{" "}
+              </div>
+              <CardContent className="p-3">
+                <div className="flex items-start gap-2">
+                  {pack.icon_url && (
+                    <img
+                      src={pack.icon_url}
+                      alt=""
+                      className="w-7 h-7 rounded-md shrink-0 border border-border"
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-foreground truncate">{pack.title} </h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {t("home.by_author", { author: pack.author })}{" "}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}{" "}
+        </div>
+      );
+    } else if (section.id === "mod-of-the-day") {
+      title = t("home.mod_of_the_day", "Mod of the Day");
+      Icon = Sparkles;
+      action = (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 text-muted-foreground hover:text-foreground"
+          onClick={loadNewModOfTheDay}
+        >
+          <ArrowRotateRight className="w-3.5 h-3.5" />
+          {t("home.other_mod", "Other")}
+        </Button>
+      );
+      content = loadingModOfTheDay ? (
+        <Card className="border-border overflow-hidden">
+          <Skeleton className="w-full h-36" />
+          <CardContent className="p-4">
+            <div className="flex gap-3">
+              <Skeleton className="w-12 h-12 rounded-lg shrink-0" />
+              <div className="flex-1">
+                <Skeleton className="h-4 w-32 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : modOfTheDay ? (
+        <Card className="border-border overflow-hidden group">
+          <div className="relative w-full h-36 bg-gradient-to-br from-primary/10 to-card overflow-hidden">
+            {modOfTheDay.featured_image ? (
+              <img src={modOfTheDay.featured_image} alt="" className="w-full h-full object-cover" />
+            ) : modOfTheDay.gallery && modOfTheDay.gallery.length > 0 ? (
+              <img
+                src={modOfTheDay.gallery[0].url}
+                alt={modOfTheDay.gallery[0].title || ""}
+                className="w-full h-full object-cover"
+              />
+            ) : modOfTheDay.icon_url ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <img src={modOfTheDay.icon_url} alt="" className="w-16 h-16 rounded-xl" />
+              </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Sparkles className="w-12 h-12 text-muted-foreground" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+          </div>
+
+          <CardContent className="p-4">
+            <div className="flex gap-3 mb-3">
+              <div className="flex-shrink-0">
+                {modOfTheDay.icon_url && (
+                  <img
+                    src={modOfTheDay.icon_url}
+                    alt=""
+                    className="w-10 h-10 rounded-lg border border-border"
+                  />
+                )}{" "}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-semibold text-foreground truncate">
+                    {modOfTheDay.title}{" "}
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    {t("home.by_author", {
+                      author: modOfTheDay.author,
+                    })}{" "}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  <div className="flex items-center gap-1">
+                    <ArrowDownToLine className="w-3 h-3" />
+                    <span>{formatDownloads(modOfTheDay.downloads)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Heart className="w-3 h-3" />
+                    <span>{formatDownloads(modOfTheDay.followers)}</span>
+                  </div>
+                  {modOfTheDay.updated && (
+                    <span>{formatTimeAgo(new Date(modOfTheDay.updated).getTime())}</span>
+                  )}{" "}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-1 mb-3">
+              {modOfTheDay.loaders?.map((loader) => (
+                <Badge key={loader} variant="default" className="text-[10px] capitalize">
+                  {loader}{" "}
+                </Badge>
+              ))}
+              {modOfTheDay.categories?.slice(0, 4).map((cat) => (
+                <Badge key={cat} variant="secondary" className="text-[10px] capitalize">
+                  {cat.replace(/-/g, " ")}{" "}
+                </Badge>
+              ))}{" "}
+            </div>
+
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+              {modOfTheDay.description || "No description available"}{" "}
+            </p>
+
+            <div className="flex gap-2">
+              <Button variant="default" size="sm" className="flex-1 h-8 text-xs" asChild>
+                <a
+                  href={`https://modrinth.com/mod/${modOfTheDay.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Link className="w-3 h-3 mr-1.5" />
+                  Modrinth
+                </a>
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 h-8 text-xs"
+                onClick={loadNewModOfTheDay}
+              >
+                <ArrowRotateRight className="w-3 h-3 mr-1.5" /> {t("home.other_mod")}{" "}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-border">
+          <CardContent className="p-4 text-center">
+            <p className="text-sm text-muted-foreground">{t("home.failed_to_load_mod")}</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <SectionCard
+        sectionClass={sectionClass}
+        dragHandlers={dragProps}
+        onToggleWidth={() => toggleWidth(sectionIndex)}
+        isEditing={isEditing}
+        title={title}
+        icon={Icon}
+        action={action}
+      >
+        {content}
+      </SectionCard>
     );
   };
 
+  const rawWelcome = dashSettings.welcomeMessage || "Welcome back, %player_name%!";
+  const welcomeTitle = rawWelcome.replace(
+    "%player_name%",
+    userProfile?.name || t("home.player", "Player"),
+  );
+
   return (
     <div className="flex flex-col h-full">
-      <PageHeader
-        title={
-          userProfile?.name
-            ? t("home.welcome_back_name", {
-                name: userProfile.name,
-                defaultValue: `Welcome back, ${userProfile.name}!`,
-              })
-            : t("home.welcome_back")
-        }
-        description={t("home.everything_place")}
-      >
+      <PageHeader title={welcomeTitle} description={t("home.everything_place")}>
         <div className="flex items-center gap-2">
           {isEditing && (
-            <Button
-              size="sm"
-              onClick={() => setIsEditing(false)}
-              className="gap-1.5"
-            >
-              <Settings2 className="w-3.5 h-3.5" /> {t("home.save_layout")}{" "}
+            <Button size="sm" onClick={() => setIsEditing(false)} className="gap-1.5">
+              <Gear className="w-3.5 h-3.5" /> {t("home.save_layout")}{" "}
             </Button>
           )}
           <Button
@@ -1079,7 +1045,7 @@ function Home({
             onClick={() => setShowCustomizer(true)}
             title="Customize Dashboard"
           >
-            <Settings2 className="h-4 w-4" />{" "}
+            <Gear className="h-4 w-4" />{" "}
           </Button>
         </div>
       </PageHeader>
@@ -1088,20 +1054,17 @@ function Home({
         <ExtensionSlot name="home.top" className="mb-6" />
         {isEditing && (
           <div className="mb-4 p-3 bg-primary/10 border border-dashed border-primary/30 rounded-lg text-center">
-            <p className="text-sm font-medium text-primary">
-              Advanced Editor Mode
-            </p>
+            <p className="text-sm font-medium text-primary">Advanced Editor Mode</p>
             <p className="text-[11px] text-primary/70">
               Drag sections to reorder · Toggle "Half/Full" to resize grid
             </p>
           </div>
         )}{" "}
-        <div className="grid grid-cols-12 gap-x-4 gap-y-1">
+        <div className="grid grid-cols-12 gap-x-4 gap-y-4">
           {" "}
           {dashSettings.layout.map((section) => renderSection(section))}{" "}
         </div>
-        {dashSettings.layout.find((s) => s.id === "recent-instances")
-          ?.visible &&
+        {dashSettings.layout.find((s) => s.id === "recent-instances")?.visible &&
           recentInstances.length === 0 &&
           !isEditing && (
             <EmptyState
@@ -1122,23 +1085,18 @@ function Home({
           {selectedModpack && (
             <>
               <div className="relative">
-                {selectedModpack.gallery &&
-                selectedModpack.gallery.length > 0 ? (
+                {selectedModpack.gallery && selectedModpack.gallery.length > 0 ? (
                   <img
                     src={selectedModpack.gallery[0]}
                     alt={selectedModpack.title}
                     className="w-full h-44 object-cover"
                   />
                 ) : (
-                  <div className="w-full h-44 bg-gradient-to-br from-primary/10 to-muted flex items-center justify-center">
+                  <div className="w-full h-44 bg-gradient-to-br from-primary/10 to-card flex items-center justify-center">
                     {selectedModpack.icon_url ? (
-                      <img
-                        src={selectedModpack.icon_url}
-                        alt=""
-                        className="w-16 h-16 rounded-xl"
-                      />
+                      <img src={selectedModpack.icon_url} alt="" className="w-16 h-16 rounded-xl" />
                     ) : (
-                      <Package className="w-12 h-12 text-muted-foreground" />
+                      <Box className="w-12 h-12 text-muted-foreground" />
                     )}{" "}
                   </div>
                 )}
@@ -1156,9 +1114,7 @@ function Home({
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <DialogTitle className="text-xl">
-                        {selectedModpack.title}
-                      </DialogTitle>
+                      <DialogTitle className="text-xl">{selectedModpack.title}</DialogTitle>
                       <DialogDescription className="text-sm mt-0.5">
                         by {selectedModpack.author}{" "}
                       </DialogDescription>
@@ -1167,13 +1123,11 @@ function Home({
                 </DialogHeader>
                 <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <Download className="w-3.5 h-3.5" />
+                    <ArrowDownToLine className="w-3.5 h-3.5" />
                     <span>
                       {" "}
                       {selectedModpack.downloads
-                        ? `${formatDownloads(
-                            selectedModpack.downloads,
-                          )} downloads`
+                        ? `${formatDownloads(selectedModpack.downloads)} downloads`
                         : "0 downloads"}{" "}
                     </span>
                   </div>
@@ -1185,73 +1139,57 @@ function Home({
                     </span>
                   </div>
                 </div>
-                {selectedModpack.categories &&
-                  selectedModpack.categories.length > 0 && (
-                    <div className="flex items-center gap-1 mb-4">
-                      {selectedModpack.categories.map((cat) => (
-                        <Badge
-                          key={cat}
-                          variant="secondary"
-                          className="text-[10px] capitalize"
-                        >
-                          {cat}{" "}
-                        </Badge>
-                      ))}{" "}
-                    </div>
-                  )}
+                {selectedModpack.categories && selectedModpack.categories.length > 0 && (
+                  <div className="flex items-center gap-1 mb-4">
+                    {selectedModpack.categories.map((cat) => (
+                      <Badge key={cat} variant="secondary" className="text-[10px] capitalize">
+                        {cat}{" "}
+                      </Badge>
+                    ))}{" "}
+                  </div>
+                )}
                 <Separator className="my-4" />
                 <div className="mb-4">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
                     Description
                   </h3>
                   <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                    {selectedModpack.description ||
-                      "No description available."}{" "}
+                    {selectedModpack.description || "No description available."}{" "}
                   </p>
                 </div>
-                {selectedModpack.gallery &&
-                  selectedModpack.gallery.length > 1 && (
-                    <div className="mb-4">
-                      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                        Gallery
-                      </h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedModpack.gallery.slice(0, 4).map((img, i) => (
-                          <img
-                            key={i}
-                            src={img}
-                            alt=""
-                            className="w-full rounded-md object-cover aspect-video border border-border"
-                          />
+                {selectedModpack.gallery && selectedModpack.gallery.length > 1 && (
+                  <div className="mb-4">
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      Gallery
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedModpack.gallery.slice(0, 4).map((img, i) => (
+                        <img
+                          key={i}
+                          src={img}
+                          alt=""
+                          className="w-full rounded-md object-cover aspect-video border border-border"
+                        />
+                      ))}{" "}
+                    </div>
+                  </div>
+                )}
+                {selectedModpack.versions && selectedModpack.versions.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      Supported Versions
+                    </h3>
+                    <div className="flex flex-wrap gap-1">
+                      {(selectedModpack.display_categories || selectedModpack.versions || [])
+                        .slice(0, 10)
+                        .map((v) => (
+                          <Badge key={v} variant="outline" className="text-xs">
+                            {v}{" "}
+                          </Badge>
                         ))}{" "}
-                      </div>
                     </div>
-                  )}
-                {selectedModpack.versions &&
-                  selectedModpack.versions.length > 0 && (
-                    <div>
-                      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                        Supported Versions
-                      </h3>
-                      <div className="flex flex-wrap gap-1">
-                        {(
-                          selectedModpack.display_categories ||
-                          selectedModpack.versions ||
-                          []
-                        )
-                          .slice(0, 10)
-                          .map((v) => (
-                            <Badge
-                              key={v}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {v}{" "}
-                            </Badge>
-                          ))}{" "}
-                      </div>
-                    </div>
-                  )}{" "}
+                  </div>
+                )}{" "}
               </div>
 
               <DialogFooter className="px-5 py-3 border-t border-border flex items-center justify-between">
@@ -1262,21 +1200,15 @@ function Home({
                   asChild
                 >
                   <a
-                    href={`https://modrinth.com/modpack/${
-                      selectedModpack.slug
-                    }`}
+                    href={`https://modrinth.com/modpack/${selectedModpack.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <Link className="w-3.5 h-3.5" />
                     View on Modrinth
                   </a>
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setSelectedModpack(null)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setSelectedModpack(null)}>
                   Close
                 </Button>
               </DialogFooter>
@@ -1300,4 +1232,4 @@ function Home({
   );
 }
 
-export default Home;
+export default House;

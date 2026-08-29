@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
+import { ChevronLeft, ChevronRight, Ellipsis } from "@gravity-ui/icons";
 import { cn } from "../../lib/utils"
 import { buttonVariants } from "./button"
 import type { VariantProps } from "class-variance-authority"
@@ -83,7 +83,7 @@ const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<"span"
     className={cn("flex size-7 items-center justify-center text-muted-foreground [&_svg]:size-4", className)}
     {...props}
   >
-    <MoreHorizontal />
+    <Ellipsis />
   </span>
 )
 PaginationEllipsis.displayName = "PaginationEllipsis"

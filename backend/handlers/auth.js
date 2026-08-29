@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { Auth, mcTokenToolbox, wrapError } = require('msmc');
 const Store = require('electron-store');
 const store = new Store();

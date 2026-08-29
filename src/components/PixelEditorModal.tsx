@@ -11,17 +11,7 @@ import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { useTranslation } from 'react-i18next';
-import {
-  Paintbrush,
-  Eraser,
-  PaintBucket,
-  Trash2,
-  Download,
-  Check,
-  Undo2,
-  Redo2,
-  Grid3X3,
-} from 'lucide-react';
+import { Brush, Eraser, Bucket, TrashBin, ArrowDownToLine, Check, ArrowUturnCcwLeft, ArrowUturnCcwRight, LayoutCells } from "@gravity-ui/icons";
 import ColorPicker from './ColorPicker';
 
 const CANVAS_SIZE = 32;
@@ -332,7 +322,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 onClick={() => setCurrentTool('brush')}
                 title={t('pixel_editor.brush')}
               >
-                <Paintbrush className="w-4 h-4" />
+                <Brush className="w-4 h-4" />
               </Button>
               <Button
                 variant={currentTool === 'eraser' ? 'default' : 'outline'}
@@ -348,7 +338,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 onClick={() => setCurrentTool('fill')}
                 title={t('pixel_editor.fill')}
               >
-                <PaintBucket className="w-4 h-4" />
+                <Bucket className="w-4 h-4" />
               </Button>
               <div className="w-px h-8 bg-border mx-1" />
               <Button
@@ -357,7 +347,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 onClick={undo}
                 disabled={historyIndex <= 0}
               >
-                <Undo2 className="w-4 h-4" />
+                <ArrowUturnCcwLeft className="w-4 h-4" />
               </Button>
               <Button
                 variant="outline"
@@ -365,7 +355,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 onClick={redo}
                 disabled={historyIndex >= history.length - 1}
               >
-                <Redo2 className="w-4 h-4" />
+                <ArrowUturnCcwRight className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -380,7 +370,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                   onClick={() => setShowGrid(!showGrid)}
                   className="text-xs h-8"
                 >
-                  <Grid3X3 className="w-3.5 h-3.5 mr-1.5" />
+                  <LayoutCells className="w-3.5 h-3.5 mr-1.5" />
                   Grid
                 </Button>
                 <Button
@@ -389,7 +379,7 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                   onClick={handleClear}
                   className="text-xs h-8 text-destructive"
                 >
-                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  <TrashBin className="w-3.5 h-3.5 mr-1.5" />
                   {t('pixel_editor.clear')}
                 </Button>
               </div>
@@ -440,8 +430,8 @@ export function PixelEditorModal({ isOpen, onClose, onSave, initialIcon }) {
                 className="w-full justify-start text-xs h-9"
                 onClick={handleDownload}
               >
-                <Download className="w-3.5 h-3.5 mr-2" />
-                {t('pixel_editor.download', 'Download PNG')}
+                <ArrowDownToLine className="w-3.5 h-3.5 mr-2" />
+                {t('pixel_editor.download', 'ArrowDownToLine PNG')}
               </Button>
             </div>
           </div>

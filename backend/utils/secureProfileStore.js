@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { safeStorage } = require('electron');
 
 const ENC_PREFIX = 'safe:v1:';

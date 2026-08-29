@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../components/ui/context-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Separator } from '../components/ui/separator';
-import { Plus, Trash2, Pencil, Pause, Play, X, AlertTriangle, Loader2, User, Crown, ImageUp, Link2, Download, Paintbrush, Eraser, Save, PaintBucket, Hand, Settings2 } from 'lucide-react';
+import { Plus, TrashBin, Pencil, Pause, Play, Xmark, TriangleExclamation, ArrowRotateLeft, Person, CrownDiamond, Picture, Link, ArrowDownToLine, Brush, Eraser, FloppyDisk, Bucket, Hand, Gear } from "@gravity-ui/icons";
 
 const DEFAULT_SKINS = [
     { name: 'Steve', defaultModel: 'classic', urls: { classic: './assets/skins/steve-classic.png', slim: './assets/skins/steve-slim.png' } },
@@ -1496,7 +1496,7 @@ export const AdvancedSkinEditorDialog = ({
                 const selectedPath = await window.electronAPI.showSaveDialog({
                     title: t('skins.choose_save_location', 'Choose where to save the skin'),
                     defaultPath: `${sanitizeSkinFileName(skinName)}.png`,
-                    filters: [{ name: 'PNG Image', extensions: ['png'] }]
+                    filters: [{ name: 'PNG Picture', extensions: ['png'] }]
                 });
 
                 if (typeof selectedPath !== 'string' || !selectedPath.trim()) {
@@ -1564,7 +1564,7 @@ export const AdvancedSkinEditorDialog = ({
                                             className="h-8 w-8 shrink-0"
                                             onClick={() => setShowHotkeySettings(true)}
                                         >
-                                            <Settings2 className="h-4 w-4" />
+                                            <Gear className="h-4 w-4" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>{t('skins.tool_hotkeys', 'Tool Hotkeys')}</TooltipContent>
@@ -1669,9 +1669,9 @@ export const AdvancedSkinEditorDialog = ({
                                 <TooltipProvider>
                                     <div className="grid grid-cols-3 gap-2">
                                         {([
-                                            { id: 'paint' as const, label: t('skins.paint'), icon: <Paintbrush className="h-4 w-4" /> },
+                                            { id: 'paint' as const, label: t('skins.paint'), icon: <Brush className="h-4 w-4" /> },
                                             { id: 'erase' as const, label: t('skins.erase'), icon: <Eraser className="h-4 w-4" /> },
-                                            { id: 'fill' as const, label: t('skins.fill'), icon: <PaintBucket className="h-4 w-4" /> },
+                                            { id: 'fill' as const, label: t('skins.fill'), icon: <Bucket className="h-4 w-4" /> },
                                             { id: 'pipette' as const, label: t('skins.pipette', 'Pipette'), icon: null },
                                             { id: 'replace' as const, label: t('skins.color_replace', 'Color Replace'), icon: null },
                                         ]).map((entry) => {
@@ -1810,7 +1810,7 @@ export const AdvancedSkinEditorDialog = ({
                                     {t('common.cancel')}
                                 </Button>
                                 <Button type="button" onClick={handleSave} disabled={isSaving}>
-                                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                    {isSaving ? <ArrowRotateLeft className="h-4 w-4 animate-spin" /> : <FloppyDisk className="h-4 w-4" />}
                                     {t('common.save')}
                                 </Button>
                             </div>
@@ -2334,7 +2334,7 @@ function Skins({ onLogout, onProfileUpdate }) {
             setIsSelectingTexture(true);
             const result = await window.electronAPI.openFileDialog({
                 properties: ['openFile'],
-                filters: [{ name: 'PNG Image', extensions: ['png'] }],
+                filters: [{ name: 'PNG Picture', extensions: ['png'] }],
             });
             if (result?.canceled || !result?.filePaths?.length) return;
             const p = `${result.filePaths[0]}`;
@@ -2364,7 +2364,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 onClick={() => handleSetCape(null)}
                                 className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-all ${activeCapeId === null ? 'border-primary bg-primary/10' : 'border-border hover:border-muted-foreground/50 bg-muted/50'}`}
                             >
-                                <X className="h-6 w-6 text-muted-foreground mb-2" />
+                                <Xmark className="h-6 w-6 text-muted-foreground mb-2" />
                                 <span className="text-sm font-medium text-muted-foreground">{t('skins.no_cape')}</span>
                             </div>
 
@@ -2408,7 +2408,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                     {t('skins.source_file_desc')}
                                 </div>
                                 <Button onClick={handleImportSkinFromFile} disabled={isImportingSkin} className="w-full">
-                                    {isImportingSkin ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                                    {isImportingSkin ? <ArrowRotateLeft className="h-4 w-4 animate-spin" /> : <Picture className="h-4 w-4" />}
                                     {t('skins.choose_skin_file')}
                                 </Button>
                             </TabsContent>
@@ -2430,7 +2430,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                     />
                                 </div>
                                 <Button onClick={handleImportSkinFromUrl} disabled={isImportingSkin || !skinUrlInput.trim()} className="w-full">
-                                    {isImportingSkin ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                                    {isImportingSkin ? <ArrowRotateLeft className="h-4 w-4 animate-spin" /> : <Link className="h-4 w-4" />}
                                     {t('skins.import_from_url')}
                                 </Button>
                             </TabsContent>
@@ -2452,7 +2452,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                     />
                                 </div>
                                 <Button onClick={handleImportSkinFromUsername} disabled={isImportingSkin || !skinUsernameInput.trim()} className="w-full">
-                                    {isImportingSkin ? <Loader2 className="h-4 w-4 animate-spin" /> : <User className="h-4 w-4" />}
+                                    {isImportingSkin ? <ArrowRotateLeft className="h-4 w-4 animate-spin" /> : <Person className="h-4 w-4" />}
                                     {t('skins.fetch_from_username')}
                                 </Button>
                             </TabsContent>
@@ -2480,7 +2480,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 onClick={handleStartWithTexture}
                                 disabled={isSelectingTexture}
                             >
-                                {isSelectingTexture ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                                {isSelectingTexture ? <ArrowRotateLeft className="h-4 w-4 animate-spin" /> : <Picture className="h-4 w-4" />}
                                 {t('tools.start_with_texture', 'Start with Texture')}
                             </Button>
                         </div>
@@ -2518,7 +2518,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                         {webglError ? (
                             <div className="flex flex-col items-center justify-center p-6 text-center">
                                 <div className="w-12 h-12 bg-destructive/15 text-destructive rounded-xl flex items-center justify-center mb-4">
-                                    <AlertTriangle className="h-6 w-6" />
+                                    <TriangleExclamation className="h-6 w-6" />
                                 </div>
                                 <h3 className="text-sm font-semibold text-foreground mb-1">{t('common.error_title')}</h3>
                                 <p className="text-sm text-muted-foreground max-w-xs">
@@ -2532,7 +2532,7 @@ function Skins({ onLogout, onProfileUpdate }) {
 
                     {!isSkinLoaded && !webglError && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                            <ArrowRotateLeft className="h-8 w-8 text-primary animate-spin" />
                         </div>
                     )}
 
@@ -2567,7 +2567,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 }
                             }}
                         >
-                            <User className="h-4 w-4" />
+                            <Person className="h-4 w-4" />
                             {t('skins.model')}: {variant === 'classic' ? `(${t('skins.wide')})` : `(${t('skins.slim')})`}
                         </Button>
 
@@ -2581,7 +2581,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                     onClick={() => setShowCapeModal(true)}
                                     disabled={!capes.length}
                                 >
-                                    <Crown className="h-4 w-4" />
+                                    <CrownDiamond className="h-4 w-4" />
                                     {capes.length ? t('skins.change_cape') : t('skins.no_capes')}
                                 </Button>
                             </TooltipTrigger>
@@ -2603,7 +2603,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 setShowAdvancedEditor(true);
                             }}
                         >
-                            <Paintbrush className="h-4 w-4" />
+                            <Brush className="h-4 w-4" />
                             {t('skins.edit_skin', 'Edit Skin')}
                         </Button>
                     </div>
@@ -2621,7 +2621,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                 disabled={isLoading}
                                 size="sm"
                             >
-                                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                {isLoading && <ArrowRotateLeft className="h-4 w-4 animate-spin" />}
                                 {isLoading ? t('skins.uploading') : t('skins.apply')}
                             </Button>
                         )}
@@ -2646,7 +2646,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                     className="aspect-[3/4] bg-muted/50 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-muted transition-all group"
                                 >
                                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/15 transition-colors">
-                                        <Paintbrush className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        <Brush className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                                     </div>
                                     <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{t('tools.open_skin_editor', 'Create Skin')}</span>
                                 </div>
@@ -2725,7 +2725,7 @@ function Skins({ onLogout, onProfileUpdate }) {
                                                                 handleDeleteSkin(skin.id);
                                                             }}
                                                         >
-                                                            <Trash2 className="h-3 w-3" />
+                                                            <TrashBin className="h-3 w-3" />
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>Delete</TooltipContent>
@@ -2734,11 +2734,11 @@ function Skins({ onLogout, onProfileUpdate }) {
                                         </ContextMenuTrigger>
                                         <ContextMenuContent className="w-48">
                                             <ContextMenuItem onClick={() => handleDownloadSkin(skin)}>
-                                                <Download className="h-4 w-4" />
+                                                <ArrowDownToLine className="h-4 w-4" />
                                                 {t('skins.download_skin')}
                                             </ContextMenuItem>
                                             <ContextMenuItem onClick={() => handleDeleteSkin(skin.id)} className="text-destructive focus:text-destructive">
-                                                <Trash2 className="h-4 w-4" />
+                                                <TrashBin className="h-4 w-4" />
                                                 {t('common.delete')}
                                             </ContextMenuItem>
                                         </ContextMenuContent>

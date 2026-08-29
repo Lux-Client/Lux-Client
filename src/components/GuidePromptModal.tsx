@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, MoveRight } from 'lucide-react';
+import { Compass, ArrowRight } from "@gravity-ui/icons";
 import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -76,7 +76,7 @@ export default function GuidePromptModal({
                             className="h-11 rounded-xl px-5"
                         >
                             {t('guide.start')}
-                            <MoveRight className="h-4 w-4" />
+                            <ArrowRight className="h-4 w-4" />
                         </Button>
                     </div>
                 </CardContent>

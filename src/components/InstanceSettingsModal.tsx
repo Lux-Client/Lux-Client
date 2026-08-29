@@ -5,7 +5,8 @@ import { useAnimationsEnabled } from '../hooks/useAnimationsEnabled';
 import ReinstallModal from './ReinstallModal';
 import ConfirmationModal from './ConfirmationModal';
 import Dropdown from './Dropdown';
-import ToggleBox from './ToggleBox';
+import ToggleBox from './ToggleBox';import { CircleXmark } from "@gravity-ui/icons";
+
 
 function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDelete }) {
     const { t } = useTranslation();
@@ -250,7 +251,7 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
 
                             {error && (
                                 <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                                    ❌ {error}
+                                    <CircleXmark className="inline h-4 w-4 mr-1" /> {error}
                                 </div>
                             )}
 

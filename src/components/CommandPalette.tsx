@@ -7,10 +7,7 @@ import {
   CommandGroup, CommandItem, CommandSeparator, CommandShortcut
 } from './ui/command';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import {
-  Home, LayoutGrid, Search, User, Puzzle, Palette,
-  Settings, Newspaper, Play, Server, Rocket, Gamepad2, List, Wrench
-} from 'lucide-react';
+import { House, LayoutColumns3, Magnifier, Person, Puzzle, Palette, Gear, SquareArticle, Play, Server, Rocket, Bars, Wrench } from "@gravity-ui/icons";
 
 function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentMode, isAvailable, canAccessSkins }) {
   const { t } = useTranslation();
@@ -58,19 +55,19 @@ function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentM
 
   const navItems = currentMode === 'tools'
     ? [
-      { id: 'tools-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutGrid, shortcut: 'D' },
-      { id: 'settings', label: t('common.settings', 'Settings'), icon: Settings, shortcut: ',' },
-      { id: 'news', label: t('common.news', 'News'), icon: Newspaper },
+      { id: 'tools-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutColumns3, shortcut: 'D' },
+      { id: 'settings', label: t('common.settings', 'Gear'), icon: Gear, shortcut: ',' },
+      { id: 'news', label: t('common.news', 'News'), icon: SquareArticle },
     ]
     : [
-      { id: 'dashboard', label: t('common.dashboard'), icon: Home, shortcut: 'D' },
-      { id: 'library', label: t('common.library'), icon: LayoutGrid, shortcut: 'L' },
-      { id: 'search', label: t('common.search'), icon: Search, shortcut: 'S' },
-      { id: 'skins', label: t('common.skins'), icon: User, disabled: !canAccessSkins },
+      { id: 'dashboard', label: t('common.dashboard'), icon: House, shortcut: 'D' },
+      { id: 'library', label: t('common.library'), icon: LayoutColumns3, shortcut: 'L' },
+      { id: 'search', label: t('common.search'), icon: Magnifier, shortcut: 'S' },
+      { id: 'skins', label: t('common.skins'), icon: Person, disabled: !canAccessSkins },
       { id: 'extensions', label: t('common.extensions'), icon: Puzzle },
       { id: 'styling', label: t('common.styling'), icon: Palette },
-      { id: 'settings', label: t('common.settings'), icon: Settings, shortcut: ',' },
-      { id: 'news', label: t('common.news', 'News'), icon: Newspaper },
+      { id: 'settings', label: t('common.settings'), icon: Gear, shortcut: ',' },
+      { id: 'news', label: t('common.news', 'News'), icon: SquareArticle },
     ];
 
   if (!isAvailable) {
@@ -81,9 +78,9 @@ function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 max-w-xl rounded-xl border-border/50 shadow-2xl duration-300 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-2 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-bottom-4 data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-top-[50%] data-[state=open]:slide-in-from-top-[50%] [&>button]:hidden">
         <DialogTitle className="sr-only">Command Palette</DialogTitle>
-        <DialogDescription className="sr-only">Search and quick navigation commands.</DialogDescription>
+        <DialogDescription className="sr-only">Magnifier and quick navigation commands.</DialogDescription>
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground">
-          <CommandInput placeholder={t('dashboard.search_placeholder', 'Type a command or search...')} className="h-12" />
+          <CommandInput placeholder={t('dashboard.search_placeholder', 'Text a command or search...')} className="h-12" />
           <CommandList className="max-h-[400px]">
             <CommandEmpty className="py-8 text-center text-sm text-muted-foreground">
               {t('dashboard.no_instances', 'No results found.')}
@@ -131,7 +128,7 @@ function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentM
                         {inst.icon && inst.icon.startsWith('data:') ? (
                           <img src={inst.icon} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                          <LayoutColumns3 className="h-4 w-4 text-muted-foreground" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -157,7 +154,7 @@ function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentM
                     className="gap-3 py-2 px-3 rounded-lg cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center shrink-0">
-                      <Gamepad2 className="h-4 w-4" />
+                      <Play className="h-4 w-4" />
                     </div>
                     <span className="font-medium">{t('common.client', 'Client')}</span>
                   </CommandItem>
@@ -167,7 +164,7 @@ function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentM
                     className="gap-3 py-2 px-3 rounded-lg cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded-md bg-accent flex items-center justify-center shrink-0">
-                      <List className="h-4 w-4" />
+                      <Bars className="h-4 w-4" />
                     </div>
                     <span className="font-medium">{t('instance_details.content.mods', 'Mods')}</span>
                   </CommandItem>
@@ -201,7 +198,7 @@ function CommandPalette({ open, onOpenChange, onNavigate, onModeSelect, currentM
                   onSelect={() => handleSelect(() => onModeSelect('client'))}
                   className="gap-3 py-2 px-3 rounded-lg cursor-pointer"
                 >
-                  <Gamepad2 className="h-4 w-4" />
+                  <Play className="h-4 w-4" />
                   <span>{t('common.client', 'Client')}</span>
                   {currentMode === 'client' && <CommandShortcut>Active</CommandShortcut>}
                 </CommandItem>

@@ -5,7 +5,8 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import LoadingOverlay from '../components/LoadingOverlay';
 import FileBrowser from '../components/FileBrowser';
 import ServerSettingsModal from '../components/ServerSettingsModal';
-import { getSourceTags } from '../utils/sourceTags';
+import { getSourceTags } from '../utils/sourceTags';import { Server, Star } from "@gravity-ui/icons";
+
 
 function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGuest }) {
     const { addNotification } = useNotification();
@@ -1603,7 +1604,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                 <img src={server.icon} alt="" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-2xl">
-                                    🖥️
+                                    <Server className="h-8 w-8" />
                                 </div>
                             )}
                         </div>
@@ -2676,7 +2677,7 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                                                                         </span>
                                                                     ))}
                                                                     <span className="text-xs bg-muted px-2 py-1 rounded text-foreground">
-                                                                        ⭐ {result.follows > 0 ? Math.floor(result.follows / 100) : '0'}
+                                                                        <Star className="h-3 w-3 inline" /> {result.follows > 0 ? Math.floor(result.follows / 100) : '0'}
                                                                     </span>
                                                                 </div>
                                                             </div>

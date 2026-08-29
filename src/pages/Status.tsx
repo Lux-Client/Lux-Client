@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-react';
+import { ArrowRotateRight, Check, TriangleExclamation, CircleXmark, Clock } from "@gravity-ui/icons";
 
 type ServiceStatus = 'operational' | 'degraded' | 'down' | 'checking';
 
@@ -124,7 +124,7 @@ function Status() {
         ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
         : 'bg-muted text-muted-foreground border-border';
 
-    const OverallIcon = allOk ? CheckCircle2 : hasDown ? XCircle : AlertTriangle;
+    const OverallIcon = allOk ? Check : hasDown ? CircleXmark : TriangleExclamation;
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar p-6">
@@ -145,7 +145,7 @@ function Status() {
                         disabled={isChecking}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                     >
-                        <RefreshCw className={`h-3.5 w-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+                        <ArrowRotateRight className={`h-3.5 w-3.5 ${isChecking ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
                 </div>
@@ -160,7 +160,7 @@ function Status() {
             )}
 
             <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <TriangleExclamation className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>
                     This only checks whether each server responds. A reachable server can still have a
                     broken login or auth backend, so “Reachable” does not guarantee that sign-in works.

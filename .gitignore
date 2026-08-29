@@ -27,6 +27,7 @@ test-load.js
 # testfiles
 *.bat
 *.sh
+.tmp
 
 # Production and test build outputs
 dist/

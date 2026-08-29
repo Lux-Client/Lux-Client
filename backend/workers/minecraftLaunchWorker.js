@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { Client } = require('minecraft-launcher-core');
 
 let launcher = null;

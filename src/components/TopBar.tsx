@@ -16,10 +16,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup
 } from './ui/dropdown-menu';
-import {
-  Search, ChevronDown, ChevronLeft, ChevronRight, Newspaper, Rocket,
-  Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap, Wrench
-} from 'lucide-react';
+import { Magnifier, ChevronDown, ChevronLeft, ChevronRight, SquareArticle, Rocket, ArrowDownToLine, Play, Server, PersonPlus, TrashBin, ArrowRightFromLine, Thunderbolt, Wrench } from "@gravity-ui/icons";
 
 type TopBarProps = {
   currentMode: any;
@@ -159,14 +156,14 @@ function TopBar({
     ...(isClientPageEnabled ? [{
       value: 'client',
       label: t('common.client', 'Client'),
-      icon: Gamepad2
+      icon: Play
     }] : [])
   ];
 
   return (
-    <div className="h-16 w-full titlebar flex items-center justify-between px-3 lg:px-5 border-b border-border bg-background/80 backdrop-blur-md flex-none relative z-[60]">
+    <div className="h-14 w-full titlebar flex items-center justify-between px-3 lg:px-5 border-b border-border/60 bg-background/70 backdrop-blur-xl flex-none relative z-[60]">
       <div className="flex items-center gap-1.5 lg:gap-2.5 no-drag shrink-0">
-        <div className="w-10 h-10 bg-primary/15 rounded-xl flex items-center justify-center text-primary font-bold text-base border border-primary/20 overflow-hidden">
+        <div className="w-9 h-9 lg:w-10 lg:h-10 bg-primary/15 rounded-xl flex items-center justify-center text-primary font-bold text-base border border-primary/20 overflow-hidden">
           <img src="./icon.png" alt="Lux" className="w-full h-full object-cover" />
         </div>
 
@@ -227,10 +224,10 @@ function TopBar({
                         aria-label={label}
                         data-guide-id={`mode-switch-${value}`}
                         className={cn(
-                          "h-8 w-8 rounded-lg px-0",
+                          "h-8 w-8 rounded-lg px-0 transition-all duration-200",
                           currentMode === value
-                            ? "bg-muted text-foreground shadow-sm hover:bg-muted hover:text-foreground"
-                            : "text-muted-foreground"
+                            ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.25)] hover:bg-primary/20 hover:text-primary"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                         )}
                       >
                         <Icon className="h-4 w-4" />
@@ -251,7 +248,7 @@ function TopBar({
             className="h-10 gap-2.5 rounded-xl px-2 lg:px-3.5 text-sm font-semibold text-muted-foreground hidden sm:flex"
             onClick={() => onNavigate('news')}
           >
-            <Newspaper className="h-4 w-4" />
+            <SquareArticle className="h-4 w-4" />
             <span className="hidden lg:inline">{t('common.news', 'News')}</span>
           </Button>
         </>
@@ -262,12 +259,12 @@ function TopBar({
           <Button
             variant="outline"
             size="sm"
-            className="h-10 w-full max-w-[280px] gap-2 rounded-xl border-border/50 bg-background/50 px-2 lg:px-4 text-sm text-muted-foreground justify-start"
+            className="h-9 w-full max-w-[280px] gap-2 rounded-xl border-border/50 bg-background/40 px-2.5 lg:px-4 text-sm text-muted-foreground justify-start hover:bg-accent/60 hover:text-accent-foreground hover:border-border transition-all duration-200"
             onClick={onOpenCommandPalette}
             disabled={!isCommandPaletteAvailable}
           >
-            <Search className="h-4 w-4 shrink-0" />
-            <span className="hidden md:inline truncate">{t('dashboard.search_placeholder', 'Search...')}</span>
+            <Magnifier className="h-4 w-4 shrink-0" />
+            <span className="hidden md:inline truncate">{t('dashboard.search_placeholder', 'Magnifier...')}</span>
             <kbd className="hidden lg:inline-flex ml-auto pointer-events-none h-6 select-none items-center gap-1 rounded-md border border-border bg-muted px-2 font-mono text-[11px] font-medium text-muted-foreground">
               Ctrl+K
             </kbd>
@@ -283,7 +280,7 @@ function TopBar({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-10 gap-2 rounded-xl px-3 text-sm">
-                <Download className="h-4 w-4 text-primary animate-pulse" />
+                <ArrowDownToLine className="h-4 w-4 text-primary animate-pulse" />
                 <span className="tabular-nums">
                   {Math.round(activeDownloadEntries.reduce((t, [, d]) => t + ((d as any)?.progress || 0), 0) / activeDownloadCount)}%
                 </span>
@@ -330,7 +327,7 @@ function TopBar({
                 className="h-10 w-10 rounded-xl p-0"
                 onClick={() => setActionBarOpen(true)}
               >
-                <Zap className="h-4 w-4 text-muted-foreground" />
+                <Thunderbolt className="h-4 w-4 text-muted-foreground" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -359,7 +356,7 @@ function TopBar({
                 </>
               ) : (
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted shrink-0">
-                  <UserPlus className="h-4 w-4 text-muted-foreground" />
+                  <PersonPlus className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 hidden sm:block" />
@@ -400,12 +397,12 @@ function TopBar({
                     onClick={(e) => { e.stopPropagation(); handleRemove(acc.uuid); }}
                     className="opacity-0 group-hover/acc:opacity-100 p-0.5 hover:text-destructive transition-all"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <TrashBin className="h-3 w-3" />
                   </button>
                 </DropdownMenuItem>
               ))}
               <DropdownMenuItem onClick={handleAddAccount} className="text-primary">
-                <UserPlus className="h-4 w-4 mr-2" />
+                <PersonPlus className="h-4 w-4 mr-2" />
                 {t('common.add_account', 'Add Account')}
               </DropdownMenuItem>
             </DropdownMenuGroup>

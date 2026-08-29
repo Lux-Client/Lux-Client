@@ -69,13 +69,13 @@ function PluginTabContent({ viewId }: { viewId: string }) {
 const DEFAULT_PAGE_ANIMATION_PRESET = 'cinematic';
 const PAGE_TRANSITION_PRESETS = {
     cinematic: {
-        duration: 0.34,
+        duration: 0.4,
         variants: {
             initial: {
                 opacity: 0,
-                y: 18,
-                scale: 0.985,
-                filter: 'blur(10px)'
+                y: 12,
+                scale: 0.99,
+                filter: 'blur(8px)'
             },
             animate: {
                 opacity: 1,
@@ -85,20 +85,20 @@ const PAGE_TRANSITION_PRESETS = {
             },
             exit: {
                 opacity: 0,
-                y: -14,
-                scale: 0.992,
-                filter: 'blur(6px)'
+                y: -8,
+                scale: 0.995,
+                filter: 'blur(4px)'
             }
         }
     },
     glide: {
-        duration: 0.3,
+        duration: 0.36,
         variants: {
             initial: {
                 opacity: 0,
-                x: 32,
-                scale: 0.992,
-                filter: 'blur(8px)'
+                x: 24,
+                scale: 0.995,
+                filter: 'blur(6px)'
             },
             animate: {
                 opacity: 1,
@@ -108,14 +108,14 @@ const PAGE_TRANSITION_PRESETS = {
             },
             exit: {
                 opacity: 0,
-                x: -26,
-                scale: 0.996,
-                filter: 'blur(4px)'
+                x: -18,
+                scale: 0.998,
+                filter: 'blur(3px)'
             }
         }
     },
     fade: {
-        duration: 0.22,
+        duration: 0.25,
         variants: {
             initial: {
                 opacity: 0
@@ -129,12 +129,12 @@ const PAGE_TRANSITION_PRESETS = {
         }
     },
     zoom: {
-        duration: 0.28,
+        duration: 0.32,
         variants: {
             initial: {
                 opacity: 0,
-                scale: 0.94,
-                filter: 'blur(12px)'
+                scale: 0.96,
+                filter: 'blur(10px)'
             },
             animate: {
                 opacity: 1,
@@ -143,18 +143,18 @@ const PAGE_TRANSITION_PRESETS = {
             },
             exit: {
                 opacity: 0,
-                scale: 1.03,
-                filter: 'blur(6px)'
+                scale: 1.02,
+                filter: 'blur(5px)'
             }
         }
     },
     lift: {
-        duration: 0.29,
+        duration: 0.34,
         variants: {
             initial: {
                 opacity: 0,
-                y: 28,
-                scale: 0.978
+                y: 20,
+                scale: 0.985
             },
             animate: {
                 opacity: 1,
@@ -163,8 +163,28 @@ const PAGE_TRANSITION_PRESETS = {
             },
             exit: {
                 opacity: 0,
-                y: -20,
-                scale: 0.988
+                y: -14,
+                scale: 0.992
+            }
+        }
+    },
+    smooth: {
+        duration: 0.3,
+        variants: {
+            initial: {
+                opacity: 0,
+                y: 6,
+                filter: 'blur(2px)'
+            },
+            animate: {
+                opacity: 1,
+                y: 0,
+                filter: 'blur(0px)'
+            },
+            exit: {
+                opacity: 0,
+                y: -4,
+                filter: 'blur(2px)'
             }
         }
     }
@@ -1414,7 +1434,7 @@ function App() {
                                                 exit={shouldAnimatePages ? 'exit' : undefined}
                                                 transition={shouldAnimatePages ? {
                                                     duration: activePageTransitionPreset.duration,
-                                                    ease: [0.22, 1, 0.36, 1]
+                                                    ease: [0.16, 1, 0.3, 1]
                                                 } : { duration: 0 }}
                                             >
                                                 {currentPage}

@@ -4,7 +4,7 @@ import { useNotification } from '../context/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { Upload, FolderUp, Loader2, X, FileIcon, Folder } from 'lucide-react';
+import { ArrowUpToLine, FolderArrowUp, ArrowRotateLeft, Xmark, File, Folder } from "@gravity-ui/icons";
 
 const FileBrowser = ({ serverName }) => {
     const { t } = useTranslation();
@@ -273,7 +273,7 @@ const FileBrowser = ({ serverName }) => {
                                 title="Copy to clipboard"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
                                 Copy
                             </button>
@@ -374,7 +374,7 @@ const FileBrowser = ({ serverName }) => {
                                 className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-accent-foreground"
                                 title={t('server_details.files.upload')}
                             >
-                                <Upload className="h-5 w-5" />
+                                <ArrowUpToLine className="h-5 w-5" />
                             </button>
                         </>
                     )}
@@ -399,7 +399,7 @@ const FileBrowser = ({ serverName }) => {
                 ) : files.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-4">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
                         <span className="text-sm opacity-50">{t('server_details.files.empty')}</span>
                     </div>
@@ -498,7 +498,7 @@ const FileBrowser = ({ serverName }) => {
                     >
                         <div className="flex flex-col items-center gap-4">
                             <div className={`p-4 rounded-full ${isDraggingOver ? 'bg-primary/20' : 'bg-muted'}`}>
-                                <FolderUp className={`h-8 w-8 ${isDraggingOver ? 'text-primary' : 'text-muted-foreground'}`} />
+                                <FolderArrowUp className={`h-8 w-8 ${isDraggingOver ? 'text-primary' : 'text-muted-foreground'}`} />
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-foreground">
@@ -542,9 +542,9 @@ const FileBrowser = ({ serverName }) => {
                                     }`}
                                 >
                                     {file.status === 'success' ? (
-                                        <FileIcon className="h-4 w-4 text-green-500 shrink-0" />
+                                        <File className="h-4 w-4 text-green-500 shrink-0" />
                                     ) : (
-                                        <X className="h-4 w-4 text-red-500 shrink-0" />
+                                        <Xmark className="h-4 w-4 text-red-500 shrink-0" />
                                     )}
                                     <span className="text-sm text-foreground truncate flex-1">{file.name}</span>
                                 </div>

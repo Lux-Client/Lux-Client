@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');

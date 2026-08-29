@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import LoadingOverlay from '../components/LoadingOverlay';
 import ServerJavaFields from '../components/ServerJavaFields';
-import { Compass } from 'lucide-react';
+import { Compass } from "@gravity-ui/icons";
 
 function ServerSettings({ onRestartGuide = null }) {
     const { t } = useTranslation();

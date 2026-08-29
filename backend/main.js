@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, protocol } = require('electron');
 
 const path = require('path');
 const fs = require('fs-extra');
+const { isPathInside } = require('./utils/path-safety');
 
 console.log('Electron versions:', process.versions);
 if (require('electron-squirrel-startup')) {
@@ -144,7 +145,7 @@ app.whenReady().then(() => {
             const extensionsDir = path.join(app.getPath('userData'), 'extensions');
             const filePath = path.normalize(path.join(extensionsDir, decodedUrl));
 
-            if (!filePath.startsWith(extensionsDir)) {
+            if (!isPathInside(extensionsDir, filePath)) {
                 return callback({ error: -2 });
             }
             callback({ path: filePath });
