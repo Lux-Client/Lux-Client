@@ -12,9 +12,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription
 } from './ui/sheet';
-import {
-  Zap, Plus, Trash2, Play, Square, Globe, FolderOpen, Settings2
-} from 'lucide-react';
+import { Thunderbolt, Plus, TrashBin, Play, Square, Globe, FolderOpen, Gear } from "@gravity-ui/icons";
 
 const ACTION_TYPES = [
   'external',
@@ -117,7 +115,7 @@ function ActionBar({ open, onOpenChange }) {
       case 'instance:stop': return Square;
       case 'server:start': return Play;
       case 'server:stop': return Square;
-      default: return Zap;
+      default: return Thunderbolt;
     }
   };
 
@@ -212,7 +210,7 @@ function ActionBar({ open, onOpenChange }) {
         <SheetHeader className="px-5 pt-5 pb-0 pr-12">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-sm font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
+              <Thunderbolt className="h-4 w-4 text-primary" />
               {t('action_bar.title')}
             </SheetTitle>
             <Button
@@ -221,7 +219,7 @@ function ActionBar({ open, onOpenChange }) {
               className="h-7 text-[11px]"
               onClick={() => setIsCustomizing(prev => !prev)}
             >
-              <Settings2 className="h-3 w-3" />
+              <Gear className="h-3 w-3" />
               {isCustomizing ? t('action_bar.exit_customize') : t('action_bar.customize')}
             </Button>
           </div>
@@ -237,7 +235,7 @@ function ActionBar({ open, onOpenChange }) {
             {actions.length === 0 && !isCustomizing && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
-                  <Zap className="h-5 w-5 text-muted-foreground" />
+                  <Thunderbolt className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">{t('action_bar.empty')}</p>
                 <button
@@ -293,7 +291,7 @@ function ActionBar({ open, onOpenChange }) {
                         onClick={() => handleDelete(action.id)}
                         className="h-6 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <TrashBin className="h-3 w-3" />
                         {t('action_bar.remove', t('common.delete'))}
                       </Button>
                     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, PencilLine, Sparkles, Globe, Package, SunMedium, Grip } from 'lucide-react';
+import { LayoutColumns3, Pencil, Sparkles, Globe, Box, Sun, Grip } from "@gravity-ui/icons";
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
@@ -50,13 +50,13 @@ const sections = [
         id: 'modpacks',
         title: 'Discover Modpacks',
         description: 'Display curated modpack recommendations on the home page.',
-        icon: Package,
+        icon: Box,
     },
     {
         id: 'mod-of-the-day',
         title: 'Mod of the Day',
         description: 'Highlight a featured mod to explore something new.',
-        icon: SunMedium,
+        icon: Sun,
     },
 ];
 
@@ -88,7 +88,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
                     <DialogHeader className="gap-0 border-b border-border bg-muted/30 px-6 py-5 text-left">
                         <div className="flex items-center gap-4 pr-8">
                             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-primary shadow-sm">
-                                <LayoutGrid />
+                                <LayoutColumns3 />
                             </div>
                             <div className="flex min-w-0 flex-1 flex-col justify-center">
                                 <DialogTitle className="text-xl font-semibold">Customize Dashboard</DialogTitle>
@@ -102,7 +102,7 @@ function DashboardCustomizer({ open, settings, onUpdate, onClose, onEnterEditor,
                             <CardHeader className="pb-3">
                                 <div className="flex items-center gap-3">
                                     <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                        <PencilLine />
+                                        <Pencil />
                                     </div>
                                     <div className="flex-1">
                                         <CardTitle className="text-base">Visual Layout Editor</CardTitle>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, Moon, Palette, Sun } from 'lucide-react';
+import { ArrowRotateLeft, Moon, Palette, Sun } from "@gravity-ui/icons";
 import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -93,7 +93,7 @@ export default function ThemeModeSelectionModal({ onSelect }) {
                                         >
                                             {isPending ? (
                                                 <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <ArrowRotateLeft className="h-4 w-4 animate-spin" />
                                                     {t('common.loading')}
                                                 </>
                                             ) : (

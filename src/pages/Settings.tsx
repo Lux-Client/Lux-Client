@@ -21,34 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { getSourceTags } from '../utils/sourceTags';
 import { filterInstancesForMode } from '../utils/instanceTypes';
-import {
-    ArrowLeft,
-    Save,
-    FolderOpen,
-    Download,
-    Trash2,
-    Check,
-    Loader2,
-    RefreshCw,
-    Cloud,
-    Info,
-    AlertTriangle,
-    FlaskConical,
-    Puzzle,
-    Search,
-    Plus,
-    X,
-    Monitor,
-    Cpu,
-    HardDrive,
-    Globe,
-    Zap,
-    Play,
-    Shield,
-    Settings2,
-    RotateCcw,
-    Compass
-} from 'lucide-react';
+import { ArrowLeft, FloppyDisk, FolderOpen, ArrowDownToLine, TrashBin, Check, ArrowRotateLeft, ArrowRotateRight, Cloud, CircleInfo, TriangleExclamation, Flask, Puzzle, Magnifier, Plus, Xmark, Display, Cpu, HardDrive, Globe, Thunderbolt, Play, Shield, Gear as GearIcon, Compass } from "@gravity-ui/icons";
 
 // An extension crashing must not take the whole settings page down with it.
 class ExtensionSettingsBoundary extends React.Component<{ children: React.ReactNode; name: string }, { hasError: boolean }> {
@@ -62,7 +35,7 @@ class ExtensionSettingsBoundary extends React.Component<{ children: React.ReactN
     }
 
     componentDidCatch(error: any, errorInfo: any) {
-        console.error(`[Extension:${this.props.name}] Settings render error:`, error, errorInfo);
+        console.error(`[Extension:${this.props.name}] Gear render error:`, error, errorInfo);
     }
 
     render() {
@@ -78,7 +51,7 @@ class ExtensionSettingsBoundary extends React.Component<{ children: React.ReactN
     }
 }
 
-function Settings({ mode = 'default', onRestartGuide = null, onClose = null, disableClose = false }) {
+function Gear({ mode = 'default', onRestartGuide = null, onClose = null, disableClose = false }) {
     const { t, i18n } = useTranslation();
     const { addNotification } = useNotification();
     const { settingsSections: extensionSettings = [], installedExtensions = [] } = useExtensions() || {};
@@ -697,7 +670,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                 setDownloadedFilePath(res.path);
                 addNotification(t('settings.update.download_success'), 'success');
             } else {
-                addNotification(`Download failed: ${res.error}`, 'error');
+                addNotification(`ArrowDownToLine failed: ${res.error}`, 'error');
             }
         } catch (e) {
             addNotification(`Error: ${e.message}`, 'error');
@@ -735,7 +708,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             id: 'experience',
             label: t('settings.system.experience', 'Experience'),
             description: t('settings.system.experience_desc', 'Navigation, language, guides and UI behavior.'),
-            icon: Settings2,
+            icon: GearIcon,
             keywords: ['language', 'startup', 'guide', 'animation', 'ui', 'experience', 'sound', 'audio', 'volume']
         },
         {
@@ -749,7 +722,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             id: 'automation',
             label: t('settings.system.automation', 'Automation'),
             description: t('settings.system.automation_desc', 'Integrations, auto-install and compatibility toggles.'),
-            icon: Zap,
+            icon: Thunderbolt,
             keywords: ['discord', 'logs', 'mods', 'compatibility', 'optimization', 'automation']
         },
         {
@@ -763,14 +736,14 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             id: 'advanced',
             label: t('settings.system.advanced', 'Maintenance'),
             description: t('settings.system.advanced_desc', 'Reset and recovery tools for troubleshooting.'),
-            icon: FlaskConical,
+            icon: Flask,
             keywords: ['advanced', 'maintenance', 'reset', 'troubleshooting', 'factory']
         },
         // Only offered once an extension actually registers settings, so the tab never sits empty.
         ...(extensionSettings.length > 0 ? [{
             id: 'extensions',
             label: t('settings.system.extensions', 'Extensions'),
-            description: t('settings.system.extensions_desc', 'Settings provided by your installed extensions.'),
+            description: t('settings.system.extensions_desc', 'Gear provided by your installed extensions.'),
             icon: Puzzle,
             keywords: ['extension', 'extensions', 'plugin', 'addon', ...extensionSettings.map((section) => String(section.extensionId))]
         }] : [])
@@ -865,13 +838,13 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                             <span>{t('common.back', 'Back')}</span>
                         </Button>
                         <div>
-                            <p className="text-sm font-semibold text-foreground">{t('settings.system.title', 'Settings Categories')}</p>
+                            <p className="text-sm font-semibold text-foreground">{t('settings.system.title', 'Gear Categories')}</p>
                             <p className="text-xs text-muted-foreground">{t('settings.system.subtitle', 'Select a category on the left to view matching entries on the right.')}</p>
                         </div>
                         <Input
                             value={settingsSearch}
                             onChange={(event) => setSettingsSearch(event.target.value)}
-                            placeholder={t('settings.system.search_placeholder', 'Search categories (e.g. Java, Cloud, Update...)')}
+                            placeholder={t('settings.system.search_placeholder', 'Magnifier categories (e.g. Java, Cloud, Update...)')}
                             className="h-9"
                         />
 
@@ -908,7 +881,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                 <p className="text-sm text-muted-foreground">{t('settings.desc')}</p>
                             </div>
                             <Button onClick={handleManualSave} size="sm" className="shrink-0">
-                                <Save />
+                                <FloppyDisk />
                                 <span>{t('settings.save_btn')}</span>
                             </Button>
                         </div>
@@ -919,7 +892,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Settings2 className="h-4 w-4 text-muted-foreground" />
+                                <Gear className="h-4 w-4 text-muted-foreground" />
                                 {t('settings.general.title')}
                             </CardTitle>
                         </CardHeader>
@@ -1169,7 +1142,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                     : t('settings.remote.show_token', 'Show')}
                                             </Button>
                                             <Button variant="outline" size="sm" onClick={handleRegenerateRemoteToken}>
-                                                <RefreshCw className="h-3.5 w-3.5" />
+                                                <ArrowRotateRight className="h-3.5 w-3.5" />
                                                 {t('settings.remote.regenerate_token', 'Regenerate')}
                                             </Button>
                                         </div>
@@ -1236,12 +1209,12 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                     >
                                         {isInstallingJava ? (
                                             <>
-                                                <Loader2 className="animate-spin" />
+                                                <ArrowRotateLeft className="animate-spin" />
                                                 <span>{javaInstallProgress ? `${Math.round(javaInstallProgress.progress)}%` : t('settings.java.installing')}</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Download />
+                                                <ArrowDownToLine />
                                                 <span>{t('settings.java.install')}</span>
                                             </>
                                         )}
@@ -1253,7 +1226,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                     </p>
                                 )}
                                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-                                    <Info className="h-3.5 w-3.5 text-amber-500" />
+                                    <CircleInfo className="h-3.5 w-3.5 text-amber-500" />
                                     {t('settings.java.recommended')}
                                 </p>
                             </div>
@@ -1301,7 +1274,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                                             onClick={() => handleDeleteRuntime(runtime.dirPath)}
                                                         >
-                                                            <Trash2 className="h-4 w-4" />
+                                                            <TrashBin className="h-4 w-4" />
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -1383,7 +1356,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Monitor className="h-4 w-4 text-muted-foreground" />
+                                <Display className="h-4 w-4 text-muted-foreground" />
                                 {t('settings.resolution.title')}
                             </CardTitle>
                         </CardHeader>
@@ -1439,7 +1412,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                             onClick={() => handleChange('instancesPath', '')}
                                             disabled={!settings.instancesPath}
                                         >
-                                            <RotateCcw />
+                                            <ArrowRotateLeft />
                                             {t('settings.instance.storage_path_reset', 'Default')}
                                         </Button>
                                     </div>
@@ -1486,7 +1459,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                     className="h-7 px-2"
                                                     onClick={() => handleRemoveExternalLauncherPath(externalPath)}
                                                 >
-                                                    <X className="h-3.5 w-3.5" />
+                                                    <Xmark className="h-3.5 w-3.5" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -1545,7 +1518,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Zap className="h-4 w-4 text-muted-foreground" />
+                                <Thunderbolt className="h-4 w-4 text-muted-foreground" />
                                 {t('settings.integration.title')}
                             </CardTitle>
                         </CardHeader>
@@ -1614,7 +1587,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Search className="h-4 w-4 text-muted-foreground" />
+                                    <Magnifier className="h-4 w-4 text-muted-foreground" />
                                     {t('settings.auto_install.management_title')}
                                 </CardTitle>
                             </CardHeader>
@@ -1697,7 +1670,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                         size="sm"
                                                         onClick={() => removeAutoInstallMod(mod)}
                                                     >
-                                                        <X className="h-3 w-3 mr-1" />
+                                                        <Xmark className="h-3 w-3 mr-1" />
                                                         {t('settings.auto_install.remove_btn')}
                                                     </Button>
                                                 </div>
@@ -1848,7 +1821,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                                <ArrowRotateRight className="h-4 w-4 text-muted-foreground" />
                                 {t('settings.update.title', 'Software Update')}
                             </CardTitle>
                         </CardHeader>
@@ -1868,9 +1841,9 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                     size="sm"
                                 >
                                     {isCheckingUpdate ? (
-                                        <Loader2 className="animate-spin" />
+                                        <ArrowRotateLeft className="animate-spin" />
                                     ) : (
-                                        <RefreshCw />
+                                        <ArrowRotateRight />
                                     )}
                                     <span>{isCheckingUpdate ? t('settings.update.checking', 'Checking...') : t('settings.update.check_btn', 'Check for Updates')}</span>
                                 </Button>
@@ -1885,8 +1858,8 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                         </div>
                                         {!downloadedFilePath && !isDownloadingUpdate && (
                                             <Button onClick={handleDownloadUpdate} size="sm">
-                                                <Download />
-                                                {t('settings.update.download_btn', 'Download')}
+                                                <ArrowDownToLine />
+                                                {t('settings.update.download_btn', 'ArrowDownToLine')}
                                             </Button>
                                         )}
                                         {downloadedFilePath && (
@@ -1940,8 +1913,8 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                 <CardHeader className="p-0">
                                     <AccordionTrigger className="px-5 py-4 hover:no-underline">
                                         <div className="flex items-center gap-2">
-                                            <Settings2 className="h-4 w-4 text-muted-foreground" />
-                                            <span className="font-semibold">{t('settings.advanced_settings', 'Advanced Settings')}</span>
+                                            <Gear className="h-4 w-4 text-muted-foreground" />
+                                            <span className="font-semibold">{t('settings.advanced_settings', 'Advanced Gear')}</span>
                                         </div>
                                     </AccordionTrigger>
                                 </CardHeader>
@@ -1950,7 +1923,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                         {isFeatureEnabled('settingsDevelopmentTesting') && (
                                             <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
                                                 <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <FlaskConical className="h-3.5 w-3.5" />
+                                                    <Flask className="h-3.5 w-3.5" />
                                                     Development Testing
                                                 </h3>
                                                 <div className="flex gap-2">
@@ -1966,7 +1939,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                         className="border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
                                                         onClick={handleSetTestVersion}
                                                     >
-                                                        <FlaskConical className="h-3.5 w-3.5" />
+                                                        <Flask className="h-3.5 w-3.5" />
                                                         Set Test Version
                                                     </Button>
                                                 </div>
@@ -1976,13 +1949,13 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
 
                                         <div>
                                             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-                                                <FlaskConical className="h-3.5 w-3.5" />
+                                                <Flask className="h-3.5 w-3.5" />
                                                 {t('settings.maintenance.title')}
                                             </h3>
 
                                             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 mb-4">
                                                 <div className="flex items-start gap-2">
-                                                    <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                                                    <CircleInfo className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                                                     <div>
                                                         <p className="font-medium text-foreground text-sm">{t('settings.maintenance.troubleshooting_title')}</p>
                                                         <p className="text-xs text-muted-foreground mt-0.5">{t('settings.maintenance.troubleshooting_desc')}</p>
@@ -2008,7 +1981,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                         className="mt-3 w-full"
                                                         onClick={() => setShowSoftResetModal(true)}
                                                     >
-                                                        <RotateCcw className="h-3.5 w-3.5" />
+                                                        <ArrowRotateLeft className="h-3.5 w-3.5" />
                                                         {t('settings.maintenance.soft_reset_btn')}
                                                     </Button>
                                                 </div>
@@ -2020,7 +1993,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                             {t('settings.maintenance.factory_reset_desc')}
                                                         </p>
                                                         <p className="text-xs text-destructive font-medium mt-1">
-                                                            <AlertTriangle className="h-3 w-3 inline mr-1" />
+                                                            <TriangleExclamation className="h-3 w-3 inline mr-1" />
                                                             {t('settings.maintenance.factory_reset_warning')}
                                                         </p>
                                                     </div>
@@ -2030,7 +2003,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                         className="mt-3 w-full"
                                                         onClick={() => setShowFactoryResetModal(true)}
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        <TrashBin className="h-3.5 w-3.5" />
                                                         {t('settings.maintenance.factory_reset_btn')}
                                                     </Button>
                                                 </div>
@@ -2047,7 +2020,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                                                 size="sm"
                                                 onClick={() => setShowUninstallModal(true)}
                                             >
-                                                <Trash2 className="h-3.5 w-3.5" />
+                                                <TrashBin className="h-3.5 w-3.5" />
                                                 {t('settings.instance.uninstall_btn')}
                                             </Button>
                                         </div>
@@ -2157,4 +2130,4 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
     return createPortal(settingsOverlay, document.body);
 }
 
-export default Settings;
+export default Gear;

@@ -11,18 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Switch } from '../components/ui/switch';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import {
-  Upload,
-  Globe,
-  Search,
-  Trash2,
-  Check,
-  Loader2,
-  Eye,
-  Package,
-  ExternalLink,
-  Download,
-} from 'lucide-react';
+import { ArrowUpToLine, Globe, Magnifier, TrashBin, Check, ArrowRotateLeft, Eye, Box, Link, ArrowDownToLine } from "@gravity-ui/icons";
 
 const Extensions = () => {
     const { t } = useTranslation();
@@ -154,7 +143,7 @@ const Extensions = () => {
                 description={t('extensions.desc')}
             >
                 <Button size="sm" onClick={handleUpload} className="gap-1.5">
-                    <Upload className="w-3.5 h-3.5" />
+                    <ArrowUpToLine className="w-3.5 h-3.5" />
                     {t('extensions.install_file')}
                 </Button>
             </PageHeader>
@@ -174,7 +163,7 @@ const Extensions = () => {
 
                 {activeTab === 'online' && (
                     <div className="relative mb-5">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                        <Magnifier className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                         <Input
                             type="text"
                             placeholder={t('extensions.search')}
@@ -189,7 +178,7 @@ const Extensions = () => {
                     {activeTab === 'installed' ? (
                         installedExtensions.length === 0 ? (
                             <EmptyState
-                                icon={Package}
+                                icon={Box}
                                 title={t('extensions.no_extensions')}
                                 description={t('dashboard.import_file')}
                             />
@@ -245,7 +234,7 @@ const Extensions = () => {
                                             onClick={() => handleRemove(ext.id)}
                                             title={t('extensions.uninstall')}
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <TrashBin className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 </div>
@@ -279,7 +268,7 @@ const Extensions = () => {
                             />
                         ) : filtered.length === 0 ? (
                             <EmptyState
-                                icon={Search}
+                                icon={Magnifier}
                                 title={t('extensions.no_search_results')}
                             />
                         ) : (
@@ -308,7 +297,7 @@ const Extensions = () => {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-medium text-foreground truncate">{ext.name}</span>
                                                 <Badge variant="secondary" className="text-[10px] gap-1 px-1.5 py-0 h-4">
-                                                    <Download className="w-2.5 h-2.5" />
+                                                    <ArrowDownToLine className="w-2.5 h-2.5" />
                                                     {ext.downloads} {t('common.downloads') || 'downloads'}
                                                 </Badge>
                                             </div>
@@ -331,12 +320,12 @@ const Extensions = () => {
                                                 >
                                                     {installing === ext.id ? (
                                                         <>
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            <ArrowRotateLeft className="w-3.5 h-3.5 animate-spin" />
                                                             Installing...
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <Download className="w-3.5 h-3.5" />
+                                                            <ArrowDownToLine className="w-3.5 h-3.5" />
                                                             Install
                                                         </>
                                                     )}

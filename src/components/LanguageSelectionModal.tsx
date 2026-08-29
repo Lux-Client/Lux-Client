@@ -1,26 +1,26 @@
 import React from 'react';
-import { Check, Languages, MoveRight } from 'lucide-react';
+import { Check, Globe, ArrowRight } from "@gravity-ui/icons";
 import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { cn } from '../lib/utils';
 
 const languages = [
-    { code: 'en_us', name: 'English (US)', flag: '🇺🇸' },
-    { code: 'en_uk', name: 'English (UK)', flag: '🇬🇧' },
-    { code: 'de_de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'de_ch', name: 'Deutsch (CH)', flag: '🇨🇭' },
-    { code: 'fr_fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'es_es', name: 'Español', flag: '🇪🇸' },
-    { code: 'it_it', name: 'Italiano', flag: '🇮🇹' },
-    { code: 'pl_pl', name: 'Polski', flag: '🇵🇱' },
-    { code: 'pt_br', name: 'Português (BR)', flag: '🇧🇷' },
-    { code: 'pt_pt', name: 'Português (PT)', flag: '🇵🇹' },
-    { code: 'ru_ru', name: 'Русский', flag: '🇷🇺' },
-    { code: 'sv_se', name: 'Svenska', flag: '🇸🇪' },
-    { code: 'sk_sk', name: 'Slovenčina', flag: '🇸🇰' },
-    { code: 'sl_si', name: 'Slovenščina', flag: '🇸🇮' },
-    { code: 'ro_ro', name: 'Română', flag: '🇷🇴' }
+    { code: 'en_us', name: 'English (US)' },
+    { code: 'en_uk', name: 'English (UK)' },
+    { code: 'de_de', name: 'Deutsch' },
+    { code: 'de_ch', name: 'Deutsch (CH)' },
+    { code: 'fr_fr', name: 'Français' },
+    { code: 'es_es', name: 'Español' },
+    { code: 'it_it', name: 'Italiano' },
+    { code: 'pl_pl', name: 'Polski' },
+    { code: 'pt_br', name: 'Português (BR)' },
+    { code: 'pt_pt', name: 'Português (PT)' },
+    { code: 'ru_ru', name: 'Русский' },
+    { code: 'sv_se', name: 'Svenska' },
+    { code: 'sk_sk', name: 'Slovenčina' },
+    { code: 'sl_si', name: 'Slovenščina' },
+    { code: 'ro_ro', name: 'Română' }
 ];
 
 export default function LanguageSelectionModal({ onSelect }) {
@@ -39,7 +39,7 @@ export default function LanguageSelectionModal({ onSelect }) {
                     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-3">
                             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                                <Languages className="h-3.5 w-3.5 text-primary" />
+                                <Globe className="h-3.5 w-3.5 text-primary" />
                                 Lux
                             </div>
                             <div>
@@ -70,7 +70,7 @@ export default function LanguageSelectionModal({ onSelect }) {
                                     )}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <span className="text-3xl transition-transform duration-200 group-hover:scale-110">{lang.flag}</span>
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/70 bg-background/70 text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-transform duration-200 group-hover:scale-110">{lang.code.split('_')[1]}</span>
                                         <div>
                                             <p className="text-sm font-medium text-foreground">{lang.name}</p>
                                             <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">{lang.code.replace('_', '-')}</p>
@@ -80,7 +80,7 @@ export default function LanguageSelectionModal({ onSelect }) {
                                         'flex h-8 w-8 items-center justify-center rounded-full border',
                                         isCurrent ? 'border-primary/40 bg-primary text-primary-foreground' : 'border-border/70 bg-background/70 text-muted-foreground'
                                     )}>
-                                        {isCurrent ? <Check className="h-4 w-4" /> : <MoveRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
+                                        {isCurrent ? <Check className="h-4 w-4" /> : <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
                                     </div>
                                 </button>
                             );

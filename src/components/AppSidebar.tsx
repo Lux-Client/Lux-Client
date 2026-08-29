@@ -7,10 +7,7 @@ import { cn } from '../lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
-import {
-  Home, LayoutGrid, Search, User, Puzzle, Palette, Settings,
-  LogOut, Plus, Play, ChevronLeft, ChevronRight, List, Gamepad2, Activity
-} from 'lucide-react';
+import { House, LayoutColumns3, Magnifier, Person, Puzzle, Palette, Gear, ArrowRightFromLine, Plus, Play, ChevronLeft, ChevronRight, Bars, Pulse } from "@gravity-ui/icons";
 import { useExtensions } from '../context/ExtensionContext';
 
 function AppSidebar({
@@ -63,33 +60,33 @@ function AppSidebar({
   };
 
   const launcherItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
-    { id: 'dashboard', label: t('common.dashboard'), icon: Home },
-    { id: 'library', label: t('common.library'), icon: LayoutGrid },
-    { id: 'search', label: t('common.search'), icon: Search },
-    { id: 'skins', label: t('common.skins'), icon: User, disabled: isGuest },
+    { id: 'dashboard', label: t('common.dashboard'), icon: House },
+    { id: 'library', label: t('common.library'), icon: LayoutColumns3 },
+    { id: 'search', label: t('common.search'), icon: Magnifier },
+    { id: 'skins', label: t('common.skins'), icon: Person, disabled: isGuest },
     { id: 'extensions', label: t('common.extensions'), icon: Puzzle },
     { id: 'styling', label: t('common.styling'), icon: Palette },
   ];
 
   const serverItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
-    { id: 'server-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutGrid },
-    { id: 'search', label: t('common.search', 'Search'), icon: Search },
-    { id: 'server-library', label: t('common.library', 'Library'), icon: List },
+    { id: 'server-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutColumns3 },
+    { id: 'search', label: t('common.search', 'Magnifier'), icon: Magnifier },
+    { id: 'server-library', label: t('common.library', 'Library'), icon: Bars },
     { id: 'styling', label: t('common.styling', 'Styling'), icon: Palette },
   ];
 
   const clientItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
-    { id: 'open-client', label: t('common.client', 'Client'), icon: Gamepad2 },
-    { id: 'skins', label: t('common.skins', 'Skins'), icon: User, disabled: isGuest },
+    { id: 'open-client', label: t('common.client', 'Client'), icon: Play },
+    { id: 'skins', label: t('common.skins', 'Skins'), icon: Person, disabled: isGuest },
     { id: 'extensions', label: t('common.extensions', 'Extensions'), icon: Puzzle },
     { id: 'styling', label: t('common.styling', 'Styling'), icon: Palette },
-    { id: 'mods', label: t('instance_details.content.mods', 'Mods'), icon: List },
-    // Settings is rendered once at the bottom of the sidebar for every mode; listing it here
+    { id: 'mods', label: t('instance_details.content.mods', 'Mods'), icon: Bars },
+    // Gear is rendered once at the bottom of the sidebar for every mode; listing it here
     // too made it appear twice in client mode.
   ];
 
   const toolsItems: { id: string; label: string; icon: any; disabled?: boolean }[] = [
-    { id: 'tools-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutGrid },
+    { id: 'tools-dashboard', label: t('common.dashboard', 'Dashboard'), icon: LayoutColumns3 },
   ];
 
   const getMenuItems = () => {
@@ -150,9 +147,9 @@ function AppSidebar({
         onClick={() => !item.disabled && setView(item.id)}
         data-guide-id={`sidebar-nav-${item.id}`}
         className={cn(
-          'group relative flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold outline-none focus:outline-none focus-visible:outline-none',
+          'group relative flex h-11 w-full items-center overflow-hidden rounded-xl text-[13px] font-semibold outline-none focus:outline-none focus-visible:outline-none transition-colors duration-200',
           layoutTransitionClass,
-          isCollapsed ? 'px-2.5' : 'px-4',
+          isCollapsed ? 'px-2.5' : 'px-3.5',
           isActive
             ? 'bg-primary/15 text-primary'
             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
@@ -180,11 +177,11 @@ function AppSidebar({
       <button
         onClick={onClick}
         className={cn(
-          'group flex h-11 w-full items-center overflow-hidden rounded-2xl text-[13px] font-semibold outline-none focus:outline-none focus-visible:outline-none',
+          'group flex h-11 w-full items-center overflow-hidden rounded-xl text-[13px] font-semibold outline-none focus:outline-none focus-visible:outline-none transition-colors duration-200',
           layoutTransitionClass,
-          isCollapsed ? 'px-2.5' : 'px-4',
+          isCollapsed ? 'px-2.5' : 'px-3.5',
           destructive
-            ? 'hover:text-destructive hover:bg-destructive/10 text-destructive/30 '
+            ? 'hover:text-destructive hover:bg-destructive/10 text-destructive/30'
             : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
         )}
       >
@@ -202,7 +199,7 @@ function AppSidebar({
     <TooltipProvider>
       <div
         className={cn(
-          'relative z-50 flex h-full flex-col overflow-hidden border-r border-border bg-sidebar',
+          'relative z-50 flex h-full flex-col overflow-hidden border-r border-border/60 bg-sidebar',
           shellTransitionClass,
           isCollapsed ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-width-expanded)]'
         )}
@@ -284,7 +281,7 @@ function AppSidebar({
                               <img src={inst.icon} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <LayoutGrid className="h-3 w-3 text-muted-foreground" />
+                                <LayoutColumns3 className="h-3 w-3 text-muted-foreground" />
                               </div>
                             )}
                           </div>
@@ -326,12 +323,12 @@ function AppSidebar({
           <div className={cn('pb-1', layoutTransitionClass, isCollapsed ? 'px-0' : 'px-1')}>
             <Separator className="opacity-50" />
           </div>
-          <NavItem item={{ id: 'status', label: t('common.status', 'Status'), icon: Activity }} />
+          <NavItem item={{ id: 'status', label: t('common.status', 'Status'), icon: Pulse }} />
           <div className={cn('py-1', layoutTransitionClass, isCollapsed ? 'px-0' : 'px-1')}>
             <Separator className="opacity-50" />
           </div>
-          <NavItem item={{ id: settingsView, label: t('common.settings'), icon: Settings }} />
-          <FooterAction icon={LogOut} label={t('common.logout')} onClick={onLogout} destructive />
+          <NavItem item={{ id: settingsView, label: t('common.settings'), icon: Gear }} />
+          <FooterAction icon={ArrowRightFromLine} label={t('common.logout')} onClick={onLogout} destructive />
           <ExtensionSlot name="sidebar.bottom" className="flex flex-col gap-1" />
         </div>
       </div>

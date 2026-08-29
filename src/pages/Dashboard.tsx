@@ -42,28 +42,7 @@ import {
 } from "../components/ui/context-menu";
 import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
-import {
-  Play,
-  Square,
-  Clock,
-  Plus,
-  Search,
-  MoreVertical,
-  Folder,
-  Box,
-  Eye,
-  Copy,
-  Download,
-  FolderOpen,
-  Trash2,
-  Loader2,
-  ChevronDown,
-  ChevronRight,
-  FileCode,
-  FileDown,
-  Zap,
-  ImageIcon,
-} from "lucide-react";
+import { Play, Square, Clock, Plus, Magnifier, EllipsisVertical, Folder, Box, Eye, Copy, ArrowDownToLine, FolderOpen, TrashBin, ArrowRotateLeft, ChevronDown, ChevronRight, FileCode, FileArrowDown, Thunderbolt, Picture } from "@gravity-ui/icons";
 
 const DEFAULT_ICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
@@ -173,12 +152,12 @@ const InstanceCard = React.memo(function InstanceCard({
   return (
     <div
       onClick={() => onInstanceClick(instance)}
-      className={`group relative rounded-lg border p-3 transition-colors cursor-pointer ${
+      className={`group relative rounded-xl border p-3 transition-colors duration-200 cursor-pointer ${
         isSelected
           ? "border-primary bg-primary/10 ring-1 ring-primary/40"
           : isRunning
             ? "border-primary/40 bg-primary/5"
-            : "border-border hover:bg-accent/50 active:bg-accent"
+            : "border-border hover:bg-accent/40 active:bg-accent/60"
       }`}
     >
       <div className="flex items-start gap-3 mb-2.5">
@@ -264,12 +243,12 @@ const InstanceCard = React.memo(function InstanceCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent"
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
               >
-                <MoreVertical className="w-4 h-4" />
+                <EllipsisVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             {actionMenu}
@@ -278,13 +257,13 @@ const InstanceCard = React.memo(function InstanceCard({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent"
             onClick={(e) => {
               e.stopPropagation();
               onContextAction && onContextAction(e, instance);
             }}
           >
-            <MoreVertical className="w-4 h-4" />
+            <EllipsisVertical className="w-4 h-4" />
           </Button>
         )}
       </div>
@@ -299,12 +278,12 @@ const InstanceCard = React.memo(function InstanceCard({
         <Button
           variant={isRunning ? "destructive" : "default"}
           size="sm"
-          className={`h-7 gap-1 text-xs ${
+          className={`h-7 gap-1 text-xs transition-all duration-200 ${
             !isRunning &&
             !isInstalling &&
             !isLaunching &&
             !pendingLaunches[instance.name]
-              ? "opacity-0 group-hover:opacity-100 transition-opacity"
+              ? "opacity-0 group-hover:opacity-100"
               : ""
           }`}
           onClick={async (e) => {
@@ -369,7 +348,7 @@ const InstanceCard = React.memo(function InstanceCard({
             </>
           ) : isInstalling || isLaunching || pendingLaunches[instance.name] ? (
             <>
-              <Loader2 className="w-3 h-3 animate-spin" />
+              <ArrowRotateLeft className="w-3 h-3 animate-spin" />
               {isInstalling
                 ? installState?.type === "duplicate"
                   ? t("common.duplicating", "Duplicating...")
@@ -1411,7 +1390,7 @@ function Dashboard({
         {t("dashboard.context.duplicate")}
       </ContextMenuItem>
       <ContextMenuItem onClick={() => handleContextAction("export", instance)}>
-        <Download className="w-4 h-4 mr-2" />
+        <ArrowDownToLine className="w-4 h-4 mr-2" />
         {t("dashboard.context.export")}
       </ContextMenuItem>
       <ContextMenuItem onClick={() => handleContextAction("folder", instance)}>
@@ -1438,14 +1417,14 @@ function Dashboard({
         <ContextMenuItem
           onClick={() => handleContextAction("remove-from-actionbar", instance)}
         >
-          <Zap className="w-4 h-4 mr-2" />
+          <Thunderbolt className="w-4 h-4 mr-2" />
           {t("action_bar.remove_from_actionbar", "Remove from Actionbar")}
         </ContextMenuItem>
       ) : (
         <ContextMenuItem
           onClick={() => handleContextAction("add-to-actionbar", instance)}
         >
-          <Zap className="w-4 h-4 mr-2" />
+          <Thunderbolt className="w-4 h-4 mr-2" />
           {t("action_bar.add_to_actionbar", "Add to Actionbar")}
         </ContextMenuItem>
       )}
@@ -1454,7 +1433,7 @@ function Dashboard({
         className="text-destructive focus:text-destructive"
         onClick={() => handleContextAction("delete", instance)}
       >
-        <Trash2 className="w-4 h-4 mr-2" />
+        <TrashBin className="w-4 h-4 mr-2" />
         {t("dashboard.context.delete")}
       </ContextMenuItem>
     </>
@@ -1523,7 +1502,7 @@ function Dashboard({
                   handleContextAction("export", instance);
                 }}
               >
-                <Download className="w-4 h-4 mr-2" />
+                <ArrowDownToLine className="w-4 h-4 mr-2" />
                 {t("dashboard.context.export")}
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -1568,7 +1547,7 @@ function Dashboard({
                     handleContextAction("remove-from-actionbar", instance);
                   }}
                 >
-                  <Zap className="w-4 h-4 mr-2" />
+                  <Thunderbolt className="w-4 h-4 mr-2" />
                   {t(
                     "action_bar.remove_from_actionbar",
                     "Remove from Actionbar",
@@ -1581,7 +1560,7 @@ function Dashboard({
                     handleContextAction("add-to-actionbar", instance);
                   }}
                 >
-                  <Zap className="w-4 h-4 mr-2" />
+                  <Thunderbolt className="w-4 h-4 mr-2" />
                   {t("action_bar.add_to_actionbar", "Add to Actionbar")}
                 </DropdownMenuItem>
               )}
@@ -1593,7 +1572,7 @@ function Dashboard({
                   handleContextAction("delete", instance);
                 }}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <TrashBin className="w-4 h-4 mr-2" />
                 {t("dashboard.context.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -1626,7 +1605,7 @@ function Dashboard({
           <div className="rounded-2xl border border-border/80 bg-card/60 p-3">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative min-w-[220px] flex-1">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Magnifier className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder={t("dashboard.search_placeholder")}
@@ -1723,7 +1702,7 @@ function Dashboard({
                       }
                     }}
                   >
-                    <FileDown className="w-4 h-4 mr-2" />
+                    <FileArrowDown className="w-4 h-4 mr-2" />
                     {t("dashboard.import_file")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowCodeModal(true)}>
@@ -1863,7 +1842,7 @@ function Dashboard({
                       className="object-cover w-full h-full"
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                      <ImageIcon className="h-6 w-6 text-white" />
+                      <Picture className="h-6 w-6 text-white" />
                     </div>
                     <input
                       type="file"
@@ -1937,7 +1916,7 @@ function Dashboard({
                     </div>
                     {loadingVersions ? (
                       <div className="flex items-center justify-center rounded-md border border-border bg-muted p-2.5 text-xs text-muted-foreground">
-                        <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                        <ArrowRotateLeft className="w-3 h-3 mr-1.5 animate-spin" />
                         {t("common.loading")}
                       </div>
                     ) : (
@@ -1997,7 +1976,7 @@ function Dashboard({
                       size="sm"
                       className="gap-1.5 mr-auto"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <ArrowDownToLine className="w-3.5 h-3.5" />
                       {t("dashboard.import_options")}
                       <ChevronDown className="w-3 h-3" />
                     </Button>
@@ -2034,7 +2013,7 @@ function Dashboard({
                         }
                       }}
                     >
-                      <FileDown className="w-4 h-4 mr-2" />
+                      <FileArrowDown className="w-4 h-4 mr-2" />
                       {t("dashboard.import_file")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -2075,7 +2054,7 @@ function Dashboard({
                 disabled={isCreating || (creationStep === 1 && loadingVersions)}
                 className="gap-1.5"
               >
-                {isCreating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {isCreating && <ArrowRotateLeft className="w-3.5 h-3.5 animate-spin" />}
                 {isCreating
                   ? t("common.creating")
                   : creationStep === 1 &&
@@ -2176,7 +2155,7 @@ function Dashboard({
               {t("common.cancel")}
             </Button>
             <Button type="button" size="sm" onClick={handleSaveFolderPath}>
-              {t("common.save", "Save")}
+              {t("common.save", "FloppyDisk")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2218,7 +2197,7 @@ function Dashboard({
                 className="justify-start gap-2"
               >
                 {isPreparingCodeExport ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <ArrowRotateLeft className="w-4 h-4 animate-spin" />
                 ) : (
                   <FileCode className="w-4 h-4" />
                 )}
@@ -2236,7 +2215,7 @@ function Dashboard({
                 disabled={!exportTargetInstance || isPreparingCodeExport}
                 className="justify-start gap-2"
               >
-                <FileDown className="w-4 h-4" />
+                <FileArrowDown className="w-4 h-4" />
                 {t("dashboard.export_choice.file", "Export as .mcpack file")}
               </Button>
             </div>

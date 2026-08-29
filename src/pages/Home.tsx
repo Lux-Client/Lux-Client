@@ -21,28 +21,9 @@ import {
   DialogFooter,
   DialogDescription,
 } from "../components/ui/dialog";
-import {
-  Play,
-  Square,
-  Clock,
-  GripVertical,
-  Settings2,
-  Loader2,
-  Box,
-  Globe,
-  Sparkles,
-  Download,
-  Heart,
-  ExternalLink,
-  RefreshCw,
-  ChevronRight,
-  Package,
-  MoreVertical,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
+import { Play, Square, Clock, Grip, Gear, ArrowRotateLeft, Box, Globe, Sparkles, ArrowDownToLine, Heart, Link, ArrowRotateRight, ChevronRight, EllipsisVertical, ArrowsExpand, ChevronsCollapseToLine } from "@gravity-ui/icons";
 
-function Home({
+function House({
   onInstanceClick,
   runningInstances = {},
   activeDownloads = {},
@@ -563,7 +544,7 @@ function Home({
       >
         {isEditing && (
           <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-medium px-2 py-0.5 rounded-full z-10">
-            <GripVertical className="w-3 h-3" />{" "}
+            <Grip className="w-3 h-3" />{" "}
             {t("home.drag_to_reorder", "Drag to reorder")}{" "}
           </div>
         )}
@@ -576,9 +557,9 @@ function Home({
               onClick={() => toggleWidth(sectionIndex)}
             >
               {section.width === 12 ? (
-                <Minimize2 className="w-3 h-3" />
+                <ChevronsCollapseToLine className="w-3 h-3" />
               ) : (
-                <Maximize2 className="w-3 h-3" />
+                <ArrowsExpand className="w-3 h-3" />
               )}
               {section.width === 12 ? "Full" : "Half"}
             </Button>
@@ -673,7 +654,7 @@ function Home({
                         </>
                       ) : isInstalling || isLaunching || isPending ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                          <ArrowRotateLeft className="w-3.5 h-3.5 animate-spin" />{" "}
                           {isInstalling
                             ? t("common.installing")
                             : t("common.starting")}{" "}
@@ -694,7 +675,7 @@ function Home({
                         onInstanceClick(instance);
                       }}
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <EllipsisVertical className="w-4 h-4" />
                     </Button>
                   </div>
                 );
@@ -861,7 +842,7 @@ function Home({
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-8 h-8 text-muted-foreground" />
+                          <Box className="w-8 h-8 text-muted-foreground" />
                         </div>
                       )}{" "}
                     </div>
@@ -963,7 +944,7 @@ function Home({
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                         <div className="flex items-center gap-1">
-                          <Download className="w-3 h-3" />
+                          <ArrowDownToLine className="w-3 h-3" />
                           <span>{formatDownloads(modOfTheDay.downloads)}</span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -1018,7 +999,7 @@ function Home({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <ExternalLink className="w-3 h-3 mr-1.5" />
+                        <Link className="w-3 h-3 mr-1.5" />
                         Modrinth
                       </a>
                     </Button>
@@ -1028,7 +1009,7 @@ function Home({
                       className="flex-1 h-8 text-xs"
                       onClick={loadNewModOfTheDay}
                     >
-                      <RefreshCw className="w-3 h-3 mr-1.5" />{" "}
+                      <ArrowRotateRight className="w-3 h-3 mr-1.5" />{" "}
                       {t("home.other_mod")}{" "}
                     </Button>
                   </div>
@@ -1069,7 +1050,7 @@ function Home({
               onClick={() => setIsEditing(false)}
               className="gap-1.5"
             >
-              <Settings2 className="w-3.5 h-3.5" /> {t("home.save_layout")}{" "}
+              <Gear className="w-3.5 h-3.5" /> {t("home.save_layout")}{" "}
             </Button>
           )}
           <Button
@@ -1079,7 +1060,7 @@ function Home({
             onClick={() => setShowCustomizer(true)}
             title="Customize Dashboard"
           >
-            <Settings2 className="h-4 w-4" />{" "}
+            <Gear className="h-4 w-4" />{" "}
           </Button>
         </div>
       </PageHeader>
@@ -1138,7 +1119,7 @@ function Home({
                         className="w-16 h-16 rounded-xl"
                       />
                     ) : (
-                      <Package className="w-12 h-12 text-muted-foreground" />
+                      <Box className="w-12 h-12 text-muted-foreground" />
                     )}{" "}
                   </div>
                 )}
@@ -1167,7 +1148,7 @@ function Home({
                 </DialogHeader>
                 <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <Download className="w-3.5 h-3.5" />
+                    <ArrowDownToLine className="w-3.5 h-3.5" />
                     <span>
                       {" "}
                       {selectedModpack.downloads
@@ -1268,7 +1249,7 @@ function Home({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <Link className="w-3.5 h-3.5" />
                     View on Modrinth
                   </a>
                 </Button>
@@ -1300,4 +1281,4 @@ function Home({
   );
 }
 
-export default Home;
+export default House;

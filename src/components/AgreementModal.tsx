@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, ExternalLink, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Link, ShieldCheck } from "@gravity-ui/icons";
 import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -40,7 +40,7 @@ const AgreementModal = ({ onAccept, onDecline }) => {
                         >
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium text-foreground">{t('agreement.privacy')}</p>
-                                <ExternalLink className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
+                                <Link className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
                             </div>
                         </a>
                         <a
@@ -51,7 +51,7 @@ const AgreementModal = ({ onAccept, onDecline }) => {
                         >
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium text-foreground">{t('agreement.opt_out')}</p>
-                                <ExternalLink className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
+                                <Link className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
                             </div>
                         </a>
                     </div>

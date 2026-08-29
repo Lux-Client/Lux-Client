@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import { useAnimationsEnabled } from '../hooks/useAnimationsEnabled';
-import ServerJavaFields from './ServerJavaFields';
+import ServerJavaFields from './ServerJavaFields';import { Gear } from "@gravity-ui/icons";
+
 
 // Mirrors InstanceSettingsModal: a full-screen modal opened from a gear button, with a left
 // tab sidebar and a right content pane, so per-server settings feel identical to per-instance
@@ -69,7 +70,7 @@ function ServerSettingsModal({ server, serverStatus, onClose, onSaved }) {
                 {/* Sidebar */}
                 <div className="w-64 bg-card border-r border-border p-4 flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-xl font-bold mb-4 px-2">
-                        <span aria-hidden>⚙️</span>
+                        <Gear className="h-5 w-5" aria-hidden />
                         <span className="truncate" title={server.name}>{server.name}</span>
                     </div>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Gamepad2, Loader2, Rocket, Server, Wrench } from 'lucide-react';
+import { Play, ArrowRotateLeft, Rocket, Server, Wrench } from "@gravity-ui/icons";
 import { useTranslation } from 'react-i18next';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { getDefaultStartupValueForMode, getStartupModes } from '../lib/startupPages';
@@ -15,7 +15,7 @@ const MODE_VISUALS = {
         previewClass: 'bg-[linear-gradient(135deg,#1a1208_0%,#2d1d10_45%,#4a2f18_100%)]'
     },
     client: {
-        icon: Gamepad2,
+        icon: Play,
         accentClass: 'from-cyan-400/30 to-blue-500/10',
         previewClass: 'bg-[linear-gradient(135deg,#0f1f2e_0%,#1b3248_45%,#2a4f72_100%)]'
     },
@@ -101,7 +101,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
                                     {t('setup.chooseStartup', 'Choose Your Default Section')}
                                 </h1>
                                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                                    {t('setup.chooseStartupDesc', 'Pick what should open first when Lux starts. You can change this later in Settings.')}
+                                    {t('setup.chooseStartupDesc', 'Pick what should open first when Lux starts. You can change this later in Gear.')}
                                 </p>
                             </div>
                         </div>
@@ -183,7 +183,7 @@ export default function StartupModeSelectionModal({ onSelect, canAccessSkins = t
                                 >
                                     {pendingMode ? (
                                         <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <ArrowRotateLeft className="h-4 w-4 animate-spin" />
                                             {t('common.loading', 'Loading...')}
                                         </>
                                     ) : (

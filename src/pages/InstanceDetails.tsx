@@ -9,7 +9,8 @@ import { Analytics } from '../services/Analytics';
 import ToggleBox from '../components/ToggleBox';
 import ExtensionSlot from '../components/Extensions/ExtensionSlot';
 import BackupManagerModal from '../components/BackupManagerModal';
-import InstanceFileBrowser from '../components/InstanceFileBrowser';
+import InstanceFileBrowser from '../components/InstanceFileBrowser';import { Box, FolderOpen, Palette, Sparkles, Magnifier, Globe } from "@gravity-ui/icons";
+
 import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
 
@@ -1077,7 +1078,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     {hasImageIcon ? (
                         <img src={instance.icon} alt="" className="w-full h-full object-cover" />
                     ) : (
-                        <span className="text-6xl">{instance.icon || '📦'}</span>
+                        <span className="text-6xl">{instance.icon || <Box className="h-16 w-16" />}</span>
                     )}
                 </div>
                 <div className="flex-1">
@@ -1430,7 +1431,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 )}
                                 {mods.filter(m => m.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || m.name?.toLowerCase().includes(localSearchQuery.toLowerCase())).length === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                                        <div className="text-4xl mb-4 opacity-50">📂</div>
+                                        <FolderOpen className="h-10 w-10 mb-4 opacity-50" />
                                         <p className="text-lg font-medium">{t('instance_details.content.no_mods')}</p>
                                         <button onClick={() => setContentView('search')} className="mt-4 text-primary hover:underline">{t('instance_details.content.browse_mods')}</button>
                                     </div>
@@ -1510,7 +1511,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     </div>
                                 ) : resourcePacks.filter(p => p.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || p.name?.toLowerCase().includes(localSearchQuery.toLowerCase())).length === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                                        <div className="text-4xl mb-4 opacity-50">🎨</div>
+                                        <Palette className="h-10 w-10 mb-4 opacity-50" />
                                         <p className="text-lg font-medium">{t('instance_details.content.no_packs')}</p>
                                         <p className="text-sm opacity-50 mb-4">{t('instance_details.content.check_folder_packs')}</p>
                                         <button onClick={() => { setContentView('search'); setSearchCategory('resourcepack'); }} className="mt-4 text-primary hover:underline font-bold">{t('instance_details.content.browse_packs')}</button>
@@ -1587,7 +1588,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     </div>
                                 ) : shaders.filter(s => s.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || s.name?.toLowerCase().includes(localSearchQuery.toLowerCase())).length === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                                        <div className="text-4xl mb-4 opacity-50">✨</div>
+                                        <Sparkles className="h-10 w-10 mb-4 opacity-50" />
                                         <p className="text-lg font-medium">{t('instance_details.content.no_shaders')}</p>
                                         <p className="text-sm opacity-50 mb-4">{t('instance_details.content.check_folder_shaders')}</p>
                                         <button onClick={() => { setContentView('search'); setSearchCategory('shader'); }} className="mt-4 text-primary hover:underline font-bold">{t('instance_details.content.browse_shaders')}</button>
@@ -1701,7 +1702,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
                                     ) : searchResults.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                                            <div className="text-4xl mb-4">🔍</div>
+                                            <Magnifier className="h-10 w-10 mb-4" />
                                             <p>{t('instance_details.search.no_results', { query: searchQuery })}</p>
                                         </div>
                                     ) : (
@@ -1800,7 +1801,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {worlds.length === 0 ? (
                                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted rounded-xl border border-dashed border-border">
-                                    <div className="text-5xl mb-4 opacity-50">🌍</div>
+                                    <Globe className="h-12 w-12 mb-4 opacity-50" />
                                     <p className="text-lg font-medium">{t('instance_details.worlds.no_worlds')}</p>
                                 </div>
                             ) : (
@@ -1812,7 +1813,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                 <img src={world.iconData} alt="" className="w-full h-full object-cover transition-transform duration-500" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-900/20 to-blue-900/20 text-white/10 group-hover:text-white/20 transition-colors">
-                                                    🌍
+                                                    <Globe className="h-12 w-12 text-white/10 group-hover:text-white/20 transition-colors" />
                                                 </div>
                                             )}
                                             { }

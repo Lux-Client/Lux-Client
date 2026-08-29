@@ -8,24 +8,7 @@ import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 
 import { filterInstancesForMode } from '../utils/instanceTypes';
-import {
-    Wrench,
-    Sparkles,
-    Cuboid,
-    Loader2,
-    RotateCcw,
-    ImageUp,
-    ShieldCheck,
-    Globe,
-    PackageSearch,
-    Trash2,
-    WandSparkles,
-    ScrollText,
-    X,
-    ChevronDown,
-    ChevronUp,
-    AlertCircle,
-} from 'lucide-react';
+import { Wrench, Sparkles, Cube, ArrowRotateLeft, Picture, ShieldCheck, Globe, Magnifier, TrashBin, MagicWand, Text, Xmark, ChevronDown, ChevronUp, CircleExclamation } from "@gravity-ui/icons";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -125,7 +108,7 @@ function NoInstanceSelected() {
     return (
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center rounded-2xl border border-dashed border-border/60 bg-muted/10">
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                <CircleExclamation className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
                 <p className="text-sm font-medium text-foreground">No instance selected</p>
@@ -457,7 +440,7 @@ function ToolsDashboard() {
                                         onClick={() => setShowCompatLog((v) => !v)}
                                         className="gap-1.5 text-muted-foreground"
                                     >
-                                        <ScrollText className="h-4 w-4" />
+                                        <Text className="h-4 w-4" />
                                         Log
                                         {showCompatLog
                                             ? <ChevronUp className="h-3 w-3" />
@@ -505,7 +488,7 @@ function ToolsDashboard() {
                                         <div className="flex gap-2 flex-wrap">
                                             <Button onClick={handleScanCompatibility} disabled={scanningCompatibility}>
                                                 {scanningCompatibility
-                                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ? <ArrowRotateLeft className="h-4 w-4 animate-spin" />
                                                     : <ShieldCheck className="h-4 w-4" />}
                                                 Scan
                                             </Button>
@@ -515,8 +498,8 @@ function ToolsDashboard() {
                                                 disabled={applyingCompatibility || !compatibilityResult}
                                             >
                                                 {applyingCompatibility
-                                                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                                                    : <WandSparkles className="h-4 w-4" />}
+                                                    ? <ArrowRotateLeft className="h-4 w-4 animate-spin" />
+                                                    : <MagicWand className="h-4 w-4" />}
                                                 Apply Auto Fix
                                             </Button>
                                         </div>
@@ -562,7 +545,7 @@ function ToolsDashboard() {
                                             className="h-6 w-6 p-0 text-muted-foreground"
                                             onClick={() => setShowCompatLog(false)}
                                         >
-                                            <X className="h-3.5 w-3.5" />
+                                            <Xmark className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>
                                     <div className="h-52 overflow-auto bg-black/50 px-4 py-3 font-mono text-xs text-green-400 leading-relaxed">
@@ -598,7 +581,7 @@ function ToolsDashboard() {
                                         onClick={() => refreshWorldManager()}
                                         disabled={loadingWorlds}
                                     >
-                                        {loadingWorlds ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+                                        {loadingWorlds ? <ArrowRotateLeft className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
                                         Refresh
                                     </Button>
                                 </div>
@@ -697,7 +680,7 @@ function ToolsDashboard() {
                                         disabled={cloningWorld || !cloneSourceWorld || !cloneTargetInstance}
                                     >
                                         {cloningWorld
-                                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                                            ? <ArrowRotateLeft className="h-4 w-4 animate-spin" />
                                             : <Sparkles className="h-4 w-4" />}
                                         Safe Clone World
                                     </Button>
@@ -708,7 +691,7 @@ function ToolsDashboard() {
                             <section className="rounded-2xl border border-border bg-card/40 p-5">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-2">
-                                        <PackageSearch className="h-4 w-4 text-primary" />
+                                        <Magnifier className="h-4 w-4 text-primary" />
                                         <h2 className="text-base font-semibold text-foreground">
                                             Resource Pack Optimizer
                                         </h2>
@@ -720,8 +703,8 @@ function ToolsDashboard() {
                                         disabled={loadingResourcepacks}
                                     >
                                         {loadingResourcepacks
-                                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                                            : <PackageSearch className="h-4 w-4" />}
+                                            ? <ArrowRotateLeft className="h-4 w-4 animate-spin" />
+                                            : <Magnifier className="h-4 w-4" />}
                                         Scan
                                     </Button>
                                 </div>
@@ -749,8 +732,8 @@ function ToolsDashboard() {
                                                     disabled={runningPackAction.length > 0}
                                                 >
                                                     {runningPackAction === `cleanup:${pack.packName}`
-                                                        ? <Loader2 className="h-4 w-4 animate-spin" />
-                                                        : <Trash2 className="h-4 w-4" />}
+                                                        ? <ArrowRotateLeft className="h-4 w-4 animate-spin" />
+                                                        : <TrashBin className="h-4 w-4" />}
                                                     Cleanup
                                                 </Button>
                                                 <Button
@@ -759,8 +742,8 @@ function ToolsDashboard() {
                                                     disabled={runningPackAction.length > 0}
                                                 >
                                                     {runningPackAction === `compress:${pack.packName}`
-                                                        ? <Loader2 className="h-4 w-4 animate-spin" />
-                                                        : <WandSparkles className="h-4 w-4" />}
+                                                        ? <ArrowRotateLeft className="h-4 w-4 animate-spin" />
+                                                        : <MagicWand className="h-4 w-4" />}
                                                     Compress PNG
                                                 </Button>
                                             </div>

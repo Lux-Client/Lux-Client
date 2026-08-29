@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@gravity-ui/icons':
+        specifier: ^2.22.0
+        version: 2.22.0(react@18.3.1)
       '@heroicons/react':
         specifier: ^2.2.0
         version: 2.2.0(react@18.3.1)
@@ -621,6 +624,14 @@ packages:
 
   '@github/browserslist-config@1.0.0':
     resolution: {integrity: sha512-gIhjdJp/c2beaIWWIlsXdqXVRUz3r2BxBCpfz/F3JXHvSAQ1paMYjLH+maEATtENg+k5eLV7gA+9yPp762ieuw==}
+
+  '@gravity-ui/icons@2.22.0':
+    resolution: {integrity: sha512-v304kVTXbtsq8b3Uq3ZnX9R3LnRdECToeLspDgCs92C9fcID4C7dJqS3PywHKEaM4PFEZO8LRp/6JQbIm9UjHA==}
+    peerDependencies:
+      react: '*'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@heroicons/react@2.2.0':
     resolution: {integrity: sha512-LMcepvRaS9LYHJGsF0zzmgKCUim/X3N/DQKc4jepAXJ7l8QxJ1PmxJzqplF2Z3FE4PqBAIGyJAQ/w4B5dsqbtQ==}
@@ -5936,6 +5947,12 @@ snapshots:
   '@floating-ui/utils@0.2.12': {}
 
   '@github/browserslist-config@1.0.0': {}
+
+  '@gravity-ui/icons@2.22.0(react@18.3.1)':
+    dependencies:
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 18.3.1
 
   '@heroicons/react@2.2.0(react@18.3.1)':
     dependencies:

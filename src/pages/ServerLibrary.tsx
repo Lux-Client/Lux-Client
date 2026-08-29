@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
-import LoadingOverlay from '../components/LoadingOverlay';
-import { fetchSupportedPlatforms, fetchVersionsFor, fetchDetailsFor } from '../services/serverJars';
+import Skeleton from '../components/ui/skeleton';
+import { fetchSupportedPlatforms, fetchVersionsFor, fetchDetailsFor } from '../services/serverJars';import { Box } from "@gravity-ui/icons";
+
 
 function ServerLibrary() {
     const { t } = useTranslation();
@@ -141,7 +142,27 @@ function ServerLibrary() {
 
     return (
         <div className="p-8 h-full overflow-y-auto custom-scrollbar">
-            {isLoading && <LoadingOverlay message={t('server_library.loading_platforms')} />}
+            {isLoading && (
+                <div className="grid grid-cols-1 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="bg-card/40 backdrop-blur-sm border border-border rounded-xl overflow-hidden">
+                            <div className="p-6">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <Skeleton className="w-16 h-16 rounded-xl" />
+                                        <div className="flex-1 space-y-3">
+                                            <Skeleton className="h-6 w-48 rounded-md" />
+                                            <Skeleton className="h-4 w-64 rounded-md" />
+                                            <Skeleton className="h-3 w-32 rounded-md" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="w-6 h-6 rounded-md" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="mb-6">
                 <h1 className="text-3xl font-bold text-foreground mb-1">{t('server_library.title')}</h1>
@@ -151,7 +172,7 @@ function ServerLibrary() {
             <div className="grid grid-cols-1 gap-4">
                 {platforms.map((platform) => {
                     const details = platformDetails[platform.key] || {
-                        icon: '📦',
+                        icon: Box,
                         name: platform.name,
                         description: 'Minecraft server software',
                         color: 'from-gray-500/20'
@@ -163,7 +184,7 @@ function ServerLibrary() {
                         <div key={platform.key} className="space-y-2">
                             <div
                                 onClick={() => handleSelectPlatform(platform)}
-                                className={`bg-card/40 backdrop-blur-sm border ${isSelected ? 'border-primary/50 shadow-md' : 'border-border'} rounded-xl overflow-hidden hover:border-primary/50 transition-all cursor-pointer group`}
+                                className={`bg-card/40 backdrop-blur-sm border ${isSelected ? 'border-primary/50 bg-primary/5' : 'border-border'} rounded-xl overflow-hidden hover:border-primary/50 hover:bg-accent/20 transition-colors cursor-pointer group`}
                             >
                                 <div className="p-6">
                                     <div className="flex items-start justify-between">
@@ -171,6 +192,8 @@ function ServerLibrary() {
                                             <div className={`w-16 h-16 bg-gradient-to-br ${details.color} to-transparent rounded-xl flex items-center justify-center border border-border transition-transform overflow-hidden p-3`}>
                                                 {details.logo ? (
                                                     <img src={details.logo} alt={details.name} className="w-full h-full object-contain" />
+                                                ) : typeof details.icon === 'function' ? (
+                                                    <details.icon className="h-8 w-8 text-foreground" />
                                                 ) : (
                                                     <span className="text-4xl">{details.icon}</span>
                                                 )}
@@ -206,9 +229,10 @@ function ServerLibrary() {
                                 {isSelected && (
                                     <div className="pl-24 pr-6 pb-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
                                         {isLoadingVersions ? (
-                                            <div className="flex items-center gap-3 py-4 text-muted-foreground text-sm justify-center">
-                                                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                                                {t('server_library.loading_versions')}
+                                            <div className="space-y-2 py-2">
+                                                {Array.from({ length: 3 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-14 w-full rounded-xl" />
+                                                ))}
                                             </div>
                                         ) : (
                                             versions.map((version) => {

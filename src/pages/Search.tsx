@@ -24,27 +24,11 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import {
-    Search as SearchIcon,
-    Download,
-    Plus,
-    Check,
-    X,
-    Eye,
-    Image,
-    ArrowDownToLine,
-    Loader2,
-    Package,
-    Blocks,
-    Paintbrush,
-    Box,
-    ChevronLeft,
-    ChevronRight,
-} from 'lucide-react';
+import { Magnifier as SearchIcon, ArrowDownToLine, Plus, Check, Xmark, Eye, Picture, ArrowRotateLeft, Box, Boxes3, Brush, ChevronLeft, ChevronRight } from "@gravity-ui/icons";
 import { cn } from '../lib/utils';
 import { getSourceTags } from '../utils/sourceTags';
 
-function Search({ initialCategory, onCategoryConsumed }) {
+function Magnifier({ initialCategory, onCategoryConsumed }) {
     const { t } = useTranslation();
     const { addNotification } = useNotification();
     const [query, setQuery] = useState('');
@@ -528,19 +512,19 @@ function Search({ initialCategory, onCategoryConsumed }) {
                 <Tabs value={projectType} onValueChange={toggleProjectType}>
                     <TabsList>
                         <TabsTrigger value="mod">
-                            <Blocks className="h-3.5 w-3.5 mr-1.5" />
+                            <Boxes3 className="h-3.5 w-3.5 mr-1.5" />
                             {t('instance_details.content.mods')}
                         </TabsTrigger>
                         <TabsTrigger value="resourcepack">
-                            <Paintbrush className="h-3.5 w-3.5 mr-1.5" />
+                            <Brush className="h-3.5 w-3.5 mr-1.5" />
                             {t('instance_details.content.resourcepacks')}
                         </TabsTrigger>
                         <TabsTrigger value="modpack">
-                            <Package className="h-3.5 w-3.5 mr-1.5" />
+                            <Box className="h-3.5 w-3.5 mr-1.5" />
                             {t('home.discover_modpack')}
                         </TabsTrigger>
                         <TabsTrigger value="shader">
-                            <Paintbrush className="h-3.5 w-3.5 mr-1.5" />
+                            <Brush className="h-3.5 w-3.5 mr-1.5" />
                             {t('instance_details.content.shaders')}
                         </TabsTrigger>
                     </TabsList>
@@ -817,7 +801,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                                 <SelectTrigger className="w-full">
                                     {loadingVersions ? (
                                         <span className="flex items-center text-muted-foreground">
-                                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                            <ArrowRotateLeft className="h-4 w-4 mr-1.5 animate-spin" />
                                             {t('search.loading_versions')}
                                         </span>
                                     ) : availableVersions.length === 0 ? (
@@ -849,7 +833,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                             disabled={installing || !selectedInstance || loadingVersions || availableVersions.length === 0}
                             className={instanceInstalledIds.has(selectedMod?.project_id) ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
                         >
-                            {installing && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+                            {installing && <ArrowRotateLeft className="h-4 w-4 mr-1.5 animate-spin" />}
                             {installing ? t('search.installing_dots') : (instanceInstalledIds.has(selectedMod?.project_id) ? t('search.already_installed') : t('search.install'))}
                         </Button>
                     </DialogFooter>
@@ -881,7 +865,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                                     >
                                         <img
                                             src={img.url}
-                                            alt={img.title || 'Gallery Image'}
+                                            alt={img.title || 'Gallery Picture'}
                                             className="w-full h-full object-cover transition-transform duration-500"
                                         />
                                         {img.title && (
@@ -893,7 +877,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                                 ))}
                             </div>
                         ) : (
-                            <EmptyState icon={Image} title={t('search.no_gallery')} />
+                            <EmptyState icon={Picture} title={t('search.no_gallery')} />
                         )}
                     </div>
 
@@ -936,7 +920,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                         className="absolute top-6 right-6 z-50 rounded-full bg-white/10 hover:bg-white/20 text-white"
                         onClick={() => setLightboxIndex(-1)}
                     >
-                        <X className="h-6 w-6" />
+                        <Xmark className="h-6 w-6" />
                     </Button>
 
                     <Button
@@ -966,7 +950,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                     >
                         <img
                             src={previewProject.gallery[lightboxIndex].url}
-                            alt={previewProject.gallery[lightboxIndex].title || "Gallery Image"}
+                            alt={previewProject.gallery[lightboxIndex].title || "Gallery Picture"}
                             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
                         />
                         {previewProject.gallery[lightboxIndex].title && (
@@ -989,4 +973,4 @@ function Search({ initialCategory, onCategoryConsumed }) {
     );
 }
 
-export default Search;
+export default Magnifier;
