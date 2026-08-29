@@ -42,7 +42,28 @@ import {
 } from "../components/ui/context-menu";
 import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
-import { Play, Square, Clock, Plus, Magnifier, EllipsisVertical, Folder, Box, Eye, Copy, ArrowDownToLine, FolderOpen, TrashBin, ArrowRotateLeft, ChevronDown, ChevronRight, FileCode, FileArrowDown, Thunderbolt, Picture } from "@gravity-ui/icons";
+import {
+  Play,
+  Square,
+  Clock,
+  Plus,
+  Magnifier,
+  EllipsisVertical,
+  Folder,
+  Box,
+  Eye,
+  Copy,
+  ArrowDownToLine,
+  FolderOpen,
+  TrashBin,
+  ArrowRotateLeft,
+  ChevronDown,
+  ChevronRight,
+  FileCode,
+  FileArrowDown,
+  Thunderbolt,
+  Picture,
+} from "@gravity-ui/icons";
 
 const DEFAULT_ICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
@@ -72,7 +93,7 @@ function InstanceListRow({ index, style, rows, renderCard, toggleFolder }: any) 
         <button
           type="button"
           onClick={() => toggleFolder(item.key)}
-          className="w-full flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-left hover:bg-muted/50"
+          className="w-full flex items-center gap-2 rounded-md border border-border bg-card/60 px-2.5 py-1.5 text-left hover:bg-accent/40"
           style={{
             marginLeft: `${item.depth * 10}px`,
             width: `calc(100% - ${item.depth * 10}px)`,
@@ -84,12 +105,8 @@ function InstanceListRow({ index, style, rows, renderCard, toggleFolder }: any) 
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
           )}
           <Folder className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-xs font-medium text-foreground truncate">
-            {item.name}
-          </span>
-          <span className="ml-auto text-[10px] text-muted-foreground">
-            {item.count}
-          </span>
+          <span className="text-xs font-medium text-foreground truncate">{item.name}</span>
+          <span className="ml-auto text-[10px] text-muted-foreground">{item.count}</span>
         </button>
       </div>
     );
@@ -168,10 +185,7 @@ const InstanceCard = React.memo(function InstanceCard({
             title={
               isSelectable
                 ? t("dashboard.selection.toggle", "Select instance")
-                : t(
-                    "dashboard.selection.not_selectable",
-                    "External profiles cannot be selected",
-                  )
+                : t("dashboard.selection.not_selectable", "External profiles cannot be selected")
             }
           >
             <input
@@ -198,15 +212,11 @@ const InstanceCard = React.memo(function InstanceCard({
         ) : (
           <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border border-border shrink-0">
             <span className="text-xl">{instance.icon || ""}</span>
-            {!instance.icon && (
-              <Box className="w-6 h-6 text-muted-foreground" />
-            )}
+            {!instance.icon && <Box className="w-6 h-6 text-muted-foreground" />}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-foreground truncate">
-            {instance.name}
-          </h3>
+          <h3 className="text-sm font-medium text-foreground truncate">{instance.name}</h3>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
             <span className="capitalize">
               {String(instance.loader || "Vanilla").trim() || "Vanilla"}
@@ -217,12 +227,9 @@ const InstanceCard = React.memo(function InstanceCard({
           {status && status !== "ready" && status !== "stopped" && (
             <div className="mt-1.5 flex items-center gap-1.5">
               <Badge
-                variant={isRunning ? "default" : "secondary"}
-                className="text-[10px] px-1.5 py-0 h-4 gap-1"
+                className={`text-[10px] px-1.5 py-0 h-4 gap-1 border border-border bg-card shadow-none ${isRunning ? "text-primary" : "text-muted-foreground"}`}
               >
-                {isRunning && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                )}
+                {isRunning && <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
                 {isInstalling
                   ? installState
                     ? installState.type === "duplicate"
@@ -243,7 +250,7 @@ const InstanceCard = React.memo(function InstanceCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent"
+                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-card border border-border text-foreground hover:bg-accent/40"
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
@@ -257,7 +264,7 @@ const InstanceCard = React.memo(function InstanceCard({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent"
+            className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-card border border-border text-foreground hover:bg-accent/40"
             onClick={(e) => {
               e.stopPropagation();
               onContextAction && onContextAction(e, instance);
@@ -276,13 +283,10 @@ const InstanceCard = React.memo(function InstanceCard({
           {formatPlaytime(instance.playtime)}
         </span>
         <Button
-          variant={isRunning ? "destructive" : "default"}
+          variant="outline"
           size="sm"
-          className={`h-7 gap-1 text-xs transition-all duration-200 ${
-            !isRunning &&
-            !isInstalling &&
-            !isLaunching &&
-            !pendingLaunches[instance.name]
+          className={`h-7 gap-1 text-xs transition-all duration-200 bg-card text-primary hover:bg-accent/40 hover:text-primary ${
+            !isRunning && !isInstalling && !isLaunching && !pendingLaunches[instance.name]
               ? "opacity-0 group-hover:opacity-100"
               : ""
           }`}
@@ -295,19 +299,13 @@ const InstanceCard = React.memo(function InstanceCard({
             if (isRunning) {
               window.electronAPI.killGame(instance.name);
               addNotification(`Stopping ${instance.name}...`, "info");
-            } else if (
-              !isInstalling &&
-              !isLaunching &&
-              !pendingLaunches[instance.name]
-            ) {
+            } else if (!isInstalling && !isLaunching && !pendingLaunches[instance.name]) {
               setPendingLaunches((prev) => ({
                 ...prev,
                 [instance.name]: true,
               }));
               try {
-                const result = await window.electronAPI.launchGame(
-                  instance.name,
-                );
+                const result = await window.electronAPI.launchGame(instance.name);
                 if (!result.success) {
                   addNotification(`Launch failed: ${result.error}`, "error");
                 } else {
@@ -324,9 +322,7 @@ const InstanceCard = React.memo(function InstanceCard({
               }
             }
           }}
-          disabled={
-            isInstalling || isLaunching || pendingLaunches[instance.name]
-          }
+          disabled={isInstalling || isLaunching || pendingLaunches[instance.name]}
           title={
             isRunning
               ? t("common.stop")
@@ -435,12 +431,8 @@ function Dashboard({
   const [actionBarActions, setActionBarActions] = useState([]);
   const fileInputRef = useRef(null);
   const [showSnapshots, setShowSnapshots] = useState(false);
-  const [showModrinthInstancesInLibrary, setShowModrinthInstancesInLibrary] =
-    useState(true);
-  const [
-    showCurseforgeInstancesInLibrary,
-    setShowCurseforgeInstancesInLibrary,
-  ] = useState(true);
+  const [showModrinthInstancesInLibrary, setShowModrinthInstancesInLibrary] = useState(true);
+  const [showCurseforgeInstancesInLibrary, setShowCurseforgeInstancesInLibrary] = useState(true);
 
   const normalizeFolderPath = (value = "") => {
     const segments = String(value)
@@ -456,10 +448,7 @@ function Dashboard({
   };
 
   const handleCodeImportComplete = async (modpackData) => {
-    addNotification(
-      t("dashboard.import_starting", { name: modpackData.name }),
-      "info",
-    );
+    addNotification(t("dashboard.import_starting", { name: modpackData.name }), "info");
 
     try {
       const createRes = await window.electronAPI.createInstance(
@@ -476,41 +465,30 @@ function Dashboard({
           [instanceName]: { progress: 0, status: "Starting import..." },
         }));
         window.electronAPI.installSharedContent(instanceName, modpackData);
-        addNotification(
-          t("dashboard.instance_created", { name: instanceName }),
-          "success",
-        );
+        addNotification(t("dashboard.instance_created", { name: instanceName }), "success");
         loadInstances();
       } else {
-        addNotification(
-          t("dashboard.create_failed", { error: createRes.error }),
-          "error",
-        );
+        addNotification(t("dashboard.create_failed", { error: createRes.error }), "error");
       }
     } catch (error) {
       console.error("Code import error:", error);
-      addNotification(
-        t("dashboard.import_failed", { error: error.message }),
-        "error",
-      );
+      addNotification(t("dashboard.import_failed", { error: error.message }), "error");
     }
   };
 
   useEffect(() => {
     loadInstances();
 
-    const removeListener = window.electronAPI.onInstanceStatus(
-      ({ instanceName, status }) => {
-        if (
-          status === "stopped" ||
-          status === "ready" ||
-          status === "error" ||
-          status === "deleted"
-        ) {
-          loadInstances();
-        }
-      },
-    );
+    const removeListener = window.electronAPI.onInstanceStatus(({ instanceName, status }) => {
+      if (
+        status === "stopped" ||
+        status === "ready" ||
+        status === "error" ||
+        status === "deleted"
+      ) {
+        loadInstances();
+      }
+    });
 
     return () => {
       if (removeListener) removeListener();
@@ -522,9 +500,7 @@ function Dashboard({
       try {
         const settingsRes = await window.electronAPI.getSettings();
         if (settingsRes?.success) {
-          const existingActions = Array.isArray(
-            settingsRes.settings?.actionBarActions,
-          )
+          const existingActions = Array.isArray(settingsRes.settings?.actionBarActions)
             ? settingsRes.settings.actionBarActions
             : [];
           setActionBarActions(existingActions);
@@ -541,20 +517,14 @@ function Dashboard({
 
     loadActionBarActions();
 
-    const removeSettingsListener = window.electronAPI?.onSettingsUpdated?.(
-      (newSettings) => {
-        const existingActions = Array.isArray(newSettings?.actionBarActions)
-          ? newSettings.actionBarActions
-          : [];
-        setActionBarActions(existingActions);
-        setShowModrinthInstancesInLibrary(
-          newSettings?.showModrinthInstancesInLibrary !== false,
-        );
-        setShowCurseforgeInstancesInLibrary(
-          newSettings?.showCurseforgeInstancesInLibrary !== false,
-        );
-      },
-    );
+    const removeSettingsListener = window.electronAPI?.onSettingsUpdated?.((newSettings) => {
+      const existingActions = Array.isArray(newSettings?.actionBarActions)
+        ? newSettings.actionBarActions
+        : [];
+      setActionBarActions(existingActions);
+      setShowModrinthInstancesInLibrary(newSettings?.showModrinthInstancesInLibrary !== false);
+      setShowCurseforgeInstancesInLibrary(newSettings?.showCurseforgeInstancesInLibrary !== false);
+    });
 
     return () => {
       if (removeSettingsListener) removeSettingsListener();
@@ -605,15 +575,13 @@ function Dashboard({
             setAvailableVersions(versions);
             if (
               versions.length > 0 &&
-              (!selectedVersion ||
-                !versions.find((v) => v.id === selectedVersion))
+              (!selectedVersion || !versions.find((v) => v.id === selectedVersion))
             ) {
               setSelectedVersion(versions[0].id);
             }
           }
         } else {
-          const res =
-            await window.electronAPI.getSupportedGameVersions(selectedLoader);
+          const res = await window.electronAPI.getSupportedGameVersions(selectedLoader);
           if (res.success) {
             let versions = res.versions;
             if (!showSnapshots) {
@@ -626,8 +594,7 @@ function Dashboard({
             setAvailableVersions(versionObjs);
             if (
               versionObjs.length > 0 &&
-              (!selectedVersion ||
-                !versionObjs.find((v) => v.id === selectedVersion))
+              (!selectedVersion || !versionObjs.find((v) => v.id === selectedVersion))
             ) {
               setSelectedVersion(versionObjs[0].id);
             } else if (versionObjs.length === 0) {
@@ -676,10 +643,7 @@ function Dashboard({
 
       setLoadingVersions(true);
       try {
-        const res = await window.electronAPI.getLoaderVersions(
-          loaderForApi,
-          selectedVersion,
-        );
+        const res = await window.electronAPI.getLoaderVersions(loaderForApi, selectedVersion);
         setLoadingVersions(false);
 
         if (res.success && res.versions && res.versions.length > 0) {
@@ -688,17 +652,11 @@ function Dashboard({
           setCreationStep(2);
           return;
         } else {
-          addNotification(
-            "No specific loader versions found, using latest.",
-            "info",
-          );
+          addNotification("No specific loader versions found, using latest.", "info");
         }
       } catch (err) {
         setLoadingVersions(false);
-        addNotification(
-          "Failed to fetch loader versions: " + err.message,
-          "error",
-        );
+        addNotification("Failed to fetch loader versions: " + err.message, "error");
         return;
       }
     }
@@ -725,10 +683,7 @@ function Dashboard({
       if (result.success) {
         setShowCreateModal(false);
         await loadInstances();
-        addNotification(
-          `Started creating: ${result.instanceName || nameToUse}`,
-          "success",
-        );
+        addNotification(`Started creating: ${result.instanceName || nameToUse}`, "success");
         Analytics.trackInstanceCreation(loaderForApi, selectedVersion);
       } else {
         addNotification(`Failed to create instance: ${result.error}`, "error");
@@ -753,9 +708,7 @@ function Dashboard({
 
   const handleFileExport = async (instance) => {
     try {
-      const exportResult = await window.electronAPI.exportInstance(
-        instance.name,
-      );
+      const exportResult = await window.electronAPI.exportInstance(instance.name);
       if (exportResult.success) {
         addNotification(`Exported to ${exportResult.path}`, "success");
       } else if (exportResult.error !== "Cancelled") {
@@ -777,12 +730,11 @@ function Dashboard({
   const prepareCodeExport = async (instance) => {
     setIsPreparingCodeExport(true);
     try {
-      const [modsResult, resourcePacksResult, shadersResult] =
-        await Promise.all([
-          window.electronAPI.getMods(instance.name),
-          window.electronAPI.getResourcePacks(instance.name),
-          window.electronAPI.getShaders(instance.name),
-        ]);
+      const [modsResult, resourcePacksResult, shadersResult] = await Promise.all([
+        window.electronAPI.getMods(instance.name),
+        window.electronAPI.getResourcePacks(instance.name),
+        window.electronAPI.getShaders(instance.name),
+      ]);
 
       const mods =
         modsResult?.success && Array.isArray(modsResult.mods)
@@ -800,11 +752,7 @@ function Dashboard({
           ? shadersResult.shaders.map((entry) => ({ ...entry, type: "shader" }))
           : [];
 
-      if (
-        !modsResult?.success ||
-        !resourcePacksResult?.success ||
-        !shadersResult?.success
-      ) {
+      if (!modsResult?.success || !resourcePacksResult?.success || !shadersResult?.success) {
         addNotification(
           t(
             "dashboard.export_choice.partial_load_warning",
@@ -837,9 +785,7 @@ function Dashboard({
             break;
           }
 
-          const existingActions = Array.isArray(
-            settingsRes.settings?.actionBarActions,
-          )
+          const existingActions = Array.isArray(settingsRes.settings?.actionBarActions)
             ? settingsRes.settings.actionBarActions
             : [];
 
@@ -851,10 +797,7 @@ function Dashboard({
               ? `${instance.name} (${t("common.stop")})`
               : `${instance.name} (${t("common.play")})`,
             type: isRunning ? "instance:stop" : "instance:start",
-            icon:
-              instance.icon && instance.icon.startsWith("data:")
-                ? instance.icon
-                : "",
+            icon: instance.icon && instance.icon.startsWith("data:") ? instance.icon : "",
             path: "",
             target: instance.name,
           };
@@ -865,10 +808,7 @@ function Dashboard({
           });
 
           if (saveRes?.success) {
-            addNotification(
-              t("action_bar.added", "Added to Actionbar"),
-              "success",
-            );
+            addNotification(t("action_bar.added", "Added to Actionbar"), "success");
             setActionBarActions([...existingActions, nextAction]);
           } else {
             addNotification("Failed to save action", "error");
@@ -885,9 +825,7 @@ function Dashboard({
             break;
           }
 
-          const existingActions2 = Array.isArray(
-            settingsRes2.settings?.actionBarActions,
-          )
+          const existingActions2 = Array.isArray(settingsRes2.settings?.actionBarActions)
             ? settingsRes2.settings.actionBarActions
             : [];
 
@@ -895,8 +833,7 @@ function Dashboard({
             (entry) =>
               !(
                 entry?.target === instance.name &&
-                (entry?.type === "instance:start" ||
-                  entry?.type === "instance:stop")
+                (entry?.type === "instance:start" || entry?.type === "instance:stop")
               ),
           );
 
@@ -906,10 +843,7 @@ function Dashboard({
           });
 
           if (saveRes2?.success) {
-            addNotification(
-              t("action_bar.removed", "Removed from Actionbar"),
-              "success",
-            );
+            addNotification(t("action_bar.removed", "Removed from Actionbar"), "success");
             setActionBarActions(filteredActions);
           } else {
             addNotification("Failed to remove action", "error");
@@ -926,9 +860,7 @@ function Dashboard({
         break;
       case "duplicate":
         try {
-          const result = await window.electronAPI.duplicateInstance(
-            instance.name,
-          );
+          const result = await window.electronAPI.duplicateInstance(instance.name);
           if (result.success) {
             addNotification(`Duplicated instance: ${instance.name}`, "success");
             await loadInstances();
@@ -953,18 +885,12 @@ function Dashboard({
         break;
       case "remove-from-folder":
         try {
-          const res = await window.electronAPI.setInstanceFolderPath(
-            instance,
-            "",
-          );
+          const res = await window.electronAPI.setInstanceFolderPath(instance, "");
           if (res?.success) {
             addNotification(`Removed ${instance.name} from folder`, "success");
             await loadInstances();
           } else {
-            addNotification(
-              `Failed to update folder: ${res?.error || "Unknown error"}`,
-              "error",
-            );
+            addNotification(`Failed to update folder: ${res?.error || "Unknown error"}`, "error");
           }
         } catch (e) {
           addNotification(`Failed to update folder: ${e.message}`, "error");
@@ -988,10 +914,7 @@ function Dashboard({
     setIsLoading(true);
     try {
       if (folderTargetInstance) {
-        const res = await window.electronAPI.setInstanceFolderPath(
-          folderTargetInstance,
-          nextPath,
-        );
+        const res = await window.electronAPI.setInstanceFolderPath(folderTargetInstance, nextPath);
         if (res?.success) {
           addNotification(
             nextPath
@@ -1000,22 +923,16 @@ function Dashboard({
             "success",
           );
         } else {
-          addNotification(
-            `Failed to update folder: ${res?.error || "Unknown error"}`,
-            "error",
-          );
+          addNotification(`Failed to update folder: ${res?.error || "Unknown error"}`, "error");
           return;
         }
       } else {
         const updates = await Promise.all(
           selectedInstanceNames.map((instanceName) => {
-            const instanceRef = instances.find(
-              (instance) => instance.name === instanceName,
-            ) || { name: instanceName };
-            return window.electronAPI.setInstanceFolderPath(
-              instanceRef,
-              nextPath,
-            );
+            const instanceRef = instances.find((instance) => instance.name === instanceName) || {
+              name: instanceName,
+            };
+            return window.electronAPI.setInstanceFolderPath(instanceRef, nextPath);
           }),
         );
         const failed = updates.filter((entry) => !entry?.success).length;
@@ -1107,23 +1024,14 @@ function Dashboard({
   };
 
   const filteredInstances = instances.filter((inst) => {
-    const isExternal =
-      String(inst?.instanceType || "").toLowerCase() === "external";
+    const isExternal = String(inst?.instanceType || "").toLowerCase() === "external";
     const source = String(inst?.externalSource || "").toLowerCase();
 
-    if (
-      isExternal &&
-      source === "modrinth" &&
-      !showModrinthInstancesInLibrary
-    ) {
+    if (isExternal && source === "modrinth" && !showModrinthInstancesInLibrary) {
       return false;
     }
 
-    if (
-      isExternal &&
-      source === "curseforge" &&
-      !showCurseforgeInstancesInLibrary
-    ) {
+    if (isExternal && source === "curseforge" && !showCurseforgeInstancesInLibrary) {
       return false;
     }
 
@@ -1154,9 +1062,7 @@ function Dashboard({
 
   useEffect(() => {
     const availableNames = new Set(instances.map((instance) => instance.name));
-    setSelectedInstanceNames((prev) =>
-      prev.filter((name) => availableNames.has(name)),
-    );
+    setSelectedInstanceNames((prev) => prev.filter((name) => availableNames.has(name)));
   }, [instances]);
 
   const toggleInstanceSelection = (instanceName) => {
@@ -1231,9 +1137,7 @@ function Dashboard({
     const finalizeNode = (node) => ({
       ...node,
       children: Array.from(node.children.values())
-        .sort((a: any, b: any) =>
-          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-        )
+        .sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
         .map(finalizeNode),
     });
 
@@ -1264,9 +1168,7 @@ function Dashboard({
       const groups = {};
       items.forEach((inst) => {
         const key =
-          groupMethod === "version"
-            ? inst.version || "Unknown"
-            : inst.loader || "Vanilla";
+          groupMethod === "version" ? inst.version || "Unknown" : inst.loader || "Vanilla";
         if (!groups[key]) groups[key] = [];
         groups[key].push(inst);
       });
@@ -1303,13 +1205,11 @@ function Dashboard({
         sourceGroups[sourceLabel].push(inst);
       });
 
-      ["LuxClient", "Modrinth", "CurseForge", "External"].forEach(
-        (sourceLabel) => {
-          const sourceItems = sourceGroups[sourceLabel] || [];
-          if (sourceItems.length === 0) return;
-          buildSections(sourceItems, sourceLabel);
-        },
-      );
+      ["LuxClient", "Modrinth", "CurseForge", "External"].forEach((sourceLabel) => {
+        const sourceItems = sourceGroups[sourceLabel] || [];
+        if (sourceItems.length === 0) return;
+        buildSections(sourceItems, sourceLabel);
+      });
     } else {
       buildSections(sortedInstances, null);
     }
@@ -1355,11 +1255,7 @@ function Dashboard({
             });
           }
           node.children.forEach((child) => {
-            processFolder(
-              child,
-              node.path === "" ? depth : depth + 1,
-              parentKeyPrefix,
-            );
+            processFolder(child, node.path === "" ? depth : depth + 1, parentKeyPrefix);
           });
         }
       };
@@ -1383,9 +1279,7 @@ function Dashboard({
         <Eye className="w-4 h-4 mr-2" />
         {t("dashboard.context.view")}
       </ContextMenuItem>
-      <ContextMenuItem
-        onClick={() => handleContextAction("duplicate", instance)}
-      >
+      <ContextMenuItem onClick={() => handleContextAction("duplicate", instance)}>
         <Copy className="w-4 h-4 mr-2" />
         {t("dashboard.context.duplicate")}
       </ContextMenuItem>
@@ -1399,31 +1293,23 @@ function Dashboard({
       </ContextMenuItem>
       {String(instance?.instanceType || "").toLowerCase() !== "external" && (
         <>
-          <ContextMenuItem
-            onClick={() => handleContextAction("move-to-folder", instance)}
-          >
+          <ContextMenuItem onClick={() => handleContextAction("move-to-folder", instance)}>
             <Folder className="w-4 h-4 mr-2" />
             {t("dashboard.context.move_to_folder", "Move to folder")}
           </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => handleContextAction("remove-from-folder", instance)}
-          >
+          <ContextMenuItem onClick={() => handleContextAction("remove-from-folder", instance)}>
             <Folder className="w-4 h-4 mr-2" />
             {t("dashboard.context.remove_from_folder", "Remove from folder")}
           </ContextMenuItem>
         </>
       )}
       {hasInstanceAction(instance.name) ? (
-        <ContextMenuItem
-          onClick={() => handleContextAction("remove-from-actionbar", instance)}
-        >
+        <ContextMenuItem onClick={() => handleContextAction("remove-from-actionbar", instance)}>
           <Thunderbolt className="w-4 h-4 mr-2" />
           {t("action_bar.remove_from_actionbar", "Remove from Actionbar")}
         </ContextMenuItem>
       ) : (
-        <ContextMenuItem
-          onClick={() => handleContextAction("add-to-actionbar", instance)}
-        >
+        <ContextMenuItem onClick={() => handleContextAction("add-to-actionbar", instance)}>
           <Thunderbolt className="w-4 h-4 mr-2" />
           {t("action_bar.add_to_actionbar", "Add to Actionbar")}
         </ContextMenuItem>
@@ -1445,149 +1331,142 @@ function Dashboard({
     );
     const installState = installStateKey ? activeDownloads[installStateKey] : null;
     return (
-    <ContextMenu key={instance.name}>
-      <ContextMenuTrigger>
-        <InstanceCard
-          instance={instance}
-          runningInstances={runningInstances}
-          installState={installState}
-          pendingLaunches={pendingLaunches}
-          onInstanceClick={(selectedInstance) => {
-            if (selectionMode) {
-              toggleInstanceSelection(selectedInstance.name);
-              return;
+      <ContextMenu key={instance.name}>
+        <ContextMenuTrigger>
+          <InstanceCard
+            instance={instance}
+            runningInstances={runningInstances}
+            installState={installState}
+            pendingLaunches={pendingLaunches}
+            onInstanceClick={(selectedInstance) => {
+              if (selectionMode) {
+                toggleInstanceSelection(selectedInstance.name);
+                return;
+              }
+              onInstanceClick(selectedInstance);
+            }}
+            selectionMode={selectionMode}
+            isSelected={selectedInstanceNames.includes(instance.name)}
+            isSelectable={isSelectableInstance(instance)}
+            onToggleSelect={toggleInstanceSelection}
+            onContextAction={(e, inst) => {
+              e.stopPropagation();
+            }}
+            actionMenu={
+              <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("play", instance);
+                  }}
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  {t("dashboard.context.play")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("view", instance);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  {t("dashboard.context.view")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("duplicate", instance);
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  {t("dashboard.context.duplicate")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("export", instance);
+                  }}
+                >
+                  <ArrowDownToLine className="w-4 h-4 mr-2" />
+                  {t("dashboard.context.export")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("folder", instance);
+                  }}
+                >
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  {t("dashboard.context.folder")}
+                </DropdownMenuItem>
+                {String(instance?.instanceType || "").toLowerCase() !== "external" && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleContextAction("move-to-folder", instance);
+                      }}
+                    >
+                      <Folder className="w-4 h-4 mr-2" />
+                      {t("dashboard.context.move_to_folder", "Move to folder")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleContextAction("remove-from-folder", instance);
+                      }}
+                    >
+                      <Folder className="w-4 h-4 mr-2" />
+                      {t("dashboard.context.remove_from_folder", "Remove from folder")}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {hasInstanceAction(instance.name) ? (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleContextAction("remove-from-actionbar", instance);
+                    }}
+                  >
+                    <Thunderbolt className="w-4 h-4 mr-2" />
+                    {t("action_bar.remove_from_actionbar", "Remove from Actionbar")}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleContextAction("add-to-actionbar", instance);
+                    }}
+                  >
+                    <Thunderbolt className="w-4 h-4 mr-2" />
+                    {t("action_bar.add_to_actionbar", "Add to Actionbar")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextAction("delete", instance);
+                  }}
+                >
+                  <TrashBin className="w-4 h-4 mr-2" />
+                  {t("dashboard.context.delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
             }
-            onInstanceClick(selectedInstance);
-          }}
-          selectionMode={selectionMode}
-          isSelected={selectedInstanceNames.includes(instance.name)}
-          isSelectable={isSelectableInstance(instance)}
-          onToggleSelect={toggleInstanceSelection}
-          onContextAction={(e, inst) => {
-            e.stopPropagation();
-          }}
-          actionMenu={
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextAction("play", instance);
-                }}
-              >
-                <Play className="w-4 h-4 mr-2" />
-                {t("dashboard.context.play")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextAction("view", instance);
-                }}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                {t("dashboard.context.view")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextAction("duplicate", instance);
-                }}
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                {t("dashboard.context.duplicate")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextAction("export", instance);
-                }}
-              >
-                <ArrowDownToLine className="w-4 h-4 mr-2" />
-                {t("dashboard.context.export")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextAction("folder", instance);
-                }}
-              >
-                <FolderOpen className="w-4 h-4 mr-2" />
-                {t("dashboard.context.folder")}
-              </DropdownMenuItem>
-              {String(instance?.instanceType || "").toLowerCase() !==
-                "external" && (
-                <>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleContextAction("move-to-folder", instance);
-                    }}
-                  >
-                    <Folder className="w-4 h-4 mr-2" />
-                    {t("dashboard.context.move_to_folder", "Move to folder")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleContextAction("remove-from-folder", instance);
-                    }}
-                  >
-                    <Folder className="w-4 h-4 mr-2" />
-                    {t(
-                      "dashboard.context.remove_from_folder",
-                      "Remove from folder",
-                    )}
-                  </DropdownMenuItem>
-                </>
-              )}
-              {hasInstanceAction(instance.name) ? (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleContextAction("remove-from-actionbar", instance);
-                  }}
-                >
-                  <Thunderbolt className="w-4 h-4 mr-2" />
-                  {t(
-                    "action_bar.remove_from_actionbar",
-                    "Remove from Actionbar",
-                  )}
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleContextAction("add-to-actionbar", instance);
-                  }}
-                >
-                  <Thunderbolt className="w-4 h-4 mr-2" />
-                  {t("action_bar.add_to_actionbar", "Add to Actionbar")}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextAction("delete", instance);
-                }}
-              >
-                <TrashBin className="w-4 h-4 mr-2" />
-                {t("dashboard.context.delete")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          }
-          addNotification={addNotification}
-          loadInstances={loadInstances}
-          setPendingLaunches={setPendingLaunches}
-          t={t}
-          isGuest={isGuest}
-        />
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
-        {instanceMenuItems(instance)}
-      </ContextMenuContent>
-    </ContextMenu>
+            addNotification={addNotification}
+            loadInstances={loadInstances}
+            setPendingLaunches={setPendingLaunches}
+            t={t}
+            isGuest={isGuest}
+          />
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-48 bg-card border-border">
+          {instanceMenuItems(instance)}
+        </ContextMenuContent>
+      </ContextMenu>
     );
   };
 
@@ -1595,14 +1474,11 @@ function Dashboard({
     <div className="flex flex-col h-full relative">
       {isLoading && <LoadingOverlay message="Processing..." />}
 
-      <PageHeader
-        title={t("dashboard.title")}
-        description={t("dashboard.desc")}
-      />
+      <PageHeader title={t("dashboard.title")} description={t("dashboard.desc")} />
 
       <PageContent>
         <div className="flex h-full flex-col gap-3">
-          <div className="rounded-2xl border border-border/80 bg-card/60 p-3">
+          <div className="rounded-xl border border-border bg-card/60 p-3">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative min-w-[220px] flex-1">
                 <Magnifier className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -1611,24 +1487,16 @@ function Dashboard({
                   placeholder={t("dashboard.search_placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-9 rounded-xl border-border/80 bg-background/80 pl-8 text-xs"
+                  className="h-9 rounded-xl border border-border bg-card pl-8 text-xs shadow-none hover:bg-accent/40"
                 />
               </div>
               <div className="w-[150px]">
-                <Dropdown
-                  options={sortOptions}
-                  value={sortMethod}
-                  onChange={setSortMethod}
-                />
+                <Dropdown options={sortOptions} value={sortMethod} onChange={setSortMethod} />
               </div>
               <div className="w-[150px]">
-                <Dropdown
-                  options={groupOptions}
-                  value={groupMethod}
-                  onChange={setGroupMethod}
-                />
+                <Dropdown options={groupOptions} value={groupMethod} onChange={setGroupMethod} />
               </div>
-              <div className="flex h-9 items-center gap-2 rounded-xl border border-border bg-background/70 px-3">
+              <div className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-3">
                 <Switch
                   checked={groupBySourceEnabled}
                   onCheckedChange={setGroupBySourceEnabled}
@@ -1645,7 +1513,7 @@ function Dashboard({
                   size="sm"
                   variant="outline"
                   onClick={enableSelectionMode}
-                  className="rounded-xl"
+                  className="rounded-xl bg-card hover:bg-accent/40"
                 >
                   {t("dashboard.selection.enable", "Select")}
                 </Button>
@@ -1653,9 +1521,9 @@ function Dashboard({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                   onClick={disableSelectionMode}
-                  className="rounded-xl"
+                  className="rounded-xl bg-card hover:bg-accent/40"
                 >
                   {t("dashboard.selection.done", "Done")}
                 </Button>
@@ -1669,7 +1537,7 @@ function Dashboard({
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuContent align="end" className="w-52 bg-card border-border">
                   <DropdownMenuItem onClick={() => setShowCreateModal(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     {t("dashboard.manual_creation")}
@@ -1685,16 +1553,10 @@ function Dashboard({
                         }
                         const result = await window.electronAPI.importFile();
                         if (result.success) {
-                          addNotification(
-                            `Importing Modpack: ${result.instanceName}...`,
-                            "info",
-                          );
+                          addNotification(`Importing Modpack: ${result.instanceName}...`, "info");
                           loadInstances();
                         } else if (result.error !== "Cancelled") {
-                          addNotification(
-                            `Import failed: ${result.error}`,
-                            "error",
-                          );
+                          addNotification(`Import failed: ${result.error}`, "error");
                         }
                       } catch (err) {
                         console.error("[Dashboard] Import error:", err);
@@ -1728,7 +1590,7 @@ function Dashboard({
                   size="sm"
                   variant="outline"
                   onClick={selectAllVisible}
-                  className="rounded-xl"
+                  className="rounded-xl bg-card hover:bg-accent/40"
                 >
                   {t("dashboard.selection.select_all", "Select all visible")}
                 </Button>
@@ -1737,20 +1599,12 @@ function Dashboard({
                   size="sm"
                   variant="outline"
                   onClick={clearSelection}
-                  className="rounded-xl"
+                  className="rounded-xl bg-card hover:bg-accent/40"
                 >
                   {t("dashboard.selection.clear", "Clear")}
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={openBulkMoveDialog}
-                  className="rounded-xl"
-                >
-                  {t(
-                    "dashboard.selection.move_to_folder",
-                    "Move selected to folder",
-                  )}
+                <Button type="button" size="sm" onClick={openBulkMoveDialog} className="rounded-xl">
+                  {t("dashboard.selection.move_to_folder", "Move selected to folder")}
                 </Button>
               </div>
             )}
@@ -1824,7 +1678,7 @@ function Dashboard({
       </PageContent>
 
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg bg-card border-border rounded-xl">
           <DialogHeader>
             <DialogTitle>Create New Instance</DialogTitle>
           </DialogHeader>
@@ -1833,14 +1687,10 @@ function Dashboard({
               <>
                 <div className="flex flex-col items-center gap-3">
                   <div
-                    className="group relative flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted transition-colors hover:border-primary/50"
+                    className="group relative flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-card transition-colors hover:border-primary/50"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <img
-                      src={newInstanceIcon}
-                      alt="Icon"
-                      className="object-cover w-full h-full"
-                    />
+                    <img src={newInstanceIcon} alt="Icon" className="object-cover w-full h-full" />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                       <Picture className="h-6 w-6 text-white" />
                     </div>
@@ -1854,14 +1704,9 @@ function Dashboard({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-muted-foreground">
-                      {t(
-                        "dashboard.click_to_upload_icon",
-                        "Click to upload icon",
-                      )}
+                      {t("dashboard.click_to_upload_icon", "Click to upload icon")}
                     </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      or
-                    </span>
+                    <span className="text-[11px] text-muted-foreground">or</span>
                     <Button
                       type="button"
                       variant="link"
@@ -1881,6 +1726,7 @@ function Dashboard({
                     value={newInstanceName}
                     onChange={(e) => setNewInstanceName(e.target.value)}
                     placeholder="New Instance"
+                    className="bg-card shadow-none"
                   />
                 </div>
 
@@ -1891,6 +1737,7 @@ function Dashboard({
                     value={newInstanceFolderPath}
                     onChange={(e) => setNewInstanceFolderPath(e.target.value)}
                     placeholder="e.g. PvP/1.20 or Modpacks/Fabric"
+                    className="bg-card shadow-none"
                   />
                   <p className="text-[11px] text-muted-foreground">
                     Use / to create nested folders.
@@ -1900,9 +1747,7 @@ function Dashboard({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between h-5">
-                      <Label className="text-xs">
-                        {t("dashboard.version")}
-                      </Label>
+                      <Label className="text-xs">{t("dashboard.version")}</Label>
                       <div className="flex items-center gap-1.5">
                         <Switch
                           checked={showSnapshots}
@@ -1915,7 +1760,7 @@ function Dashboard({
                       </div>
                     </div>
                     {loadingVersions ? (
-                      <div className="flex items-center justify-center rounded-md border border-border bg-muted p-2.5 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-center rounded-md border border-border bg-card p-2.5 text-xs text-muted-foreground">
                         <ArrowRotateLeft className="w-3 h-3 mr-1.5 animate-spin" />
                         {t("common.loading")}
                       </div>
@@ -1960,9 +1805,7 @@ function Dashboard({
                   onChange={setSelectedLoaderVersion}
                   placeholder={t("dashboard.select_loader_version_placeholder")}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Minecraft {selectedVersion}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Minecraft {selectedVersion}</p>
               </div>
             )}
 
@@ -1970,18 +1813,13 @@ function Dashboard({
               {creationStep === 1 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 mr-auto"
-                    >
+                    <Button type="button" variant="outline" size="sm" className="gap-1.5 mr-auto">
                       <ArrowDownToLine className="w-3.5 h-3.5" />
                       {t("dashboard.import_options")}
                       <ChevronDown className="w-3 h-3" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuContent align="start" className="w-48 bg-card border-border">
                     <DropdownMenuItem
                       onClick={async () => {
                         try {
@@ -1992,24 +1830,15 @@ function Dashboard({
                           }
                           const result = await window.electronAPI.importFile();
                           if (result.success) {
-                            addNotification(
-                              `Importing Modpack: ${result.instanceName}...`,
-                              "info",
-                            );
+                            addNotification(`Importing Modpack: ${result.instanceName}...`, "info");
                             setShowCreateModal(false);
                             loadInstances();
                           } else if (result.error !== "Cancelled") {
-                            addNotification(
-                              `Import failed: ${result.error}`,
-                              "error",
-                            );
+                            addNotification(`Import failed: ${result.error}`, "error");
                           }
                         } catch (err) {
                           console.error("[Dashboard] Import error:", err);
-                          addNotification(
-                            `Import error: ${err.message}`,
-                            "error",
-                          );
+                          addNotification(`Import error: ${err.message}`, "error");
                         }
                       }}
                     >
@@ -2057,8 +1886,7 @@ function Dashboard({
                 {isCreating && <ArrowRotateLeft className="w-3.5 h-3.5 animate-spin" />}
                 {isCreating
                   ? t("common.creating")
-                  : creationStep === 1 &&
-                      selectedLoader.toLowerCase() !== "vanilla"
+                  : creationStep === 1 && selectedLoader.toLowerCase() !== "vanilla"
                     ? t("common.next")
                     : t("common.create")}
               </Button>
@@ -2114,25 +1942,21 @@ function Dashboard({
       )}
 
       <Dialog open={showMoveFolderModal} onOpenChange={setShowMoveFolderModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-card border-border rounded-xl">
           <DialogHeader>
             <DialogTitle>
               {folderTargetInstance
                 ? t("dashboard.folder_modal.title", "Move instance to folder")
-                : t(
-                    "dashboard.folder_modal.title_multi",
-                    "Move selected instances to folder",
-                  )}
+                : t("dashboard.folder_modal.title_multi", "Move selected instances to folder")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <Label className="text-xs">
-              {t("dashboard.folder_modal.path", "Folder path")}
-            </Label>
+            <Label className="text-xs">{t("dashboard.folder_modal.path", "Folder path")}</Label>
             <Input
               value={folderInputPath}
               onChange={(e) => setFolderInputPath(e.target.value)}
               placeholder="e.g. Modpacks/Survival"
+              className="bg-card shadow-none"
             />
             <p className="text-[11px] text-muted-foreground">
               {t(
@@ -2168,11 +1992,9 @@ function Dashboard({
           if (!open) setExportTargetInstance(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-card border-border rounded-xl">
           <DialogHeader>
-            <DialogTitle>
-              {t("dashboard.export_choice.title", "Export instance")}
-            </DialogTitle>
+            <DialogTitle>{t("dashboard.export_choice.title", "Export instance")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -2182,17 +2004,14 @@ function Dashboard({
               )}
             </p>
             {exportTargetInstance && (
-              <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="rounded-md border border-border bg-card/60 px-3 py-2 text-xs text-muted-foreground">
                 {`${t("dashboard.export_choice.target_prefix", "Instance:")} ${exportTargetInstance.name}`}
               </div>
             )}
             <div className="grid grid-cols-1 gap-2">
               <Button
                 type="button"
-                onClick={() =>
-                  exportTargetInstance &&
-                  prepareCodeExport(exportTargetInstance)
-                }
+                onClick={() => exportTargetInstance && prepareCodeExport(exportTargetInstance)}
                 disabled={!exportTargetInstance || isPreparingCodeExport}
                 className="justify-start gap-2"
               >
