@@ -1,4 +1,4 @@
-const { shell } = require('electron');
+const { shell, clipboard } = require('electron');
 const fs = require('fs-extra');
 
 function isAllowedExternalProtocol(protocol) {
@@ -61,6 +61,19 @@ module.exports = (ipcMain) => {
             return { success: true };
         } catch (error) {
             console.error('Error running external file:', error);
+            return { success: false, error: error.message };
+        }
+    });
+    ipcMain.handle('clipboard:write-text', async (_event, text) => {
+        try {
+            if (typeof text !== 'string') {
+                return { success: false, error: 'Invalid text' };
+            }
+
+            clipboard.writeText(text);
+            return { success: true };
+        } catch (error) {
+            console.error('Error writing to clipboard:', error);
             return { success: false, error: error.message };
         }
     });

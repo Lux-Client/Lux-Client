@@ -283,7 +283,10 @@
             "drop_shaders": "Drag and drop shader packs here to install",
             "accepting_archives": "Accepting .zip and .rar files",
             "failed_packs": "Failed to load resource packs.",
-            "failed_shaders": "Failed to load shaders."
+            "failed_shaders": "Failed to load shaders.",
+            "delete_mod": "Usuń mod",
+            "delete_resourcepack": "Usuń paczkę zasobów",
+            "delete_shader": "Usuń shader"
         },
         "search": {
             "placeholder": "Wprowadź ID Modrinth lub wyszukaj nazwę moda...",
@@ -318,7 +321,8 @@
             "copy": "Kopiuj",
             "clear": "Wyczyść",
             "no_logs": "Brak aktywnych wpisów w logach.",
-            "upload": "Upload logs"
+            "upload": "Upload logs",
+            "truncated": "Ukryto {{amount}} starszych linii - użyj Kopiuj lub Wyślij, aby uzyskać pełny log"
         },
         "project": {
             "compatible": "Zgodne",
@@ -351,7 +355,15 @@
             "unsaved_title": "Unsaved Changes",
             "upload": "Upload",
             "upload_failed": "Upload failed",
-            "upload_success": "Upload successful"
+            "upload_success": "Upload successful",
+            "minimap_hint": "Przeciągnij, aby przewinąć"
+        },
+        "updates": {
+            "running": "Aktualizowanie zawartości",
+            "finished": "Aktualizacja zakończona",
+            "finished_with_errors": "Aktualizacja zakończona z błędami",
+            "success_count": "zaktualizowano: {{amount}}",
+            "failed_count": "niepowodzenia: {{amount}}"
         }
     },
     "skins": {
@@ -1308,5 +1320,12 @@
         "start_with_texture": "Start with texture",
         "steve_default": "Steve Default",
         "upcoming_tools": "Upcoming Tools"
+    },
+    "project_menu": {
+        "open_in_browser": "Otwórz w przeglądarce",
+        "copy_link": "Kopiuj link",
+        "copied": "Link do projektu skopiowany do schowka!",
+        "copy_failed": "Nie udało się skopiować linku do projektu.",
+        "open_failed": "Nie udało się otworzyć strony projektu."
     }
 }

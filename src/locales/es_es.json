@@ -283,7 +283,10 @@
             "drop_shaders": "Drag and drop shader packs here to install",
             "accepting_archives": "Accepting .zip and .rar files",
             "failed_packs": "Failed to load resource packs.",
-            "failed_shaders": "Failed to load shaders."
+            "failed_shaders": "Failed to load shaders.",
+            "delete_mod": "Eliminar mod",
+            "delete_resourcepack": "Eliminar paquete de recursos",
+            "delete_shader": "Eliminar shader"
         },
         "search": {
             "placeholder": "Introduce el ID de Modrinth o busca por nombre...",
@@ -318,7 +321,8 @@
             "copy": "Copiar",
             "clear": "Limpiar",
             "no_logs": "No hay registros activos.",
-            "upload": "Upload logs"
+            "upload": "Upload logs",
+            "truncated": "{{amount}} líneas antiguas ocultas: usa Copiar o Subir para el registro completo"
         },
         "project": {
             "compatible": "Compatible",
@@ -351,7 +355,15 @@
             "unsaved_title": "Unsaved Changes",
             "upload": "Upload",
             "upload_failed": "Upload failed",
-            "upload_success": "Upload successful"
+            "upload_success": "Upload successful",
+            "minimap_hint": "Arrastra para desplazarte"
+        },
+        "updates": {
+            "running": "Actualizando contenido",
+            "finished": "Actualización completada",
+            "finished_with_errors": "Actualización terminada con errores",
+            "success_count": "{{amount}} actualizados",
+            "failed_count": "{{amount}} fallidos"
         }
     },
     "skins": {
@@ -1308,5 +1320,12 @@
         "start_with_texture": "Start with texture",
         "steve_default": "Steve Default",
         "upcoming_tools": "Upcoming Tools"
+    },
+    "project_menu": {
+        "open_in_browser": "Abrir en el navegador",
+        "copy_link": "Copiar enlace",
+        "copied": "¡Enlace del proyecto copiado al portapapeles!",
+        "copy_failed": "No se pudo copiar el enlace del proyecto.",
+        "open_failed": "No se pudo abrir la página del proyecto."
     }
 }

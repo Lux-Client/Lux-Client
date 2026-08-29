@@ -283,7 +283,10 @@
             "drop_shaders": "Drag and drop shader packs here to install",
             "accepting_archives": "Accepting .zip and .rar files",
             "failed_packs": "Failed to load resource packs.",
-            "failed_shaders": "Failed to load shaders."
+            "failed_shaders": "Failed to load shaders.",
+            "delete_mod": "Ta bort mod",
+            "delete_resourcepack": "Ta bort resurspaket",
+            "delete_shader": "Ta bort shader"
         },
         "search": {
             "placeholder": "Ange Modrinth ID eller sök på modnamn...",
@@ -318,7 +321,8 @@
             "copy": "Kopiera",
             "clear": "Rensa",
             "no_logs": "Inga aktiva loggposter.",
-            "upload": "Upload logs"
+            "upload": "Upload logs",
+            "truncated": "{{amount}} äldre rader dolda - använd Kopiera eller Ladda upp för hela loggen"
         },
         "project": {
             "compatible": "Kompatibel",
@@ -351,7 +355,15 @@
             "unsaved_title": "Unsaved Changes",
             "upload": "Upload",
             "upload_failed": "Upload failed",
-            "upload_success": "Upload successful"
+            "upload_success": "Upload successful",
+            "minimap_hint": "Dra för att scrolla"
+        },
+        "updates": {
+            "running": "Uppdaterar innehåll",
+            "finished": "Uppdateringen klar",
+            "finished_with_errors": "Uppdateringen slutfördes med fel",
+            "success_count": "{{amount}} uppdaterade",
+            "failed_count": "{{amount}} misslyckades"
         }
     },
     "skins": {
@@ -1308,5 +1320,12 @@
         "start_with_texture": "Start with texture",
         "steve_default": "Steve Default",
         "upcoming_tools": "Upcoming Tools"
+    },
+    "project_menu": {
+        "open_in_browser": "Öppna i webbläsaren",
+        "copy_link": "Kopiera länk",
+        "copied": "Projektlänken kopierades till urklipp!",
+        "copy_failed": "Det gick inte att kopiera projektlänken.",
+        "open_failed": "Det gick inte att öppna projektsidan."
     }
 }

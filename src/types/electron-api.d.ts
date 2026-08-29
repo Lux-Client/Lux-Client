@@ -106,6 +106,7 @@ interface ElectronAPI {
   openJavaFolder: () => Promise<any>;
   openExternal: (url: string) => Promise<any>;
   runExternalFile: (filePath: string) => Promise<any>;
+  copyToClipboard: (text: string) => Promise<any>;
   exportModpackAsCode: (data: any) => Promise<any>;
   importModpackFromCode: (code: string) => Promise<any>;
   getModpackCodes: () => Promise<any>;

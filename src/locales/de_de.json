@@ -298,7 +298,10 @@
             "drop_shaders": "Shader hierher ziehen und ablegen, um sie zu installieren",
             "accepting_archives": ".zip- und .rar-Dateien werden akzeptiert",
             "failed_packs": "Failed to load resource packs.",
-            "failed_shaders": "Failed to load shaders."
+            "failed_shaders": "Failed to load shaders.",
+            "delete_mod": "Mod löschen",
+            "delete_resourcepack": "Resource Pack löschen",
+            "delete_shader": "Shader löschen"
         },
         "search": {
             "placeholder": "Modrinth-ID eingeben oder nach Mod-Namen suchen...",
@@ -333,7 +336,8 @@
             "copy": "Kopieren",
             "clear": "Leeren",
             "no_logs": "Keine aktiven Logeinträge.",
-            "upload": "Upload logs"
+            "upload": "Upload logs",
+            "truncated": "{{amount}} ältere Zeilen ausgeblendet - nutze Kopieren oder Hochladen für das komplette Log"
         },
         "project": {
             "compatible": "Kompatibel",
@@ -366,7 +370,15 @@
             "unsaved_title": "Unsaved Changes",
             "upload": "Upload",
             "upload_failed": "Upload failed",
-            "upload_success": "Upload successful"
+            "upload_success": "Upload successful",
+            "minimap_hint": "Zum Scrollen ziehen"
+        },
+        "updates": {
+            "running": "Inhalte werden aktualisiert",
+            "finished": "Update abgeschlossen",
+            "finished_with_errors": "Update mit Fehlern beendet",
+            "success_count": "{{amount}} aktualisiert",
+            "failed_count": "{{amount}} fehlgeschlagen"
         }
     },
     "skins": {
@@ -1325,5 +1337,12 @@
         "start_with_texture": "Start with texture",
         "steve_default": "Steve Default",
         "upcoming_tools": "Upcoming Tools"
+    },
+    "project_menu": {
+        "open_in_browser": "Im Browser öffnen",
+        "copy_link": "Link kopieren",
+        "copied": "Projekt-Link in die Zwischenablage kopiert!",
+        "copy_failed": "Projekt-Link konnte nicht kopiert werden.",
+        "open_failed": "Projektseite konnte nicht geöffnet werden."
     }
 }

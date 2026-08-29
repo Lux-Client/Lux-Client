@@ -118,6 +118,7 @@ const electronAPI = {
     openJavaFolder: () => ipcRenderer.invoke('java:open-folder'),
     openExternal: (url) => ipcRenderer.invoke('open-external', url),
     runExternalFile: (filePath) => ipcRenderer.invoke('external:run-file', filePath),
+    copyToClipboard: (text) => ipcRenderer.invoke('clipboard:write-text', text),
     exportModpackAsCode: (data) => {
         console.log('[Preload] 📤 exportModpackAsCode aufgerufen mit:', data);
         return ipcRenderer.invoke('modpack:export-code', data);

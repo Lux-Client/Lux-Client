@@ -283,7 +283,10 @@
             "drop_shaders": "Drag and drop shader packs here to install",
             "accepting_archives": "Accepting .zip and .rar files",
             "failed_packs": "Failed to load resource packs.",
-            "failed_shaders": "Failed to load shaders."
+            "failed_shaders": "Failed to load shaders.",
+            "delete_mod": "Odstrániť mod",
+            "delete_resourcepack": "Odstrániť resource pack",
+            "delete_shader": "Odstrániť shader"
         },
         "search": {
             "placeholder": "Zadajte Modrinth ID alebo vyhľadajte názov módu...",
@@ -318,7 +321,8 @@
             "copy": "Kopírovať",
             "clear": "Vymazať",
             "no_logs": "Žiadne aktívne záznamy.",
-            "upload": "Upload logs"
+            "upload": "Upload logs",
+            "truncated": "Skrytých starších riadkov: {{amount}} - použite Kopírovať alebo Nahrať pre celý log"
         },
         "project": {
             "compatible": "Kompatibilné",
@@ -351,7 +355,15 @@
             "unsaved_title": "Unsaved Changes",
             "upload": "Upload",
             "upload_failed": "Upload failed",
-            "upload_success": "Upload successful"
+            "upload_success": "Upload successful",
+            "minimap_hint": "Potiahnutím posúvajte"
+        },
+        "updates": {
+            "running": "Aktualizuje sa obsah",
+            "finished": "Aktualizácia dokončená",
+            "finished_with_errors": "Aktualizácia dokončená s chybami",
+            "success_count": "aktualizované: {{amount}}",
+            "failed_count": "zlyhalo: {{amount}}"
         }
     },
     "skins": {
@@ -1308,5 +1320,12 @@
         "start_with_texture": "Start with texture",
         "steve_default": "Steve Default",
         "upcoming_tools": "Upcoming Tools"
+    },
+    "project_menu": {
+        "open_in_browser": "Otvoriť v prehliadači",
+        "copy_link": "Kopírovať odkaz",
+        "copied": "Odkaz na projekt bol skopírovaný do schránky!",
+        "copy_failed": "Odkaz na projekt sa nepodarilo skopírovať.",
+        "open_failed": "Stránku projektu sa nepodarilo otvoriť."
     }
 }

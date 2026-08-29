@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Analytics } from '../services/Analytics';
 import ModDependencyModal from '../components/ModDependencyModal';
 import { getSourceTags } from '../utils/sourceTags';
+import ProjectContextMenu from '../components/ProjectContextMenu';
 
 function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any; onCategoryConsumed?: any }) {
     const { t } = useTranslation();
@@ -345,7 +346,8 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {results.map((mod) => (
-                            <div key={mod.project_id} className="bg-card p-5 rounded-xl border border-border hover:border-primary/50 transition-all group flex flex-col shadow-lg">
+                            <ProjectContextMenu key={mod.project_id} project={{ project_type: projectType, ...mod }}>
+                            <div className="bg-card p-5 rounded-xl border border-border hover:border-primary/50 transition-all group flex flex-col shadow-lg">
                                 <div className="flex items-start gap-4 mb-4">
                                     <div className="w-16 h-16 rounded-xl bg-background overflow-hidden shrink-0 shadow-md">
                                         <img src={mod.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = 'https://cdn.modrinth.com/placeholder.svg'} />
@@ -388,6 +390,7 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
                                     )}
                                 </button>
                             </div>
+                            </ProjectContextMenu>
                         ))}
                     </div>
                 )}

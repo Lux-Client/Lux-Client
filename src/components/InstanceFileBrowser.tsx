@@ -175,6 +175,7 @@ const renderHighlightedText = (
         parts.push(
             <mark
                 key={`${keyPrefix}-match-${matchIndex}`}
+                data-search-match={matchIndex}
                 className={activeMatchIndex === matchIndex ? 'bg-primary text-black rounded-sm px-0.5' : 'bg-yellow-400/35 text-inherit rounded-sm px-0.5'}
             >
                 {text.slice(localStart, localEnd)}
@@ -263,6 +264,9 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const searchInputRef = useRef<HTMLInputElement | null>(null);
     const editorShellRef = useRef<HTMLDivElement | null>(null);
+    const editorScrollRef = useRef<HTMLDivElement | null>(null);
+    const minimapRef = useRef<HTMLDivElement | null>(null);
+    const isDraggingMinimapRef = useRef(false);
 
     const [editorViewport, setEditorViewport] = useState<EditorViewport>({
         scrollTop: 0,
@@ -362,18 +366,21 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
         }
     }, [searchMatches.length, activeSearchMatch]);
 
+    // The editor grows to its full content height, so the element that actually scrolls is
+    // the wrapper around it - not the textarea. Tracking the textarea left the minimap
+    // indicator frozen at the top and made it useless for scrolling.
     useEffect(() => {
         if (!selectedFile) return;
 
         const updateViewport = () => {
-            const textarea = getEditorTextarea();
-            if (!textarea) return;
+            const scroller = editorScrollRef.current;
+            if (!scroller) return;
 
             setEditorViewport((current) => {
                 const next = {
-                    scrollTop: textarea.scrollTop,
-                    scrollHeight: textarea.scrollHeight || 1,
-                    clientHeight: textarea.clientHeight || 1
+                    scrollTop: scroller.scrollTop,
+                    scrollHeight: scroller.scrollHeight || 1,
+                    clientHeight: scroller.clientHeight || 1
                 };
 
                 if (
@@ -389,21 +396,24 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
         };
 
         const bindViewportTracking = () => {
-            const textarea = getEditorTextarea();
-            if (!textarea) {
+            const scroller = editorScrollRef.current;
+            if (!scroller) {
                 requestAnimationFrame(bindViewportTracking);
                 return;
             }
 
             updateViewport();
 
-            textarea.addEventListener('scroll', updateViewport);
+            scroller.addEventListener('scroll', updateViewport, { passive: true });
 
             const resizeObserver = typeof ResizeObserver !== 'undefined'
                 ? new ResizeObserver(() => updateViewport())
                 : null;
 
-            resizeObserver?.observe(textarea);
+            resizeObserver?.observe(scroller);
+            if (scroller.firstElementChild) {
+                resizeObserver?.observe(scroller.firstElementChild);
+            }
             if (editorShellRef.current) {
                 resizeObserver?.observe(editorShellRef.current);
             }
@@ -411,7 +421,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
             window.addEventListener('resize', updateViewport);
 
             return () => {
-                textarea.removeEventListener('scroll', updateViewport);
+                scroller.removeEventListener('scroll', updateViewport);
                 resizeObserver?.disconnect();
                 window.removeEventListener('resize', updateViewport);
             };
@@ -422,6 +432,69 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
             cleanup?.();
         };
     }, [selectedFile, editingContent, showSearchBar]);
+
+    const scrollEditorToRatio = (ratio: number) => {
+        const scroller = editorScrollRef.current;
+        if (!scroller) return;
+
+        const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+        scroller.scrollTop = Math.min(maxScrollTop, Math.max(0, ratio * maxScrollTop));
+    };
+
+    // Turns the minimap strip into a real scrollbar: click or drag it to move the editor.
+    const scrollFromMinimapEvent = (clientY: number) => {
+        const minimap = minimapRef.current;
+        if (!minimap) return;
+
+        const rect = minimap.getBoundingClientRect();
+        if (rect.height <= 0) return;
+
+        const indicatorHeight = rect.height * (viewportIndicator.heightPercent / 100);
+        const usableHeight = Math.max(1, rect.height - indicatorHeight);
+        const offset = clientY - rect.top - indicatorHeight / 2;
+
+        scrollEditorToRatio(offset / usableHeight);
+    };
+
+    const handleMinimapPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.button !== 0) return;
+        if ((event.target as HTMLElement)?.dataset?.searchMarker === 'true') return;
+
+        isDraggingMinimapRef.current = true;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        scrollFromMinimapEvent(event.clientY);
+    };
+
+    const handleMinimapPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!isDraggingMinimapRef.current) return;
+        scrollFromMinimapEvent(event.clientY);
+    };
+
+    const handleMinimapPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!isDraggingMinimapRef.current) return;
+
+        isDraggingMinimapRef.current = false;
+        try {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        } catch {
+            // Pointer capture may already be gone - nothing to release.
+        }
+    };
+
+    // Without this the wheel does nothing while the cursor sits over the minimap strip,
+    // because the strip is painted on top of the scroll container.
+    const handleMinimapWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+        const scroller = editorScrollRef.current;
+        if (!scroller) return;
+
+        const step = event.deltaMode === 1
+            ? event.deltaY * 16
+            : event.deltaMode === 2
+                ? event.deltaY * scroller.clientHeight
+                : event.deltaY;
+
+        scroller.scrollTop += step;
+    };
 
     const loadFiles = async () => {
         setLoading(true);
@@ -605,9 +678,21 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
         const match = searchMatches[normalizedIndex];
         requestAnimationFrame(() => {
             const textarea = getEditorTextarea();
-            if (!textarea) return;
-            textarea.focus();
-            textarea.setSelectionRange(match.start, match.end);
+            if (textarea) {
+                textarea.focus();
+                textarea.setSelectionRange(match.start, match.end);
+            }
+
+            // The textarea itself never scrolls, so bring the highlighted match into view
+            // inside the wrapper that does.
+            const scroller = editorScrollRef.current;
+            const marker = scroller?.querySelector(`[data-search-match="${normalizedIndex}"]`) as HTMLElement | null;
+            if (!scroller || !marker) return;
+
+            const markerTop = marker.offsetTop;
+            if (markerTop < scroller.scrollTop || markerTop > scroller.scrollTop + scroller.clientHeight - 40) {
+                scroller.scrollTop = Math.max(0, markerTop - scroller.clientHeight / 2);
+            }
         });
     };
 
@@ -850,10 +935,19 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                 )}
 
                 <div ref={editorShellRef} className="relative flex-1 min-h-0 bg-background">
-                    <div className="absolute inset-y-0 right-0 z-10 w-5 border-l border-border/60 bg-background/80 backdrop-blur-sm">
+                    <div
+                        ref={minimapRef}
+                        onPointerDown={handleMinimapPointerDown}
+                        onPointerMove={handleMinimapPointerMove}
+                        onPointerUp={handleMinimapPointerUp}
+                        onPointerCancel={handleMinimapPointerUp}
+                        onWheel={handleMinimapWheel}
+                        title={t('instance_details.files.minimap_hint', 'Drag to scroll')}
+                        className="absolute inset-y-0 right-0 z-10 w-5 cursor-grab border-l border-border/60 bg-background/80 backdrop-blur-sm active:cursor-grabbing"
+                    >
                         <div className="relative h-full w-full">
                             <div
-                                className="absolute left-1/2 w-2 -translate-x-1/2 rounded-full border border-primary/25 bg-primary/10"
+                                className="pointer-events-none absolute left-1/2 w-2.5 -translate-x-1/2 rounded-full border border-primary/40 bg-primary/25"
                                 style={{
                                     top: `${Math.min(100 - viewportIndicator.heightPercent, viewportIndicator.topPercent)}%`,
                                     height: `${viewportIndicator.heightPercent}%`
@@ -863,6 +957,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                                 <button
                                     key={`search-marker-${marker.index}`}
                                     type="button"
+                                    data-search-marker="true"
                                     onClick={() => jumpToSearchMatch(marker.index)}
                                     title={t('instance_details.files.search_jump_to_result', 'Jump to result')}
                                     className={`absolute left-1/2 w-3 -translate-x-1/2 rounded-full transition-colors ${marker.index === activeSearchMatch ? 'bg-primary shadow-[0_0_0_1px_rgba(255,255,255,0.25)]' : 'bg-yellow-400/80 hover:bg-yellow-300'}`}
@@ -875,7 +970,7 @@ const InstanceFileBrowser = forwardRef<InstanceFileBrowserHandle, InstanceFileBr
                         </div>
                     </div>
 
-                    <div className="h-full overflow-auto pr-5 custom-scrollbar">
+                    <div ref={editorScrollRef} className="h-full overflow-auto pr-5 custom-scrollbar">
                         <Editor
                             value={editingContent}
                             onValueChange={setEditingContent}

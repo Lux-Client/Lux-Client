@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Dropdown from '../components/Dropdown';
 import InstanceSettingsModal from '../components/InstanceSettingsModal';
@@ -12,6 +12,7 @@ import BackupManagerModal from '../components/BackupManagerModal';
 import InstanceFileBrowser from '../components/InstanceFileBrowser';
 import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
+import ProjectContextMenu from '../components/ProjectContextMenu';
 
 function RetryableListIcon({ src, className, fallback }) {
     const [attempt, setAttempt] = useState(0);
@@ -125,6 +126,27 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     } | null>(null);
     const BULK_UPDATE_NOTIFICATION_THRESHOLD = 4;
     const MAX_LIVE_LOG_CHARS = 1200000;
+    // Rendering every log line as its own node froze the UI on long sessions, so only the
+    // tail is mounted while the untouched `log` string stays available for copy/upload.
+    const MAX_RENDERED_LOG_LINES = 2000;
+    // Which content lists have been read from disk at least once. Used to know whether an
+    // entry missing from a list really was removed or was simply never loaded.
+    const loadedContentTypesRef = useRef({ mod: false, resourcepack: false, shader: false });
+    const lastCheckedContentSignatureRef = useRef<string | null>(null);
+
+    // Identifies the currently installed content. Changes whenever something is added,
+    // removed, toggled or updated, which is what drives the automatic update re-check.
+    const contentSignature = useMemo(() => {
+        const describe = (prefix: string, entries: any[]) => entries.map((entry) => (
+            `${prefix}:${entry?.projectId || ''}:${entry?.versionId || ''}:${entry?.name || ''}`
+        ));
+
+        return [
+            ...describe('mod', mods),
+            ...describe('rp', resourcePacks),
+            ...describe('sh', shaders)
+        ].sort().join('|');
+    }, [mods, resourcePacks, shaders]);
 
     useEffect(() => {
         if (!showMenu) return;
@@ -303,14 +325,20 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
     const loadMods = async () => {
         const res = await window.electronAPI.getMods(instance.name);
-        if (res.success) setMods(res.mods);
+        if (res.success) {
+            loadedContentTypesRef.current.mod = true;
+            setMods(res.mods);
+        }
     };
 
     const loadResourcePacks = async () => {
         setLoadingResourcePacks(true);
         try {
             const res = await window.electronAPI.getResourcePacks(instance.name);
-            if (res.success) setResourcePacks(res.packs);
+            if (res.success) {
+                loadedContentTypesRef.current.resourcepack = true;
+                setResourcePacks(res.packs);
+            }
             else addNotification(t('instance_details.content.failed_packs'), 'error');
         } catch (e) {
             console.error(e);
@@ -323,7 +351,10 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         setLoadingShaders(true);
         try {
             const res = await window.electronAPI.getShaders(instance.name);
-            if (res.success) setShaders(res.shaders);
+            if (res.success) {
+                loadedContentTypesRef.current.shader = true;
+                setShaders(res.shaders);
+            }
             else addNotification(t('instance_details.content.failed_shaders'), 'error');
         } catch (e) {
             console.error(e);
@@ -433,7 +464,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     liveLogFlushTimerRef.current = window.setTimeout(() => {
                         liveLogFlushTimerRef.current = null;
                         flushBufferedLogs();
-                    }, 120);
+                    }, 250);
                 }
 
                 if (liveLogBufferRef.current.length > 200000) {
@@ -542,6 +573,12 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         const latestPacks = packsRes?.success && Array.isArray(packsRes.packs) ? packsRes.packs : [];
         const latestShaders = shadersRes?.success && Array.isArray(shadersRes.shaders) ? shadersRes.shaders : [];
 
+        loadedContentTypesRef.current = {
+            mod: Boolean(modsRes?.success) || loadedContentTypesRef.current.mod,
+            resourcepack: Boolean(packsRes?.success) || loadedContentTypesRef.current.resourcepack,
+            shader: Boolean(shadersRes?.success) || loadedContentTypesRef.current.shader
+        };
+
         setMods(latestMods);
         setResourcePacks(latestPacks);
         setShaders(latestShaders);
@@ -592,14 +629,50 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             setCheckingUpdates(false);
         }
     };
+    // Drop pending updates for content that is no longer installed, so a removed mod stops
+    // being counted by "Update All".
     useEffect(() => {
-        if (!isVanilla && activeTab === 'content' && (mods.length > 0 || resourcePacks.length > 0 || shaders.length > 0)) {
+        const installedIdsByType: Record<string, Set<string>> = {
+            mod: new Set(mods.map((m: any) => m.projectId).filter(Boolean)),
+            resourcepack: new Set(resourcePacks.map((p: any) => p.projectId).filter(Boolean)),
+            shader: new Set(shaders.map((s: any) => s.projectId).filter(Boolean))
+        };
 
-            if (Object.keys(updates).length === 0 && !checkingUpdates) {
-                handleCheckUpdates(true);
-            }
-        }
-    }, [mods.length, resourcePacks.length, shaders.length, activeTab, isVanilla]);
+        setUpdates(prev => {
+            const entries = Object.entries(prev);
+            if (entries.length === 0) return prev;
+
+            const next = {};
+            let removed = false;
+
+            entries.forEach(([projectId, update]: [string, any]) => {
+                const type = update?.type || 'mod';
+                const installedIds = installedIdsByType[type];
+
+                // Never prune a type we have not loaded yet - its list is empty by default.
+                if (installedIds && loadedContentTypesRef.current[type] && !installedIds.has(projectId)) {
+                    removed = true;
+                    return;
+                }
+
+                next[projectId] = update;
+            });
+
+            return removed ? next : prev;
+        });
+    }, [contentSignature]);
+
+    // Re-run the update check whenever the installed content actually changed (install,
+    // delete, toggle, update), not only the first time the tab is opened.
+    useEffect(() => {
+        if (isVanilla || activeTab !== 'content') return;
+        if (checkingUpdates || updatingMod || bulkUpdateStatus?.isRunning) return;
+        if (!contentSignature) return;
+        if (lastCheckedContentSignatureRef.current === contentSignature) return;
+
+        lastCheckedContentSignatureRef.current = contentSignature;
+        handleCheckUpdates(true);
+    }, [contentSignature, activeTab, isVanilla, checkingUpdates, updatingMod, bulkUpdateStatus?.isRunning]);
 
     const handleUpdateMod = async (updateData, options: { suppressSuccessNotification?: boolean; suppressErrorNotification?: boolean } = {}) => {
         const { suppressSuccessNotification = false, suppressErrorNotification = false } = options;
@@ -981,22 +1054,57 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             addNotification(`Error during import: ${error.message}`, 'error');
         }
     };
-    const getFilteredLog = () => {
-        if (!log) return [];
+    // Filtering used to run twice per render on the whole (up to 1.2 MB) log buffer while
+    // every single line was mounted as its own node - that is what froze the launcher on
+    // the logs tab. Now it runs once per log change and only the tail gets rendered.
+    const filteredLogLines = useMemo(() => {
+        if (!log) return [] as Array<{ text: string; tone: 'error' | 'warn' | 'default' }>;
+
         const lines = log.replace(/\r\n/g, '\n').split('\n');
-        return lines.filter(line => {
-            if (!line.trim()) return false;
+        const anyFilterActive = logFilters.error || logFilters.warn || logFilters.info || logFilters.debug;
+        const result: Array<{ text: string; tone: 'error' | 'warn' | 'default' }> = [];
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+
             const lower = line.toLowerCase();
-            if (logFilters.error && lower.includes('error')) return true;
-            if (logFilters.warn && lower.includes('warn')) return true;
-            if (logFilters.info && lower.includes('info')) return true;
-            if (logFilters.debug && lower.includes('debug')) return true;
-            if (!lower.includes('error') && !lower.includes('warn') && !lower.includes('info') && !lower.includes('debug')) {
-                return logFilters.error || logFilters.warn || logFilters.info || logFilters.debug;
+            const isError = lower.includes('error');
+            const isWarn = lower.includes('warn');
+            const isInfo = lower.includes('info');
+            const isDebug = lower.includes('debug');
+
+            let keep: boolean;
+            if (isError || isWarn || isInfo || isDebug) {
+                keep = Boolean(
+                    (logFilters.error && isError) ||
+                    (logFilters.warn && isWarn) ||
+                    (logFilters.info && isInfo) ||
+                    (logFilters.debug && isDebug)
+                );
+            } else {
+                keep = anyFilterActive;
             }
-            return false;
-        });
-    };
+
+            if (!keep) continue;
+
+            result.push({ text: line, tone: isError ? 'error' : isWarn ? 'warn' : 'default' });
+        }
+
+        return result;
+    }, [log, logFilters]);
+
+    const visibleLogLines = useMemo(() => (
+        filteredLogLines.length > MAX_RENDERED_LOG_LINES
+            ? filteredLogLines.slice(-MAX_RENDERED_LOG_LINES)
+            : filteredLogLines
+    ), [filteredLogLines]);
+
+    const hiddenLogLineCount = filteredLogLines.length - visibleLogLines.length;
+
+    const bulkUpdatePercent = bulkUpdateStatus
+        ? Math.min(100, Math.round((bulkUpdateStatus.completed / Math.max(bulkUpdateStatus.total, 1)) * 100))
+        : 0;
+    const bulkUpdateHasFailures = Boolean(bulkUpdateStatus && bulkUpdateStatus.failedCount > 0);
 
     const TAB_CLASSES = (id) => `px-6 py-2 font-bold transition-all border-b-2 ${activeTab === id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-accent-foreground'}`;
     const requestTabChange = (targetTab: string) => {
@@ -1395,17 +1503,76 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         </div>
 
                         {bulkUpdateStatus && (
-                            <div className="mb-4 px-3 py-2 rounded-xl border border-border bg-card text-xs text-muted-foreground flex items-center justify-between gap-3">
-                                <span>
-                                    {bulkUpdateStatus.isRunning
-                                        ? `Updating ${bulkUpdateStatus.completed}/${bulkUpdateStatus.total}${bulkUpdateStatus.currentName ? ` • Current: ${bulkUpdateStatus.currentName}` : ''}`
-                                        : `Update finished • Success: ${bulkUpdateStatus.successCount} • Failed: ${bulkUpdateStatus.failedCount}`}
-                                </span>
-                                <div className="w-36 h-1.5 rounded-full bg-muted overflow-hidden">
-                                    <div
-                                        className="h-full bg-primary transition-all"
-                                        style={{ width: `${bulkUpdateStatus.total > 0 ? (bulkUpdateStatus.completed / bulkUpdateStatus.total) * 100 : 0}%` }}
-                                    ></div>
+                            <div className="mb-4 rounded-2xl border border-border bg-card/80 p-4 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-1 duration-300">
+                                <div className="flex items-center gap-3">
+                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${bulkUpdateStatus.isRunning
+                                        ? 'bg-primary/10 border-primary/20 text-primary'
+                                        : bulkUpdateHasFailures
+                                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
+                                        {bulkUpdateStatus.isRunning ? (
+                                            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        ) : bulkUpdateHasFailures ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M4.93 19h14.14a2 2 0 001.74-3l-7.07-12a2 2 0 00-3.48 0l-7.07 12a2 2 0 001.74 3z" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="truncate text-sm font-bold text-foreground">
+                                                {bulkUpdateStatus.isRunning
+                                                    ? t('instance_details.updates.running', 'Updating content')
+                                                    : bulkUpdateHasFailures
+                                                        ? t('instance_details.updates.finished_with_errors', 'Update finished with errors')
+                                                        : t('instance_details.updates.finished', 'Update complete')}
+                                            </span>
+                                            <span className="shrink-0 text-xs font-bold tabular-nums text-muted-foreground">
+                                                {bulkUpdateStatus.completed}/{bulkUpdateStatus.total} · {bulkUpdatePercent}%
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                                            <div
+                                                className={`relative h-full rounded-full transition-[width] duration-500 ease-out ${bulkUpdateStatus.isRunning
+                                                    ? 'bg-gradient-to-r from-primary/60 to-primary'
+                                                    : bulkUpdateHasFailures
+                                                        ? 'bg-amber-500'
+                                                        : 'bg-emerald-500'}`}
+                                                style={{ width: `${bulkUpdatePercent}%` }}
+                                            >
+                                                {bulkUpdateStatus.isRunning && (
+                                                    <div className="absolute inset-0 animate-pulse rounded-full bg-white/25"></div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                                            {bulkUpdateStatus.isRunning && bulkUpdateStatus.currentName && (
+                                                <span className="min-w-0 max-w-full truncate text-muted-foreground">
+                                                    {bulkUpdateStatus.currentName}
+                                                </span>
+                                            )}
+                                            {bulkUpdateStatus.successCount > 0 && (
+                                                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-400">
+                                                    {t('instance_details.updates.success_count', { amount: bulkUpdateStatus.successCount, defaultValue: '{{amount}} updated' })}
+                                                </span>
+                                            )}
+                                            {bulkUpdateHasFailures && (
+                                                <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 font-bold text-red-400">
+                                                    {t('instance_details.updates.failed_count', { amount: bulkUpdateStatus.failedCount, defaultValue: '{{amount}} failed' })}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -1438,22 +1605,29 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     mods.filter(m => m.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || m.name?.toLowerCase().includes(localSearchQuery.toLowerCase()))
                                         .sort((a, b) => (a.title || a.name || "").localeCompare(b.title || b.name || ""))
                                         .map(mod => (
-                                            <div key={mod.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
-                                                <div className="flex items-center gap-4">
+                                            <ProjectContextMenu
+                                                key={mod.name}
+                                                project={{ ...mod, project_type: 'mod' }}
+                                                title={mod.title || mod.name}
+                                                onDelete={() => handleDeleteMod(mod.name, 'mod')}
+                                                deleteLabel={t('instance_details.content.delete_mod', 'Delete Mod')}
+                                            >
+                                            <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
+                                                <div className="flex min-w-0 items-center gap-4">
                                                     <RetryableListIcon
                                                         src={mod.icon}
                                                         className="w-10 h-10 rounded-lg bg-background object-cover"
                                                         fallback={<div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-xs border border-border">{t('instance.jar_label')}</div>}
                                                     />
-                                                    <div>
-                                                        <div className={`font-bold ${!mod.enabled ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{mod.title || mod.name}</div>
+                                                    <div className="min-w-0">
+                                                        <div className={`truncate font-bold ${!mod.enabled ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{mod.title || mod.name}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
                                                             <span className="bg-background px-1.5 rounded">{mod.version || 'v?'}</span>
-                                                            <span className="opacity-50">{mod.name}</span>
+                                                            <span className="truncate opacity-50">{mod.name}</span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-6">
+                                                <div className="flex shrink-0 items-center gap-4">
                                                     {updates[mod.projectId] && (
                                                         <button
                                                             onClick={() => handleUpdateMod(updates[mod.projectId])}
@@ -1477,11 +1651,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                         checked={mod.enabled}
                                                         onChange={() => handleToggleMod(mod.name)}
                                                     />
-                                                    <button onClick={() => handleDeleteMod(mod.name, 'mod')} className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                                    <button
+                                                        onClick={() => handleDeleteMod(mod.name, 'mod')}
+                                                        className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition-all hover:bg-red-500 hover:text-white"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                                        {t('instance_details.content.delete_mod', 'Delete Mod')}
                                                     </button>
                                                 </div>
                                             </div>
+                                            </ProjectContextMenu>
                                         ))
                                 )}
                             </div>
@@ -1519,22 +1698,29 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     resourcePacks.filter(p => p.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || p.name?.toLowerCase().includes(localSearchQuery.toLowerCase()))
                                         .sort((a, b) => (a.title || a.name || "").localeCompare(b.title || b.name || ""))
                                         .map(pack => (
-                                            <div key={pack.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
-                                                <div className="flex items-center gap-4">
+                                            <ProjectContextMenu
+                                                key={pack.name}
+                                                project={{ ...pack, project_type: 'resourcepack' }}
+                                                title={pack.title || pack.name}
+                                                onDelete={() => handleDeleteMod(pack.name, 'resourcepack')}
+                                                deleteLabel={t('instance_details.content.delete_resourcepack', 'Delete Resource Pack')}
+                                            >
+                                            <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
+                                                <div className="flex min-w-0 items-center gap-4">
                                                     <RetryableListIcon
                                                         src={pack.icon}
                                                         className="w-10 h-10 rounded-lg bg-background object-cover"
                                                         fallback={<div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-muted-foreground font-mono text-[10px] border border-border text-center leading-tight whitespace-pre-line">{t('instance.res_pack_label')}</div>}
                                                     />
-                                                    <div>
-                                                        <div className="font-bold text-foreground">{pack.title}</div>
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-bold text-foreground">{pack.title}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
                                                             {pack.version && <span className="bg-background px-1.5 rounded">{pack.version}</span>}
-                                                            <span className="opacity-50">{pack.name}</span>
+                                                            <span className="truncate opacity-50">{pack.name}</span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-6">
+                                                <div className="flex shrink-0 items-center gap-4">
                                                     {updates[pack.projectId] && (
                                                         <button
                                                             onClick={() => handleUpdateMod(updates[pack.projectId])}
@@ -1554,11 +1740,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                             )}
                                                         </button>
                                                     )}
-                                                    <button onClick={() => handleDeleteMod(pack.name, 'resourcepack')} className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                                    <button
+                                                        onClick={() => handleDeleteMod(pack.name, 'resourcepack')}
+                                                        className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition-all hover:bg-red-500 hover:text-white"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                                        {t('instance_details.content.delete_resourcepack', 'Delete Resource Pack')}
                                                     </button>
                                                 </div>
                                             </div>
+                                            </ProjectContextMenu>
                                         ))
                                 )}
                             </div>
@@ -1596,17 +1787,24 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     shaders.filter(s => s.title?.toLowerCase().includes(localSearchQuery.toLowerCase()) || s.name?.toLowerCase().includes(localSearchQuery.toLowerCase()))
                                         .sort((a, b) => (a.title || a.name || "").localeCompare(b.title || b.name || ""))
                                         .map(shader => (
-                                            <div key={shader.name} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
-                                                <div className="flex items-center gap-4">
+                                            <ProjectContextMenu
+                                                key={shader.name}
+                                                project={{ ...shader, project_type: 'shader' }}
+                                                title={shader.title || shader.name}
+                                                onDelete={() => handleDeleteMod(shader.name, 'shader')}
+                                                deleteLabel={t('instance_details.content.delete_shader', 'Delete Shader')}
+                                            >
+                                            <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-border hover:bg-accent transition-all group">
+                                                <div className="flex min-w-0 items-center gap-4">
                                                     <RetryableListIcon
                                                         src={shader.icon}
                                                         className="w-10 h-10 rounded-lg bg-background object-cover"
                                                         fallback={<div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-mono text-[10px] border border-primary/20 text-center leading-tight whitespace-pre-line">{t('instance.shader_label')}</div>}
                                                     />
-                                                    <div>
-                                                        <div className="font-bold text-foreground">{shader.title}</div>
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-bold text-foreground">{shader.title}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                                            <span className="opacity-50">{shader.name}</span>
+                                                            <span className="truncate opacity-50">{shader.name}</span>
                                                         </div>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handlePreview(shader); }}
@@ -1617,7 +1815,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-6">
+                                                <div className="flex shrink-0 items-center gap-4">
                                                     {updates[shader.projectId] && (
                                                         <button
                                                             onClick={() => handleUpdateMod(updates[shader.projectId])}
@@ -1637,11 +1835,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                             )}
                                                         </button>
                                                     )}
-                                                    <button onClick={() => handleDeleteMod(shader.name, 'shader')} className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                                    <button
+                                                        onClick={() => handleDeleteMod(shader.name, 'shader')}
+                                                        className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition-all hover:bg-red-500 hover:text-white"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                                        {t('instance_details.content.delete_shader', 'Delete Shader')}
                                                     </button>
                                                 </div>
                                             </div>
+                                            </ProjectContextMenu>
                                         ))
                                 )}
                             </div>
@@ -1706,7 +1909,8 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                         </div>
                                     ) : (
                                         searchResults.map(result => (
-                                            <div key={result.project_id} className="bg-card p-4 rounded-xl flex items-center gap-4 border border-border hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleViewProject(result)}>
+                                            <ProjectContextMenu key={result.project_id} project={result}>
+                                            <div className="bg-card p-4 rounded-xl flex items-center gap-4 border border-border hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleViewProject(result)}>
                                                 <img src={result.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-12 h-12 rounded-lg bg-background" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
@@ -1751,6 +1955,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                             installationStatus[result.project_id] === 'failed' ? t('instance_details.search.failed') : t('instance_details.search.install')}
                                                 </button>
                                             </div>
+                                            </ProjectContextMenu>
                                         ))
                                     )}
                                 </div>
@@ -1970,11 +2175,23 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
                         { }
                         <div ref={logContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-xs text-foreground custom-scrollbar">
-                            {getFilteredLog().length > 0 ? getFilteredLog().map((line, i) => (
-                                <div key={i} className={`whitespace-pre-wrap leading-relaxed py-0.5 border-b border-transparent hover:bg-accent ${line.toLowerCase().includes('error') ? 'text-red-400 font-bold' : line.toLowerCase().includes('warn') ? 'text-yellow-400' : 'text-muted-foreground'}`}>
-                                    {line}
-                                </div>
-                            )) : (
+                            {visibleLogLines.length > 0 ? (
+                                <>
+                                    {hiddenLogLineCount > 0 && (
+                                        <div className="mb-2 rounded-lg border border-border bg-card/70 px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                            {t('instance_details.logs.truncated', {
+                                                amount: hiddenLogLineCount,
+                                                defaultValue: '{{amount}} older lines hidden - use Copy or Upload for the complete log'
+                                            })}
+                                        </div>
+                                    )}
+                                    {visibleLogLines.map((line, i) => (
+                                        <div key={i} className={`whitespace-pre-wrap leading-relaxed py-0.5 border-b border-transparent hover:bg-accent ${line.tone === 'error' ? 'text-red-400 font-bold' : line.tone === 'warn' ? 'text-yellow-400' : 'text-muted-foreground'}`}>
+                                            {line.text}
+                                        </div>
+                                    ))}
+                                </>
+                            ) : (
                                 <div className="text-muted-foreground italic py-10 text-center">
                                     {t('instance_details.logs.no_logs')}
                                 </div>

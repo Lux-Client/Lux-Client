@@ -3,6 +3,7 @@ import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from 'react-i18next';
 import { Analytics } from '../services/Analytics';
 import ModDependencyModal from '../components/ModDependencyModal';
+import ProjectContextMenu from '../components/ProjectContextMenu';
 import PageHeader from '../components/layout/PageHeader';
 import PageContent from '../components/layout/PageContent';
 import EmptyState from '../components/layout/EmptyState';
@@ -636,7 +637,8 @@ function Search({ initialCategory, onCategoryConsumed }) {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {results.map((mod) => (
-                                    <div key={mod.project_id} className="rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors group flex flex-col">
+                                    <ProjectContextMenu key={mod.project_id} project={mod}>
+                                    <div className="rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors group flex flex-col">
                                         <div className="flex items-start gap-3 mb-3">
                                             <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0">
                                                 <img src={mod.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = 'https://cdn.modrinth.com/placeholder.svg'} />
@@ -701,6 +703,7 @@ function Search({ initialCategory, onCategoryConsumed }) {
                                             )}
                                         </Button>
                                     </div>
+                                    </ProjectContextMenu>
                                 ))}
                             </div>
                         )}

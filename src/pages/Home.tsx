@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardCustomizer from "../components/DashboardCustomizer";
 import modOfTheDayData from "../data/modOfTheDay.json";
 import ExtensionSlot from "../components/Extensions/ExtensionSlot";
+import ProjectContextMenu from "../components/ProjectContextMenu";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "../context/NotificationContext";
 import PageHeader from "../components/layout/PageHeader";
@@ -847,8 +848,11 @@ function Home({
                 }`}
               >
                 {modpacks.map((pack) => (
-                  <Card
+                  <ProjectContextMenu
                     key={pack.project_id}
+                    project={{ project_type: "modpack", ...pack }}
+                  >
+                  <Card
                     className="group cursor-pointer transition-colors hover:bg-accent/30 border-border overflow-hidden"
                     onClick={() => setSelectedModpack(pack)}
                   >
@@ -885,6 +889,7 @@ function Home({
                       </div>
                     </CardContent>
                   </Card>
+                  </ProjectContextMenu>
                 ))}{" "}
               </div>
             )}{" "}
@@ -909,6 +914,9 @@ function Home({
                 </CardContent>
               </Card>
             ) : modOfTheDay ? (
+              <ProjectContextMenu
+                project={{ project_type: "mod", ...modOfTheDay }}
+              >
               <Card className="border-border overflow-hidden group">
                 <div className="relative w-full h-36 bg-gradient-to-br from-primary/10 to-muted overflow-hidden">
                   {modOfTheDay.featured_image ? (
@@ -1034,6 +1042,7 @@ function Home({
                   </div>
                 </CardContent>
               </Card>
+              </ProjectContextMenu>
             ) : (
               <Card className="border-border">
                 <CardContent className="p-4 text-center">

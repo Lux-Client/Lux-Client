@@ -7,6 +7,7 @@ import {
 } from '../config/clientDefaults';
 import { filterInstancesForMode } from '../utils/instanceTypes';
 import { getSourceTags } from '../utils/sourceTags';
+import ProjectContextMenu from '../components/ProjectContextMenu';
 
 function ClientMods() {
     const { t } = useTranslation();
@@ -646,7 +647,8 @@ function ClientMods() {
                                 const isBusy = Boolean(projectId && busyProjectIds[projectId]);
 
                                 return (
-                                    <div key={projectId || result.slug} className="p-3 rounded-xl border border-border bg-muted">
+                                    <ProjectContextMenu key={projectId || result.slug} project={result}>
+                                    <div className="p-3 rounded-xl border border-border bg-muted">
                                         <div className="flex items-center gap-3 mb-3">
                                             <img
                                                 src={result.icon_url || 'https://cdn.modrinth.com/placeholder.svg'}
@@ -685,6 +687,7 @@ function ClientMods() {
                                             </button>
                                         </div>
                                     </div>
+                                    </ProjectContextMenu>
                                 );
                             })
                         )}
