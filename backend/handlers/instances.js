@@ -20,6 +20,8 @@ const {
     migrateLegacyInstancesToPrimarySync
 } = require('../utils/instances-path');
 const { downloadAndCacheIcon } = require('../utils/icon-cache');
+const { ensureInstanceId, newInstanceId } = require('../luxcloud/instanceIdentity');
+const { extractIconToFile, resolveIconForRenderer } = require('../luxcloud/instanceIcon');
 let appData;
 let instancesDir;
 let globalBackupsDir;
@@ -1181,6 +1183,15 @@ async function getMergedInstances() {
                     config.instanceType = 'open-client';
                 }
 
+                // Seit der Icon-Auslagerung (luxcloud/instanceIcon.js) steht in
+                // instance.json nur noch ein Dateiname statt einer data:-URI. Der
+                // Renderer erwartet aber weiterhin etwas, das direkt in <img src>
+                // passt, also wird hier zurueckgewandelt. Die Ersparnis auf der Platte
+                // und beim spaeteren Sync bleibt davon unberuehrt.
+                if (config?.icon) {
+                    config.icon = await resolveIconForRenderer(instanceDir, config.icon);
+                }
+
                 const key = config?.name || dir;
                 const folderMetaKey = buildInstanceFolderMetaKey(config);
                 const metaFolderPath = normalizeFolderPathValue(folderMeta[folderMetaKey]);
@@ -2340,10 +2351,14 @@ async function installNeoForgeLoader(instanceDir, mcVersion, loaderVersion, onPr
 function sanitizeInstanceConfig(config) {
     if (!config || typeof config !== 'object') return {};
     const allowedKeys = [
+        // instanceId ist die stabile Identitaet der Instanz ueber alle PCs hinweg
+        // (siehe luxcloud/instanceIdentity.js). Sie MUSS hier stehen, sonst wirft
+        // jedes instance:update die UUID weg und die Cloud-Verknuepfung reisst ab.
+        'instanceId',
         'name', 'version', 'loader', 'loaderVersion', 'versionId', 'icon',
         'created', 'playtime', 'lastPlayed', 'status', 'imported',
         'javaPath', 'minMemory', 'maxMemory', 'resolutionWidth', 'resolutionHeight',
-        'folderPath'
+        'folderPath', 'instanceType'
     ];
     const cleanConfig = {};
     for (const key of allowedKeys) {
@@ -4117,6 +4132,9 @@ module.exports = (ipcMain, win) => {
                 const instanceType = typeof options?.instanceType === 'string' ? options.instanceType.trim() : '';
                 const folderPath = typeof options?.folderPath === 'string' ? options.folderPath.trim() : '';
                 const config = {
+                    // Stabile Identitaet ab der ersten Sekunde, damit eine Instanz
+                    // nie ohne UUID existiert (siehe luxcloud/instanceIdentity.js).
+                    instanceId: newInstanceId(),
                     name: finalName,
                     version,
                     loader: loader || 'vanilla',
@@ -4355,6 +4373,15 @@ module.exports = (ipcMain, win) => {
                     const safeNewConfig = sanitizeInstanceConfig(newConfig);
                     const updated = { ...current, ...safeNewConfig };
                     await withBusyFsRetry(() => fs.writeJson(configPath, updated, { spaces: 4 }));
+
+                    const instanceDir = path.join(instancesDir, instanceName);
+                    // Der Renderer bekommt Icons als data:-URI (siehe getMergedInstances)
+                    // und schickt sie beim Speichern unveraendert zurueck. Hier wieder
+                    // auslagern, damit instance.json klein bleibt -- sonst waere die
+                    // Migration nach dem ersten Settings-Dialog wieder rueckgaengig.
+                    await extractIconToFile(instanceDir).catch(() => {});
+                    await ensureInstanceId(instanceDir).catch(() => {});
+
                     invalidateMergedInstancesCache();
                     return { success: true };
                 }
@@ -4527,6 +4554,10 @@ module.exports = (ipcMain, win) => {
                     config.created = Date.now();
                     config.playtime = 0;
                     config.lastPlayed = null;
+                    // Eine Kopie ist eine eigenstaendige Instanz. Wuerde sie die UUID
+                    // des Originals erben, wuerden sich beide in der Cloud gegenseitig
+                    // ueberschreiben.
+                    config.instanceId = newInstanceId();
                     await fs.writeJson(configPath, config, { spaces: 4 });
                 }
 

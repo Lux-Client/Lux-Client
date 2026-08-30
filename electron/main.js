@@ -648,6 +648,27 @@ function createWindow() {
         }
     }
 
+    // Lux Cloud Sync, Phase 0: stabile Instanz-UUIDs vergeben, inline-Icons aus
+    // instance.json auslagern und abgebrochene Spielsitzungen nachbuchen.
+    // Laeuft absichtlich nach der Handler-Registrierung und ohne await -- der Client
+    // soll nicht darauf warten, und ein Fehlschlag darf den Start nicht verhindern.
+    // Details: docs/cloud-sync/03-ROADMAP.md, Phase 0.
+    try {
+        const { runStartupMigrations } = require('../backend/luxcloud/migrations');
+        sendSplashStatus({ status: 'Starting', detail: 'Preparing instances...' });
+        runStartupMigrations({
+            log: (msg) => { logToFile(msg); console.log(msg); },
+            logError: (msg, detail) => {
+                logToFile(`${msg} ${detail || ''}`);
+                console.error(msg, detail || '');
+            }
+        }).catch((e) => {
+            logToFile(`[LuxCloud] Startup-Migrationen fehlgeschlagen: ${e.message}`);
+        });
+    } catch (e) {
+        logToFile(`[LuxCloud] Startup-Migrationen nicht ladbar: ${e.message}`);
+    }
+
     ipcMain.on('app:is-packaged', (event) => {
         event.returnValue = app.isPackaged;
     });
