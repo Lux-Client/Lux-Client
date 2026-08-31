@@ -913,10 +913,6 @@ const handleDeepLink = (argv) => {
         try {
             const parsed = new URL(deepLink);
 
-            // Lux Cloud Sync: Rueckkanal der Geraete-Autorisierung. Der Code ist
-            // ohne den lokalen code_verifier wertlos, deshalb darf er hier auch
-            // dann ankommen, wenn das Fenster noch nicht steht -- auth.js haelt
-            // den wartenden Login-Versuch.
             if (parsed.hostname === 'auth') {
                 try {
                     const { completeLogin } = require('../backend/luxcloud/auth');

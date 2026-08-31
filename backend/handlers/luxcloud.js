@@ -1,7 +1,13 @@
+const path = require('path');
 const { app } = require('electron');
 
 const api = require('../luxcloud/api');
 const auth = require('../luxcloud/auth');
+const { summarize } = require('../luxcloud/manifest');
+const { buildManifestInWorker } = require('../luxcloud/manifestRunner');
+const { getHashCacheDir } = require('../luxcloud/paths');
+const { readInstanceId } = require('../luxcloud/instanceIdentity');
+const { resolveInstanceDirByName } = require('../utils/instances-path');
 
 function ok(payload = {}) {
     return { success: true, ...payload };
@@ -82,6 +88,47 @@ module.exports = (ipcMain, mainWindow) => {
         try {
             const result = await api.authed({ method: 'GET', url: '/api/cloud/devices' });
             return ok({ devices: result.devices || [] });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:preview-manifest', async (_event, instanceName, options = {}) => {
+        try {
+            const instanceDir = resolveInstanceDirByName(instanceName);
+            if (!instanceDir) {
+                return { success: false, error: 'not_found', message: `Unknown instance: ${instanceName}` };
+            }
+
+            const instanceId = await readInstanceId(instanceDir);
+            if (!instanceId) {
+                return { success: false, error: 'no_instance_id', message: 'This instance has no id yet' };
+            }
+
+            const started = Date.now();
+            const result = await buildManifestInWorker({
+                instanceDir,
+                instanceId,
+                name: instanceName,
+                hashCacheDir: getHashCacheDir(),
+                modCachePath: path.join(app.getPath('userData'), 'mod_cache.json'),
+                syncWorlds: Boolean(options.syncWorlds),
+                syncScreenshots: Boolean(options.syncScreenshots),
+                enableChunking: Boolean(options.enableChunking)
+            }, {
+                onProgress: (progress) => {
+                    if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+                        mainWindow.webContents.send('luxcloud:manifest-progress', { instanceName, ...progress });
+                    }
+                }
+            });
+
+            return ok({
+                instanceId,
+                durationMs: Date.now() - started,
+                manifestHash: result.manifestBlob.sha256,
+                summary: summarize(result)
+            });
         } catch (err) {
             return fail(err);
         }

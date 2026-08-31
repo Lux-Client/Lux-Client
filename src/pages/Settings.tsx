@@ -1755,9 +1755,6 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                     </TabsContent>
 
                     <TabsContent value="account" className="mt-0 space-y-5">
-                        {/* Lux Cloud Sync, Phase 1: nur Anmeldung, globale
-                            Schalter, Kontingent und Geraete. Der Rest der
-                            Cloud-UI kommt in Phase 9. */}
                         <LuxAccountPanel />
                     </TabsContent>
 

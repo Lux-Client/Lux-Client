@@ -239,8 +239,6 @@ interface ElectronAPI {
   onCompatibilityLog: (callback: (data: { msg: string }) => void) => UnsubscribeFn;
   onCrashReport: (callback: IpcCallback) => UnsubscribeFn;
 
-  // Lux Cloud Sync (luxcloud:*). Nicht zu verwechseln mit cloud* oben --
-  // das sind die Google-Drive-/Dropbox-Backups.
   luxCloudGetAccount: () => Promise<any>;
   luxCloudLogin: () => Promise<any>;
   luxCloudCancelLogin: () => Promise<any>;
@@ -250,4 +248,6 @@ interface ElectronAPI {
   luxCloudListDevices: () => Promise<any>;
   luxCloudRevokeDevice: (deviceUuid: string) => Promise<any>;
   onLuxCloudAccountChanged: (callback: IpcCallback) => UnsubscribeFn;
+  luxCloudPreviewManifest: (instanceName: string, options?: any) => Promise<any>;
+  onLuxCloudManifestProgress: (callback: IpcCallback) => UnsubscribeFn;
 }

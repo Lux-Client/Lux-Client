@@ -10,6 +10,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:luxcloud": "node tests/luxcloud.phase4.test.js",
+    "luxcloud:preview": "node scripts/luxcloud-manifest-preview.js",
     "start": "electron .",
     "dist-clean": "rimraf dist && rimraf release",
     "dist": "npm run dist-clean && npm run build && electron-builder --win --x64",

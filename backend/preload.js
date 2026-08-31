@@ -385,9 +385,6 @@ const electronAPI = {
 
     checkServiceStatus: () => ipcRenderer.invoke('status:check'),
 
-    // --- Lux Cloud Sync -------------------------------------------------
-    // Eigener Namespace: cloud* oben gehoert zu den Google-Drive-/Dropbox-
-    // Backups, luxCloud* zum Lux-Account.
     luxCloudGetAccount: () => ipcRenderer.invoke('luxcloud:get-account'),
     luxCloudLogin: () => ipcRenderer.invoke('luxcloud:login'),
     luxCloudCancelLogin: () => ipcRenderer.invoke('luxcloud:cancel-login'),
@@ -396,6 +393,12 @@ const electronAPI = {
     luxCloudUpdateSettings: (patch) => ipcRenderer.invoke('luxcloud:update-settings', patch),
     luxCloudListDevices: () => ipcRenderer.invoke('luxcloud:list-devices'),
     luxCloudRevokeDevice: (deviceUuid) => ipcRenderer.invoke('luxcloud:revoke-device', deviceUuid),
+    luxCloudPreviewManifest: (instanceName, options) => ipcRenderer.invoke('luxcloud:preview-manifest', instanceName, options),
+    onLuxCloudManifestProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:manifest-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:manifest-progress', subscription);
+    },
     onLuxCloudAccountChanged: (callback) => {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('luxcloud:account-changed', subscription);
