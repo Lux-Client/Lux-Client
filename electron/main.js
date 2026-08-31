@@ -624,7 +624,8 @@ function createWindow() {
         { name: 'java', path: '../backend/handlers/java' },
         { name: 'external', path: '../backend/handlers/external' },
         { name: 'updater', path: '../backend/handlers/updater' },
-        { name: 'status', path: '../backend/handlers/status' }
+        { name: 'status', path: '../backend/handlers/status' },
+        { name: 'luxcloud', path: '../backend/handlers/luxcloud' }
     ];
 
     for (const h of handlers) {
@@ -911,6 +912,30 @@ const handleDeepLink = (argv) => {
     if (deepLink) {
         try {
             const parsed = new URL(deepLink);
+
+            // Lux Cloud Sync: Rueckkanal der Geraete-Autorisierung. Der Code ist
+            // ohne den lokalen code_verifier wertlos, deshalb darf er hier auch
+            // dann ankommen, wenn das Fenster noch nicht steht -- auth.js haelt
+            // den wartenden Login-Versuch.
+            if (parsed.hostname === 'auth') {
+                try {
+                    const { completeLogin } = require('../backend/luxcloud/auth');
+                    completeLogin({
+                        code: parsed.searchParams.get('code'),
+                        state: parsed.searchParams.get('state'),
+                        error: parsed.searchParams.get('error')
+                    });
+                } catch (e) {
+                    console.error('[DeepLink] luxcloud auth callback failed:', e);
+                }
+
+                if (mainWindow) {
+                    if (mainWindow.isMinimized()) mainWindow.restore();
+                    mainWindow.focus();
+                }
+                return;
+            }
+
             if (parsed.hostname === 'install') {
                 const payload = {
                     identifier: parsed.searchParams.get('identifier'),

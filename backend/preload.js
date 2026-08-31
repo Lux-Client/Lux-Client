@@ -385,6 +385,23 @@ const electronAPI = {
 
     checkServiceStatus: () => ipcRenderer.invoke('status:check'),
 
+    // --- Lux Cloud Sync -------------------------------------------------
+    // Eigener Namespace: cloud* oben gehoert zu den Google-Drive-/Dropbox-
+    // Backups, luxCloud* zum Lux-Account.
+    luxCloudGetAccount: () => ipcRenderer.invoke('luxcloud:get-account'),
+    luxCloudLogin: () => ipcRenderer.invoke('luxcloud:login'),
+    luxCloudCancelLogin: () => ipcRenderer.invoke('luxcloud:cancel-login'),
+    luxCloudLogout: () => ipcRenderer.invoke('luxcloud:logout'),
+    luxCloudGetMe: () => ipcRenderer.invoke('luxcloud:get-me'),
+    luxCloudUpdateSettings: (patch) => ipcRenderer.invoke('luxcloud:update-settings', patch),
+    luxCloudListDevices: () => ipcRenderer.invoke('luxcloud:list-devices'),
+    luxCloudRevokeDevice: (deviceUuid) => ipcRenderer.invoke('luxcloud:revoke-device', deviceUuid),
+    onLuxCloudAccountChanged: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:account-changed', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:account-changed', subscription);
+    },
+
     remoteGetConfig: () => ipcRenderer.invoke('remote:get-config'),
     remoteSetConfig: (config) => ipcRenderer.invoke('remote:set-config', config),
     remoteGetToken: () => ipcRenderer.invoke('remote:get-token'),

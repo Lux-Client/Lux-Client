@@ -109,6 +109,11 @@ function setAccounts(store, accounts) {
 }
 
 module.exports = {
+    // Auch von backend/luxcloud/state.js benutzt: die Lux-Cloud-Tokens
+    // liegen in einer eigenen Datei, sollen aber genauso geschuetzt sein
+    // wie die Microsoft-Tokens hier.
+    encryptToken,
+    decryptToken,
     getUserProfile,
     setUserProfile,
     getAccounts,

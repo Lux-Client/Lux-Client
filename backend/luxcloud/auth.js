@@ -1,0 +1,244 @@
+const crypto = require('crypto');
+const { EventEmitter } = require('events');
+const { shell } = require('electron');
+
+const api = require('./api');
+const state = require('./state');
+const {
+    ACCESS_TOKEN_REFRESH_MARGIN_MS,
+    LOGIN_TIMEOUT_MS,
+    getBaseUrl
+} = require('./config');
+
+const events = new EventEmitter();
+
+let pendingLogin = null;
+let refreshInFlight = null;
+
+function base64Url(buffer) {
+    return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function createPkcePair() {
+    const verifier = base64Url(crypto.randomBytes(32));
+    const challenge = base64Url(crypto.createHash('sha256').update(verifier).digest());
+    return { verifier, challenge };
+}
+
+function emitAccountChanged(reason) {
+    getAccount()
+        .then((account) => events.emit('account-changed', { reason, account }))
+        .catch(() => {});
+}
+
+async function getAccount() {
+    const current = await state.readState();
+    return {
+        loggedIn: Boolean(current.refreshToken && current.user),
+        user: current.user || null,
+        device: {
+            uuid: current.deviceUuid || null,
+            name: state.getDeviceName(),
+            platform: process.platform
+        },
+        linkedAt: current.linkedAt || null,
+        baseUrl: getBaseUrl()
+    };
+}
+
+function cancelPendingLogin(reason) {
+    if (!pendingLogin) return;
+
+    clearTimeout(pendingLogin.timer);
+    const { reject } = pendingLogin;
+    pendingLogin = null;
+    reject(new api.LuxCloudError('login_cancelled', reason || 'Sign-in was cancelled'));
+}
+
+async function exchangeCode({ code, verifier, deviceUuid, appVersion }) {
+    return api.raw({
+        method: 'POST',
+        url: '/api/auth/device/token',
+        data: {
+            code,
+            code_verifier: verifier,
+            device_uuid: deviceUuid,
+            device_name: state.getDeviceName(),
+            platform: process.platform,
+            app_version: appVersion || null
+        }
+    });
+}
+
+async function login({ appVersion } = {}) {
+    cancelPendingLogin('A newer sign-in was started');
+
+    const deviceUuid = await state.ensureDeviceUuid();
+    const pkce = createPkcePair();
+    const requestState = base64Url(crypto.randomBytes(16));
+
+    const params = new URLSearchParams({
+        code_challenge: pkce.challenge,
+        state: requestState,
+        device_name: state.getDeviceName(),
+        platform: process.platform
+    });
+
+    const codePromise = new Promise((resolve, reject) => {
+        pendingLogin = {
+            state: requestState,
+            resolve,
+            reject,
+            timer: setTimeout(() => {
+                pendingLogin = null;
+                reject(new api.LuxCloudError('login_timeout', 'Sign-in timed out. Please try again.'));
+            }, LOGIN_TIMEOUT_MS)
+        };
+    });
+
+    try {
+        await shell.openExternal(`${getBaseUrl()}/auth/device?${params.toString()}`);
+    } catch (err) {
+        cancelPendingLogin('The browser could not be opened');
+        throw new api.LuxCloudError('browser_unavailable', 'Could not open your browser for the sign-in.');
+    }
+
+    const { code } = await codePromise;
+
+    let tokens;
+    try {
+        tokens = await exchangeCode({ code, verifier: pkce.verifier, deviceUuid, appVersion });
+    } catch (err) {
+        if (err.code === 'device_conflict') {
+            const freshUuid = await state.rotateDeviceUuid();
+            tokens = await exchangeCode({ code, verifier: pkce.verifier, deviceUuid: freshUuid, appVersion });
+        } else {
+            throw err;
+        }
+    }
+
+    await state.setSession({
+        user: tokens.user,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn
+    });
+
+    emitAccountChanged('login');
+    return getAccount();
+}
+
+function completeLogin({ code, state: returnedState, error }) {
+    if (!pendingLogin) {
+        console.warn('[LuxCloud] Received an auth deep link without a pending sign-in - ignoring.');
+        return false;
+    }
+
+    if (returnedState !== pendingLogin.state) {
+        console.warn('[LuxCloud] Auth deep link with an unexpected state - ignoring.');
+        return false;
+    }
+
+    const { resolve, reject, timer } = pendingLogin;
+    clearTimeout(timer);
+    pendingLogin = null;
+
+    if (error) {
+        reject(new api.LuxCloudError(
+            error === 'access_denied' ? 'login_denied' : 'login_failed',
+            error === 'access_denied' ? 'Sign-in was declined in the browser.' : 'Sign-in failed.'
+        ));
+        return true;
+    }
+
+    if (typeof code !== 'string' || code.length === 0) {
+        reject(new api.LuxCloudError('login_failed', 'The browser returned no authorization code.'));
+        return true;
+    }
+
+    resolve({ code });
+    return true;
+}
+
+async function refreshSession({ reason } = {}) {
+    if (refreshInFlight) return refreshInFlight;
+
+    refreshInFlight = (async () => {
+        const current = await state.readState();
+        if (!current.refreshToken || !current.deviceUuid) return false;
+
+        try {
+            const tokens = await api.raw({
+                method: 'POST',
+                url: '/api/auth/device/refresh',
+                data: { refresh_token: current.refreshToken, device_uuid: current.deviceUuid }
+            });
+
+            await state.updateTokens({
+                accessToken: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+                expiresIn: tokens.expiresIn
+            });
+            return true;
+        } catch (err) {
+            if (err.code === 'device_revoked' || err.code === 'forbidden' || err.code === 'invalid_request') {
+                await handleRevocation(err);
+                return false;
+            }
+            console.warn(`[LuxCloud] Token refresh failed (${reason || 'scheduled'}): ${err.code}`);
+            return false;
+        } finally {
+            refreshInFlight = null;
+        }
+    })();
+
+    return refreshInFlight;
+}
+
+async function getValidAccessToken() {
+    const current = await state.readState();
+    if (!current.refreshToken) return null;
+
+    const expiresAt = Number(current.accessTokenExpiresAt || 0);
+    if (current.accessToken && expiresAt - Date.now() > ACCESS_TOKEN_REFRESH_MARGIN_MS) {
+        return current.accessToken;
+    }
+
+    const refreshed = await refreshSession({ reason: 'expiring' });
+    if (!refreshed) return null;
+
+    const next = await state.readState();
+    return next.accessToken || null;
+}
+
+async function handleRevocation(err) {
+    await state.clearSession();
+    emitAccountChanged('revoked');
+    console.warn(`[LuxCloud] Signed out locally: ${err ? err.code : 'device_revoked'}`);
+}
+
+async function logout() {
+    cancelPendingLogin('Signed out');
+
+    try {
+        await api.authed({ method: 'POST', url: '/api/auth/device/revoke' }, { allowRetry: false });
+    } catch (err) {
+        console.warn(`[LuxCloud] Server-side sign-out failed (${err.code}) - clearing local session anyway.`);
+    }
+
+    await state.clearSession();
+    emitAccountChanged('logout');
+    return getAccount();
+}
+
+module.exports = {
+    cancelPendingLogin,
+    completeLogin,
+    events,
+    getAccount,
+    getValidAccessToken,
+    handleRevocation,
+    login,
+    logout,
+    refreshSession
+};
