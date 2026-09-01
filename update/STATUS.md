@@ -5,12 +5,13 @@
 > Du musst die Repos **nicht** neu analysieren — das steht in `01-ANALYSE.md`.
 
 **Zuletzt aktualisiert:** 2026-08-31
-**Aktuelle Phase:** Phase 4 — **fertig**, Phase 5 als Nächstes
-**Geschriebener Code:** Client `backend/luxcloud/` (17 Module), Manifest-Worker,
-UI-Anbindung, `tests/` (80 Tests) · Website
-`routes/{deviceAuth,cloud,cloudBlobs,adminCloud,manifestSchema}.js`,
+**Aktuelle Phase:** Phase 5 — **fertig**, Phase 6 als Nächstes
+**Geschriebener Code:** Client `backend/luxcloud/` (21 Module), Manifest-Worker,
+UI-Anbindung, `tests/` (113 Tests) · Website
+`routes/{deviceAuth,cloud,cloudSync,cloudBlobs,adminCloud,manifestSchema}.js`,
 `middleware/deviceAuth.js`, `storage/`, `jobs/cloudGc.js`, `cloudBlobs.js`,
-`cloudConfig.js`, `db_init_cloud.js`, `tests/` (226 Tests), Zustimmungsseite
+`cloudInstances.js`, `cloudConfig.js`, `db_init_cloud.js`, `tests/` (272 Tests),
+Zustimmungsseite
 
 ---
 
@@ -67,8 +68,8 @@ UI-Anbindung, `tests/` (80 Tests) · Website
 | 2 Backend / DB | ✅ fertig | Alle Cloud-Tabellen, Instanz-CRUD, Papierkorb, Limit, 56 grüne Tests |
 | 3 Storage Layer | ✅ fertig | fs- und s3-Treiber, Blob-Upload/Download, Refcounts, GC + Reconcile, 67 grüne Tests |
 | 4 Instance Manifest | ✅ fertig | Manifest-Bau im Worker, FastCDC, Kompressionsheuristik, Server-Validator, 80 + 66 grüne Tests |
-| 5 Upload / Download | ⬜ offen | **als Nächstes** — der erste Moment, in dem das Feature real wird |
-| 6 Inkrementeller Sync | ⬜ offen | |
+| 5 Upload / Download | ✅ fertig | negotiate/commit/manifest, Uploader, Downloader, Blob-Cache, 46 + 37 grüne Tests |
+| 6 Inkrementeller Sync | ⬜ offen | **als Nächstes** — Delta-Erkennung steht bereits, es fehlen Auto-Trigger und Retention |
 | 7 Konfliktauflösung | ⬜ offen | |
 | 8 Playtime-Sync | ⬜ offen | unabhängig, kann vorgezogen werden |
 | 9 UI / UX | ⬜ offen | |
@@ -369,30 +370,95 @@ Bemerkenswert daran:
 
 ---
 
+
+## Was in Phase 5 gebaut wurde
+
+Ab hier ist das Feature real: eine Instanz geht vollständig hoch und kommt auf
+einem zweiten Rechner wieder herunter.
+
+### Website
+
+`routes/cloudSync.js`:
+
+| Endpunkt | Aufgabe |
+|---|---|
+| `POST /instances/:uuid/negotiate` | Welche Blobs fehlen? Quota-Vorprüfung gegen `projectedBytes`, 413 bevor Bytes fließen |
+| `POST /instances/:uuid/commit` | Die heikelste Transaktion des Projekts |
+| `GET /instances/:uuid/manifest` | `?revision=latest\|N`, mit `?touch=1` für `last_pulled_at` |
+| `GET /instances/:uuid/revisions` | Versionsliste inkl. schreibendem Gerät |
+
+Der Commit läuft vollständig in einer Transaktion: `SELECT … FOR UPDATE` auf
+`cloud_instances`, `parentRevision`-Vergleich, Blob-Autorisierung nach `§F.4`,
+Quota, `cloud_revisions`, `addRefs`, Fortschreiben der Instanz,
+`recalcUsedBytes`. **Jeder Abweisungspfad rollt zurück, bevor irgendetwas
+geschrieben wurde** — der Test weist nach, dass ein fremder Blob, ein
+unbekannter Blob, ein Traversal-Pfad, ein falsches `parentRevision` und eine
+Quota-Überschreitung keine Revision hinterlassen.
+
+Die Instanz-Helfer sind nach `cloudInstances.js` gewandert (Vorbild
+`cloudBlobs.js`), weil `cloud.js` und `cloudSync.js` beide `ownedInstance`,
+`decorate` und `serializeInstance` brauchen. `cloud.js`: 572 → 472 Zeilen.
+
+### Client
+
+| Modul | Aufgabe |
+|---|---|
+| `uploader.js` | Manifest → negotiate → Blobs → commit, mit Fortschritt |
+| `downloader.js` | Auflösungskette lokal → Blob-Cache → Modrinth → Server, Staging + `rename` |
+| `blobStore.js` | lokaler CAS-Cache über alle Instanzen, LRU-Begrenzung |
+| `syncState.js` | `lastKnownRevision` / `lastManifestHash` je Instanz |
+
+Neue IPC-Kanäle: `luxcloud:sync-instance`, `luxcloud:restore-instance`,
+`luxcloud:list-cloud-instances`, `luxcloud:list-revisions`,
+`luxcloud:blob-cache-stats`, `luxcloud:prune-blob-cache`, plus die
+Fortschritts-Events `luxcloud:sync-progress` und `luxcloud:restore-progress`.
+
+### Was in Phase 5 geprüft wurde
+
+`tests/cloudSync.phase5.test.js` (46) und `tests/luxcloud.phase5.test.js` (37).
+Der Client-Test fährt die **echte** Website-Harness hoch und läuft gegen einen
+laufenden Server — kein Mock zwischen Uploader und Datenbank.
+
+- **Delta-Sync trägt.** 700-KB-Mod plus Configs hochgeladen, dann eine
+  4-KB-Config geändert: der zweite Upload überträgt **eine** Datei und unter
+  10 KB. Ein Lauf ohne Änderung überträgt **null** Blobs.
+- **Restore ist byte-genau** und legt verschachtelte Ordner an.
+- **Der zweite Restore kostet 0 Bytes** (alles liegt lokal), der Restore in ein
+  *drittes* Verzeichnis ebenfalls — dort bedient der Blob-Cache alles, vom
+  Server kommt nichts.
+- **Ein manipuliertes Manifest mit `../../evil.txt` wird clientseitig
+  abgewiesen**, auch wenn der Server es ausliefern würde. Das ist die zweite,
+  unabhängige Prüfung aus `§F.5`; der Test fälscht dafür die Server-Antwort.
+- Policy-Ausschlüsse greifen über den ganzen Weg: `logs/` und `libraries/`
+  landen weder im Manifest noch beim Restore auf der Platte.
+
+---
+
 ## Nächster Schritt
 
-**Phase 5 — Upload / Download** (siehe `03-ROADMAP.md`).
-Das ist der erste Moment, in dem das Feature real wird: eine Instanz vollständig
-hochladen und auf einem zweiten PC wiederherstellen.
+**Phase 6 — Inkrementeller Sync** (siehe `03-ROADMAP.md`).
 
-Vieles liegt bereit:
+Die Delta-Erkennung selbst steht schon und ist gemessen: eine geänderte
+4-KB-Config überträgt eine Datei und unter 10 KB, ein Lauf ohne Änderung
+überträgt nichts. Was fehlt, ist alles drumherum:
 
-- `buildManifest()` liefert die `uploads`-Liste schon in der Form, die der
-  Uploader braucht (Datei / Chunk / Chunk-Liste / erzeugter Puffer, je mit
-  Kompression).
-- Der Server nimmt Blobs an (`PUT`, `batch`), liefert sie aus und zählt
-  Referenzen. **Der Commit muss `addRefs()` aus `cloudBlobs.js` benutzen**, nicht
-  selbst in `blob_refs` schreiben.
-- `routes/manifestSchema.js` liefert im Commit die Blob-Hash-Liste, gegen die
-  `§F.4` geprüft werden muss: jeder Hash muss dem User gehören oder von ihm in
-  den letzten 24 h hochgeladen worden sein (`blob_upload_claims`).
-- `GET /api/cloud/me` nennt `capabilities` — Kompression und Größengrenzen
-  kommen vom Server, nicht aus einer Konstante im Client.
+- **Auto-Sync-Trigger** — nach Spielende, bei Instanz-Änderungen (30 s
+  entprellt), beim App-Start, manuell. Achtung auf die Sync-Schleife: während
+  eines Restores muss der Watcher für die Instanz aus sein, und der Vergleich
+  läuft gegen Hashes, nicht gegen mtime allein.
+- **Ein Sync ohne Änderung darf keine Revision erzeugen.** Heute tut er das
+  (siehe Test „trotzdem entsteht eine neue Revision"). Der Client kennt den
+  `manifestHash` aus `head` und muss den Commit überspringen, wenn er
+  übereinstimmt — sonst füllt tägliches Spielen die Retention mit
+  identischen Revisionen.
+- **Welten-Chunking scharf schalten** (`syncWorlds`), bisher nur unter Flag.
+- **Retention-Job** (`§E.5`) inkl. Degradierung alter Revisionen ohne
+  `saves/**`.
+- `POST /revisions/:rev/rollback` — `GET /revisions` steht bereits.
 
-Was fehlt: `POST /negotiate`, `POST /commit` (die heikelste Transaktion des
-Projekts, mit `SELECT … FOR UPDATE` auf `cloud_instances` und Optimistic Locking
-über `parentRevision`), `GET /manifest`, clientseitig `uploader.js`,
-`downloader.js`, `blobStore.js` und das Fortschritts-Panel.
+Bereits nutzbar aus Phase 5: `uploader.uploadInstance()` nimmt
+`options.parentRevision`, `downloader.restoreInstance()` nimmt `revision`,
+und `syncState.js` hält je Instanz `lastKnownRevision` und `lastManifestHash`.
 
 ---
 
@@ -555,6 +621,13 @@ mit Datum und Fundstelle.)*
 | 2026-08-31 | **Der `instance.json`-Eintrag im Manifest trägt die mtime der Datei auf der Platte, nicht `Date.now()`** | Zuerst stand dort die aktuelle Zeit — damit war das Manifest bei jedem Lauf ein anderes. Für Phase 6 wäre das fatal gewesen: jeder Sync hätte eine neue Revision erzeugt, obwohl sich nichts geändert hat. Der Test „beide Läufe erzeugen dasselbe Manifest" hält das jetzt fest. |
 | 2026-08-31 | **Der Manifest-Bau läuft in `worker_threads`, nicht als `child_process.fork`** | `§D.1` verlangt einen Worker. Der bestehende `minecraftLaunchWorker.js` ist ein `fork` — für einen langlebigen Java-Prozess richtig, für reines Hashen unnötig teuer. `worker_threads` teilt sich den Speicher und startet schneller. |
 | 2026-08-31 | **`uploads` ist Teil des Manifest-Ergebnisses** | Das Manifest allein sagt nicht, *woher* die Bytes kommen: eine Datei auf der Platte, ein Chunk mit Offset, eine erzeugte Chunk-Liste oder die normalisierte `instance.json`, die es auf der Platte gar nicht gibt. Ohne diese Liste müsste der Uploader das alles ein zweites Mal herleiten. |
+| 2026-08-31 | **Der Server serialisiert, hasht und speichert das Manifest selbst** | `§C.4` lässt offen, wer das tut. Ließe der Server sich den Manifest-Blob vorab hochladen und im Commit nur den Hash nennen, müsste er darauf vertrauen, dass die gespeicherten Bytes zu dem passen, was er gerade validiert hat — eine erneute Serialisierung kann abweichen. Jetzt gibt es genau eine Quelle. Der Client übernimmt den Hash aus der Commit-Antwort, `head` liefert denselben. |
+| 2026-08-31 | **Das Manifest ist ein gewöhnlicher Blob unter `blobKey`, unkomprimiert** | Damit wird es dedupliziert, refcounted und vom GC aufgeräumt wie alles andere, ohne zweiten Codepfad; `manifestKey()` bleibt vorerst ungenutzt. Unkomprimiert, weil zstd von der Node-Version des Servers abhängt (siehe „Offene Punkte" Nr. 3) und ein Manifest sonst auf einem älteren Server unlesbar wäre. Kostenpunkt: Manifeste zählen voll gegen die Quota. Bei 20 Revisionen Obergrenze und identischen Manifesten, die sich deduplizieren, ist das vertretbar. |
+| 2026-08-31 | **Instanz-Helfer nach `cloudInstances.js` ausgelagert** | `cloud.js` und `cloudSync.js` brauchen beide `ownedInstance`, `decorate`, `serializeInstance` und `INSTANCE_COLUMNS`. Kopieren wie bei `adminCloud.js` wäre hier zu viel gewesen — es geht um die Serialisierung, die beide Router nach außen geben. Vorbild ist `cloudBlobs.js`. `cloud.js`: 572 → 472 Zeilen, die 226 bestehenden Tests unverändert grün. |
+| 2026-08-31 | **`blobStore` kopiert, statt zu verlinken** | Ein Hardlink wäre schneller und spart Platz, aber der Cache-Eintrag und die Datei in der Instanz wären dasselbe Inode: Minecraft schreibt eine Config um, und der Cache enthielte still etwas anderes als seinen Hash behauptet. Bei einem content-addressed Cache ist das nicht reparierbar, nur bemerkbar. |
+| 2026-08-31 | **`LUXCLOUD_DIR` überschreibt `app.getPath('userData')`** | `paths.js` hing an Electron, damit auch `state.js`, `blobStore.js` und der Uploader. Ohne den Override wäre Phase 5 nur in einer laufenden App testbar gewesen. Die Variable ist außerdem nützlich, um zwei Konten auf einem Rechner nebeneinander zu betreiben. |
+| 2026-08-31 | **Der Client-Test fährt die echte Website-Harness hoch** | `tests/luxcloud.phase5.test.js` sucht das Website-Repo neben dem Client (beide Namen, `Lux-Website` und `MCLC-Website`) und lässt Uploader und Downloader gegen einen laufenden Server samt Datenbank laufen. Ein Mock hätte genau die Fehler durchgelassen, um die es hier geht — Reihenfolge von negotiate/commit, Hash-Verträge, Kompressions-Aushandlung. Fehlt das Repo, überspringt sich der Test, statt rot zu werden. |
+| 2026-08-31 | **`fetchBlob` rät die Kompression und prüft gegen den Hash** | `api.authed()` gibt nur den Body zurück, nicht die Header, also kommt `X-Lux-Compression` beim Downloader nicht an. Statt die geteilte API-Schicht umzubauen, wird entpackt und beides gegen den erwarteten sha256 gehalten — der Hash ist ohnehin die stärkere Prüfung, und ein Fehlgriff ist damit unmöglich statt nur unwahrscheinlich. |
 
 ---
 

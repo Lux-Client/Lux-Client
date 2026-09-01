@@ -394,6 +394,22 @@ const electronAPI = {
     luxCloudListDevices: () => ipcRenderer.invoke('luxcloud:list-devices'),
     luxCloudRevokeDevice: (deviceUuid) => ipcRenderer.invoke('luxcloud:revoke-device', deviceUuid),
     luxCloudPreviewManifest: (instanceName, options) => ipcRenderer.invoke('luxcloud:preview-manifest', instanceName, options),
+    luxCloudListCloudInstances: (status) => ipcRenderer.invoke('luxcloud:list-cloud-instances', status),
+    luxCloudSyncInstance: (instanceName, options) => ipcRenderer.invoke('luxcloud:sync-instance', instanceName, options),
+    luxCloudRestoreInstance: (instanceUuid, options) => ipcRenderer.invoke('luxcloud:restore-instance', instanceUuid, options),
+    luxCloudListRevisions: (instanceUuid) => ipcRenderer.invoke('luxcloud:list-revisions', instanceUuid),
+    luxCloudBlobCacheStats: () => ipcRenderer.invoke('luxcloud:blob-cache-stats'),
+    luxCloudPruneBlobCache: (maxBytes) => ipcRenderer.invoke('luxcloud:prune-blob-cache', maxBytes),
+    onLuxCloudSyncProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:sync-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:sync-progress', subscription);
+    },
+    onLuxCloudRestoreProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:restore-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:restore-progress', subscription);
+    },
     onLuxCloudManifestProgress: (callback) => {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('luxcloud:manifest-progress', subscription);

@@ -250,4 +250,12 @@ interface ElectronAPI {
   onLuxCloudAccountChanged: (callback: IpcCallback) => UnsubscribeFn;
   luxCloudPreviewManifest: (instanceName: string, options?: any) => Promise<any>;
   onLuxCloudManifestProgress: (callback: IpcCallback) => UnsubscribeFn;
+  luxCloudListCloudInstances: (status?: 'active' | 'trashed' | 'all') => Promise<any>;
+  luxCloudSyncInstance: (instanceName: string, options?: any) => Promise<any>;
+  luxCloudRestoreInstance: (instanceUuid: string, options?: any) => Promise<any>;
+  luxCloudListRevisions: (instanceUuid: string) => Promise<any>;
+  luxCloudBlobCacheStats: () => Promise<any>;
+  luxCloudPruneBlobCache: (maxBytes?: number) => Promise<any>;
+  onLuxCloudSyncProgress: (callback: IpcCallback) => UnsubscribeFn;
+  onLuxCloudRestoreProgress: (callback: IpcCallback) => UnsubscribeFn;
 }

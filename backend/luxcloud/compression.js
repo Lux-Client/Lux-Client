@@ -34,6 +34,16 @@ function compress(buffer, level = 3) {
     }
 }
 
+function decompress(buffer, compression) {
+    if (compression !== 'zstd') return buffer;
+    if (!ZSTD_AVAILABLE) return null;
+    try {
+        return zlib.zstdDecompressSync(buffer);
+    } catch {
+        return null;
+    }
+}
+
 function decideByExtension(relPath) {
     const ext = extensionOf(relPath);
     if (NEVER_COMPRESS.has(ext)) return 'none';
@@ -79,5 +89,6 @@ module.exports = {
     ZSTD_AVAILABLE,
     chooseCompression,
     compressIfWorthwhile,
+    decompress,
     extensionOf
 };

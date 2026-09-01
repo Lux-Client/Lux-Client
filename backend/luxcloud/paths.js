@@ -6,6 +6,10 @@ const { app } = require('electron');
 // bestehenden Google-Drive/Dropbox-Features (handlers/cloudBackup.js), das seine eigenen
 // Pfade unter userData/backups benutzt.
 function getLuxCloudDir() {
+    const override = process.env.LUXCLOUD_DIR;
+    if (typeof override === 'string' && override.trim().length > 0) {
+        return path.resolve(override.trim());
+    }
     return path.join(app.getPath('userData'), 'luxcloud');
 }
 
