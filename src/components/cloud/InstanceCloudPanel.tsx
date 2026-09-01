@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, History, CloudOff, Trash2, Clock } from 'lucide-react';
+import { RefreshCw, History, CloudOff, Trash2, Clock, AlertTriangle } from 'lucide-react';
 
 import { useLuxAccount } from '../../context/LuxAccountContext';
 import { useLuxSync } from '../../context/LuxSyncContext';
@@ -227,6 +227,24 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
                         </button>
                     </div>
                 </>
+            )}
+
+            {cloudInstance && !cloudInstance.everPulledElsewhere && cloudInstance.expiresAt && (
+                <p className="mt-3 flex items-start gap-2 rounded-lg bg-amber-500/[0.08] p-3 text-xs leading-relaxed text-amber-200/85">
+                    <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                    <span>
+                        {t('cloud.instance.expiry_warning', {
+                            defaultValue:
+                                'No other PC has downloaded this instance yet. Lux Cloud moves instances between machines, '
+                                + 'so it will be removed from the cloud on {{date}}. Open it on a second PC to keep it.',
+                            date: new Date(cloudInstance.expiresAt).toLocaleDateString()
+                        })}
+                        <strong className="mt-1 block font-medium text-amber-100/90">
+                            {t('cloud.instance.expiry_local_safe',
+                                'Your local files stay exactly as they are.')}
+                        </strong>
+                    </span>
+                </p>
             )}
 
             {!cloudInstance && status === 'local' && (

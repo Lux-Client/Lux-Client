@@ -198,6 +198,19 @@ module.exports = (ipcMain, mainWindow) => {
         });
     }
 
+    ipcMain.handle('luxcloud:delete-cloud-data', async () => {
+        try {
+            const result = await api.authed({
+                method: 'DELETE',
+                url: '/api/cloud/me',
+                data: { confirm: 'delete-my-cloud-data' }
+            });
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
     ipcMain.handle('luxcloud:get-playtime', async (_event, instanceName) => {
         try {
             const instanceDir = resolveInstanceDirByName(instanceName);

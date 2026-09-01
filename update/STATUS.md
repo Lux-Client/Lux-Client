@@ -5,13 +5,13 @@
 > Du musst die Repos **nicht** neu analysieren — das steht in `01-ANALYSE.md`.
 
 **Zuletzt aktualisiert:** 2026-08-31
-**Aktuelle Phase:** Phase 9 — **fertig**, Phase 10 als Nächstes
+**Aktuelle Phase:** Phase 10 — **fertig**, Phase 11 als Nächstes
 **Geschriebener Code:** Client `backend/luxcloud/` (29 Module), Manifest-Worker,
 UI-Anbindung, `tests/` (157 Tests), Cloud-UI (9 Komponenten) · Website
 `routes/{deviceAuth,cloud,cloudSync,cloudBlobs,adminCloud,manifestSchema}.js`,
 `middleware/deviceAuth.js`, `storage/`, `jobs/cloudGc.js`, `cloudBlobs.js`,
 `cloudInstances.js`, `cloudConfig.js`, `db_init_cloud.js`,
-`jobs/cloudRetention.js`, `tests/` (343 Tests), Zustimmungsseite
+`jobs/cloudRetention.js`, `tests/` (386 Tests), Zustimmungsseite
 
 ---
 
@@ -73,8 +73,8 @@ UI-Anbindung, `tests/` (157 Tests), Cloud-UI (9 Komponenten) · Website
 | 7 Konfliktauflösung | ✅ fertig | Pre-Launch-Gate, 3-Wege-Diff, Verlierersicherung, Advisory Lock, 21 grüne Tests |
 | 8 Playtime-Sync | ✅ fertig | G-Counter je Gerät, Monotonie- und Plausibilitätsprüfung, 23 grüne Tests |
 | 9 UI / UX | ✅ fertig | Badge, Cloud-Tab, Konfliktdialog, Onboarding, Verlauf, Transferpanel |
-| 10 Konto / Ablauf / Admin | ⬜ offen | **als Nächstes** — höchstes Datenverlust-Risiko, Dry-Run einplanen |
-| 11 Testing | ⬜ offen | |
+| 10 Konto / Ablauf / Admin | ✅ fertig | 15-Tage-Regel wörtlich, Kontolöschung, Admin-Endpunkte, 43 grüne Tests |
+| 11 Testing | ⬜ offen | **als Nächstes** — Last, Chaos, Security-Review, Kostenmessung |
 | 12 Launch | ⬜ offen | |
 
 Legende: ⬜ offen · 🟨 in Arbeit · ✅ fertig · ⚠️ blockiert
@@ -629,30 +629,119 @@ Projekt bislang nicht und wurden hier auch nicht eingeführt.
 
 ---
 
+
+## Was in Phase 10 gebaut wurde
+
+### Die 15-Tage-Regel gilt wörtlich
+
+**Vom Auftraggeber am 2026-08-31 ausdrücklich so entschieden.** Die frühere
+Empfehlung („jede Aktivität setzt den Timer zurück") ist damit vom Tisch.
+
+Der Gedanke dahinter: **die Lux Cloud ist ein Transportweg zwischen PCs, kein
+Backup.** Wer sie nie zum Transportieren benutzt, belegt nur Platz.
+
+Der Zähler läuft ab `last_foreign_pull_at`, ersatzweise ab `created_at`, und
+wird **nur** zurückgesetzt, wenn ein Gerät zugreift, das **nicht** die aktuelle
+Revision hochgeladen hat (`last_commit_device_id`). Als Fremdzugriff zählen:
+
+- ein Manifest-Abruf mit `?touch=1` (also ein echter Pull oder Restore)
+- ein Sitzungsstart
+- eine Playtime-Meldung
+
+Playtime zählt mit, obwohl sie streng genommen kein Pull ist: spielt der zweite
+PC offline, scheitert der Sitzungsstart und nur die Playtime kommt später an.
+Ohne diese Ausnahme würde eine Instanz ablaufen, die nachweislich auf zwei PCs
+in Gebrauch ist.
+
+Ist `last_commit_device_id` NULL — bei allen Instanzen aus der Zeit vor dieser
+Änderung — gilt jeder Zugriff als fremd. Bestehende Daten laufen dadurch nicht
+überraschend ab.
+
+| Tag | Was passiert |
+|---|---|
+| 8 | Notification im Client und auf der Website |
+| 12 | zweite Notification **plus E-Mail** |
+| 15 | Verschiebung in den Papierkorb, Notification |
+| 45 | endgültige Löschung, Blobs gehen an den GC |
+
+**Die lokalen Dateien werden nie angefasst.** „Gelöscht" heißt ausschließlich
+„aus der Cloud entfernt". Jede Notification und jede E-Mail sagt das
+ausdrücklich, und der Cloud-Tab zeigt bei einer nie anderswo gezogenen Instanz
+eine dauerhafte Warnung mit dem konkreten Datum.
+
+> Restrisiko, das der Auftraggeber kennt: Geht der einzige PC kaputt und hat nie
+> ein zweiter die Instanz gezogen, ist die Cloud-Kopie weg. Das ist die logische
+> Folge der Entscheidung „Transportweg statt Backup" und keine Fehlfunktion.
+
+### Kontolöschung
+
+`cloudAccount.js` mit `purgeCloudData` und `purgeEverything`.
+`DELETE /api/user/delete` in `server.js` ruft `purgeEverything` **vor** dem
+`DELETE FROM users` auf. Das ist der kritische Punkt: der Cascade auf `users`
+räumt `cloud_instances` und `blob_refs` weg, **ohne** `blobs.refcount` zu
+dekrementieren — die Blobs wären für immer als referenziert markiert und
+niemals einsammelbar. Schlägt die Aufräumung fehl, wird das Konto **nicht**
+gelöscht und der Aufruf endet mit 500.
+
+Neu ist außerdem `DELETE /api/cloud/me` (nur Cloud-Daten, Konto bleibt, Geräte
+bleiben angemeldet), im Client über `luxcloud:delete-cloud-data`.
+
+### Admin
+
+`/api/admin/cloud/stats` (Blobs, physisch vs. abgerechnet, Dedup-Faktor,
+GC-Queue, **Zahl der nie anderswo gezogenen Instanzen**), `/users` mit
+Quota-Editor, `/instances?userId=`, Zwangslöschung und `/expiry` samt
+manuellem Lauf für Ablauf und Retention. Jede schreibende Aktion geht durch
+`logAdminAction`.
+
+### Was in Phase 10 geprüft wurde
+
+`cloudSync.phase10.test.js` (43). Der Kern:
+
+- Pull, Playtime und Sitzung **vom eigenen PC** setzen den Zähler *nicht* zurück
+- dieselben Aktionen **vom zweiten PC** setzen ihn zurück
+- Warnung an Tag 9, keine zweite Warnung im nächsten Lauf, zweite Warnung an
+  Tag 13, Papierkorb an Tag 16, endgültig nach 60 Tagen
+- die nie gezogene Instanz fällt, die gezogene überlebt — und fällt erst 16 Tage
+  nach *ihrem* letzten Fremdzugriff
+- der Trockenlauf meldet die Löschung, führt sie aber nicht aus
+- nach `DELETE /api/cloud/me` bleibt **kein** Blob fälschlich referenziert
+- nach der Kontolöschung ist das Gerätetoken sofort wertlos und es bleiben
+  keine `blob_refs` zurück
+
+---
+
 ## Nächster Schritt
 
-**Phase 10 — Konto, Ablauf, Admin** (siehe `03-ROADMAP.md`). Das ist der letzte
-Block mit echter Funktionalität und zugleich der mit dem **höchsten
-Datenverlust-Risiko** im ganzen Projekt.
+**Phase 11 — Testing und Härtung.** Die Funktionalität ist vollständig; ab hier
+geht es um Belastbarkeit statt Umfang.
 
-1. `DELETE /api/user/delete` erweitern (`§F.8`). **Reihenfolge ist kritisch:**
-   erst die refcounts dekrementieren, dann `cloud_instances` löschen. Andersherum
-   räumt CASCADE die `blob_refs` weg, ohne dass die Zähler mitlaufen — die Blobs
-   lägen für immer da.
-2. `DELETE /api/cloud/me` (nur Cloud-Daten, Konto bleibt) — fehlt noch ganz.
-3. Der 15-Tage-Job mit den vier Stufen aus `§E.6`, Notifications über die
-   bestehende `notifications`-Tabelle und E-Mail über `email.js`.
-   **Vorher Entscheidung Nr. 1 unten klären** und mindestens eine Woche im
-   Dry-Run mitlaufen lassen, bevor er scharf geschaltet wird.
-4. Admin-Tab `cloud` in `AdminPanel.jsx` (das `TABS`-Array, Zeile ~205) plus
-   `/api/admin/cloud/*` — die GC-Endpunkte stehen bereits.
-5. Client: „Cloud-Daten löschen" und „Lux Account löschen" mit doppelter
-   Bestätigung und einer klaren Auflistung, was verschwindet und was lokal
-   bleibt. **Lokale Dateien werden nie gelöscht** — auch nicht bei
-   Kontolöschung (`§I` Fall 8).
+1. **Lasttest**: 1.000 simulierte Geräte, je 3 Instanzen, gemischt Upload und
+   Download.
+2. **Chaos**: Netz mitten im Upload trennen, Server während des Commits neu
+   starten, Prozess killen, Platte volllaufen lassen.
+3. **`/security-review`** über alle neuen Endpunkte. Gezielt: Path Traversal,
+   IDOR zwischen zwei Konten, Token-Reuse, Quota-Umgehung.
+4. **Kostenmessung an echten Daten**: Dedup-Faktor, Bytes je User,
+   Modrinth-Trefferquote — gegen `§E.3` halten. `/api/admin/cloud/stats`
+   liefert die Zahlen bereits.
+5. **Die Online-Auflösung nachrüsten** (offener Punkt Nr. 5). Ohne sie bleibt
+   die gemessene Trefferquote systematisch zu niedrig, weil `manifest.js` nur
+   den Cache liest.
+6. Nutzer-Dokumentation: was wird synchronisiert, was nicht, und vor allem die
+   15-Tage-Regel in klaren Worten.
 
-Danach bleiben Phase 11 (Last-, Chaos- und Sicherheitstests, Kostenmessung an
-echten Daten) und Phase 12 (Launch mit Killswitch und gestaffeltem Rollout).
+**Vor dem Launch (Phase 12) zwingend:**
+
+- `LUXCLOUD_EXPIRY_DRY_RUN=true` mindestens eine Woche produktiv mitlaufen
+  lassen und die Logs prüfen. Der Ablauf-Job ist neben dem GC die einzige
+  Stelle, die dauerhaft Nutzerdaten löscht.
+- Datenschutzerklärung und Nutzungsbedingungen ergänzen — insbesondere die
+  15-Tage-Regel, weil sie für Nutzer überraschend sein kann.
+- Storage-Anbieter festlegen (Entscheidung Nr. 3), Bucket und Schlüssel
+  eintragen, `LUXCLOUD_STORAGE_DRIVER=s3` setzen.
+- Node-Version des Website-Images anheben, sonst fällt zstd weg (offener
+  Punkt Nr. 3).
 
 ---
 
@@ -703,7 +792,7 @@ gefülltem Cache bestätigt: 83 %, 100 %, 100 %, 83 %.
 
 | # | Frage | Empfehlung | Status |
 |---|---|---|---|
-| 1 | **15-Tage-Regel:** Der Auftrag sagt „nicht angefasst von *einem anderen PC*". Wörtlich genommen verliert ein User mit nur einem PC seine Instanz, obwohl er täglich spielt. | Timer bei **jeder** Aktivität zurücksetzen, auch vom selben PC. Ersparnis praktisch identisch, Datenverlustrisiko weg. | ❓ offen |
+| 1 | **15-Tage-Regel** | ✅ **entschieden am 2026-08-31: gilt wörtlich.** Nur ein Zugriff von einem *anderen* Gerät setzt den Zähler zurück. Begründung des Auftraggebers: die Cloud ist ein Transportweg zwischen PCs, kein Backup. Umgesetzt in Phase 10; lokale Dateien bleiben immer unangetastet. | ✅ erledigt |
 | 2 | **Quota-Zahlen:** Der Auftrag nennt 5 GB / 10 Instanzen, das UI-Beispiel in §14 zeigt „2.4 GB / 10 GB". | 5 GB (die ausdrückliche Vorgabe gewinnt), UI-Beispiel war illustrativ. | ✅ so umgesetzt (`user_cloud_settings`-Defaults), rückgängig zu machen durch ein `ALTER TABLE`-Default |
 | 3 | **Storage-Anbieter:** Cloudflare R2 (kein Egress-Preis) vs. Backblaze B2 vs. Hetzner. | R2 — dieses Feature ist download-lastig, Egress wäre sonst der Hauptkostenblock. | ❓ offen, aber **nicht mehr blockierend**: Phase 3 läuft auf dem `fs`-Treiber, der `s3`-Treiber ist fertig und funktioniert gegen jedes S3-kompatible Ziel. Es fehlen nur Bucket und Schlüssel in der `.env`. |
 | 4 | **Welten-Sync standardmäßig aus?** | Ja, aus. Kostet sonst das 20-fache und ist der häufigste Konfliktfall. | ✅ so umgesetzt (`sync_worlds_default = FALSE`) |
@@ -835,6 +924,11 @@ mit Datum und Fundstelle.)*
 | 2026-08-31 | **Der Onboarding-Dialog zeigt die Upload-Größe, nicht die Instanzgröße** | Direkt aus `§G.2`. Bei einer 1,2-GB-Instanz, von der 20 MB übertragen werden, würde die Instanzgröße den Nutzer grundlos abschrecken. Er misst dafür je Instanz über `luxcloud:preview-manifest` und rechnet den Speicherstand danach vor. |
 | 2026-08-31 | **Ohne Anmeldung ist kein einziges Cloud-Element sichtbar** | Kein Badge, kein Tab, kein Panel — `InstanceCloudPanel` und `CloudOverlays` geben ohne `loggedIn` `null` zurück. Der Auftrag verlangt ausdrücklich, dass der Client vollständig ohne Lux Account funktioniert; ein ausgegrauter Cloud-Tab würde das Gegenteil suggerieren. |
 | 2026-08-31 | **Für die UI wurden keine automatisierten Tests eingeführt** | Das Projekt hat bislang keine Oberflächentests, und ein Testframework einzuführen wäre eine eigene Entscheidung gewesen, nicht Teil von Phase 9. Abgesichert ist die UI über `npm run typecheck` und `npm run build`. Die Logik dahinter ist vollständig getestet — die Komponenten rufen nur IPC auf. |
+| 2026-08-31 | **Die 15-Tage-Regel gilt wörtlich** — Entscheidung des Auftraggebers | Nur ein Zugriff von einem Gerät, das nicht die aktuelle Revision hochgeladen hat, setzt den Zähler zurück. Begründung: die Cloud ist ein Transportweg zwischen PCs, kein Backup. Meine frühere Warnung war zu stark gewichtet — die lokalen Dateien bleiben in jedem Fall unangetastet, „gelöscht" heißt nur „aus der Cloud entfernt". Das reale Restrisiko ist eng: nur wenn der einzige PC ausfällt und nie ein zweiter gezogen hat. |
+| 2026-08-31 | **Playtime von einem fremden Gerät zählt als Fremdzugriff, obwohl sie kein Pull ist** | Spielt der zweite PC offline, scheitert der Sitzungsstart und nur die Playtime kommt später an. Ohne diese Ausnahme würde eine Instanz ablaufen, die nachweislich auf zwei PCs in Gebrauch ist — das wäre auch unter der wörtlichen Lesart falsch. |
+| 2026-08-31 | **`last_commit_device_id = NULL` gilt als „jeder Zugriff ist fremd"** | Alle Instanzen aus der Zeit vor Phase 10 haben die Spalte nicht gefüllt. Die Alternative — sie als „Zugriff nie fremd" zu behandeln — hätte bestehende Instanzen sofort in den Ablauf laufen lassen. Bei einer Regel, die Daten löscht, ist die konservative Richtung die richtige. |
+| 2026-08-31 | **`purgeEverything` läuft vor `DELETE FROM users`, und ein Fehlschlag bricht die Kontolöschung ab** | Der Cascade auf `users` räumt `cloud_instances` und `blob_refs` weg, ohne `blobs.refcount` zu dekrementieren. Die Blobs wären dann für immer als referenziert markiert und vom GC nie einsammelbar — ein Leck, das sich nur durch einen vollständigen Reconcile über alle Blobs finden ließe. Lieber ein 500 und ein bestehendes Konto als stiller Datenmüll. |
+| 2026-08-31 | **Die Ablaufwarnung steht dauerhaft im Cloud-Tab, nicht nur als Notification** | Bei einer Regel, die nach 15 Tagen löscht, reicht eine Benachrichtigung nicht, die man wegklicken kann. Der Tab zeigt bei jeder nie anderswo gezogenen Instanz das konkrete Datum und den Satz, dass die lokalen Dateien bleiben. |
 
 ---
 

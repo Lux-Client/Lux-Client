@@ -400,6 +400,7 @@ const electronAPI = {
     luxCloudListRevisions: (instanceUuid) => ipcRenderer.invoke('luxcloud:list-revisions', instanceUuid),
     luxCloudBlobCacheStats: () => ipcRenderer.invoke('luxcloud:blob-cache-stats'),
     luxCloudPruneBlobCache: (maxBytes) => ipcRenderer.invoke('luxcloud:prune-blob-cache', maxBytes),
+    luxCloudDeleteCloudData: () => ipcRenderer.invoke('luxcloud:delete-cloud-data'),
     luxCloudGetPlaytime: (instanceName) => ipcRenderer.invoke('luxcloud:get-playtime', instanceName),
     luxCloudPushPlaytime: () => ipcRenderer.invoke('luxcloud:push-playtime'),
     luxCloudPreLaunchCheck: (instanceName, options) => ipcRenderer.invoke('luxcloud:pre-launch-check', instanceName, options),

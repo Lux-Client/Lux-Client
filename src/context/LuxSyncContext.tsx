@@ -19,6 +19,8 @@ export type CloudInstance = {
     status: 'active' | 'trashed';
     lastTouchedAt: string | null;
     expiresAt: number | null;
+    everPulledElsewhere: boolean;
+    lastForeignPullAt: string | null;
 };
 
 export type SyncPhase = 'idle' | 'manifest' | 'negotiate' | 'upload' | 'commit' | 'download' | 'done';

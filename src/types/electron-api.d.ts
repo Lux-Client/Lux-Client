@@ -258,6 +258,9 @@ interface ElectronAPI {
   luxCloudPruneBlobCache: (maxBytes?: number) => Promise<any>;
   onLuxCloudSyncProgress: (callback: IpcCallback) => UnsubscribeFn;
   onLuxCloudRestoreProgress: (callback: IpcCallback) => UnsubscribeFn;
+  luxCloudGetPlaytime: (instanceName: string) => Promise<any>;
+  luxCloudPushPlaytime: () => Promise<any>;
+  luxCloudDeleteCloudData: () => Promise<any>;
   luxCloudPreLaunchCheck: (instanceName: string, options?: any) => Promise<any>;
   luxCloudDiffInstance: (instanceName: string, options?: any) => Promise<any>;
   luxCloudResolveConflict: (instanceName: string, choice: 'local' | 'remote', options?: any) => Promise<any>;
