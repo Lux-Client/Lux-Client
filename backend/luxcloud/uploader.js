@@ -7,6 +7,7 @@ const blobStore = require('./blobStore');
 const { compressIfWorthwhile } = require('./compression');
 const { buildManifestInWorker } = require('./manifestRunner');
 const { readInstanceState, rememberRevision } = require('./syncState');
+const { seedIfNeeded: seedPlaytime, push: pushPlaytime } = require('./playtime');
 
 const BATCH_THRESHOLD_BYTES = 256 * 1024;
 const DEFAULT_MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -191,6 +192,9 @@ async function uploadInstance({
     });
 
     const instance = await ensureCloudInstance({ instanceUuid: instanceId, manifest: built.manifest, options });
+
+    await rememberRevision(instanceId, { instanceName, cloudLinked: true });
+    await seedPlaytime(instanceId, instanceDir).catch(() => {});
     const parentRevision = Number(options.parentRevision ?? instance.revision ?? 0);
 
     const tracked = await readInstanceState(instanceId);
@@ -297,12 +301,15 @@ async function uploadInstance({
     await rememberRevision(instanceId, {
         instanceName,
         lastKnownRevision: committed.revision,
+        cloudLinked: true,
         lastManifestHash: committed.manifestHash,
         lastContentHash: built.contentHash,
         lastInstanceConfigHash: instanceConfigHashOf(built.manifest),
         lastSyncedAt: Date.now(),
         dirty: false
     });
+
+    await pushPlaytime(instanceId).catch(() => {});
 
     report('done', { revision: committed.revision });
 

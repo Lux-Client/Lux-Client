@@ -101,19 +101,51 @@ const LuxAccountPanel = () => {
     const [busy, setBusy] = useState(false);
     const [pairingOpen, setPairingOpen] = useState(false);
     const [avatarBusy, setAvatarBusy] = useState(false);
+    const [avatarError, setAvatarError] = useState<string | null>(null);
+    const [avatarBroken, setAvatarBroken] = useState(false);
+    const [manualCode, setManualCode] = useState('');
+    const [codeBusy, setCodeBusy] = useState(false);
+    const [codeError, setCodeError] = useState<string | null>(null);
 
     if (!account || !account.supported) return null;
+
+    const submitManualCode = async () => {
+        const api = (window as any).electronAPI;
+        if (!api || typeof api.luxCloudRedeemCode !== 'function') return;
+
+        setCodeBusy(true);
+        setCodeError(null);
+        try {
+            const result = await api.luxCloudRedeemCode(manualCode);
+            if (!result || result.success === false) {
+                setCodeError(result?.message || 'That code did not work.');
+                return;
+            }
+            setManualCode('');
+            await account.reload();
+        } finally {
+            setCodeBusy(false);
+        }
+    };
 
     const changeAvatar = async () => {
         const api = (window as any).electronAPI;
         if (!api || typeof api.luxCloudSetAvatar !== 'function') return;
 
         setAvatarBusy(true);
+        setAvatarError(null);
         try {
             const result = await api.luxCloudSetAvatar();
-            if (result && result.success !== false && !result.cancelled) {
+            if (!result || result.success === false) {
+                setAvatarError(result?.message || result?.error || 'The picture could not be saved.');
+                return;
+            }
+            if (!result.cancelled) {
+                setAvatarBroken(false);
                 await account.reload();
             }
+        } catch (err: any) {
+            setAvatarError(String(err?.message || err));
         } finally {
             setAvatarBusy(false);
         }
@@ -211,9 +243,33 @@ const LuxAccountPanel = () => {
                                 </Button>
                             </div>
                             {signingIn && (
-                                <p className="text-xs text-muted-foreground">
-                                    {t('settings.lux_account.browser_hint', 'Approve the request in the browser window that just opened, then come back here.')}
-                                </p>
+                                <div className="space-y-2 rounded-lg border border-border/70 bg-background/50 p-3">
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('settings.lux_account.browser_hint', 'Approve the request in the browser window that just opened, then come back here.')}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('settings.lux_account.code_hint', 'Nothing happened? The website shows a six-character code after you confirm — enter it here.')}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            value={manualCode}
+                                            onChange={(e) => setManualCode(e.target.value.toUpperCase().slice(0, 6))}
+                                            placeholder="ABC123"
+                                            className="w-32 rounded-md border border-border bg-background px-3 py-1.5 text-center font-mono text-sm tracking-[0.2em] uppercase outline-none focus:border-primary"
+                                        />
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={manualCode.length !== 6 || codeBusy}
+                                            onClick={submitManualCode}
+                                        >
+                                            {codeBusy
+                                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                : t('settings.lux_account.submit_code', 'Sign in')}
+                                        </Button>
+                                    </div>
+                                    {codeError && <p className="text-xs text-destructive">{codeError}</p>}
+                                </div>
                             )}
                         </div>
                     ) : (
@@ -227,8 +283,13 @@ const LuxAccountPanel = () => {
                                         title={t('settings.lux_account.change_avatar', 'Change profile picture')}
                                         className="group relative h-10 w-10 shrink-0 overflow-hidden rounded-full disabled:opacity-50"
                                     >
-                                        {user?.avatar ? (
-                                            <img src={user.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                                        {user?.avatar && !avatarBroken ? (
+                                            <img
+                                                src={user.avatar}
+                                                alt=""
+                                                onError={() => setAvatarBroken(true)}
+                                                className="h-10 w-10 rounded-full object-cover"
+                                            />
                                         ) : (
                                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
                                                 <UserCircle2 className="h-5 w-5 text-primary" />
@@ -308,6 +369,12 @@ const LuxAccountPanel = () => {
                                         </div>
                                     </div>
                                 </>
+                            )}
+
+                            {avatarError && (
+                                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                                    {avatarError}
+                                </p>
                             )}
 
                             <Separator />

@@ -107,7 +107,13 @@ export const LuxSyncProvider = ({
     const [state, setState] = useState<LuxSyncState>(INITIAL);
     const mounted = useRef(true);
 
-    useEffect(() => () => { mounted.current = false; }, []);
+    // StrictMode runs effects mount -> cleanup -> mount in development. Without
+    // setting this back to true the second mount would keep a false flag and every
+    // state update below would be dropped silently.
+    useEffect(() => {
+        mounted.current = true;
+        return () => { mounted.current = false; };
+    }, []);
 
     const patch = useCallback((next: Partial<LuxSyncState>) => {
         if (mounted.current) setState((current) => ({ ...current, ...next }));

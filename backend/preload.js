@@ -400,6 +400,7 @@ const electronAPI = {
     luxCloudListRevisions: (instanceUuid) => ipcRenderer.invoke('luxcloud:list-revisions', instanceUuid),
     luxCloudBlobCacheStats: () => ipcRenderer.invoke('luxcloud:blob-cache-stats'),
     luxCloudPruneBlobCache: (maxBytes) => ipcRenderer.invoke('luxcloud:prune-blob-cache', maxBytes),
+    luxCloudRedeemCode: (userCode) => ipcRenderer.invoke('luxcloud:redeem-code', userCode),
     luxCloudStartPairing: () => ipcRenderer.invoke('luxcloud:start-pairing'),
     luxCloudPollPairing: () => ipcRenderer.invoke('luxcloud:poll-pairing'),
     luxCloudCancelPairing: () => ipcRenderer.invoke('luxcloud:cancel-pairing'),

@@ -198,6 +198,14 @@ module.exports = (ipcMain, mainWindow) => {
         });
     }
 
+    ipcMain.handle('luxcloud:redeem-code', async (_event, userCode) => {
+        try {
+            return ok({ account: await auth.redeemManualCode({ userCode, appVersion: app.getVersion() }) });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
     ipcMain.handle('luxcloud:start-pairing', async () => {
         try {
             return ok({ pairing: await auth.startPairing({ appVersion: app.getVersion() }) });

@@ -87,6 +87,9 @@ async function login({ appVersion } = {}) {
     const codePromise = new Promise((resolve, reject) => {
         pendingLogin = {
             state: requestState,
+            // Kept so the manual code shown on the website can be redeemed against the
+            // same PKCE challenge -- that is what makes the code useless to anyone else.
+            verifier: pkce.verifier,
             resolve,
             reject,
             timer: setTimeout(() => {
@@ -241,6 +244,50 @@ function cancelPairing(reason = 'Cancelled') {
     return Boolean(reason);
 }
 
+async function redeemManualCode({ userCode, appVersion } = {}) {
+    if (!pendingLogin || !pendingLogin.verifier) {
+        throw new api.LuxCloudError('no_login', 'Start the sign-in first, then enter the code');
+    }
+
+    const deviceUuid = await state.ensureDeviceUuid();
+    const attempt = async (uuid) => api.raw({
+        method: 'POST',
+        url: '/api/auth/device/pair/redeem',
+        data: {
+            user_code: String(userCode || '').trim().toUpperCase(),
+            code_verifier: pendingLogin.verifier,
+            device_uuid: uuid,
+            device_name: state.getDeviceName(),
+            platform: process.platform,
+            app_version: appVersion || null
+        }
+    });
+
+    let tokens;
+    try {
+        tokens = await attempt(deviceUuid);
+    } catch (err) {
+        if (err.code !== 'device_conflict') throw err;
+        tokens = await attempt(await state.rotateDeviceUuid());
+    }
+
+    if (!tokens || !tokens.accessToken) {
+        throw new api.LuxCloudError('pairing_failed', 'The server did not return a session');
+    }
+
+    cancelPendingLogin('Signed in with a code');
+
+    await state.setSession({
+        user: tokens.user,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn
+    });
+
+    emitAccountChanged('login');
+    return getAccount();
+}
+
 async function startPairing({ appVersion } = {}) {
     cancelPairing('A newer pairing was started');
     cancelPendingLogin('A pairing was started instead');
@@ -342,6 +389,7 @@ module.exports = {
     login,
     logout,
     pollPairing,
+    redeemManualCode,
     refreshSession,
     startPairing
 };

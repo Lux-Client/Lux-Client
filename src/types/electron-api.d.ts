@@ -260,6 +260,7 @@ interface ElectronAPI {
   onLuxCloudRestoreProgress: (callback: IpcCallback) => UnsubscribeFn;
   luxCloudGetPlaytime: (instanceName: string) => Promise<any>;
   luxCloudPushPlaytime: () => Promise<any>;
+  luxCloudRedeemCode: (userCode: string) => Promise<any>;
   luxCloudStartPairing: () => Promise<any>;
   luxCloudPollPairing: () => Promise<any>;
   luxCloudCancelPairing: () => Promise<any>;
