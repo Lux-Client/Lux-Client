@@ -111,6 +111,18 @@ async function scanInstance(instanceDir, options = {}) {
     return { files, excluded, oversized };
 }
 
+async function saveModCacheUpdates(modCachePath, updates) {
+    if (!modCachePath || !updates || Object.keys(updates).length === 0) return false;
+
+    try {
+        const current = await loadModCache(modCachePath);
+        await fs.writeJson(modCachePath, { ...current, ...updates });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 async function loadModCache(modCachePath) {
     if (!modCachePath) return {};
     try {
@@ -188,6 +200,7 @@ async function buildManifest(options) {
         settings = null,
         parentRevision = 0,
         playtimeTotalMs = 0,
+        resolveOnline = false,
         onProgress = null
     } = options;
 
@@ -220,6 +233,42 @@ async function buildManifest(options) {
 
     let icon = null;
     let processed = 0;
+
+    if (resolveOnline) {
+        const pending = [];
+        const bySha1 = new Map();
+
+        for (const file of scan.files) {
+            if (!SHA1_CATEGORIES.has(file.category)) continue;
+
+            let hashed;
+            try {
+                hashed = await cache.resolve(file.relPath, file.absPath, { withSha1: true });
+            } catch {
+                continue;
+            }
+            if (!hashed.sha1) continue;
+            if (lookupSource(modCache, file, hashed.sha1)) continue;
+
+            pending.push(hashed.sha1);
+            bySha1.set(hashed.sha1, file);
+        }
+
+        if (pending.length > 0) {
+            if (onProgress) onProgress({ phase: 'resolve', total: pending.length });
+
+            const { resolveBySha1, toModCacheEntries } = require('./modrinthResolver');
+            const online = await resolveBySha1(pending);
+            const updates = toModCacheEntries(online.resolved, bySha1);
+
+            Object.assign(modCache, updates);
+            await saveModCacheUpdates(modCachePath, updates);
+
+            stats.onlineAttempted = online.attempted;
+            stats.onlineResolved = online.resolved.size;
+            stats.onlineFailed = online.failed;
+        }
+    }
 
     const instanceJson = await buildNormalizedInstanceJson(instanceDir);
 

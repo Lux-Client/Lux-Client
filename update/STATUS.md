@@ -5,13 +5,13 @@
 > Du musst die Repos **nicht** neu analysieren — das steht in `01-ANALYSE.md`.
 
 **Zuletzt aktualisiert:** 2026-08-31
-**Aktuelle Phase:** Phase 10 — **fertig**, Phase 11 als Nächstes
-**Geschriebener Code:** Client `backend/luxcloud/` (29 Module), Manifest-Worker,
+**Aktuelle Phase:** Phase 11 — **fertig**, Phase 12 als Nächstes
+**Geschriebener Code:** Client `backend/luxcloud/` (30 Module), Manifest-Worker,
 UI-Anbindung, `tests/` (157 Tests), Cloud-UI (9 Komponenten) · Website
 `routes/{deviceAuth,cloud,cloudSync,cloudBlobs,adminCloud,manifestSchema}.js`,
 `middleware/deviceAuth.js`, `storage/`, `jobs/cloudGc.js`, `cloudBlobs.js`,
 `cloudInstances.js`, `cloudConfig.js`, `db_init_cloud.js`,
-`jobs/cloudRetention.js`, `tests/` (386 Tests), Zustimmungsseite
+`jobs/cloudRetention.js`, `tests/` (417 Tests + Lasttest), Zustimmungsseite
 
 ---
 
@@ -74,8 +74,8 @@ UI-Anbindung, `tests/` (157 Tests), Cloud-UI (9 Komponenten) · Website
 | 8 Playtime-Sync | ✅ fertig | G-Counter je Gerät, Monotonie- und Plausibilitätsprüfung, 23 grüne Tests |
 | 9 UI / UX | ✅ fertig | Badge, Cloud-Tab, Konfliktdialog, Onboarding, Verlauf, Transferpanel |
 | 10 Konto / Ablauf / Admin | ✅ fertig | 15-Tage-Regel wörtlich, Kontolöschung, Admin-Endpunkte, 43 grüne Tests |
-| 11 Testing | ⬜ offen | **als Nächstes** — Last, Chaos, Security-Review, Kostenmessung |
-| 12 Launch | ⬜ offen | |
+| 11 Testing | ✅ fertig | Quota-Bug gefunden und behoben, 31 Security- + 14 Lasttests, Kostenmessung |
+| 12 Launch | ⬜ offen | **als Nächstes** — Storage-Anbieter, Node-Version, Dry-Run-Woche |
 
 Legende: ⬜ offen · 🟨 in Arbeit · ✅ fertig · ⚠️ blockiert
 
@@ -711,37 +711,125 @@ manuellem Lauf für Ablauf und Retention. Jede schreibende Aktion geht durch
 
 ---
 
+
+## Was in Phase 11 gebaut wurde
+
+### Ein echter Fund: Quota-Umgehung über gefälschte Größenangaben
+
+`logical_bytes` wurde aus den im Manifest **deklarierten** `size`-Feldern
+gerechnet. Ein manipulierter Client konnte für eine 64-KB-Datei `size: 1`
+angeben — und damit beliebig viel echten Speicher belegen, während die Quota
+kaum stieg.
+
+Behoben: der Commit rechnet jetzt mit den **tatsächlichen** Blob-Größen aus der
+`blobs`-Tabelle, die der Server beim Upload selbst gemessen hat. Nebeneffekt
+und erwünscht: Modrinth-Referenzen kosten dadurch 0 Bytes Quota, weil zu ihnen
+kein Blob gehört — genau richtig, denn sie kosten uns auch keinen Speicher.
+
+Der Test provoziert die Lücke und prüft das Ergebnis, statt nur die Ablehnung
+zu erwarten.
+
+### Gegnerische Testsuite (`security.phase11.test.js`, 31 Tests)
+
+- **IDOR:** acht Endpunkte des Opfers mit dem Token des Angreifers — keiner
+  antwortet mit etwas anderem als 404
+- **Blob-Raten:** ein fremder Blob-Hash ist weder direkt lesbar noch lässt er
+  sich ins eigene Manifest legen, und nach dem Versuch auch nicht
+- **13 Pfad-Angriffe** in einem Durchlauf: `..`, Backslash-Varianten, absolute
+  Pfade, Laufwerksbuchstaben, NUL, Windows-Reservednamen, Trailing-Space, zu
+  tiefe Pfade, leere Pfade
+- **Tokens:** erfunden, manipuliert, ohne — alle 401; Refresh rotiert; ein
+  zweimal verbrauchter Refresh tötet die ganze Gerätekette
+- **Sitzungen:** eine fremde Sitzung lässt sich weder am Leben halten noch
+  beenden, und läuft danach unverändert weiter
+- **Admin:** fünf Endpunkte, weder mit Bearer-Token noch mit Website-Sitzung
+  ohne Adminrolle erreichbar
+- **Abgemeldetes Gerät** verliert den Zugriff sofort, nicht erst mit dem Token
+
+### Last und Chaos (`load.phase11.test.js`, 14 Tests)
+
+40 Geräte, 120 Instanzen, 1.268 Blob-Uploads:
+
+| | |
+|---|---|
+| Dedup-Faktor | **1,61x** (454 gespeichert, 814 dedupliziert) |
+| `head` p50/p95 | **4 / 13 ms** |
+| `commit` p50/p95 | **54 / 84 ms** |
+| refcount-Abweichungen nach der Last | **0** |
+| `used_bytes` falsch bei | **0 Konten** |
+
+Der Lasttest umgeht bewusst den OAuth-Flow und signiert Tokens direkt: der
+Rate-Limiter (10 Token-Anfragen je 15 min und IP) greift sonst nach dem
+zehnten Gerät. Das ist die Schutzfunktion, die korrekt arbeitet — sie
+aufzuweichen wäre der falsche Weg gewesen.
+
+Enthalten ist auch der Abbruch-Fall: ein hochgeladener, nie committeter Blob
+hat refcount 0, ist über seinen Anspruch für den Uploader lesbar, für andere
+nicht — und verfällt später über den GC.
+
+`npm run test:load` läuft getrennt, Umfang über `LUXCLOUD_LOAD_DEVICES`,
+`_INSTANCES` und `_FILES` steuerbar.
+
+### Modrinth-Online-Auflösung (offener Punkt Nr. 5, erledigt)
+
+`manifest.js` las bisher nur `mod_cache.json`. Instanzen, deren Mod-Liste im
+Client nie geöffnet wurde, sahen dadurch künstlich teuer aus. Neu:
+`modrinthResolver.js` fragt fehlende Hashes gebündelt über
+`POST /v2/version_files` (100 je Anfrage) ab und schreibt die Treffer in
+`mod_cache.json` zurück — davon profitiert auch die bestehende Mod-Liste.
+
+Der Schritt ist **optional** (`resolveOnline`), damit der Manifest-Bau nicht
+zwingend netzabhängig wird. Schlägt die Abfrage fehl, geht es ohne sie weiter.
+
+**Gemessen an den echten Instanzen dieses PCs (21,7 GB auf der Platte):**
+
+| | ohne Online-Auflösung | mit |
+|---|---|---|
+| Referenziert | 424 MB | **622 MB** |
+| Upload | 233 MB | **34,9 MB** |
+| Anteil des Ordners | 1,0 % | **0,2 %** |
+| 5-GB-Kontingent belegt | 4,5 % | **0,7 %** |
+
+Damit ist die Kostenschätzung aus `§E.3` nicht nur bestätigt, sondern deutlich
+übertroffen — sie ging von ⌀ 85 % Trefferquote aus und rechnete mit 2–4 TB
+physisch für 100.000 User.
+
+---
+
 ## Nächster Schritt
 
-**Phase 11 — Testing und Härtung.** Die Funktionalität ist vollständig; ab hier
-geht es um Belastbarkeit statt Umfang.
+**Phase 12 — Produktions-Launch.** Alles Funktionale steht; hier geht es nur
+noch um das Ausrollen.
 
-1. **Lasttest**: 1.000 simulierte Geräte, je 3 Instanzen, gemischt Upload und
-   Download.
-2. **Chaos**: Netz mitten im Upload trennen, Server während des Commits neu
-   starten, Prozess killen, Platte volllaufen lassen.
-3. **`/security-review`** über alle neuen Endpunkte. Gezielt: Path Traversal,
-   IDOR zwischen zwei Konten, Token-Reuse, Quota-Umgehung.
-4. **Kostenmessung an echten Daten**: Dedup-Faktor, Bytes je User,
-   Modrinth-Trefferquote — gegen `§E.3` halten. `/api/admin/cloud/stats`
-   liefert die Zahlen bereits.
-5. **Die Online-Auflösung nachrüsten** (offener Punkt Nr. 5). Ohne sie bleibt
-   die gemessene Trefferquote systematisch zu niedrig, weil `manifest.js` nur
-   den Cache liest.
-6. Nutzer-Dokumentation: was wird synchronisiert, was nicht, und vor allem die
-   15-Tage-Regel in klaren Worten.
+**Zwingend vorher:**
 
-**Vor dem Launch (Phase 12) zwingend:**
+1. **Storage-Anbieter festlegen** (offene Entscheidung Nr. 3). Der `s3`-Treiber
+   ist fertig und funktioniert gegen jedes S3-kompatible Ziel — es fehlen nur
+   Bucket und Schlüssel in der `.env` plus `LUXCLOUD_STORAGE_DRIVER=s3`.
+   **Noch nie gegen einen echten Bucket getestet.**
+2. **Node-Version des Website-Images anheben** (offener Punkt Nr. 3). Unter
+   Node 20 meldet `/me` nur `compression: ['none']` und die zstd-Ersparnis
+   fällt weg.
+3. **`LUXCLOUD_EXPIRY_DRY_RUN=true` und `LUXCLOUD_GC_DRY_RUN=true`** mindestens
+   eine Woche produktiv mitlaufen lassen und die Logs prüfen. Beide Jobs sind
+   die einzigen Stellen, die dauerhaft Nutzerdaten löschen.
+4. **Datenschutzerklärung ist aktualisiert** (Abschnitte 6–8) und die
+   Nutzer-Doku steht unter *Docs → Cloud Sync*. Was dort noch fehlt: der
+   konkrete Storage-Anbieter samt Region, sobald Punkt 1 entschieden ist.
+5. **Deep Link auf einem gebauten Installer testen** (offener Punkt Nr. 1) —
+   `npm run dist`, installieren, Login durchspielen. Im Dev-Modus verhält sich
+   `setAsDefaultProtocolClient` anders.
+6. **Ende-zu-Ende gegen einen laufenden Server** (offener Punkt Nr. 2).
 
-- `LUXCLOUD_EXPIRY_DRY_RUN=true` mindestens eine Woche produktiv mitlaufen
-  lassen und die Logs prüfen. Der Ablauf-Job ist neben dem GC die einzige
-  Stelle, die dauerhaft Nutzerdaten löscht.
-- Datenschutzerklärung und Nutzungsbedingungen ergänzen — insbesondere die
-  15-Tage-Regel, weil sie für Nutzer überraschend sein kann.
-- Storage-Anbieter festlegen (Entscheidung Nr. 3), Bucket und Schlüssel
-  eintragen, `LUXCLOUD_STORAGE_DRIVER=s3` setzen.
-- Node-Version des Website-Images anheben, sonst fällt zstd weg (offener
-  Punkt Nr. 3).
+**Rollout:**
+
+- `LUXCLOUD_ENABLED=false` als Killswitch produktiv verifizieren
+- gestaffelt: intern → Beta-Freiwillige → 10 % → alle
+- Speicher-Alarm bei 70 % des geplanten Budgets. Der erste Massen-Upload
+  hat eine schlechte Dedup-Rate, weil der Pool noch leer ist.
+- Monitoring: Speicherwachstum, GC-Rückstand, 5xx-Rate, Commit-Konfliktrate.
+  `/api/admin/cloud/stats` liefert die Zahlen bereits.
+- Support-Runbook: „Instanz fehlt", „Speicher voll", „Konflikt hängt"
 
 ---
 
@@ -929,6 +1017,10 @@ mit Datum und Fundstelle.)*
 | 2026-08-31 | **`last_commit_device_id = NULL` gilt als „jeder Zugriff ist fremd"** | Alle Instanzen aus der Zeit vor Phase 10 haben die Spalte nicht gefüllt. Die Alternative — sie als „Zugriff nie fremd" zu behandeln — hätte bestehende Instanzen sofort in den Ablauf laufen lassen. Bei einer Regel, die Daten löscht, ist die konservative Richtung die richtige. |
 | 2026-08-31 | **`purgeEverything` läuft vor `DELETE FROM users`, und ein Fehlschlag bricht die Kontolöschung ab** | Der Cascade auf `users` räumt `cloud_instances` und `blob_refs` weg, ohne `blobs.refcount` zu dekrementieren. Die Blobs wären dann für immer als referenziert markiert und vom GC nie einsammelbar — ein Leck, das sich nur durch einen vollständigen Reconcile über alle Blobs finden ließe. Lieber ein 500 und ein bestehendes Konto als stiller Datenmüll. |
 | 2026-08-31 | **Die Ablaufwarnung steht dauerhaft im Cloud-Tab, nicht nur als Notification** | Bei einer Regel, die nach 15 Tagen löscht, reicht eine Benachrichtigung nicht, die man wegklicken kann. Der Tab zeigt bei jeder nie anderswo gezogenen Instanz das konkrete Datum und den Satz, dass die lokalen Dateien bleiben. |
+| 2026-08-31 | **`logical_bytes` kommt aus den tatsächlichen Blob-Größen, nicht aus dem Manifest** | Sicherheitsfund aus Phase 11: die deklarierten `size`-Felder im Manifest sind Clientdaten. Ein manipulierter Client konnte für eine 64-KB-Datei `size: 1` angeben und so beliebig viel echten Speicher belegen. Der Server misst die Größe beim Upload ohnehin selbst — jetzt benutzt er sie auch. Nebeneffekt und erwünscht: Modrinth-Referenzen kosten 0 Bytes Quota, weil sie uns auch keinen Speicher kosten. |
+| 2026-08-31 | **Der Lasttest signiert Tokens direkt, statt durch den OAuth-Flow zu gehen** | Der Rate-Limiter lässt 10 Token-Anfragen je 15 min und IP zu und blockiert ab dem elften Gerät. Ihn für Tests aufzuweichen wäre der falsche Weg gewesen: eine Schutzfunktion, die eine Umgehung kennt, ist irgendwann versehentlich produktiv umgangen. Der Lasttest prüft ohnehin nicht die Anmeldung. |
+| 2026-08-31 | **Die Modrinth-Online-Auflösung ist optional, nicht Standard** | `resolveOnline` macht den Manifest-Bau netzabhängig. Als Standard hätte das jeden Sync an die Erreichbarkeit von Modrinth gebunden, auch wenn der Cache längst gefüllt ist. Als Option greift sie genau dort, wo sie hilft: beim ersten Sync einer Instanz, deren Mod-Liste im Client nie geöffnet wurde. Schlägt die Abfrage fehl, läuft der Bau ohne sie weiter. Wirkung an echten Daten: Upload 233 MB → 34,9 MB. |
+| 2026-08-31 | **Die Datenschutzerklärung benennt ausdrücklich, dass keine Ende-zu-Ende-Verschlüsselung möglich ist** | Die Dedup über Konten hinweg ist der Kern der Kostenrechnung und setzt voraus, dass der Server identische Inhalte erkennt. Das ist eine Einschränkung, die Nutzer kennen müssen, bevor sie Welten hochladen — sie zu verschweigen wäre der schlechtere Weg gewesen als die Abwägung offen hinzuschreiben. |
 
 ---
 

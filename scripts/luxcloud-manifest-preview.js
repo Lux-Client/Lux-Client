@@ -76,6 +76,7 @@ function parseArgs(argv) {
         syncWorlds: flags.has('--worlds'),
         syncScreenshots: flags.has('--screenshots'),
         enableChunking: flags.has('--chunking'),
+        resolveOnline: flags.has('--online'),
         json: flags.has('--json'),
         all: flags.has('--all'),
         skipDiskSize: flags.has('--fast')
@@ -117,7 +118,8 @@ async function previewInstance(instanceDir, name, options) {
         modCachePath: path.join(options.userData, 'mod_cache.json'),
         syncWorlds: options.syncWorlds,
         syncScreenshots: options.syncScreenshots,
-        enableChunking: options.enableChunking
+        enableChunking: options.enableChunking,
+        resolveOnline: options.resolveOnline
     });
 
     const overview = summarize(result);
@@ -211,7 +213,8 @@ async function main() {
         console.log('  npm run luxcloud:preview -- "PVP MISCHE"');
         console.log('  npm run luxcloud:preview -- --all');
         console.log('  npm run luxcloud:preview -- --all --worlds --chunking');
-        console.log('\nFlags: --worlds  --screenshots  --chunking  --all  --json  --fast');
+        console.log('\nFlags: --worlds  --screenshots  --chunking  --online  --all  --json  --fast');
+        console.log('       --online fragt Modrinth nach Mods, die noch nicht im mod_cache stehen');
         return;
     }
 
