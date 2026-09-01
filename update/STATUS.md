@@ -5,13 +5,13 @@
 > Du musst die Repos **nicht** neu analysieren — das steht in `01-ANALYSE.md`.
 
 **Zuletzt aktualisiert:** 2026-08-31
-**Aktuelle Phase:** Phase 5 — **fertig**, Phase 6 als Nächstes
-**Geschriebener Code:** Client `backend/luxcloud/` (21 Module), Manifest-Worker,
-UI-Anbindung, `tests/` (113 Tests) · Website
+**Aktuelle Phase:** Phase 7 — **fertig**, Phase 8 als Nächstes
+**Geschriebener Code:** Client `backend/luxcloud/` (27 Module), Manifest-Worker,
+UI-Anbindung, `tests/` (157 Tests) · Website
 `routes/{deviceAuth,cloud,cloudSync,cloudBlobs,adminCloud,manifestSchema}.js`,
 `middleware/deviceAuth.js`, `storage/`, `jobs/cloudGc.js`, `cloudBlobs.js`,
-`cloudInstances.js`, `cloudConfig.js`, `db_init_cloud.js`, `tests/` (272 Tests),
-Zustimmungsseite
+`cloudInstances.js`, `cloudConfig.js`, `db_init_cloud.js`,
+`jobs/cloudRetention.js`, `tests/` (320 Tests), Zustimmungsseite
 
 ---
 
@@ -69,10 +69,10 @@ Zustimmungsseite
 | 3 Storage Layer | ✅ fertig | fs- und s3-Treiber, Blob-Upload/Download, Refcounts, GC + Reconcile, 67 grüne Tests |
 | 4 Instance Manifest | ✅ fertig | Manifest-Bau im Worker, FastCDC, Kompressionsheuristik, Server-Validator, 80 + 66 grüne Tests |
 | 5 Upload / Download | ✅ fertig | negotiate/commit/manifest, Uploader, Downloader, Blob-Cache, 46 + 37 grüne Tests |
-| 6 Inkrementeller Sync | ⬜ offen | **als Nächstes** — Delta-Erkennung steht bereits, es fehlen Auto-Trigger und Retention |
-| 7 Konfliktauflösung | ⬜ offen | |
-| 8 Playtime-Sync | ⬜ offen | unabhängig, kann vorgezogen werden |
-| 9 UI / UX | ⬜ offen | |
+| 6 Inkrementeller Sync | ✅ fertig | contentHash statt Leer-Commits, Auto-Sync mit Backoff, Retention, Rollback, 27 + 44 grüne Tests |
+| 7 Konfliktauflösung | ✅ fertig | Pre-Launch-Gate, 3-Wege-Diff, Verlierersicherung, Advisory Lock, 21 grüne Tests |
+| 8 Playtime-Sync | ⬜ offen | **als Nächstes** — Sessions und lokale Buchung stehen schon |
+| 9 UI / UX | ⬜ offen | die Engine ist über IPC vollständig ansprechbar, sichtbar ist noch nichts |
 | 10 Konto / Ablauf / Admin | ⬜ offen | |
 | 11 Testing | ⬜ offen | |
 | 12 Launch | ⬜ offen | |
@@ -434,31 +434,156 @@ laufenden Server — kein Mock zwischen Uploader und Datenbank.
 
 ---
 
+
+## Was in Phase 6 gebaut wurde
+
+### Ein Sync ohne Änderung erzeugt keine Revision mehr
+
+Das war der offene Punkt aus Phase 5. Der Manifest-Hash taugt dafür nicht: er
+enthält `createdAt`, ist also bei jedem Lauf ein anderer. `manifest.js` liefert
+deshalb zusätzlich einen **`contentHash`** über die inhaltsrelevanten Teile
+(Name, Runtime, Settings, Icon, und je Eintrag Pfad + sha256 + Quelle) — ohne
+Zeitstempel, ohne Gerät, ohne Playtime. Stimmt er mit dem gespeicherten überein
+**und** ist die Cloud-Revision unverändert, wird der Commit übersprungen.
+`options.force` umgeht das, wenn ein Commit erzwungen werden soll.
+
+Ohne das hätte tägliches Spielen die Retention mit identischen Revisionen
+gefüllt.
+
+### Auto-Sync (`autoSync.js`)
+
+Entprellt (30 s), führt pro Instanz nur einen Lauf, kennt Backoff
+(5 s → 15 s → 1 min → 5 min → 15 min → 1 h) und unterscheidet wiederholbare
+Fehler (offline, rate limited) von endgültigen. Eine laufende Instanz wird
+über `suspend()` ausgeklammert — sonst würde der Sync gegen ein schreibendes
+Minecraft laufen. `launcher.js` klammert beim Start aus und stößt nach dem
+Spielende an.
+
+### Retention (`jobs/cloudRetention.js`, täglich)
+
+- alle Revisionen der letzten 7 Tage, dann eine je Tag für 30 Tage, dann eine
+  je Monat für 90 Tage, Obergrenze 20 je Instanz
+- `keep_until` schützt, die aktuelle Revision wird nie verworfen
+- **Welten-Degradierung:** nur die letzten 3 Revisionen behalten ihre
+  `saves/**`-Blobs; ältere werden zu Metadaten-Snapshots (`has_worlds = false`).
+  Ohne das frisst ein einziger Spieler mit einer 2-GB-Welt die gesamte
+  Ersparnis wieder auf.
+- Papierkorb wird nach `TRASH_RETENTION_DAYS` endgültig geleert, inklusive
+  `recalcUsedBytes`
+
+### Rollback
+
+`POST /instances/:uuid/revisions/:rev/rollback` setzt eine alte Revision als
+**neue** Revision obendrauf, statt Geschichte zu löschen. Prüft vorher, ob die
+Blobs jener Revision überhaupt noch existieren — nach der Retention können sie
+weg sein, und dann ist ein sauberes 409 besser als eine kaputte Instanz.
+
+---
+
+## Was in Phase 7 gebaut wurde
+
+### Der Pre-Launch-Gate (`preLaunch.js`)
+
+Genau die vom Auftraggeber gewünschte Mechanik (`00-PROMPT.md §7`):
+
+```
+Play
+ ├─ nicht verknüpft / abgeschaltet ──────────────► sofort starten
+ ├─ head-Abfrage (Timeout 2,5 s, sonst offline) ─► sofort starten
+ ├─ remote ≤ lokal ──────────────────────────────► starten
+ │     └─ lokal geändert → nach dem Start hochschieben
+ ├─ remote > lokal, lokal sauber ────────────────► erst ziehen, dann starten
+ └─ remote > lokal, lokal geändert ──────────────► Konflikt, Start blockiert
+```
+
+Der Timeout ist hart und der Fallback ist immer „starten". Der Play-Button ist
+die meistgenutzte Funktion des Clients; eine hängende Cloud darf ihn nicht
+blockieren.
+
+### Konflikt-Engine (`conflict.js`)
+
+Drei-Wege-Diff gegen die Basis-Revision, mit den Regeln aus `§D.7`:
+
+| Fall | Auflösung |
+|---|---|
+| nur eine Seite geändert | diese Seite, automatisch |
+| beide, gleicher Hash | kein Konflikt |
+| Löschen gegen Ändern | die Änderung gewinnt, automatisch |
+| dieselbe Datei neu auf beiden Seiten | Union, automatisch |
+| beide geändert (Config u. a.) | Nachfrage |
+| `saves/<Welt>/**` | **niemals automatisch**, die ganze Welt ist die Einheit |
+
+`backupLosers()` sichert die Verliererseite nach
+`.lux-sync/conflicts/rev<N>-<zeit>/` — egal wie entschieden wird, es geht
+nichts verloren.
+
+### Dirty-Prüfung und ein Fallstrick
+
+`isLocallyDirty()` vergleicht Größe und mtime gegen den Hash-Cache, statt alles
+neu zu hashen — auf einer großen Instanz ein paar tausend `stat()` statt
+Gigabytes.
+
+**`instance.json` musste dabei ausgenommen werden.** Es wird beim Manifest-Bau
+normalisiert (Playtime und gerätelokale Felder raus) und läuft deshalb nie
+durch den Hash-Cache. Ohne die Ausnahme galt jede Instanz als geändert, und
+zwar dauerhaft — der Test hat das gefunden. Stattdessen wird der Hash der
+**normalisierten** Fassung beim Sync als `lastInstanceConfigHash` gemerkt und
+gezielt verglichen. Damit macht eine reine Playtime-Änderung die Instanz nicht
+dirty, eine geänderte Loader-Version aber sehr wohl.
+
+### Advisory Lock
+
+`POST /instances/:uuid/session`, `/sessions/:sid/heartbeat`, `/sessions/:sid/end`.
+Ein zweites Gerät wird gewarnt, aber nicht ausgesperrt — ein harter Lock würde
+offline nicht funktionieren und einen abgestürzten PC dauerhaft aussperren.
+Sessions ohne Heartbeat gelten nach `LUXCLOUD_SESSION_STALE_MINUTES` (5) als
+tot und werden von `head` ausgeblendet.
+
+### Was in Phase 6 und 7 geprüft wurde
+
+`cloudSync.phase6.test.js` (27), `cloudSync.phase7.test.js` (21),
+`luxcloud.phase67.test.js` (44). Darunter:
+
+- Rollback erzeugt eine neue Revision, lässt die alten stehen, lehnt die
+  aktuelle und unbekannte ab
+- die Retention-Auswahl über sechs Zeitfenster, inklusive „die aktuelle
+  Revision wird nie verworfen" und der 20er-Obergrenze
+- Retention gegen die Datenbank: Trockenlauf löscht nichts, der echte Lauf
+  räumt auf, die refcounts laufen mit, ein verwaister Blob fällt auf 0
+- Welten-Degradierung: von fünf Revisionen behalten drei ihre Welt
+- alle sieben Diff-Regeln einzeln, plus Welten als eigene Einheit
+- der Auto-Sync-Scheduler: Entprellen, Aussetzen, Backoff, Deckelung
+- kein Commit ohne Änderung, aber einer mit `force`
+- der Gate in allen fünf Ausgängen, inklusive „offline in unter 4 s"
+
+---
+
 ## Nächster Schritt
 
-**Phase 6 — Inkrementeller Sync** (siehe `03-ROADMAP.md`).
+**Phase 8 — Playtime-Sync** (siehe `03-ROADMAP.md`). Sie hängt nur an Phase 2
+und ist das kleinste abgeschlossene Stück, das noch fehlt. Vieles liegt bereit:
 
-Die Delta-Erkennung selbst steht schon und ist gemessen: eine geänderte
-4-KB-Config überträgt eine Datei und unter 10 KB, ein Lauf ohne Änderung
-überträgt nichts. Was fehlt, ist alles drumherum:
+- `cloud_instance_playtime` steht, `head` und `GET /instances` liefern die
+  Summe bereits aus.
+- `playtimeSession.js` (Phase 0) führt lokal Heartbeat-Sessions und bucht
+  abgebrochene beim nächsten Start nach.
+- `cloudSession.js` (Phase 7) hält bereits eine serverseitige Session mit
+  Heartbeat über die ganze Spieldauer.
 
-- **Auto-Sync-Trigger** — nach Spielende, bei Instanz-Änderungen (30 s
-  entprellt), beim App-Start, manuell. Achtung auf die Sync-Schleife: während
-  eines Restores muss der Watcher für die Instanz aus sein, und der Vergleich
-  läuft gegen Hashes, nicht gegen mtime allein.
-- **Ein Sync ohne Änderung darf keine Revision erzeugen.** Heute tut er das
-  (siehe Test „trotzdem entsteht eine neue Revision"). Der Client kennt den
-  `manifestHash` aus `head` und muss den Commit überspringen, wenn er
-  übereinstimmt — sonst füllt tägliches Spielen die Retention mit
-  identischen Revisionen.
-- **Welten-Chunking scharf schalten** (`syncWorlds`), bisher nur unter Flag.
-- **Retention-Job** (`§E.5`) inkl. Degradierung alter Revisionen ohne
-  `saves/**`.
-- `POST /revisions/:rev/rollback` — `GET /revisions` steht bereits.
+Was fehlt: `PUT /instances/:uuid/playtime` mit Monotonie-Prüfung, der
+G-Counter-Abgleich im Client (absoluter Gerätewert, nie ein Delta), die
+Erstmigration der vorhandenen `instance.json.playtime` auf das Origin-Gerät
+(genau einmal, an ein Flag in `state.json` gebunden) und die Plausibilitäts-
+grenze von 24 h pro Tag und Gerät.
 
-Bereits nutzbar aus Phase 5: `uploader.uploadInstance()` nimmt
-`options.parentRevision`, `downloader.restoreInstance()` nimmt `revision`,
-und `syncState.js` hält je Instanz `lastKnownRevision` und `lastManifestHash`.
+**Danach Phase 9 (UI/UX).** Die Engine ist vollständig und über IPC
+ansprechbar, sichtbar ist davon aber noch nichts. Es fehlen die React-Teile:
+`CloudStatusBadge`, `SyncConflictModal`, `PreLaunchSyncOverlay`,
+`CloudOnboardingModal`, `RevisionHistoryModal`, `CloudTransferPanel` und die
+Einbindung des Gates in den Play-Button. Die Roadmap führt die ersten beiden
+unter Phase 7 — sie sind bewusst dort nicht gebaut worden, weil Phase 9 die UI
+ohnehin als Ganzes angeht und ein halb angebundener Konfliktdialog schlimmer
+wäre als keiner.
 
 ---
 
@@ -628,6 +753,13 @@ mit Datum und Fundstelle.)*
 | 2026-08-31 | **`LUXCLOUD_DIR` überschreibt `app.getPath('userData')`** | `paths.js` hing an Electron, damit auch `state.js`, `blobStore.js` und der Uploader. Ohne den Override wäre Phase 5 nur in einer laufenden App testbar gewesen. Die Variable ist außerdem nützlich, um zwei Konten auf einem Rechner nebeneinander zu betreiben. |
 | 2026-08-31 | **Der Client-Test fährt die echte Website-Harness hoch** | `tests/luxcloud.phase5.test.js` sucht das Website-Repo neben dem Client (beide Namen, `Lux-Website` und `MCLC-Website`) und lässt Uploader und Downloader gegen einen laufenden Server samt Datenbank laufen. Ein Mock hätte genau die Fehler durchgelassen, um die es hier geht — Reihenfolge von negotiate/commit, Hash-Verträge, Kompressions-Aushandlung. Fehlt das Repo, überspringt sich der Test, statt rot zu werden. |
 | 2026-08-31 | **`fetchBlob` rät die Kompression und prüft gegen den Hash** | `api.authed()` gibt nur den Body zurück, nicht die Header, also kommt `X-Lux-Compression` beim Downloader nicht an. Statt die geteilte API-Schicht umzubauen, wird entpackt und beides gegen den erwarteten sha256 gehalten — der Hash ist ohnehin die stärkere Prüfung, und ein Fehlgriff ist damit unmöglich statt nur unwahrscheinlich. |
+| 2026-08-31 | **`contentHash` neben dem Manifest-Hash** | Der Manifest-Hash enthält `createdAt` und ist damit bei jedem Lauf ein anderer — als Kriterium für „hat sich etwas geändert" unbrauchbar. Der `contentHash` läuft nur über Name, Runtime, Settings, Icon und je Eintrag Pfad + sha256 + Quelle. Ohne ihn hätte jeder Auto-Sync eine Revision erzeugt und die Retention mit identischen Ständen gefüllt. |
+| 2026-08-31 | **`instance.json` ist von der Dirty-Prüfung ausgenommen und wird über den Hash der normalisierten Fassung geprüft** | Es läuft beim Manifest-Bau durch `normalizeInstanceConfig` und deshalb nie durch den Hash-Cache. Die naive Prüfung hielt es für neu — jede Instanz war damit dauerhaft dirty, der Pre-Launch-Gate hätte immer einen Konflikt gemeldet. Der Test hat es gefunden. Nebeneffekt und eigentlich der Punkt: eine reine Playtime-Änderung macht die Instanz jetzt nicht mehr dirty, eine geänderte Loader-Version schon. |
+| 2026-08-31 | **Rollback legt eine neue Revision an, statt Geschichte zu löschen** | `§C.3` lässt beides zu. Eine neue Revision obendrauf ist umkehrbar, bleibt mit dem Optimistic Locking über `parentRevision` verträglich und lässt andere Geräte den Wechsel wie jede andere Änderung sehen. Vorher wird geprüft, ob die Blobs der Zielrevision überhaupt noch da sind — nach der Retention können sie weg sein, und ein 409 ist besser als eine halb wiederhergestellte Instanz. |
+| 2026-08-31 | **Der Advisory Lock warnt, er sperrt nicht** | Ein harter Lock wäre offline nicht durchsetzbar und würde einen abgestürzten PC bis zum Ablauf aussperren. Stattdessen meldet `POST /session` die anderen laufenden Sitzungen zurück und der Client zeigt sie an. Sessions ohne Heartbeat gelten nach fünf Minuten als tot und werden von `head` ausgeblendet. |
+| 2026-08-31 | **Der Pre-Launch-Gate fällt im Zweifel immer auf „starten" zurück** | 2,5 s Timeout auf `head`, jeder Fehler wird wie offline behandelt. Der Play-Button ist die meistgenutzte Funktion des Clients; eine langsame oder kaputte Cloud darf ihn nicht blockieren. Nur ein echter Konflikt hält den Start an, und auch der ist über die Konfliktauflösung sofort auflösbar. |
+| 2026-08-31 | **`degradeWorlds` filtert in JS statt im SQL** | `WHERE r.revision <= i.current_revision - ?` liefert unter pg-mem nichts (Parameter in Arithmetik). Die Kandidatenmenge ist durch `has_worlds = TRUE` ohnehin klein, und derselbe Workaround wurde in Phase 2 schon für korrelierte Subqueries gewählt. |
+| 2026-08-31 | **Die React-Komponenten aus `§G.2` bleiben Phase 9, obwohl die Roadmap zwei davon unter Phase 7 führt** | Die Engine ist über IPC vollständig ansprechbar (`pre-launch-check`, `diff-instance`, `resolve-conflict`). Ein halb angebundener Konfliktdialog wäre schlimmer als keiner: er würde Entscheidungen anbieten, deren Auswirkung der Nutzer nicht sieht. Phase 9 geht die UI als Ganzes an. |
 
 ---
 

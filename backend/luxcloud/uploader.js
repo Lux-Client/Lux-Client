@@ -6,13 +6,18 @@ const api = require('./api');
 const blobStore = require('./blobStore');
 const { compressIfWorthwhile } = require('./compression');
 const { buildManifestInWorker } = require('./manifestRunner');
-const { rememberRevision } = require('./syncState');
+const { readInstanceState, rememberRevision } = require('./syncState');
 
 const BATCH_THRESHOLD_BYTES = 256 * 1024;
 const DEFAULT_MAX_BATCH_BYTES = 4 * 1024 * 1024;
 const DEFAULT_MAX_BATCH_ENTRIES = 500;
 const PUT_CHUNK_BYTES = 8 * 1024 * 1024;
 const PARALLEL_PUTS = 4;
+
+function instanceConfigHashOf(manifest) {
+    const entry = (manifest.entries || []).find((item) => item.path === 'instance.json');
+    return entry ? entry.sha256 : null;
+}
 
 function sha256(buffer) {
     return crypto.createHash('sha256').update(buffer).digest('hex');
@@ -188,6 +193,29 @@ async function uploadInstance({
     const instance = await ensureCloudInstance({ instanceUuid: instanceId, manifest: built.manifest, options });
     const parentRevision = Number(options.parentRevision ?? instance.revision ?? 0);
 
+    const tracked = await readInstanceState(instanceId);
+    const unchanged = Boolean(tracked)
+        && tracked.lastContentHash === built.contentHash
+        && Number(tracked.lastKnownRevision) === Number(instance.revision)
+        && Number(instance.revision) > 0;
+
+    if (unchanged && options.force !== true) {
+        await rememberRevision(instanceId, { instanceName, lastCheckedAt: Date.now(), dirty: false });
+        report('done', { revision: instance.revision, skipped: true });
+
+        return {
+            revision: Number(instance.revision),
+            manifestHash: instance.manifestHash,
+            contentHash: built.contentHash,
+            instance,
+            skipped: true,
+            uploadedBlobs: 0,
+            uploadedBytes: 0,
+            skippedBlobs: 0,
+            stats: built.stats
+        };
+    }
+
     const byHash = new Map();
     for (const upload of built.uploads) {
         if (!byHash.has(upload.sha256)) byHash.set(upload.sha256, upload);
@@ -270,6 +298,8 @@ async function uploadInstance({
         instanceName,
         lastKnownRevision: committed.revision,
         lastManifestHash: committed.manifestHash,
+        lastContentHash: built.contentHash,
+        lastInstanceConfigHash: instanceConfigHashOf(built.manifest),
         lastSyncedAt: Date.now(),
         dirty: false
     });
@@ -279,6 +309,8 @@ async function uploadInstance({
     return {
         revision: committed.revision,
         manifestHash: committed.manifestHash,
+        contentHash: built.contentHash,
+        skipped: false,
         instance: committed.instance,
         quota: committed.quota,
         uploadedBlobs: missing.length,

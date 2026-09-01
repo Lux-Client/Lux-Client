@@ -9,6 +9,8 @@ const backupManager = require('../backupManager');
 const { getProcessStats } = require('../utils/process-utils');
 const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
 const playtimeSession = require('../luxcloud/playtimeSession');
+const autoSync = require('../luxcloud/autoSync');
+const cloudSession = require('../luxcloud/cloudSession');
 
 function normalizeExternalRequestName(value) {
     return String(value || '').trim().toLowerCase();
@@ -2253,6 +2255,23 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                 }).catch(() => null);
             }
 
+            const cloudInstanceId = supportsPersistence ? (config?.instanceId || null) : null;
+            if (cloudInstanceId) {
+                autoSync.suspend(instanceName);
+                cloudSession.start(cloudInstanceId, instanceName)
+                    .then((session) => {
+                        if (session && session.otherActiveSessions && session.otherActiveSessions.length > 0
+                            && mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+                            mainWindow.webContents.send('luxcloud:session-warning', {
+                                instanceName,
+                                instanceId: cloudInstanceId,
+                                others: session.otherActiveSessions
+                            });
+                        }
+                    })
+                    .catch(() => {});
+            }
+
             try {
                 const discord = require('./discord');
                 discord.setActivity(`Playing ${instanceName}`, 'Starting Game...', 'lux_icon', 'Lux', runningInstances.get(instanceName));
@@ -2310,6 +2329,12 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                     // gutgeschrieben.
                     await playtimeSession.endSession(playtimeSessionId).catch(() => {});
                     playtimeSessionId = null;
+
+                    if (cloudInstanceId) {
+                        await cloudSession.end(cloudInstanceId).catch(() => {});
+                        autoSync.resume(instanceName);
+                        autoSync.notifyChanged(instanceName, 'after-play');
+                    }
 
                     try {
                         if (supportsPersistence && configPath && await fs.pathExists(configPath)) {

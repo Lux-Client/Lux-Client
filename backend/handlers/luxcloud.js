@@ -5,9 +5,13 @@ const fs = require('fs-extra');
 
 const api = require('../luxcloud/api');
 const auth = require('../luxcloud/auth');
+const autoSync = require('../luxcloud/autoSync');
 const blobStore = require('../luxcloud/blobStore');
+const conflict = require('../luxcloud/conflict');
 const downloader = require('../luxcloud/downloader');
+const preLaunch = require('../luxcloud/preLaunch');
 const uploader = require('../luxcloud/uploader');
+const { readInstanceState } = require('../luxcloud/syncState');
 const { summarize } = require('../luxcloud/manifest');
 const { buildManifestInWorker } = require('../luxcloud/manifestRunner');
 const { getHashCacheDir } = require('../luxcloud/paths');
@@ -147,6 +151,181 @@ module.exports = (ipcMain, mainWindow) => {
         try {
             const result = await api.authed({ method: 'GET', url: '/api/cloud/devices' });
             return ok({ devices: result.devices || [] });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    autoSync.setRunner(async (instanceName) => {
+        const instanceDir = resolveInstanceDirByName(instanceName);
+        if (!instanceDir) return { skipped: true, reason: 'not_found' };
+
+        const instanceId = await readInstanceId(instanceDir);
+        if (!instanceId) return { skipped: true, reason: 'no_instance_id' };
+
+        const tracked = await readInstanceState(instanceId);
+        if (!tracked || !tracked.cloudLinked) return { skipped: true, reason: 'not_linked' };
+
+        const me = await api.authed({ method: 'GET', url: '/api/cloud/me' });
+        if (me.settings && me.settings.autoSync === false) return { skipped: true, reason: 'auto_sync_off' };
+
+        return uploader.uploadInstance({
+            instanceDir,
+            instanceId,
+            instanceName,
+            capabilities: me.capabilities || {},
+            options: { modCachePath: path.join(app.getPath('userData'), 'mod_cache.json') },
+            onProgress: (progress) => sendProgress('luxcloud:sync-progress', { ...progress, auto: true })
+        });
+    });
+
+    for (const event of ['start', 'done', 'error']) {
+        autoSync.events.on(event, (payload) => {
+            sendProgress('luxcloud:auto-sync', {
+                event,
+                instanceName: payload.instanceName,
+                reason: payload.reason,
+                attempt: payload.attempt,
+                retryable: payload.retryable,
+                error: payload.error ? { code: payload.error.code, message: payload.error.message } : undefined,
+                result: payload.result
+                    ? { revision: payload.result.revision, skipped: Boolean(payload.result.skipped) }
+                    : undefined
+            });
+        });
+    }
+
+    ipcMain.handle('luxcloud:pre-launch-check', async (_event, instanceName, options = {}) => {
+        try {
+            const instanceDir = resolveInstanceDirByName(instanceName);
+            if (!instanceDir) {
+                return ok({ decision: preLaunch.DECISION.NOT_LINKED, canLaunch: true });
+            }
+
+            const instanceId = await readInstanceId(instanceDir);
+            if (!instanceId) {
+                return ok({ decision: preLaunch.DECISION.NOT_LINKED, canLaunch: true });
+            }
+
+            const result = await preLaunch.checkBeforeLaunch({
+                instanceDir,
+                instanceId,
+                instanceName,
+                options,
+                onProgress: (progress) => sendProgress('luxcloud:pre-launch-progress', progress)
+            });
+
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:diff-instance', async (_event, instanceName, options = {}) => {
+        try {
+            const instanceDir = resolveInstanceDirByName(instanceName);
+            if (!instanceDir) {
+                return { success: false, error: 'not_found', message: `Unknown instance: ${instanceName}` };
+            }
+
+            const instanceId = await readInstanceId(instanceDir);
+            if (!instanceId) {
+                return { success: false, error: 'no_instance_id', message: 'This instance has no id yet' };
+            }
+
+            const dirty = await conflict.isLocallyDirty(instanceDir, instanceId, options);
+            const tracked = await readInstanceState(instanceId);
+
+            return ok({
+                instanceId,
+                dirty: dirty.dirty,
+                changed: dirty.changed.slice(0, 500),
+                lastKnownRevision: tracked ? tracked.lastKnownRevision : 0,
+                lastSyncedAt: tracked ? tracked.lastSyncedAt : null
+            });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:resolve-conflict', async (_event, instanceName, choice, options = {}) => {
+        try {
+            if (![conflict.RESOLUTION.LOCAL, conflict.RESOLUTION.REMOTE].includes(choice)) {
+                return { success: false, error: 'invalid_request', message: 'choice must be local or remote' };
+            }
+
+            const instanceDir = resolveInstanceDirByName(instanceName);
+            if (!instanceDir) {
+                return { success: false, error: 'not_found', message: `Unknown instance: ${instanceName}` };
+            }
+
+            const instanceId = await readInstanceId(instanceDir);
+            const tracked = await readInstanceState(instanceId);
+            const revision = tracked ? Number(tracked.lastKnownRevision || 0) : 0;
+
+            const dirty = await conflict.isLocallyDirty(instanceDir, instanceId, options);
+            const backup = await conflict.backupLosers(
+                instanceDir,
+                revision,
+                dirty.changed.map((entry) => entry.path)
+            );
+
+            if (choice === conflict.RESOLUTION.REMOTE) {
+                const restored = await downloader.restoreInstance({
+                    instanceUuid: instanceId,
+                    instanceDir,
+                    instanceName,
+                    onProgress: (progress) => sendProgress('luxcloud:restore-progress', progress)
+                });
+                return ok({ resolved: 'remote', backup, revision: restored.revision });
+            }
+
+            const head = await preLaunch.fetchHead(instanceId);
+            const me = await api.authed({ method: 'GET', url: '/api/cloud/me' });
+
+            const pushed = await uploader.uploadInstance({
+                instanceDir,
+                instanceId,
+                instanceName,
+                capabilities: me.capabilities || {},
+                options: {
+                    ...options,
+                    force: true,
+                    parentRevision: Number(head.revision || 0),
+                    modCachePath: path.join(app.getPath('userData'), 'mod_cache.json')
+                },
+                onProgress: (progress) => sendProgress('luxcloud:sync-progress', progress)
+            });
+
+            return ok({ resolved: 'local', backup, revision: pushed.revision });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:rollback', async (_event, instanceUuid, revision) => {
+        try {
+            const result = await api.authed({
+                method: 'POST',
+                url: `/api/cloud/instances/${encodeURIComponent(String(instanceUuid))}/revisions/${Number(revision)}/rollback`
+            });
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:auto-sync-state', async () => {
+        try {
+            return ok({ enabled: autoSync.isEnabled(), pending: autoSync.pendingInstances() });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:flush-auto-sync', async () => {
+        try {
+            return ok(await autoSync.flush());
         } catch (err) {
             return fail(err);
         }

@@ -400,6 +400,27 @@ const electronAPI = {
     luxCloudListRevisions: (instanceUuid) => ipcRenderer.invoke('luxcloud:list-revisions', instanceUuid),
     luxCloudBlobCacheStats: () => ipcRenderer.invoke('luxcloud:blob-cache-stats'),
     luxCloudPruneBlobCache: (maxBytes) => ipcRenderer.invoke('luxcloud:prune-blob-cache', maxBytes),
+    luxCloudPreLaunchCheck: (instanceName, options) => ipcRenderer.invoke('luxcloud:pre-launch-check', instanceName, options),
+    luxCloudDiffInstance: (instanceName, options) => ipcRenderer.invoke('luxcloud:diff-instance', instanceName, options),
+    luxCloudResolveConflict: (instanceName, choice, options) => ipcRenderer.invoke('luxcloud:resolve-conflict', instanceName, choice, options),
+    luxCloudRollback: (instanceUuid, revision) => ipcRenderer.invoke('luxcloud:rollback', instanceUuid, revision),
+    luxCloudAutoSyncState: () => ipcRenderer.invoke('luxcloud:auto-sync-state'),
+    luxCloudFlushAutoSync: () => ipcRenderer.invoke('luxcloud:flush-auto-sync'),
+    onLuxCloudAutoSync: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:auto-sync', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:auto-sync', subscription);
+    },
+    onLuxCloudPreLaunchProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:pre-launch-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:pre-launch-progress', subscription);
+    },
+    onLuxCloudSessionWarning: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:session-warning', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:session-warning', subscription);
+    },
     onLuxCloudSyncProgress: (callback) => {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('luxcloud:sync-progress', subscription);

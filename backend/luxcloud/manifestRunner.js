@@ -38,6 +38,7 @@ function buildManifestInWorker(options, { onProgress = null, timeoutMs = 15 * 60
             if (message.type === 'done') {
                 finish(resolve, {
                     manifest: message.manifest,
+                    contentHash: message.contentHash,
                     manifestBlob: {
                         ...message.manifestBlob,
                         buffer: toBuffer(message.manifestBlob.buffer)

@@ -145,8 +145,8 @@ async function main() {
     });
 
     check('ohne Aenderung wird nichts hochgeladen', unchanged.uploadedBlobs === 0, unchanged);
-    check('alle Blobs waren dem Server bekannt', unchanged.skippedBlobs > 0, unchanged);
-    check('trotzdem entsteht eine neue Revision', unchanged.revision === 2, unchanged);
+    check('der Commit wird uebersprungen', unchanged.skipped === true, unchanged);
+    check('die Revision bleibt stehen', unchanged.revision === 1, unchanged);
 
     section('3) Delta-Upload nach kleiner Aenderung');
 
@@ -162,7 +162,7 @@ async function main() {
 
     check('nur die geaenderte Datei geht hoch', delta.uploadedBlobs === 1, delta);
     check('die 700-KB-Mod wird nicht erneut uebertragen', delta.uploadedBytes < 10 * 1024, delta);
-    check('Revision 3 ist entstanden', delta.revision === 3, delta);
+    check('Revision 2 ist entstanden', delta.revision === 2, delta);
 
     section('4) Konflikt bei veraltetem parentRevision');
 
@@ -173,7 +173,7 @@ async function main() {
             instanceId,
             instanceName: 'Skyblock',
             capabilities,
-            options: { enableChunking: false, parentRevision: 1 }
+            options: { enableChunking: false, parentRevision: 0, force: true }
         });
     } catch (err) {
         conflict = err;
@@ -182,7 +182,7 @@ async function main() {
     check('ein veralteter parentRevision wird abgewiesen', conflict !== null, conflict);
     check('der Fehler heisst revision_conflict', conflict && conflict.code === 'revision_conflict', conflict && conflict.code);
     check('der Fehler nennt die aktuelle Revision',
-        conflict && conflict.details && conflict.details.currentRevision === 3,
+        conflict && conflict.details && conflict.details.currentRevision === 2,
         conflict && conflict.details);
 
     section('5) Restore auf einem leeren Rechner');
@@ -198,7 +198,7 @@ async function main() {
         instanceName: 'Skyblock'
     });
 
-    check('der Restore holt die aktuelle Revision', restored.revision === 3, restored);
+    check('der Restore holt die aktuelle Revision', restored.revision === 2, restored);
     check('nichts blieb unauffindbar', restored.unavailable.length === 0, restored.unavailable);
 
     const original = await fs.readFile(path.join(instanceDir, 'mods/privat.jar'));

@@ -258,4 +258,13 @@ interface ElectronAPI {
   luxCloudPruneBlobCache: (maxBytes?: number) => Promise<any>;
   onLuxCloudSyncProgress: (callback: IpcCallback) => UnsubscribeFn;
   onLuxCloudRestoreProgress: (callback: IpcCallback) => UnsubscribeFn;
+  luxCloudPreLaunchCheck: (instanceName: string, options?: any) => Promise<any>;
+  luxCloudDiffInstance: (instanceName: string, options?: any) => Promise<any>;
+  luxCloudResolveConflict: (instanceName: string, choice: 'local' | 'remote', options?: any) => Promise<any>;
+  luxCloudRollback: (instanceUuid: string, revision: number) => Promise<any>;
+  luxCloudAutoSyncState: () => Promise<any>;
+  luxCloudFlushAutoSync: () => Promise<any>;
+  onLuxCloudAutoSync: (callback: IpcCallback) => UnsubscribeFn;
+  onLuxCloudPreLaunchProgress: (callback: IpcCallback) => UnsubscribeFn;
+  onLuxCloudSessionWarning: (callback: IpcCallback) => UnsubscribeFn;
 }

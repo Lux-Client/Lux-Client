@@ -353,9 +353,28 @@ async function buildManifest(options) {
     return {
         manifest,
         manifestBlob: { buffer: serialized, sha256: sha256Of(serialized) },
+        contentHash: contentHashOf(manifest),
         uploads,
         stats
     };
+}
+
+function contentHashOf(manifest) {
+    const relevant = {
+        instanceId: manifest.instanceId,
+        name: manifest.name,
+        runtime: manifest.runtime || null,
+        settings: manifest.settings || null,
+        icon: manifest.icon || null,
+        entries: (manifest.entries || []).map((entry) => [
+            entry.path,
+            entry.sha256,
+            entry.blob || null,
+            entry.source ? `${entry.source.projectId}:${entry.source.versionId}` : null,
+            entry.chunks ? entry.chunks.list : null
+        ])
+    };
+    return sha256Of(Buffer.from(JSON.stringify(relevant), 'utf8'));
 }
 
 function summarize(result) {
@@ -384,6 +403,8 @@ module.exports = {
     MANIFEST_VERSION,
     MAX_ENTRIES,
     buildManifest,
+    buildNormalizedInstanceJson,
+    contentHashOf,
     normalizeInstanceConfig,
     scanInstance,
     summarize

@@ -12,6 +12,7 @@ async function run() {
             type: 'done',
             manifest: result.manifest,
             manifestBlob: result.manifestBlob,
+            contentHash: result.contentHash,
             uploads: result.uploads,
             stats: result.stats
         });
