@@ -251,6 +251,11 @@ interface ElectronAPI {
   luxCloudPreviewManifest: (instanceName: string, options?: any) => Promise<any>;
   onLuxCloudManifestProgress: (callback: IpcCallback) => UnsubscribeFn;
   luxCloudListCloudInstances: (status?: 'active' | 'trashed' | 'all') => Promise<any>;
+  luxCloudUpdateInstanceSettings: (instanceUuid: string, patch: Record<string, boolean | string>) => Promise<any>;
+  luxCloudDeleteCloudInstance: (instanceUuid: string) => Promise<any>;
+  luxCloudListWorlds: (instanceName: string) => Promise<any>;
+  luxCloudSetWorldSelection: (instanceId: string, worldNames: string[]) => Promise<any>;
+  luxCloudGetWorldSelection: (instanceId: string) => Promise<any>;
   luxCloudSyncInstance: (instanceName: string, options?: any) => Promise<any>;
   luxCloudRestoreInstance: (instanceUuid: string, options?: any) => Promise<any>;
   luxCloudListRevisions: (instanceUuid: string) => Promise<any>;

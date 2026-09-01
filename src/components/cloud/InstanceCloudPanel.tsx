@@ -6,6 +6,7 @@ import { useLuxAccount } from '../../context/LuxAccountContext';
 import { useLuxSync } from '../../context/LuxSyncContext';
 import CloudStatusBadge from './CloudStatusBadge';
 import RevisionHistoryModal from './RevisionHistoryModal';
+import WorldSelectionModal from './WorldSelectionModal';
 import ToggleBox from '../ToggleBox';
 
 type Props = {
@@ -55,6 +56,9 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
     const [busy, setBusy] = useState(false);
     const [playtime, setPlaytime] = useState<any>(null);
     const [showHistory, setShowHistory] = useState(false);
+    const [showWorlds, setShowWorlds] = useState(false);
+    const [confirmRemove, setConfirmRemove] = useState(false);
+    const [scope, setScope] = useState<Record<string, boolean>>({});
     const [message, setMessage] = useState<string | null>(null);
 
     const cloudInstance = (sync?.cloudInstances || []).find(
@@ -91,26 +95,52 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
         }
     };
 
-    const updateScope = async (key: 'syncWorlds' | 'syncScreenshots' | 'crossPlatform', value: boolean) => {
+    const patchScope = async (patch: Record<string, boolean>) => {
         const api = bridge();
-        if (!api || !cloudInstance) return;
+        if (!api || !cloudInstance || typeof api.luxCloudUpdateInstanceSettings !== 'function') return false;
+
+        const previous = scope;
+        setScope((current) => ({ ...current, ...patch }));
         setBusy(true);
+        setMessage(null);
         try {
-            await api.luxCloudSyncInstance(instanceName, { [key]: value });
+            const result = await api.luxCloudUpdateInstanceSettings(cloudInstance.instanceUuid, patch);
+            if (result && result.success === false) {
+                setScope(previous);
+                setMessage(result.message || result.error);
+                return false;
+            }
             await sync?.refresh();
+            return true;
         } finally {
             setBusy(false);
         }
     };
 
+    const updateScope = async (key: 'syncWorlds' | 'syncScreenshots' | 'crossPlatform', value: boolean) => {
+        if (key === 'syncWorlds' && value) {
+            setShowWorlds(true);
+            return;
+        }
+        await patchScope({ [key]: value });
+    };
+
     const removeFromCloud = async () => {
         const api = bridge();
-        if (!api || !cloudInstance) return;
+        if (!api || !cloudInstance || typeof api.luxCloudDeleteCloudInstance !== 'function') return;
+
         setBusy(true);
+        setMessage(null);
         try {
-            await api.luxCloudListCloudInstances('active');
-            setMessage(t('cloud.instance.remove_hint',
-                'Removing from the cloud is available in the account settings.'));
+            const result = await api.luxCloudDeleteCloudInstance(cloudInstance.instanceUuid);
+            if (result && result.success === false) {
+                setMessage(result.message || result.error);
+                return;
+            }
+            setConfirmRemove(false);
+            setMessage(t('cloud.instance.removed',
+                'Removed from the cloud. Your local files are untouched.'));
+            await sync?.refresh();
         } finally {
             setBusy(false);
         }
@@ -191,19 +221,28 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
                             label={t('cloud.instance.cross_platform', 'Cross-platform')}
                             description={t('cloud.instance.cross_platform_hint',
                                 'Allow restoring this instance on Windows, macOS and Linux.')}
-                            checked={cloudInstance.crossPlatform}
+                            checked={scope.crossPlatform ?? cloudInstance.crossPlatform}
                             onChange={(value: boolean) => updateScope('crossPlatform', value)}
                         />
                         <ToggleBox
                             label={t('cloud.instance.sync_worlds', 'Sync worlds')}
                             description={t('cloud.instance.sync_worlds_hint',
                                 'Off by default — worlds are large and the most common source of conflicts.')}
-                            checked={cloudInstance.syncWorlds}
+                            checked={scope.syncWorlds ?? cloudInstance.syncWorlds}
                             onChange={(value: boolean) => updateScope('syncWorlds', value)}
                         />
+                        {(scope.syncWorlds ?? cloudInstance.syncWorlds) && (
+                            <button
+                                type="button"
+                                onClick={() => setShowWorlds(true)}
+                                className="ml-1 text-xs text-sky-300/80 underline-offset-2 transition hover:text-sky-200 hover:underline"
+                            >
+                                {t('cloud.instance.choose_worlds', 'Choose which worlds')}
+                            </button>
+                        )}
                         <ToggleBox
                             label={t('cloud.instance.sync_screenshots', 'Sync screenshots')}
-                            checked={cloudInstance.syncScreenshots}
+                            checked={scope.syncScreenshots ?? cloudInstance.syncScreenshots}
                             onChange={(value: boolean) => updateScope('syncScreenshots', value)}
                         />
                     </div>
@@ -217,14 +256,35 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
                             <History size={12} />
                             {t('cloud.instance.history', 'Version history')}
                         </button>
-                        <button
-                            type="button"
-                            onClick={removeFromCloud}
-                            className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1 text-xs text-white/45 transition hover:border-red-400/30 hover:text-red-300"
-                        >
-                            <Trash2 size={12} />
-                            {t('cloud.instance.remove', 'Remove from cloud')}
-                        </button>
+                        {confirmRemove ? (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={removeFromCloud}
+                                    className="flex items-center gap-1.5 rounded-lg bg-red-500 px-2.5 py-1 text-xs font-medium text-black transition hover:bg-red-400 disabled:opacity-50"
+                                >
+                                    <Trash2 size={12} />
+                                    {t('cloud.instance.remove_confirm', 'Really remove from cloud')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmRemove(false)}
+                                    className="rounded-lg px-2 py-1 text-xs text-white/45 transition hover:text-white/75"
+                                >
+                                    {t('cloud.instance.remove_cancel', 'Cancel')}
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setConfirmRemove(true)}
+                                className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1 text-xs text-white/45 transition hover:border-red-400/30 hover:text-red-300"
+                            >
+                                <Trash2 size={12} />
+                                {t('cloud.instance.remove', 'Remove from cloud')}
+                            </button>
+                        )}
                     </div>
                 </>
             )}
@@ -258,6 +318,17 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
             {message && (
                 <p className="mt-3 rounded-lg bg-white/[0.04] p-2.5 text-xs text-white/60">{message}</p>
             )}
+
+            <WorldSelectionModal
+                open={showWorlds}
+                instanceName={instanceName}
+                instanceId={cloudInstance?.instanceUuid || instanceId || null}
+                onClose={() => setShowWorlds(false)}
+                onSaved={async (worldNames) => {
+                    setShowWorlds(false);
+                    await patchScope({ syncWorlds: worldNames.length > 0 });
+                }}
+            />
 
             <RevisionHistoryModal
                 open={showHistory}

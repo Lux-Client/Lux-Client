@@ -130,7 +130,7 @@ export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) 
             loading: false,
             loggedIn: true,
             offline,
-            user: account.user,
+            user: (meResult && meResult.success && meResult.me.user) || account.user,
             device: account.device,
             settings: meResult && meResult.success ? meResult.me.settings : null,
             quota: meResult && meResult.success ? meResult.me.quota : null,

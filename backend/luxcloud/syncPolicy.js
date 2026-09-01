@@ -158,6 +158,7 @@ function classify(relPath, options = {}) {
     const {
         syncWorlds = false,
         syncScreenshots = false,
+        worldNames = null,
         size = null
     } = options;
 
@@ -232,10 +233,13 @@ function classify(relPath, options = {}) {
             return decide(CATEGORY.RESOURCEPACKS, true, 'resourcepacks');
         case 'shaderpacks':
             return decide(CATEGORY.SHADERPACKS, true, 'shaderpacks');
-        case 'saves':
-            return syncWorlds
-                ? decide(CATEGORY.WORLDS, true, 'worlds')
-                : { include: false, category: CATEGORY.WORLDS, reason: 'opt-out:worlds' };
+        case 'saves': {
+            if (!syncWorlds) return { include: false, category: CATEGORY.WORLDS, reason: 'opt-out:worlds' };
+            if (Array.isArray(worldNames) && !worldNames.includes(segments[1])) {
+                return { include: false, category: CATEGORY.WORLDS, reason: 'opt-out:world-not-selected' };
+            }
+            return decide(CATEGORY.WORLDS, true, 'worlds');
+        }
         case 'screenshots':
             return syncScreenshots
                 ? decide(CATEGORY.SCREENSHOTS, true, 'screenshots')
@@ -255,7 +259,7 @@ function classify(relPath, options = {}) {
 // einzeln zu klassifizieren. Bei 'libraries' mit zehntausenden Dateien ist das der
 // Unterschied zwischen Sekunden und Minuten.
 function shouldSkipDirectory(relDirPath, options = {}) {
-    const { syncWorlds = false, syncScreenshots = false } = options;
+    const { syncWorlds = false, syncScreenshots = false, worldNames = null } = options;
     const normalized = normalizeRelPath(relDirPath);
     if (!normalized) return false;
 
@@ -275,6 +279,8 @@ function shouldSkipDirectory(relDirPath, options = {}) {
         }
     }
     if (!syncWorlds && topLevel === 'saves') return true;
+    if (syncWorlds && topLevel === 'saves' && segments.length > 1
+        && Array.isArray(worldNames) && !worldNames.includes(segments[1])) return true;
     if (!syncScreenshots && topLevel === 'screenshots') return true;
 
     return false;

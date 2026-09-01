@@ -4,10 +4,10 @@
 > Sie sagt dir, wo wir stehen und was als Nächstes dran ist.
 > Du musst die Repos **nicht** neu analysieren — das steht in `01-ANALYSE.md`.
 
-**Zuletzt aktualisiert:** 2026-08-31
+**Zuletzt aktualisiert:** 2026-09-01
 **Aktuelle Phase:** Phase 11 — **fertig**, Phase 12 als Nächstes
 **Geschriebener Code:** Client `backend/luxcloud/` (30 Module), Manifest-Worker,
-UI-Anbindung, `tests/` (157 Tests), Cloud-UI (9 Komponenten) · Website
+UI-Anbindung, `tests/` (161 Tests), Cloud-UI (13 Komponenten) · Website
 `routes/{deviceAuth,cloud,cloudSync,cloudBlobs,adminCloud,manifestSchema}.js`,
 `middleware/deviceAuth.js`, `storage/`, `jobs/cloudGc.js`, `cloudBlobs.js`,
 `cloudInstances.js`, `cloudConfig.js`, `db_init_cloud.js`,
@@ -796,6 +796,37 @@ physisch für 100.000 User.
 
 ---
 
+## Bugfix-Runde vom 2026-09-01 (nach dem ersten echten Durchlauf)
+
+Der Auftraggeber hat den Client mit einem echten Konto benutzt. Was dabei
+auffiel und was daran repariert wurde:
+
+| Fehlerbild | Ursache | Behoben in |
+|---|---|---|
+| „Your Cloud Instances: No instances", obwohl oben `2/10` steht; nach einem Neustart kannte der Client keine Cloud-Instanz mehr; Last Sync, Version und Size blieben leer | `LuxSyncContext` setzte `mounted.current` beim zweiten Mount unter React StrictMode nie wieder auf `true`. Jedes `patch()` danach lief ins Leere. | `src/context/LuxSyncContext.tsx` |
+| Playtime nach dem ersten Sync `0m` | `seedIfNeeded` lief nur beim Spielende, nie beim Upload. | `backend/luxcloud/uploader.js` |
+| Cloud-Instanzen ließen sich nur über die Website löschen | Im Client gab es dafür keinen IPC-Kanal; der Knopf im Panel war ein Platzhalter. | `luxcloud:delete-cloud-instance`, `InstanceCloudPanel`, `CloudDashboard` |
+| Die Regler für Worlds und Screenshots sprangen nicht um | `updateScope` rief `luxcloud:sync-instance` auf — das lädt hoch, ändert aber die Instanz-Einstellungen nicht. | `luxcloud:update-instance-settings` (PATCH), optimistischer Zustand im Panel |
+| Beim Einschalten von „Sync worlds" fehlte die Weltenauswahl | Es gab keine. | `WorldSelectionModal`, `luxcloud:list-worlds`, `luxcloud:{get,set}-world-selection`, `worldNames` durch `syncPolicy` → `manifest` → `uploader` |
+| Profilbild aus dem Launcher ändern tat nichts, und eine Änderung auf der Website kam beim Refresh nicht an | `reload()` nahm `account.user` — die beim Login gespeicherte Kopie — statt der Antwort von `/me`. Zusätzlich blieb `avatarBroken` nach einem einzigen fehlgeschlagenen Bildabruf für immer stehen. | `LuxAccountContext`, `LuxAccountPanel`, `luxcloud:get-me` schreibt den frischen User zurück |
+
+### Wie die Sync-Reichweite jetzt zustande kommt
+
+`withSyncScope()` in `backend/handlers/luxcloud.js` legt vor jedem Upload die
+gespeicherte Reichweite unter die übergebenen Optionen: `syncWorlds`,
+`syncScreenshots`, `crossPlatform` und `syncWorldNames` stehen im
+`syncState`. Ohne das hätte ein Auto-Sync — der keine Optionen mitgibt —
+nach jedem Umschalten wieder mit den Standardwerten gebaut und die gerade
+eingeschalteten Welten stillschweigend weggelassen. Der PATCH-Handler
+schreibt die Reichweite deshalb lokal mit, nicht nur zum Server.
+
+`worldNames = null` heißt „alle Welten", `[]` heißt „keine". Das ist der
+Unterschied zwischen „frisch eingeschaltet, noch nichts ausgewählt" und
+„ausgewählt und alles abgewählt"; ohne die Trennung hätte ein frisches
+Opt-in gar nichts hochgeladen.
+
+---
+
 ## Nächster Schritt
 
 **Phase 12 — Produktions-Launch.** Alles Funktionale steht; hier geht es nur
@@ -1021,6 +1052,11 @@ mit Datum und Fundstelle.)*
 | 2026-08-31 | **Der Lasttest signiert Tokens direkt, statt durch den OAuth-Flow zu gehen** | Der Rate-Limiter lässt 10 Token-Anfragen je 15 min und IP zu und blockiert ab dem elften Gerät. Ihn für Tests aufzuweichen wäre der falsche Weg gewesen: eine Schutzfunktion, die eine Umgehung kennt, ist irgendwann versehentlich produktiv umgangen. Der Lasttest prüft ohnehin nicht die Anmeldung. |
 | 2026-08-31 | **Die Modrinth-Online-Auflösung ist optional, nicht Standard** | `resolveOnline` macht den Manifest-Bau netzabhängig. Als Standard hätte das jeden Sync an die Erreichbarkeit von Modrinth gebunden, auch wenn der Cache längst gefüllt ist. Als Option greift sie genau dort, wo sie hilft: beim ersten Sync einer Instanz, deren Mod-Liste im Client nie geöffnet wurde. Schlägt die Abfrage fehl, läuft der Bau ohne sie weiter. Wirkung an echten Daten: Upload 233 MB → 34,9 MB. |
 | 2026-08-31 | **Die Datenschutzerklärung benennt ausdrücklich, dass keine Ende-zu-Ende-Verschlüsselung möglich ist** | Die Dedup über Konten hinweg ist der Kern der Kostenrechnung und setzt voraus, dass der Server identische Inhalte erkennt. Das ist eine Einschränkung, die Nutzer kennen müssen, bevor sie Welten hochladen — sie zu verschweigen wäre der schlechtere Weg gewesen als die Abwägung offen hinzuschreiben. |
+| 2026-09-01 | **Die Reichweite eines Syncs kommt aus dem `syncState`, nicht aus dem Aufruf** | Die Regler schreiben jetzt per PATCH zum Server. Ein Auto-Sync gibt keine Optionen mit — er hätte danach wieder mit `syncWorlds: false` gebaut und die eben eingeschalteten Welten weggelassen. `withSyncScope()` legt die gespeicherten Werte unter die übergebenen; ein expliziter Aufruf gewinnt weiterhin. |
+| 2026-09-01 | **`worldNames: null` heißt „alle Welten", `[]` heißt „keine"** | Nötig, um „frisch eingeschaltet" von „alles abgewählt" zu unterscheiden. Ohne die Trennung hätte ein Opt-in ohne Auswahl gar nichts hochgeladen — der Nutzer schaltet ein und sieht nichts passieren. |
+| 2026-09-01 | **Das Löschen aus der Cloud vergisst zusätzlich die lokale Verknüpfung** | Der Server setzt die Instanz nur auf `trashed`. Bliebe der Eintrag im `syncState`, würde der Client weiter „synced" melden und beim nächsten Start gegen eine Instanz laufen, die es nicht mehr gibt. Die lokalen Dateien bleiben unangetastet — das ist die Zusage aus `§A.3`. |
+| 2026-09-01 | **`/me` ist die Wahrheit über den Nutzer, nicht die beim Login gespeicherte Kopie** | `reload()` nahm `account.user`. Die Kopie ändert sich nach dem Login nie, also konnte ein neues Profilbild grundsätzlich nicht ankommen — weder nach dem Hochladen noch nach einem Refresh. `luxcloud:get-me` schreibt den frischen Nutzer jetzt auch in den lokalen Zustand, damit er einen Neustart übersteht. |
+| 2026-09-01 | **Der Avatar-Upload meldet Multer-Fehler als JSON** | Ein zu großes oder nicht unterstütztes Bild lief vorher in den Express-Fehlerhandler und kam als HTML-500 zurück; der Launcher zeigte dann gar nichts an. Dazu `mkdir -p` auf das Upload-Verzeichnis: ohne gemountetes Volume existiert es nach einem Redeploy nicht, und `sharp` scheiterte still. |
 
 ---
 

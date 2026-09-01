@@ -35,7 +35,7 @@ function sha256Of(buffer) {
 }
 
 async function scanInstance(instanceDir, options = {}) {
-    const { syncWorlds = false, syncScreenshots = false } = options;
+    const { syncWorlds = false, syncScreenshots = false, worldNames = null } = options;
 
     const files = [];
     const excluded = {};
@@ -57,7 +57,7 @@ async function scanInstance(instanceDir, options = {}) {
             const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
 
             if (entry.isDirectory()) {
-                if (shouldSkipDirectory(relPath, { syncWorlds, syncScreenshots })) {
+                if (shouldSkipDirectory(relPath, { syncWorlds, syncScreenshots, worldNames })) {
                     note('policy:skipped-dir');
                     continue;
                 }
@@ -84,7 +84,7 @@ async function scanInstance(instanceDir, options = {}) {
                 continue;
             }
 
-            const verdict = classify(relPath, { syncWorlds, syncScreenshots, size: stat.size });
+            const verdict = classify(relPath, { syncWorlds, syncScreenshots, worldNames, size: stat.size });
             if (!verdict.include) {
                 note(verdict.reason);
                 if (verdict.reason === 'size:too-large') {
@@ -194,6 +194,7 @@ async function buildManifest(options) {
         modCachePath = null,
         syncWorlds = false,
         syncScreenshots = false,
+        worldNames = null,
         enableChunking = false,
         device = null,
         runtime = null,
@@ -204,7 +205,7 @@ async function buildManifest(options) {
         onProgress = null
     } = options;
 
-    const scan = await scanInstance(instanceDir, { syncWorlds, syncScreenshots });
+    const scan = await scanInstance(instanceDir, { syncWorlds, syncScreenshots, worldNames });
     if (scan.files.length > MAX_ENTRIES) {
         const error = new Error(`Instance has ${scan.files.length} syncable files, the limit is ${MAX_ENTRIES}`);
         error.code = 'too_many_entries';

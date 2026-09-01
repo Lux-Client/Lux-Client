@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     CloudOff,
@@ -106,6 +106,10 @@ const LuxAccountPanel = () => {
     const [manualCode, setManualCode] = useState('');
     const [codeBusy, setCodeBusy] = useState(false);
     const [codeError, setCodeError] = useState<string | null>(null);
+
+    const avatarUrl = account && account.user ? account.user.avatar : null;
+
+    useEffect(() => { setAvatarBroken(false); }, [avatarUrl]);
 
     if (!account || !account.supported) return null;
 

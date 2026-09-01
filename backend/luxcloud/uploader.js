@@ -185,6 +185,7 @@ async function uploadInstance({
         modCachePath: options.modCachePath,
         syncWorlds: Boolean(options.syncWorlds),
         syncScreenshots: Boolean(options.syncScreenshots),
+        worldNames: Array.isArray(options.worldNames) ? options.worldNames : null,
         enableChunking: options.enableChunking !== false,
         parentRevision: Number(options.parentRevision) || 0
     }, {

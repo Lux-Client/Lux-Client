@@ -97,6 +97,8 @@ async function makeInstance(root) {
     await fs.ensureDir(path.join(dir, 'saves', 'Welt', 'region'));
     await fs.writeFile(path.join(dir, 'saves', 'Welt', 'level.dat'), Buffer.from('leveldat'));
     await fs.writeFile(path.join(dir, 'saves', 'Welt', 'region', 'r.0.0.mca'), crypto.randomBytes(5 * 1024 * 1024));
+    await fs.ensureDir(path.join(dir, 'saves', 'Zweitwelt', 'region'));
+    await fs.writeFile(path.join(dir, 'saves', 'Zweitwelt', 'level.dat'), Buffer.from('zweiteleveldat'));
 
     await fs.ensureDir(path.join(dir, 'screenshots'));
     await fs.writeFile(path.join(dir, 'screenshots', 'bild.png'), Buffer.alloc(1024));
@@ -273,6 +275,19 @@ async function main() {
     result = await buildManifest({ ...common, syncWorlds: true });
     paths = result.manifest.entries.map((entry) => entry.path);
     check('mit syncWorlds sind Welten drin', paths.includes('saves/Welt/level.dat'), paths);
+    check('ohne Auswahl sind alle Welten drin', paths.includes('saves/Zweitwelt/level.dat'), paths);
+
+    const onlyOne = await buildManifest({ ...common, syncWorlds: true, worldNames: ['Welt'] });
+    const onlyOnePaths = onlyOne.manifest.entries.map((entry) => entry.path);
+    check('eine Auswahl nimmt die gewaehlte Welt mit',
+        onlyOnePaths.includes('saves/Welt/level.dat'), onlyOnePaths);
+    check('eine Auswahl laesst die uebrigen Welten weg',
+        !onlyOnePaths.some((entry) => entry.startsWith('saves/Zweitwelt/')), onlyOnePaths);
+
+    const noneSelected = await buildManifest({ ...common, syncWorlds: true, worldNames: [] });
+    check('eine leere Auswahl synct keine Welt',
+        !noneSelected.manifest.entries.some((entry) => entry.path.startsWith('saves/')),
+        noneSelected.manifest.entries.map((entry) => entry.path));
 
     const region = result.manifest.entries.find((e) => e.path === 'saves/Welt/region/r.0.0.mca');
     check('ohne Chunking-Flag bekommt die grosse Weltdatei einen Blob',

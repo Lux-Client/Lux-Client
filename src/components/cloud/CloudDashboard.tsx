@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    Cloud, CloudDownload, RefreshCw, HardDrive, Clock, AlertTriangle, Monitor
+    Cloud, CloudDownload, RefreshCw, HardDrive, Clock, AlertTriangle, Monitor, Trash2
 } from 'lucide-react';
 
 import { useLuxAccount } from '../../context/LuxAccountContext';
@@ -38,6 +38,8 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
 
     const [localNames, setLocalNames] = useState<Set<string>>(new Set());
     const [busy, setBusy] = useState<string | null>(null);
+    const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const loadLocal = useCallback(async () => {
         const api = bridge();
@@ -72,6 +74,26 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
         try {
             await sync?.restoreInstance(instance.instanceUuid, { instanceName: instance.name });
             await loadLocal();
+        } finally {
+            setBusy(null);
+        }
+    };
+
+    const removeFromCloud = async (instance: any) => {
+        const api = bridge();
+        if (!api || typeof api.luxCloudDeleteCloudInstance !== 'function') return;
+
+        setBusy(instance.instanceUuid);
+        setError(null);
+        try {
+            const result = await api.luxCloudDeleteCloudInstance(instance.instanceUuid);
+            if (result && result.success === false) {
+                setError(result.message || result.error);
+                return;
+            }
+            setConfirmRemove(null);
+            await sync?.refresh();
+            await account.reload();
         } finally {
             setBusy(null);
         }
@@ -214,7 +236,7 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
                                     )}
                                 </div>
 
-                                {!isLocal && (
+                                {!isLocal && confirmRemove !== instance.instanceUuid && (
                                     <button
                                         type="button"
                                         disabled={busy !== null}
@@ -227,10 +249,47 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
                                             : t('cloud.dashboard.download', 'Download')}
                                     </button>
                                 )}
+
+                                {confirmRemove === instance.instanceUuid ? (
+                                    <div className="flex shrink-0 items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            disabled={busy !== null}
+                                            onClick={() => removeFromCloud(instance)}
+                                            className="rounded-lg bg-red-500 px-2.5 py-1.5 text-xs font-medium text-black transition hover:bg-red-400 disabled:opacity-50"
+                                        >
+                                            {busy === instance.instanceUuid
+                                                ? t('cloud.dashboard.removing', 'Removing...')
+                                                : t('cloud.dashboard.remove_confirm', 'Really remove')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmRemove(null)}
+                                            className="rounded-lg px-2 py-1.5 text-xs text-white/45 transition hover:text-white/75"
+                                        >
+                                            {t('cloud.dashboard.remove_cancel', 'Cancel')}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        title={t('cloud.dashboard.remove_hint',
+                                            'Removes the cloud copy only. The folder on this PC stays as it is.')}
+                                        onClick={() => setConfirmRemove(instance.instanceUuid)}
+                                        className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-white/45 transition hover:border-red-400/30 hover:text-red-300"
+                                    >
+                                        <Trash2 size={12} />
+                                        {t('cloud.dashboard.remove', 'Remove')}
+                                    </button>
+                                )}
                             </div>
                         );
                     })}
                 </div>
+
+                {error && (
+                    <p className="m-4 rounded-lg bg-red-500/10 p-3 text-xs text-red-200">{error}</p>
+                )}
             </div>
 
             {account.devices && account.devices.length > 0 && (

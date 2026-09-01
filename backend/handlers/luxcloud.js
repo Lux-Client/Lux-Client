@@ -12,7 +12,8 @@ const downloader = require('../luxcloud/downloader');
 const cloudPlaytime = require('../luxcloud/playtime');
 const preLaunch = require('../luxcloud/preLaunch');
 const uploader = require('../luxcloud/uploader');
-const { readInstanceState } = require('../luxcloud/syncState');
+const luxState = require('../luxcloud/state');
+const { forgetInstance, readInstanceState, rememberRevision } = require('../luxcloud/syncState');
 const { summarize } = require('../luxcloud/manifest');
 const { buildManifestInWorker } = require('../luxcloud/manifestRunner');
 const { getHashCacheDir } = require('../luxcloud/paths');
@@ -129,7 +130,132 @@ module.exports = (ipcMain, mainWindow) => {
     ipcMain.handle('luxcloud:get-me', async () => {
         try {
             const me = await api.authed({ method: 'GET', url: '/api/cloud/me' });
+
+            if (me && me.user) {
+                await luxState.patchState({ user: me.user }).catch(() => {});
+            }
             return ok({ me });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    async function withSyncScope(instanceId, options = {}) {
+        const tracked = (await readInstanceState(String(instanceId)).catch(() => null)) || {};
+        const merged = { ...options };
+
+        for (const key of ['syncWorlds', 'syncScreenshots', 'crossPlatform']) {
+            if (typeof merged[key] !== 'boolean' && typeof tracked[key] === 'boolean') merged[key] = tracked[key];
+        }
+        if (!Array.isArray(merged.worldNames) && Array.isArray(tracked.syncWorldNames)) {
+            merged.worldNames = tracked.syncWorldNames;
+        }
+
+        return merged;
+    }
+
+    ipcMain.handle('luxcloud:update-instance-settings', async (_event, instanceUuid, patch) => {
+        try {
+            const allowed = {};
+            for (const key of ['crossPlatform', 'syncWorlds', 'syncScreenshots', 'name']) {
+                if (patch && key in patch) allowed[key] = patch[key];
+            }
+            if (Object.keys(allowed).length === 0) {
+                return { success: false, error: 'invalid_request', message: 'Nothing to change' };
+            }
+
+            const result = await api.authed({
+                method: 'PATCH',
+                url: `/api/cloud/instances/${encodeURIComponent(String(instanceUuid))}`,
+                data: allowed
+            });
+
+            const local = {};
+            for (const key of ['crossPlatform', 'syncWorlds', 'syncScreenshots']) {
+                if (typeof allowed[key] === 'boolean') local[key] = allowed[key];
+            }
+            if (Object.keys(local).length > 0) {
+                await rememberRevision(String(instanceUuid), { ...local, dirty: true }).catch(() => {});
+            }
+
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:delete-cloud-instance', async (_event, instanceUuid) => {
+        try {
+            const result = await api.authed({
+                method: 'DELETE',
+                url: `/api/cloud/instances/${encodeURIComponent(String(instanceUuid))}`
+            });
+
+            await forgetInstance(String(instanceUuid)).catch(() => {});
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:list-worlds', async (_event, instanceName) => {
+        try {
+            const instanceDir = resolveInstanceDirByName(instanceName);
+            if (!instanceDir) {
+                return { success: false, error: 'not_found', message: `Unknown instance: ${instanceName}` };
+            }
+
+            const savesDir = path.join(instanceDir, 'saves');
+            if (!await fs.pathExists(savesDir)) return ok({ worlds: [] });
+
+            const worlds = [];
+            for (const entry of await fs.readdir(savesDir, { withFileTypes: true })) {
+                if (!entry.isDirectory()) continue;
+
+                const dir = path.join(savesDir, entry.name);
+                let bytes = 0;
+                const walk = async (current) => {
+                    for (const child of await fs.readdir(current, { withFileTypes: true }).catch(() => [])) {
+                        const full = path.join(current, child.name);
+                        if (child.isDirectory()) await walk(full);
+                        else if (child.isFile()) {
+                            bytes += (await fs.stat(full).catch(() => ({ size: 0 }))).size;
+                        }
+                    }
+                };
+                await walk(dir);
+
+                const stat = await fs.stat(dir).catch(() => null);
+                worlds.push({
+                    name: entry.name,
+                    bytes,
+                    lastPlayed: stat ? stat.mtimeMs : null
+                });
+            }
+
+            worlds.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+            return ok({ worlds });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:set-world-selection', async (_event, instanceId, worldNames) => {
+        try {
+            const names = Array.isArray(worldNames)
+                ? worldNames.filter((name) => typeof name === 'string' && name.length > 0)
+                : [];
+            await rememberRevision(String(instanceId), { syncWorldNames: names });
+            return ok({ worldNames: names });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:get-world-selection', async (_event, instanceId) => {
+        try {
+            const tracked = await readInstanceState(String(instanceId));
+            return ok({ worldNames: (tracked && tracked.syncWorldNames) || null });
         } catch (err) {
             return fail(err);
         }
@@ -177,7 +303,7 @@ module.exports = (ipcMain, mainWindow) => {
             instanceId,
             instanceName,
             capabilities: me.capabilities || {},
-            options: { modCachePath: path.join(app.getPath('userData'), 'mod_cache.json') },
+            options: await withSyncScope(instanceId, { modCachePath: path.join(app.getPath('userData'), 'mod_cache.json') }),
             onProgress: (progress) => sendProgress('luxcloud:sync-progress', { ...progress, auto: true })
         });
     });
@@ -268,7 +394,21 @@ module.exports = (ipcMain, mainWindow) => {
 
             const FormData = require('form-data');
             const form = new FormData();
-            form.append('avatar', await fs.readFile(filePath), { filename: path.basename(filePath) });
+            const buffer = await fs.readFile(filePath);
+            const extension = path.extname(filePath).toLowerCase();
+            const contentType = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.webp': 'image/webp',
+                '.gif': 'image/gif'
+            }[extension] || 'image/png';
+
+            form.append('avatar', buffer, {
+                filename: path.basename(filePath),
+                contentType,
+                knownLength: buffer.length
+            });
 
             const result = await api.authed({
                 method: 'POST',
@@ -429,12 +569,12 @@ module.exports = (ipcMain, mainWindow) => {
                 instanceId,
                 instanceName,
                 capabilities: me.capabilities || {},
-                options: {
+                options: await withSyncScope(instanceId, {
                     ...options,
                     force: true,
                     parentRevision: Number(head.revision || 0),
                     modCachePath: path.join(app.getPath('userData'), 'mod_cache.json')
-                },
+                }),
                 onProgress: (progress) => sendProgress('luxcloud:sync-progress', progress)
             });
 
@@ -502,10 +642,10 @@ module.exports = (ipcMain, mainWindow) => {
                 instanceId,
                 instanceName,
                 capabilities: me.capabilities || {},
-                options: {
+                options: await withSyncScope(instanceId, {
                     ...options,
                     modCachePath: path.join(app.getPath('userData'), 'mod_cache.json')
-                },
+                }),
                 onProgress: (progress) => sendProgress('luxcloud:sync-progress', progress)
             });
 
