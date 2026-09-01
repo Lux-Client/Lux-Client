@@ -196,6 +196,15 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
     const [testVersion, setTestVersion] = useState('');
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
     const [activeSettingsTab, setActiveSettingsTab] = useState('experience');
+
+    useEffect(() => {
+        const openCategory = (event) => {
+            const category = event?.detail?.category;
+            if (typeof category === 'string' && category) setActiveSettingsTab(category);
+        };
+        window.addEventListener('lux:open-settings-category', openCategory);
+        return () => window.removeEventListener('lux:open-settings-category', openCategory);
+    }, []);
     const [settingsSearch, setSettingsSearch] = useState('');
     const hasUnsavedChanges = useRef(false);
     const initialSettingsRef = useRef(null);
