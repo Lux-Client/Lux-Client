@@ -8,7 +8,9 @@ import {
     Monitor,
     RefreshCw,
     ShieldCheck,
-    UserCircle2
+    UserCircle2,
+    KeyRound,
+    Camera
 } from 'lucide-react';
 
 import { Button } from '../ui/button';
@@ -16,6 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 import ToggleBox from '../ToggleBox';
 import ConfirmationModal from '../ConfirmationModal';
+import PairingCodeModal from './PairingCodeModal';
+import CloudDashboard from './CloudDashboard';
 import { useLuxAccount, type LuxCloudDevice, type LuxCloudSettings } from '../../context/LuxAccountContext';
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -95,8 +99,25 @@ const LuxAccountPanel = () => {
     const account = useLuxAccount();
     const [pendingRevoke, setPendingRevoke] = useState<LuxCloudDevice | null>(null);
     const [busy, setBusy] = useState(false);
+    const [pairingOpen, setPairingOpen] = useState(false);
+    const [avatarBusy, setAvatarBusy] = useState(false);
 
     if (!account || !account.supported) return null;
+
+    const changeAvatar = async () => {
+        const api = (window as any).electronAPI;
+        if (!api || typeof api.luxCloudSetAvatar !== 'function') return;
+
+        setAvatarBusy(true);
+        try {
+            const result = await api.luxCloudSetAvatar();
+            if (result && result.success !== false && !result.cancelled) {
+                await account.reload();
+            }
+        } finally {
+            setAvatarBusy(false);
+        }
+    };
 
     const {
         devices,
@@ -184,6 +205,10 @@ const LuxAccountPanel = () => {
                                         {t('common.cancel', 'Cancel')}
                                     </Button>
                                 )}
+                                <Button variant="outline" onClick={() => setPairingOpen(true)} disabled={signingIn}>
+                                    <KeyRound className="h-4 w-4" />
+                                    <span>{t('settings.lux_account.use_code', 'Use a code instead')}</span>
+                                </Button>
                             </div>
                             {signingIn && (
                                 <p className="text-xs text-muted-foreground">
@@ -195,13 +220,26 @@ const LuxAccountPanel = () => {
                         <div className="space-y-5">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    {user?.avatar ? (
-                                        <img src={user.avatar} alt="" className="h-10 w-10 rounded-full" />
-                                    ) : (
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
-                                            <UserCircle2 className="h-5 w-5 text-primary" />
-                                        </div>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={changeAvatar}
+                                        disabled={avatarBusy}
+                                        title={t('settings.lux_account.change_avatar', 'Change profile picture')}
+                                        className="group relative h-10 w-10 shrink-0 overflow-hidden rounded-full disabled:opacity-50"
+                                    >
+                                        {user?.avatar ? (
+                                            <img src={user.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                                        ) : (
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
+                                                <UserCircle2 className="h-5 w-5 text-primary" />
+                                            </div>
+                                        )}
+                                        <span className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition group-hover:opacity-100">
+                                            {avatarBusy
+                                                ? <Loader2 className="h-4 w-4 animate-spin text-white" />
+                                                : <Camera className="h-4 w-4 text-white" />}
+                                        </span>
+                                    </button>
                                     <div>
                                         <p className="font-medium text-foreground">{user?.username}</p>
                                         <p className="text-xs text-muted-foreground">
@@ -273,6 +311,9 @@ const LuxAccountPanel = () => {
                             )}
 
                             <Separator />
+                            <CloudDashboard />
+
+                            <Separator />
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                     <Monitor className="h-4 w-4 text-muted-foreground" />
@@ -321,6 +362,12 @@ const LuxAccountPanel = () => {
                     confirmText={t('settings.lux_account.sign_out_device', 'Sign out')}
                 />
             )}
+
+            <PairingCodeModal
+                open={pairingOpen}
+                onClose={() => setPairingOpen(false)}
+                onSignedIn={() => account.reload()}
+            />
         </>
     );
 };

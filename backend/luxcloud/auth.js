@@ -231,7 +231,108 @@ async function logout() {
     return getAccount();
 }
 
+let pendingPairing = null;
+
+function cancelPairing(reason = 'Cancelled') {
+    if (!pendingPairing) return false;
+    pendingPairing.cancelled = true;
+    clearTimeout(pendingPairing.timer);
+    pendingPairing = null;
+    return Boolean(reason);
+}
+
+async function startPairing({ appVersion } = {}) {
+    cancelPairing('A newer pairing was started');
+    cancelPendingLogin('A pairing was started instead');
+
+    const deviceUuid = await state.ensureDeviceUuid();
+    const pkce = createPkcePair();
+
+    const started = await api.raw({
+        method: 'POST',
+        url: '/api/auth/device/pair/start',
+        data: {
+            code_challenge: pkce.challenge,
+            device_name: state.getDeviceName(),
+            platform: process.platform
+        }
+    });
+
+    pendingPairing = {
+        cancelled: false,
+        deviceCode: started.deviceCode,
+        verifier: pkce.verifier,
+        deviceUuid,
+        appVersion: appVersion || null,
+        timer: setTimeout(() => cancelPairing('Pairing timed out'), (started.expiresIn || 600) * 1000)
+    };
+
+    return {
+        userCode: started.userCode,
+        verificationUri: started.verificationUri,
+        expiresIn: started.expiresIn,
+        interval: started.interval || 3
+    };
+}
+
+async function pollPairing() {
+    if (!pendingPairing) {
+        throw new api.LuxCloudError('no_pairing', 'No pairing is in progress');
+    }
+
+    const current = pendingPairing;
+    const attempt = async (uuid) => api.raw({
+        method: 'POST',
+        url: '/api/auth/device/pair/poll',
+        data: {
+            device_code: current.deviceCode,
+            code_verifier: current.verifier,
+            device_uuid: uuid,
+            device_name: state.getDeviceName(),
+            platform: process.platform,
+            app_version: current.appVersion
+        }
+    });
+
+    let tokens;
+    try {
+        tokens = await attempt(current.deviceUuid);
+    } catch (err) {
+        if (err.code === 'device_conflict') {
+            const freshUuid = await state.rotateDeviceUuid();
+            current.deviceUuid = freshUuid;
+            tokens = await attempt(freshUuid);
+        } else {
+            cancelPairing('Pairing failed');
+            throw err;
+        }
+    }
+
+    // The server answers 202 while nobody has approved the code yet. axios treats
+    // any 2xx as success, so this arrives as a normal body and not as a throw.
+    if (tokens && tokens.error === 'authorization_pending') {
+        return { status: 'pending', interval: tokens.interval || 3 };
+    }
+    if (!tokens || !tokens.accessToken) {
+        cancelPairing('Pairing returned nothing usable');
+        throw new api.LuxCloudError('pairing_failed', 'The server did not return a session');
+    }
+
+    cancelPairing('Pairing finished');
+
+    await state.setSession({
+        user: tokens.user,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn
+    });
+
+    emitAccountChanged('login');
+    return { status: 'done', account: await getAccount() };
+}
+
 module.exports = {
+    cancelPairing,
     cancelPendingLogin,
     completeLogin,
     events,
@@ -240,5 +341,7 @@ module.exports = {
     handleRevocation,
     login,
     logout,
-    refreshSession
+    pollPairing,
+    refreshSession,
+    startPairing
 };

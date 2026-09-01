@@ -198,6 +198,86 @@ module.exports = (ipcMain, mainWindow) => {
         });
     }
 
+    ipcMain.handle('luxcloud:start-pairing', async () => {
+        try {
+            return ok({ pairing: await auth.startPairing({ appVersion: app.getVersion() }) });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:poll-pairing', async () => {
+        try {
+            return ok(await auth.pollPairing());
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:cancel-pairing', async () => {
+        auth.cancelPairing('Cancelled from the client');
+        return ok();
+    });
+
+    ipcMain.handle('luxcloud:get-notifications', async (_event, limit) => {
+        try {
+            const count = Number(limit) > 0 ? Number(limit) : 0;
+            const url = count > 0
+                ? `/api/cloud/notifications?limit=${count}`
+                : '/api/cloud/notifications';
+            return ok(await api.authed({ method: 'GET', url }));
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:mark-notifications-read', async (_event, id) => {
+        try {
+            const data = Number.isFinite(Number(id)) && Number(id) > 0 ? { id: Number(id) } : {};
+            return ok(await api.authed({ method: 'POST', url: '/api/cloud/notifications/read', data }));
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:set-avatar', async () => {
+        try {
+            const { dialog } = require('electron');
+            const picked = await dialog.showOpenDialog(mainWindow, {
+                title: 'Choose a profile picture',
+                properties: ['openFile'],
+                filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
+            });
+            if (picked.canceled || picked.filePaths.length === 0) {
+                return ok({ cancelled: true });
+            }
+
+            const filePath = picked.filePaths[0];
+            const stat = await fs.stat(filePath);
+            if (stat.size > 4 * 1024 * 1024) {
+                return { success: false, error: 'too_large', message: 'The picture may be at most 4 MB' };
+            }
+
+            const FormData = require('form-data');
+            const form = new FormData();
+            form.append('avatar', await fs.readFile(filePath), { filename: path.basename(filePath) });
+
+            const result = await api.authed({
+                method: 'POST',
+                url: '/api/cloud/me/avatar',
+                data: form,
+                headers: form.getHeaders()
+            });
+
+            // The stored session still carries the old picture. Tell the renderer so
+            // it reloads the account instead of showing a stale avatar until restart.
+            sendProgress('luxcloud:account-changed', { reason: 'avatar' });
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
     ipcMain.handle('luxcloud:delete-cloud-data', async () => {
         try {
             const result = await api.authed({
