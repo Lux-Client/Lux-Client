@@ -52,6 +52,14 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
 
     useEffect(() => { loadLocal(); }, [loadLocal]);
 
+    const refresh = sync ? sync.refresh : null;
+    const reloadAccount = account ? account.reload : null;
+
+    useEffect(() => {
+        if (refresh) refresh();
+        if (reloadAccount) reloadAccount();
+    }, [refresh, reloadAccount]);
+
     const instances = sync?.cloudInstances || [];
 
     const totals = useMemo(() => ({

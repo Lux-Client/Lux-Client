@@ -809,6 +809,8 @@ auffiel und was daran repariert wurde:
 | Die Regler für Worlds und Screenshots sprangen nicht um | `updateScope` rief `luxcloud:sync-instance` auf — das lädt hoch, ändert aber die Instanz-Einstellungen nicht. | `luxcloud:update-instance-settings` (PATCH), optimistischer Zustand im Panel |
 | Beim Einschalten von „Sync worlds" fehlte die Weltenauswahl | Es gab keine. | `WorldSelectionModal`, `luxcloud:list-worlds`, `luxcloud:{get,set}-world-selection`, `worldNames` durch `syncPolicy` → `manifest` → `uploader` |
 | Profilbild aus dem Launcher ändern tat nichts, und eine Änderung auf der Website kam beim Refresh nicht an | `reload()` nahm `account.user` — die beim Login gespeicherte Kopie — statt der Antwort von `/me`. Zusätzlich blieb `avatarBroken` nach einem einzigen fehlgeschlagenen Bildabruf für immer stehen. | `LuxAccountContext`, `LuxAccountPanel`, `luxcloud:get-me` schreibt den frischen User zurück |
+| Der Lux-Tab in den Settings zeigte alte Zahlen, bis man auf Refresh drückte | Es gab keinen Mount-Effekt; geladen wurde nur beim ersten Start der App. | `LuxAccountPanel` und `CloudDashboard` laden jetzt beim Öffnen des Tabs |
+| Ein Tab ohne Seite blieb einfach leer | `renderCurrentPage()` gab `null` zurück. Die Übersetzungen dafür lagen seit jeher unter `common.maintenance_*`, die Seite fehlte. | `src/pages/Maintenance.tsx` |
 
 ### Wie die Sync-Reichweite jetzt zustande kommt
 

@@ -111,6 +111,10 @@ const LuxAccountPanel = () => {
 
     useEffect(() => { setAvatarBroken(false); }, [avatarUrl]);
 
+    const reload = account ? account.reload : null;
+
+    useEffect(() => { if (reload) reload(); }, [reload]);
+
     if (!account || !account.supported) return null;
 
     const submitManualCode = async () => {

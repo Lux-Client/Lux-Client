@@ -22,6 +22,7 @@ const Extensions = React.lazy(() => import('./pages/Extensions'));
 const Login = React.lazy(() => import('./pages/Login'));
 const News = React.lazy(() => import('./pages/News'));
 const Status = React.lazy(() => import('./pages/Status'));
+const Maintenance = React.lazy(() => import('./pages/Maintenance'));
 import { isFeatureEnabled } from './config/featureFlags';
 
 import AppSidebar from './components/AppSidebar';
@@ -1305,7 +1306,14 @@ function App() {
             return <PluginTabContent viewId={currentView} />;
         }
 
-        return null;
+        return (
+            <Maintenance
+                onBackHome={() => {
+                    setCurrentMode('launcher');
+                    setCurrentView('dashboard');
+                }}
+            />
+        );
     };
 
     const currentPage = renderCurrentPage();
