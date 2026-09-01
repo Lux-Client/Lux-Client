@@ -11,6 +11,7 @@ const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../uti
 const playtimeSession = require('../luxcloud/playtimeSession');
 const autoSync = require('../luxcloud/autoSync');
 const cloudSession = require('../luxcloud/cloudSession');
+const cloudPlaytime = require('../luxcloud/playtime');
 
 function normalizeExternalRequestName(value) {
     return String(value || '').trim().toLowerCase();
@@ -2332,6 +2333,9 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
 
                     if (cloudInstanceId) {
                         await cloudSession.end(cloudInstanceId).catch(() => {});
+                        await cloudPlaytime.seedIfNeeded(cloudInstanceId, instanceDir).catch(() => {});
+                        await cloudPlaytime.creditSession(cloudInstanceId, sessionTime).catch(() => {});
+                        cloudPlaytime.push(cloudInstanceId).catch(() => {});
                         autoSync.resume(instanceName);
                         autoSync.notifyChanged(instanceName, 'after-play');
                     }

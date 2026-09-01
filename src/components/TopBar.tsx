@@ -4,6 +4,7 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import ExtensionSlot from './Extensions/ExtensionSlot';
 import PlayerHead from './PlayerHead';
 import WindowControls from './WindowControls';
+import CloudTransferPanel from './cloud/CloudTransferPanel';
 import ActionBar from './ActionBar';
 import { useNotification } from '../context/NotificationContext';
 import { cn } from '../lib/utils';
@@ -413,6 +414,8 @@ function TopBar({
         </DropdownMenu>
 
         <Separator orientation="vertical" className="h-5" />
+        <CloudTransferPanel />
+
         <WindowControls isMaximized={isMaximized} />
       </div>
 

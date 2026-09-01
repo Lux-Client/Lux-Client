@@ -9,6 +9,7 @@ const autoSync = require('../luxcloud/autoSync');
 const blobStore = require('../luxcloud/blobStore');
 const conflict = require('../luxcloud/conflict');
 const downloader = require('../luxcloud/downloader');
+const cloudPlaytime = require('../luxcloud/playtime');
 const preLaunch = require('../luxcloud/preLaunch');
 const uploader = require('../luxcloud/uploader');
 const { readInstanceState } = require('../luxcloud/syncState');
@@ -156,6 +157,8 @@ module.exports = (ipcMain, mainWindow) => {
         }
     });
 
+    cloudPlaytime.pushAllPending().catch(() => {});
+
     autoSync.setRunner(async (instanceName) => {
         const instanceDir = resolveInstanceDirByName(instanceName);
         if (!instanceDir) return { skipped: true, reason: 'not_found' };
@@ -194,6 +197,43 @@ module.exports = (ipcMain, mainWindow) => {
             });
         });
     }
+
+    ipcMain.handle('luxcloud:get-playtime', async (_event, instanceName) => {
+        try {
+            const instanceDir = resolveInstanceDirByName(instanceName);
+            if (!instanceDir) {
+                return { success: false, error: 'not_found', message: `Unknown instance: ${instanceName}` };
+            }
+
+            const instanceId = await readInstanceId(instanceDir);
+            if (!instanceId) {
+                return { success: false, error: 'no_instance_id', message: 'This instance has no id yet' };
+            }
+
+            const tracked = await readInstanceState(instanceId);
+            if (!tracked || !tracked.cloudLinked) {
+                return ok({
+                    cloudLinked: false,
+                    deviceTotalMs: await cloudPlaytime.readLocalPlaytime(instanceDir),
+                    totalMs: await cloudPlaytime.readLocalPlaytime(instanceDir),
+                    byDevice: []
+                });
+            }
+
+            const breakdown = await cloudPlaytime.fetchBreakdown(instanceId);
+            return ok({ cloudLinked: true, ...breakdown });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:push-playtime', async () => {
+        try {
+            return ok({ results: await cloudPlaytime.pushAllPending() });
+        } catch (err) {
+            return fail(err);
+        }
+    });
 
     ipcMain.handle('luxcloud:pre-launch-check', async (_event, instanceName, options = {}) => {
         try {

@@ -5,13 +5,13 @@
 > Du musst die Repos **nicht** neu analysieren — das steht in `01-ANALYSE.md`.
 
 **Zuletzt aktualisiert:** 2026-08-31
-**Aktuelle Phase:** Phase 7 — **fertig**, Phase 8 als Nächstes
-**Geschriebener Code:** Client `backend/luxcloud/` (27 Module), Manifest-Worker,
-UI-Anbindung, `tests/` (157 Tests) · Website
+**Aktuelle Phase:** Phase 9 — **fertig**, Phase 10 als Nächstes
+**Geschriebener Code:** Client `backend/luxcloud/` (29 Module), Manifest-Worker,
+UI-Anbindung, `tests/` (157 Tests), Cloud-UI (9 Komponenten) · Website
 `routes/{deviceAuth,cloud,cloudSync,cloudBlobs,adminCloud,manifestSchema}.js`,
 `middleware/deviceAuth.js`, `storage/`, `jobs/cloudGc.js`, `cloudBlobs.js`,
 `cloudInstances.js`, `cloudConfig.js`, `db_init_cloud.js`,
-`jobs/cloudRetention.js`, `tests/` (320 Tests), Zustimmungsseite
+`jobs/cloudRetention.js`, `tests/` (343 Tests), Zustimmungsseite
 
 ---
 
@@ -71,9 +71,9 @@ UI-Anbindung, `tests/` (157 Tests) · Website
 | 5 Upload / Download | ✅ fertig | negotiate/commit/manifest, Uploader, Downloader, Blob-Cache, 46 + 37 grüne Tests |
 | 6 Inkrementeller Sync | ✅ fertig | contentHash statt Leer-Commits, Auto-Sync mit Backoff, Retention, Rollback, 27 + 44 grüne Tests |
 | 7 Konfliktauflösung | ✅ fertig | Pre-Launch-Gate, 3-Wege-Diff, Verlierersicherung, Advisory Lock, 21 grüne Tests |
-| 8 Playtime-Sync | ⬜ offen | **als Nächstes** — Sessions und lokale Buchung stehen schon |
-| 9 UI / UX | ⬜ offen | die Engine ist über IPC vollständig ansprechbar, sichtbar ist noch nichts |
-| 10 Konto / Ablauf / Admin | ⬜ offen | |
+| 8 Playtime-Sync | ✅ fertig | G-Counter je Gerät, Monotonie- und Plausibilitätsprüfung, 23 grüne Tests |
+| 9 UI / UX | ✅ fertig | Badge, Cloud-Tab, Konfliktdialog, Onboarding, Verlauf, Transferpanel |
+| 10 Konto / Ablauf / Admin | ⬜ offen | **als Nächstes** — höchstes Datenverlust-Risiko, Dry-Run einplanen |
 | 11 Testing | ⬜ offen | |
 | 12 Launch | ⬜ offen | |
 
@@ -558,32 +558,101 @@ tot und werden von `head` ausgeblendet.
 
 ---
 
+
+## Was in Phase 8 gebaut wurde
+
+Playtime als **G-Counter**: jedes Gerät führt seinen eigenen absoluten Zähler,
+die Gesamtzeit ist deren Summe. Der Client sendet nie ein Delta. Damit ist
+jeder Retry, jede Doppelzustellung und jede Reihenfolge folgenlos — das ist
+die einzige Konstruktion, die die Vorgabe „keine Doppelzählung bei mehreren
+Clients" garantiert statt sie nur unwahrscheinlich zu machen.
+
+`PUT /instances/:uuid/playtime` prüft zwei Dinge:
+
+- **Monotonie** — ein kleinerer Wert wird mit 409 und dem gespeicherten Stand
+  abgewiesen. Der Client übernimmt dann den Serverwert.
+- **Plausibilität** — der Zuwachs darf die seit dem letzten Update verstrichene
+  Wanduhrzeit (plus 1 h Kulanz) nicht übersteigen. Spielzeit kann nicht
+  schneller vergehen als Zeit.
+
+Die **erste** Meldung eines Geräts ist davon ausgenommen. Genau dort landet die
+Migration: beim ersten Sync wird die vorhandene `instance.json.playtime` dem
+Origin-Gerät gutgeschrieben, und das können mehrere hundert Stunden sein. Ab
+der zweiten Meldung greift die Prüfung.
+
+Client: `playtime.js` mit `seedIfNeeded` (einmalig, an ein Flag gebunden),
+`creditSession`, `push` (idempotent) und `pushAllPending` — Letzteres läuft beim
+App-Start und holt nach, was offline liegen geblieben ist.
+
+---
+
+## Was in Phase 9 gebaut wurde
+
+Bis hierher war das Feature vollständig, aber unsichtbar. Jetzt nicht mehr.
+
+| Komponente | Aufgabe |
+|---|---|
+| `context/LuxSyncContext.tsx` | Cloud-Instanzen, Live-Fortschritt, Konflikte, Sitzungswarnungen; leitet aus allem den Status je Instanz ab |
+| `CloudStatusBadge` | die sieben Zustände, eine Quelle für Dashboard, Tab und Panel |
+| `CloudTransferPanel` | Fortschritt in der TopBar, aufklappbar je Instanz |
+| `InstanceCloudPanel` | eigener Cloud-Tab je Instanz: Status, letzter Sync, Version, Spielzeit gesamt und je Gerät, Größe, Scope-Schalter |
+| `SyncConflictModal` | zwei Optionen, Dateiliste auf Wunsch, mit dem ausdrücklichen Hinweis, dass die Verliererseite gesichert wird |
+| `PreLaunchSyncOverlay` | „prüfe Cloud / aktualisiere / offline" vor dem Start |
+| `CloudOnboardingModal` | der Erstlogin-Assistent aus `00-PROMPT.md §4` |
+| `RevisionHistoryModal` | Versionsliste mit Rollback und Sicherheitsabfrage |
+| `CloudOverlays` | hängt Onboarding, Konflikt und Sitzungswarnung global ein |
+
+Zwei Details, die der Auftrag ausdrücklich verlangt hat:
+
+- Der Onboarding-Dialog zeigt je Instanz die **Upload-Größe**, nicht die
+  Instanzgröße. Bei einer 1,2-GB-Instanz, von der 20 MB übertragen werden,
+  wäre die andere Zahl irreführend. Er misst dafür über
+  `luxcloud:preview-manifest` und rechnet den Speicherstand danach vor.
+- Wer nicht angemeldet ist, sieht **kein einziges Cloud-Element** — weder
+  Badge noch Tab noch Panel. Der Client bleibt vollständig ohne Lux Account
+  benutzbar.
+
+Der Account-Bereich mit Speicherbalken, Schaltern und Geräteliste stand bereits
+aus Phase 1 und ist unverändert geblieben.
+
+### Was in Phase 8 und 9 geprüft wurde
+
+`cloudSync.phase8.test.js` (23): 20 h + 15 h ergibt 35 h, fünfmal derselbe Wert
+ändert nichts, ein kleinerer Wert wird abgewiesen, ein Sprung über die
+verstrichene Zeit ebenso, 500 h aus einer Altinstanz gehen als Erstmeldung
+durch, danach greift die Plausibilität wieder, und ein fremdes Konto kommt
+weder lesend noch schreibend heran.
+
+Die UI ist über `npm run typecheck` und `npm run build` abgesichert; beides
+läuft ohne neue Fehler durch. Automatisierte Oberflächentests gibt es im
+Projekt bislang nicht und wurden hier auch nicht eingeführt.
+
+---
+
 ## Nächster Schritt
 
-**Phase 8 — Playtime-Sync** (siehe `03-ROADMAP.md`). Sie hängt nur an Phase 2
-und ist das kleinste abgeschlossene Stück, das noch fehlt. Vieles liegt bereit:
+**Phase 10 — Konto, Ablauf, Admin** (siehe `03-ROADMAP.md`). Das ist der letzte
+Block mit echter Funktionalität und zugleich der mit dem **höchsten
+Datenverlust-Risiko** im ganzen Projekt.
 
-- `cloud_instance_playtime` steht, `head` und `GET /instances` liefern die
-  Summe bereits aus.
-- `playtimeSession.js` (Phase 0) führt lokal Heartbeat-Sessions und bucht
-  abgebrochene beim nächsten Start nach.
-- `cloudSession.js` (Phase 7) hält bereits eine serverseitige Session mit
-  Heartbeat über die ganze Spieldauer.
+1. `DELETE /api/user/delete` erweitern (`§F.8`). **Reihenfolge ist kritisch:**
+   erst die refcounts dekrementieren, dann `cloud_instances` löschen. Andersherum
+   räumt CASCADE die `blob_refs` weg, ohne dass die Zähler mitlaufen — die Blobs
+   lägen für immer da.
+2. `DELETE /api/cloud/me` (nur Cloud-Daten, Konto bleibt) — fehlt noch ganz.
+3. Der 15-Tage-Job mit den vier Stufen aus `§E.6`, Notifications über die
+   bestehende `notifications`-Tabelle und E-Mail über `email.js`.
+   **Vorher Entscheidung Nr. 1 unten klären** und mindestens eine Woche im
+   Dry-Run mitlaufen lassen, bevor er scharf geschaltet wird.
+4. Admin-Tab `cloud` in `AdminPanel.jsx` (das `TABS`-Array, Zeile ~205) plus
+   `/api/admin/cloud/*` — die GC-Endpunkte stehen bereits.
+5. Client: „Cloud-Daten löschen" und „Lux Account löschen" mit doppelter
+   Bestätigung und einer klaren Auflistung, was verschwindet und was lokal
+   bleibt. **Lokale Dateien werden nie gelöscht** — auch nicht bei
+   Kontolöschung (`§I` Fall 8).
 
-Was fehlt: `PUT /instances/:uuid/playtime` mit Monotonie-Prüfung, der
-G-Counter-Abgleich im Client (absoluter Gerätewert, nie ein Delta), die
-Erstmigration der vorhandenen `instance.json.playtime` auf das Origin-Gerät
-(genau einmal, an ein Flag in `state.json` gebunden) und die Plausibilitäts-
-grenze von 24 h pro Tag und Gerät.
-
-**Danach Phase 9 (UI/UX).** Die Engine ist vollständig und über IPC
-ansprechbar, sichtbar ist davon aber noch nichts. Es fehlen die React-Teile:
-`CloudStatusBadge`, `SyncConflictModal`, `PreLaunchSyncOverlay`,
-`CloudOnboardingModal`, `RevisionHistoryModal`, `CloudTransferPanel` und die
-Einbindung des Gates in den Play-Button. Die Roadmap führt die ersten beiden
-unter Phase 7 — sie sind bewusst dort nicht gebaut worden, weil Phase 9 die UI
-ohnehin als Ganzes angeht und ein halb angebundener Konfliktdialog schlimmer
-wäre als keiner.
+Danach bleiben Phase 11 (Last-, Chaos- und Sicherheitstests, Kostenmessung an
+echten Daten) und Phase 12 (Launch mit Killswitch und gestaffeltem Rollout).
 
 ---
 
@@ -760,6 +829,12 @@ mit Datum und Fundstelle.)*
 | 2026-08-31 | **Der Pre-Launch-Gate fällt im Zweifel immer auf „starten" zurück** | 2,5 s Timeout auf `head`, jeder Fehler wird wie offline behandelt. Der Play-Button ist die meistgenutzte Funktion des Clients; eine langsame oder kaputte Cloud darf ihn nicht blockieren. Nur ein echter Konflikt hält den Start an, und auch der ist über die Konfliktauflösung sofort auflösbar. |
 | 2026-08-31 | **`degradeWorlds` filtert in JS statt im SQL** | `WHERE r.revision <= i.current_revision - ?` liefert unter pg-mem nichts (Parameter in Arithmetik). Die Kandidatenmenge ist durch `has_worlds = TRUE` ohnehin klein, und derselbe Workaround wurde in Phase 2 schon für korrelierte Subqueries gewählt. |
 | 2026-08-31 | **Die React-Komponenten aus `§G.2` bleiben Phase 9, obwohl die Roadmap zwei davon unter Phase 7 führt** | Die Engine ist über IPC vollständig ansprechbar (`pre-launch-check`, `diff-instance`, `resolve-conflict`). Ein halb angebundener Konfliktdialog wäre schlimmer als keiner: er würde Entscheidungen anbieten, deren Auswirkung der Nutzer nicht sieht. Phase 9 geht die UI als Ganzes an. |
+| 2026-08-31 | **Die Plausibilitätsprüfung greift erst ab der zweiten Meldung eines Geräts** | Sonst wäre die Migration unmöglich: beim ersten Sync wird die vorhandene `instance.json.playtime` gutgeschrieben, und das können mehrere hundert Stunden sein. Der Kompromiss ist vertretbar, weil der erste Wert ohnehin nur einmal je Gerät und Instanz gesetzt werden kann und die Obergrenze von 20 Jahren weiter gilt. |
+| 2026-08-31 | **Der Client übernimmt bei 409 `non_monotonic` den Serverwert** | Die Alternative wäre, den lokalen Zähler zu behalten und es später erneut zu versuchen — das würde ewig scheitern. Der Server hat in dieser Richtung immer recht, weil nur er alle Geräte kennt. |
+| 2026-08-31 | **`LuxSyncContext` ist getrennt von `LuxAccountContext`** | Der Account-Kontext aus Phase 1 wird auf jeder Seite gebraucht und soll billig bleiben. Sync-Zustand, Fortschritts-Events und Konflikte hängen dagegen an einer laufenden Verbindung und ändern sich häufig. Getrennt zu halten heißt, dass ein Fortschritts-Tick nicht die Account-Konsumenten neu rendert. |
+| 2026-08-31 | **Der Onboarding-Dialog zeigt die Upload-Größe, nicht die Instanzgröße** | Direkt aus `§G.2`. Bei einer 1,2-GB-Instanz, von der 20 MB übertragen werden, würde die Instanzgröße den Nutzer grundlos abschrecken. Er misst dafür je Instanz über `luxcloud:preview-manifest` und rechnet den Speicherstand danach vor. |
+| 2026-08-31 | **Ohne Anmeldung ist kein einziges Cloud-Element sichtbar** | Kein Badge, kein Tab, kein Panel — `InstanceCloudPanel` und `CloudOverlays` geben ohne `loggedIn` `null` zurück. Der Auftrag verlangt ausdrücklich, dass der Client vollständig ohne Lux Account funktioniert; ein ausgegrauter Cloud-Tab würde das Gegenteil suggerieren. |
+| 2026-08-31 | **Für die UI wurden keine automatisierten Tests eingeführt** | Das Projekt hat bislang keine Oberflächentests, und ein Testframework einzuführen wäre eine eigene Entscheidung gewesen, nicht Teil von Phase 9. Abgesichert ist die UI über `npm run typecheck` und `npm run build`. Die Logik dahinter ist vollständig getestet — die Komponenten rufen nur IPC auf. |
 
 ---
 

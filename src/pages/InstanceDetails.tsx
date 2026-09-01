@@ -13,6 +13,10 @@ import InstanceFileBrowser from '../components/InstanceFileBrowser';
 import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
 import ProjectContextMenu from '../components/ProjectContextMenu';
+import InstanceCloudPanel from '../components/cloud/InstanceCloudPanel';
+import CloudStatusBadge from '../components/cloud/CloudStatusBadge';
+import { useLuxAccount } from '../context/LuxAccountContext';
+import { useLuxSync } from '../context/LuxSyncContext';
 
 function RetryableListIcon({ src, className, fallback }) {
     const [attempt, setAttempt] = useState(0);
@@ -53,6 +57,8 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const { t } = useTranslation();
     const isVanilla = !instance.loader || instance.loader.toLowerCase() === 'vanilla';
     const [activeTab, setActiveTab] = useState('content');
+    const luxAccount = useLuxAccount();
+    const luxSync = useLuxSync();
     const [contentView, setContentView] = useState(isVanilla ? 'resourcepacks' : 'mods');
     const [searchCategory, setSearchCategory] = useState(isVanilla ? 'resourcepack' : 'mod');
     const [mods, setMods] = useState([]);
@@ -1357,10 +1363,32 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                 <button onClick={() => requestTabChange('files')} className={TAB_CLASSES('files')}>{t('instance_details.tabs.files', 'Files')}</button>
                 <button onClick={() => requestTabChange('worlds')} className={TAB_CLASSES('worlds')}>{t('instance_details.tabs.worlds')}</button>
                 <button onClick={() => requestTabChange('logs')} className={TAB_CLASSES('logs')}>{t('instance_details.tabs.logs')}</button>
+                {luxAccount?.loggedIn && (
+                    <button onClick={() => requestTabChange('cloud')} className={TAB_CLASSES('cloud')}>
+                        <span className="flex items-center gap-1.5">
+                            {t('instance_details.tabs.cloud', 'Cloud')}
+                            <CloudStatusBadge
+                                status={luxSync ? luxSync.statusFor(instance.name, instance.instanceId) : 'local'}
+                                compact
+                            />
+                        </span>
+                    </button>
+                )}
             </div>
 
             { }
             <div className="flex-1 overflow-hidden p-8 pt-4">
+                {activeTab === 'cloud' && (
+                    <div className="h-full overflow-y-auto">
+                        <div className="max-w-2xl">
+                            <InstanceCloudPanel
+                                instanceName={instance.name}
+                                instanceId={instance.instanceId}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'content' && (
                     <div className="h-full flex flex-col min-h-0">
                         <div className="sticky top-0 z-20 flex justify-between items-center mb-4 py-2 bg-background backdrop-blur-xl -mx-8 px-8 border-b border-border animate-in fade-in slide-in-from-top-4 duration-500">

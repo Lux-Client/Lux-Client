@@ -26,6 +26,7 @@ import { isFeatureEnabled } from './config/featureFlags';
 
 import AppSidebar from './components/AppSidebar';
 import TopBar from './components/TopBar';
+import CloudOverlays from './components/cloud/CloudOverlays';
 import CommandPalette from './components/CommandPalette';
 import UpdateNotification from './components/UpdateNotification';
 import AgreementModal from './components/AgreementModal';
@@ -1516,6 +1517,8 @@ function App() {
                     onSkip={handleGuideFinish}
                 />
             )}
+
+            <CloudOverlays />
 
         </ExtensionProvider>
     );
