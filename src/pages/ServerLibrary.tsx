@@ -21,6 +21,7 @@ function ServerLibrary() {
         spigot: { logo: './assets/server-software/spigot.png', name: 'Spigot', description: 'Most popular server software', color: 'from-yellow-500/20' },
         paper: { logo: './assets/server-software/paper.svg', name: 'Paper', description: 'High-performance fork of Spigot', color: 'from-blue-500/20' },
         purpur: { logo: './assets/server-software/purpur.svg', name: 'Purpur', description: 'Fork of Paper with many features', color: 'from-purple-500/20' },
+        mohist: { logo: './assets/server-software/mohist.ico', name: 'Mohist', description: 'Forge mods and Bukkit plugins on one server', color: 'from-amber-500/20' },
         folia: { logo: './assets/server-software/folia.png', name: 'Folia', description: 'Regionized multithreaded server', color: 'from-emerald-500/20' },
         forge: { logo: './assets/server-software/forge.jpeg', name: 'Forge', description: 'Modded server for Forge mods', color: 'from-red-500/20' },
         fabric: { logo: './assets/server-software/fabric.png', name: 'Fabric', description: 'Lightweight modding platform', color: 'from-cyan-500/20' },
@@ -39,7 +40,7 @@ function ServerLibrary() {
         setIsLoading(true);
         try {
             const data = fetchSupportedPlatforms();
-            const supportedPlatforms = ['vanilla', 'bukkit', 'spigot', 'paper', 'purpur', 'folia', 'forge', 'fabric', 'neoforge', 'quilt', 'bungeecord', 'velocity'];
+            const supportedPlatforms = ['vanilla', 'bukkit', 'spigot', 'paper', 'purpur', 'folia', 'mohist', 'forge', 'fabric', 'neoforge', 'quilt', 'bungeecord', 'velocity'];
             const filteredPlatforms = data
                 .filter((platform) => supportedPlatforms.includes(platform.key))
                 .map((platform) => {
@@ -60,6 +61,7 @@ function ServerLibrary() {
                 { key: 'paper', name: 'Paper' },
                 { key: 'purpur', name: 'Purpur' },
                 { key: 'folia', name: 'Folia' },
+                { key: 'mohist', name: 'Mohist' },
                 { key: 'forge', name: 'Forge' },
                 { key: 'fabric', name: 'Fabric' },
                 { key: 'neoforge', name: 'NeoForge' },

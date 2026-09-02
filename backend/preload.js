@@ -385,6 +385,79 @@ const electronAPI = {
 
     checkServiceStatus: () => ipcRenderer.invoke('status:check'),
 
+    luxCloudGetAccount: () => ipcRenderer.invoke('luxcloud:get-account'),
+    luxCloudLogin: () => ipcRenderer.invoke('luxcloud:login'),
+    luxCloudCancelLogin: () => ipcRenderer.invoke('luxcloud:cancel-login'),
+    luxCloudLogout: () => ipcRenderer.invoke('luxcloud:logout'),
+    luxCloudGetMe: () => ipcRenderer.invoke('luxcloud:get-me'),
+    luxCloudUpdateSettings: (patch) => ipcRenderer.invoke('luxcloud:update-settings', patch),
+    luxCloudListDevices: () => ipcRenderer.invoke('luxcloud:list-devices'),
+    luxCloudRevokeDevice: (deviceUuid) => ipcRenderer.invoke('luxcloud:revoke-device', deviceUuid),
+    luxCloudPreviewManifest: (instanceName, options) => ipcRenderer.invoke('luxcloud:preview-manifest', instanceName, options),
+    luxCloudListCloudInstances: (status) => ipcRenderer.invoke('luxcloud:list-cloud-instances', status),
+    luxCloudUpdateInstanceSettings: (instanceUuid, patch) => ipcRenderer.invoke('luxcloud:update-instance-settings', instanceUuid, patch),
+    luxCloudDeleteCloudInstance: (instanceUuid) => ipcRenderer.invoke('luxcloud:delete-cloud-instance', instanceUuid),
+    luxCloudListWorlds: (instanceName) => ipcRenderer.invoke('luxcloud:list-worlds', instanceName),
+    luxCloudSetWorldSelection: (instanceId, worldNames) => ipcRenderer.invoke('luxcloud:set-world-selection', instanceId, worldNames),
+    luxCloudGetWorldSelection: (instanceId) => ipcRenderer.invoke('luxcloud:get-world-selection', instanceId),
+    luxCloudSyncInstance: (instanceName, options) => ipcRenderer.invoke('luxcloud:sync-instance', instanceName, options),
+    luxCloudRestoreCloudInstance: (instanceUuid) => ipcRenderer.invoke('luxcloud:restore-cloud-instance', instanceUuid),
+    luxCloudRestoreInstance: (instanceUuid, options) => ipcRenderer.invoke('luxcloud:restore-instance', instanceUuid, options),
+    luxCloudListRevisions: (instanceUuid) => ipcRenderer.invoke('luxcloud:list-revisions', instanceUuid),
+    luxCloudBlobCacheStats: () => ipcRenderer.invoke('luxcloud:blob-cache-stats'),
+    luxCloudPruneBlobCache: (maxBytes) => ipcRenderer.invoke('luxcloud:prune-blob-cache', maxBytes),
+    luxCloudRedeemCode: (userCode) => ipcRenderer.invoke('luxcloud:redeem-code', userCode),
+    luxCloudStartPairing: () => ipcRenderer.invoke('luxcloud:start-pairing'),
+    luxCloudPollPairing: () => ipcRenderer.invoke('luxcloud:poll-pairing'),
+    luxCloudCancelPairing: () => ipcRenderer.invoke('luxcloud:cancel-pairing'),
+    luxCloudGetNotifications: (limit) => ipcRenderer.invoke('luxcloud:get-notifications', limit),
+    luxCloudMarkNotificationsRead: (id) => ipcRenderer.invoke('luxcloud:mark-notifications-read', id),
+    luxCloudSetAvatar: () => ipcRenderer.invoke('luxcloud:set-avatar'),
+    luxCloudDeleteCloudData: () => ipcRenderer.invoke('luxcloud:delete-cloud-data'),
+    luxCloudGetPlaytime: (instanceName) => ipcRenderer.invoke('luxcloud:get-playtime', instanceName),
+    luxCloudPushPlaytime: () => ipcRenderer.invoke('luxcloud:push-playtime'),
+    luxCloudPreLaunchCheck: (instanceName, options) => ipcRenderer.invoke('luxcloud:pre-launch-check', instanceName, options),
+    luxCloudDiffInstance: (instanceName, options) => ipcRenderer.invoke('luxcloud:diff-instance', instanceName, options),
+    luxCloudResolveConflict: (instanceName, choice, options) => ipcRenderer.invoke('luxcloud:resolve-conflict', instanceName, choice, options),
+    luxCloudRollback: (instanceUuid, revision) => ipcRenderer.invoke('luxcloud:rollback', instanceUuid, revision),
+    luxCloudAutoSyncState: () => ipcRenderer.invoke('luxcloud:auto-sync-state'),
+    luxCloudFlushAutoSync: () => ipcRenderer.invoke('luxcloud:flush-auto-sync'),
+    onLuxCloudAutoSync: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:auto-sync', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:auto-sync', subscription);
+    },
+    onLuxCloudPreLaunchProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:pre-launch-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:pre-launch-progress', subscription);
+    },
+    onLuxCloudSessionWarning: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:session-warning', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:session-warning', subscription);
+    },
+    onLuxCloudSyncProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:sync-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:sync-progress', subscription);
+    },
+    onLuxCloudRestoreProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:restore-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:restore-progress', subscription);
+    },
+    onLuxCloudManifestProgress: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:manifest-progress', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:manifest-progress', subscription);
+    },
+    onLuxCloudAccountChanged: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('luxcloud:account-changed', subscription);
+        return () => ipcRenderer.removeListener('luxcloud:account-changed', subscription);
+    },
+
     remoteGetConfig: () => ipcRenderer.invoke('remote:get-config'),
     remoteSetConfig: (config) => ipcRenderer.invoke('remote:set-config', config),
     remoteGetToken: () => ipcRenderer.invoke('remote:get-token'),

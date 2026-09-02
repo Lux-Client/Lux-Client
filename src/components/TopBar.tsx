@@ -4,6 +4,9 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import ExtensionSlot from './Extensions/ExtensionSlot';
 import PlayerHead from './PlayerHead';
 import WindowControls from './WindowControls';
+import CloudTransferPanel from './cloud/CloudTransferPanel';
+import NotificationBell from './cloud/NotificationBell';
+import { useLuxAccount } from '../context/LuxAccountContext';
 import ActionBar from './ActionBar';
 import { useNotification } from '../context/NotificationContext';
 import { cn } from '../lib/utils';
@@ -18,7 +21,8 @@ import {
 } from './ui/dropdown-menu';
 import {
   Search, ChevronDown, ChevronLeft, ChevronRight, Newspaper, Rocket,
-  Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap, Wrench
+  Download, Gamepad2, Server, UserPlus, Trash2, LogOut, Zap, Wrench,
+  UserCircle2, Cloud as CloudIcon
 } from 'lucide-react';
 
 type TopBarProps = {
@@ -59,6 +63,7 @@ function TopBar({
   isCommandPaletteAvailable
 }: TopBarProps) {
   const { t } = useTranslation();
+  const luxAccount = useLuxAccount();
   const [accounts, setAccounts] = useState([]);
   const [liveSkin, setLiveSkin] = useState(null);
   const [actionBarOpen, setActionBarOpen] = useState(false);
@@ -409,10 +414,69 @@ function TopBar({
                 {t('common.add_account', 'Add Account')}
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                {t('common.lux_account', 'Lux Account')}
+              </DropdownMenuLabel>
+
+              {luxAccount?.loggedIn ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      onNavigate('settings');
+                      setTimeout(() => window.dispatchEvent(
+                        new CustomEvent('lux:open-settings-category', { detail: { category: 'account' } })
+                      ), 60);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    {luxAccount.user?.avatar ? (
+                      <img
+                        src={luxAccount.user.avatar}
+                        alt=""
+                        className="h-5 w-5 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <UserCircle2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-xs">{luxAccount.user?.username}</span>
+                    {luxAccount.quota && luxAccount.quota.quotaBytes > 0 && (
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {Math.round((luxAccount.quota.usedBytes / luxAccount.quota.quotaBytes) * 100)}%
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => luxAccount.signOut()}
+                    className="text-xs text-muted-foreground"
+                  >
+                    <LogOut className="h-3.5 w-3.5 mr-2" />
+                    {t('common.lux_sign_out', 'Sign out of Lux')}
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => luxAccount?.signIn()}
+                  disabled={Boolean(luxAccount?.signingIn)}
+                  className="text-primary"
+                >
+                  <CloudIcon className="h-4 w-4 mr-2" />
+                  {luxAccount?.signingIn
+                    ? t('common.lux_signing_in', 'Waiting for the browser...')
+                    : t('common.lux_sign_in', 'Sign in with Lux')}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 
         <Separator orientation="vertical" className="h-5" />
+        <NotificationBell />
+        <CloudTransferPanel />
+
         <WindowControls isMaximized={isMaximized} />
       </div>
 

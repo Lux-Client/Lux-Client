@@ -624,7 +624,9 @@ function createWindow() {
         { name: 'java', path: '../backend/handlers/java' },
         { name: 'external', path: '../backend/handlers/external' },
         { name: 'updater', path: '../backend/handlers/updater' },
-        { name: 'status', path: '../backend/handlers/status' }
+        { name: 'status', path: '../backend/handlers/status' },
+        { name: 'luxcloud', path: '../backend/handlers/luxcloud' },
+        { name: 'remoteControl', path: '../backend/handlers/remoteControl' }
     ];
 
     for (const h of handlers) {
@@ -646,6 +648,27 @@ function createWindow() {
             logToFile(`[Main] ❌ CRITICAL: Failed to register ${h.name} handler: ${e.message}\n${e.stack}`);
             console.error(`[Main] Failed to register ${h.name} handler:`, e);
         }
+    }
+
+    // Lux Cloud Sync, Phase 0: stabile Instanz-UUIDs vergeben, inline-Icons aus
+    // instance.json auslagern und abgebrochene Spielsitzungen nachbuchen.
+    // Laeuft absichtlich nach der Handler-Registrierung und ohne await -- der Client
+    // soll nicht darauf warten, und ein Fehlschlag darf den Start nicht verhindern.
+    // Details: docs/cloud-sync/03-ROADMAP.md, Phase 0.
+    try {
+        const { runStartupMigrations } = require('../backend/luxcloud/migrations');
+        sendSplashStatus({ status: 'Starting', detail: 'Preparing instances...' });
+        runStartupMigrations({
+            log: (msg) => { logToFile(msg); console.log(msg); },
+            logError: (msg, detail) => {
+                logToFile(`${msg} ${detail || ''}`);
+                console.error(msg, detail || '');
+            }
+        }).catch((e) => {
+            logToFile(`[LuxCloud] Startup-Migrationen fehlgeschlagen: ${e.message}`);
+        });
+    } catch (e) {
+        logToFile(`[LuxCloud] Startup-Migrationen nicht ladbar: ${e.message}`);
     }
 
     ipcMain.on('app:is-packaged', (event) => {
@@ -890,6 +913,26 @@ const handleDeepLink = (argv) => {
     if (deepLink) {
         try {
             const parsed = new URL(deepLink);
+
+            if (parsed.hostname === 'auth') {
+                try {
+                    const { completeLogin } = require('../backend/luxcloud/auth');
+                    completeLogin({
+                        code: parsed.searchParams.get('code'),
+                        state: parsed.searchParams.get('state'),
+                        error: parsed.searchParams.get('error')
+                    });
+                } catch (e) {
+                    console.error('[DeepLink] luxcloud auth callback failed:', e);
+                }
+
+                if (mainWindow) {
+                    if (mainWindow.isMinimized()) mainWindow.restore();
+                    mainWindow.focus();
+                }
+                return;
+            }
+
             if (parsed.hostname === 'install') {
                 const payload = {
                     identifier: parsed.searchParams.get('identifier'),

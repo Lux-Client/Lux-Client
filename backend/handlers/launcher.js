@@ -8,6 +8,10 @@ const { getUserProfile } = require('../utils/secureProfileStore');
 const backupManager = require('../backupManager');
 const { getProcessStats } = require('../utils/process-utils');
 const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
+const playtimeSession = require('../luxcloud/playtimeSession');
+const autoSync = require('../luxcloud/autoSync');
+const cloudSession = require('../luxcloud/cloudSession');
+const cloudPlaytime = require('../luxcloud/playtime');
 
 function normalizeExternalRequestName(value) {
     return String(value || '').trim().toLowerCase();
@@ -2239,6 +2243,36 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
             });
             runningInstances.set(instanceName, Date.now());
 
+            // Absturzsicherung fuer die Playtime: waehrend des Spielens liegt eine
+            // Sessiondatei mit Heartbeat, die beim naechsten Start nachgebucht wird,
+            // falls dieser Prozess nie sauber beendet wird (Absturz, Stromausfall,
+            // Task-Manager). Ohne sie war die gesamte Session verloren.
+            let playtimeSessionId = null;
+            if (supportsPersistence) {
+                playtimeSessionId = await playtimeSession.startSession({
+                    instanceName,
+                    instanceId: config?.instanceId || null,
+                    instanceDir
+                }).catch(() => null);
+            }
+
+            const cloudInstanceId = supportsPersistence ? (config?.instanceId || null) : null;
+            if (cloudInstanceId) {
+                autoSync.suspend(instanceName);
+                cloudSession.start(cloudInstanceId, instanceName)
+                    .then((session) => {
+                        if (session && session.otherActiveSessions && session.otherActiveSessions.length > 0
+                            && mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+                            mainWindow.webContents.send('luxcloud:session-warning', {
+                                instanceName,
+                                instanceId: cloudInstanceId,
+                                others: session.otherActiveSessions
+                            });
+                        }
+                    })
+                    .catch(() => {});
+            }
+
             try {
                 const discord = require('./discord');
                 discord.setActivity(`Playing ${instanceName}`, 'Starting Game...', 'lux_icon', 'Lux', runningInstances.get(instanceName));
@@ -2289,6 +2323,22 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                 if (startTime) {
                     const sessionTime = Date.now() - startTime;
                     console.log(`[Launcher] Session finished for ${instanceName}. Duration: ${sessionTime}ms`);
+
+                    // Regulaeres Ende: die Sessiondatei hat ihren Zweck erfuellt und wird
+                    // entfernt, BEVOR unten gebucht wird. Wuerde sie liegen bleiben,
+                    // wuerde derselbe Zeitraum beim naechsten Start ein zweites Mal
+                    // gutgeschrieben.
+                    await playtimeSession.endSession(playtimeSessionId).catch(() => {});
+                    playtimeSessionId = null;
+
+                    if (cloudInstanceId) {
+                        await cloudSession.end(cloudInstanceId).catch(() => {});
+                        await cloudPlaytime.seedIfNeeded(cloudInstanceId, instanceDir).catch(() => {});
+                        await cloudPlaytime.creditSession(cloudInstanceId, sessionTime).catch(() => {});
+                        cloudPlaytime.push(cloudInstanceId).catch(() => {});
+                        autoSync.resume(instanceName);
+                        autoSync.notifyChanged(instanceName, 'after-play');
+                    }
 
                     try {
                         if (supportsPersistence && configPath && await fs.pathExists(configPath)) {

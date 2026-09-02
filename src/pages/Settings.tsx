@@ -7,6 +7,7 @@ import { useExtensions } from '../context/ExtensionContext';
 import { isFeatureEnabled } from '../config/featureFlags';
 import ToggleBox from '../components/ToggleBox';
 import ConfirmationModal from '../components/ConfirmationModal';
+import LuxAccountPanel from '../components/cloud/LuxAccountPanel';
 import { getDefaultStartupValueForMode, getStartupModes, normalizeStartupPageValue } from '../lib/startupPages';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -47,7 +48,8 @@ import {
     Shield,
     Settings2,
     RotateCcw,
-    Compass
+    Compass,
+    UserCircle2
 } from 'lucide-react';
 
 // An extension crashing must not take the whole settings page down with it.
@@ -194,6 +196,15 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
     const [testVersion, setTestVersion] = useState('');
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
     const [activeSettingsTab, setActiveSettingsTab] = useState('experience');
+
+    useEffect(() => {
+        const openCategory = (event) => {
+            const category = event?.detail?.category;
+            if (typeof category === 'string' && category) setActiveSettingsTab(category);
+        };
+        window.addEventListener('lux:open-settings-category', openCategory);
+        return () => window.removeEventListener('lux:open-settings-category', openCategory);
+    }, []);
     const [settingsSearch, setSettingsSearch] = useState('');
     const hasUnsavedChanges = useRef(false);
     const initialSettingsRef = useRef(null);
@@ -751,6 +762,13 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             description: t('settings.system.automation_desc', 'Integrations, auto-install and compatibility toggles.'),
             icon: Zap,
             keywords: ['discord', 'logs', 'mods', 'compatibility', 'optimization', 'automation']
+        },
+        {
+            id: 'account',
+            label: t('settings.system.account', 'Lux Account'),
+            description: t('settings.system.account_desc', 'Optional Lux account and cloud sync across your PCs.'),
+            icon: UserCircle2,
+            keywords: ['account', 'lux', 'login', 'sign in', 'cloud sync', 'devices', 'storage', 'quota']
         },
         {
             id: 'cloud',
@@ -1743,6 +1761,10 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
                             />
                         </CardContent>
                     </Card>
+                    </TabsContent>
+
+                    <TabsContent value="account" className="mt-0 space-y-5">
+                        <LuxAccountPanel />
                     </TabsContent>
 
                     <TabsContent value="cloud" className="mt-0 space-y-5">

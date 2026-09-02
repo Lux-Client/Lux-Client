@@ -18,6 +18,8 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Separator } from "../components/ui/separator";
+import CloudStatusBadge from "../components/cloud/CloudStatusBadge";
+import { useLuxSync } from "../context/LuxSyncContext";
 import { filterInstancesForMode } from "../utils/instanceTypes";
 import {
   Dialog,
@@ -152,6 +154,7 @@ const InstanceCard = React.memo(function InstanceCard({
   setPendingLaunches,
   t,
   isGuest,
+  cloudStatus,
 }: any) {
   const formatPlaytime = (ms) => {
     if (!ms || ms <= 0) return t("common.time.0h");
@@ -295,6 +298,9 @@ const InstanceCard = React.memo(function InstanceCard({
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
           {formatPlaytime(instance.playtime)}
+          {cloudStatus && cloudStatus !== 'local' && (
+            <CloudStatusBadge status={cloudStatus} compact className="ml-1" />
+          )}
         </span>
         <Button
           variant={isRunning ? "destructive" : "default"}
@@ -398,6 +404,7 @@ function Dashboard({
 }) {
   const { addNotification } = useNotification();
   const { t } = useTranslation();
+  const luxSync = useLuxSync();
   const [instances, setInstances] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPixelEditor, setShowPixelEditor] = useState(false);
@@ -1470,6 +1477,7 @@ function Dashboard({
       <ContextMenuTrigger>
         <InstanceCard
           instance={instance}
+          cloudStatus={luxSync ? luxSync.statusFor(instance.name, instance.instanceId) : null}
           runningInstances={runningInstances}
           installState={installState}
           pendingLaunches={pendingLaunches}

@@ -309,6 +309,13 @@
   -webkit-app-region: no-drag;
 }
 
+/* Chromium never forwards clicks inside a drag region to the renderer, so a
+   popover anchored in the title bar could not be dismissed by clicking the bare
+   bar next to it. While one is open the title bar stops being draggable. */
+body[data-titlebar-popover='open'] .titlebar {
+  -webkit-app-region: no-drag;
+}
+
 .image-pixelated {
   image-rendering: pixelated;
   image-rendering: -moz-pixelated;

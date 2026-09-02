@@ -109,6 +109,8 @@ function setAccounts(store, accounts) {
 }
 
 module.exports = {
+    encryptToken,
+    decryptToken,
     getUserProfile,
     setUserProfile,
     getAccounts,
