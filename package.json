@@ -184,7 +184,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
-    "@vitejs/plugin-react": "^4.2.1",
+    "@vitejs/plugin-react": "^6.0.5",
     "autoprefixer": "^10.4.17",
     "concurrently": "^10.0.3",
     "cross-env": "^7.0.3",
@@ -200,7 +200,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "^7.3.1",
+    "vite": "^8.2.1",
     "wait-on": "^7.2.0"
   }
 }
