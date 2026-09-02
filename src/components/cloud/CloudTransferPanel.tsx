@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, ChevronDown, CloudOff } from 'lucide-react';
 
 import { useLuxSync } from '../../context/LuxSyncContext';
+import { useAnimationsEnabled } from '../../hooks/useAnimationsEnabled';
+import { useTitlebarPopover } from '../../hooks/useTitlebarPopover';
+
+// Kept in sync with the notification bell so both title-bar popovers match.
+const PANEL_MOTION =
+    'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 ' +
+    'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2';
 
 function formatBytes(bytes: number) {
     if (!bytes) return '0 B';
@@ -22,7 +29,8 @@ const PHASE_KEYS: Record<string, [string, string]> = {
 export default function CloudTransferPanel() {
     const { t } = useTranslation();
     const sync = useLuxSync();
-    const [open, setOpen] = useState(false);
+    const animationsEnabled = useAnimationsEnabled();
+    const { containerRef, open, mounted, state, toggle } = useTitlebarPopover<HTMLDivElement>(animationsEnabled);
 
     if (!sync) return null;
 
@@ -46,21 +54,27 @@ export default function CloudTransferPanel() {
     const percent = total > 0 ? Math.min(100, Math.round((moved / total) * 100)) : 0;
 
     return (
-        <div className="relative">
+        <div ref={containerRef} className="relative">
             <button
                 type="button"
-                onClick={() => setOpen((value) => !value)}
+                onClick={toggle}
+                aria-expanded={open}
                 className="flex items-center gap-1.5 rounded-full border border-sky-400/25 bg-sky-500/10 px-2.5 py-1 text-[11px] font-medium text-sky-300 transition hover:bg-sky-500/20"
             >
                 <RefreshCw size={11} className="animate-spin" />
                 {total > 0
                     ? `${percent}%`
                     : t('cloud.transfer.working', 'Syncing')}
-                <ChevronDown size={11} className={open ? 'rotate-180 transition' : 'transition'} />
+                <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
-            {open && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/10 bg-[#1a1a1a] p-3 shadow-2xl">
+            {mounted && (
+                <div
+                    data-state={state}
+                    className={`absolute right-0 top-full z-50 mt-2 w-72 origin-top-right rounded-xl border border-white/10 bg-[#1a1a1a] p-3 shadow-2xl data-[state=closed]:pointer-events-none ${
+                        animationsEnabled ? PANEL_MOTION : ''
+                    }`}
+                >
                     <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/35">
                         {t('cloud.transfer.title', 'Cloud sync')}
                     </p>

@@ -1,8 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bell, Info, CheckCircle2, AlertTriangle, XCircle, CheckCheck } from 'lucide-react';
 
 import { useLuxAccount } from '../../context/LuxAccountContext';
+import { useAnimationsEnabled } from '../../hooks/useAnimationsEnabled';
+import { useTitlebarPopover } from '../../hooks/useTitlebarPopover';
+
+// Mirrors the entrance of the Radix dropdowns sitting next to the bell.
+const PANEL_MOTION =
+    'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 ' +
+    'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2';
 
 const POLL_MS = 5 * 60 * 1000;
 
@@ -31,12 +38,12 @@ function formatWhen(value: string, t: any) {
 export default function NotificationBell() {
     const { t } = useTranslation();
     const account = useLuxAccount();
+    const animationsEnabled = useAnimationsEnabled();
+    const { containerRef, open, mounted, state, setOpen } = useTitlebarPopover<HTMLDivElement>(animationsEnabled);
 
-    const [open, setOpen] = useState(false);
     const [items, setItems] = useState<any[]>([]);
     const [unread, setUnread] = useState(0);
     const [loading, setLoading] = useState(false);
-    const containerRef = useRef<HTMLDivElement | null>(null);
 
     const load = useCallback(async () => {
         const api = bridge();
@@ -66,18 +73,6 @@ export default function NotificationBell() {
         return () => clearInterval(timer);
     }, [account?.loggedIn, load]);
 
-    useEffect(() => {
-        if (!open) return undefined;
-
-        const onOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', onOutside);
-        return () => document.removeEventListener('mousedown', onOutside);
-    }, [open]);
-
     if (!account || !account.loggedIn) return null;
 
     const markAll = async () => {
@@ -100,7 +95,10 @@ export default function NotificationBell() {
                 type="button"
                 onClick={openAndRead}
                 aria-label={t('cloud.bell.label', 'Notifications')}
-                className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
+                aria-expanded={open}
+                className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-white/5 hover:text-foreground ${
+                    open ? 'bg-white/5 text-foreground' : 'text-muted-foreground'
+                }`}
             >
                 <Bell className="h-4 w-4" />
                 {unread > 0 && (
@@ -110,8 +108,13 @@ export default function NotificationBell() {
                 )}
             </button>
 
-            {open && (
-                <div className="absolute right-0 top-full z-[70] mt-2 w-80 overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1a] shadow-2xl">
+            {mounted && (
+                <div
+                    data-state={state}
+                    className={`absolute right-0 top-full z-[70] mt-2 w-80 origin-top-right overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1a] shadow-2xl data-[state=closed]:pointer-events-none ${
+                        animationsEnabled ? PANEL_MOTION : ''
+                    }`}
+                >
                     <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
                         <span className="text-xs font-medium uppercase tracking-wider text-white/40">
                             {t('cloud.bell.title', 'Notifications')}
