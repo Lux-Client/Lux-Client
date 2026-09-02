@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
-const { shell } = require('electron');
+const { app, shell } = require('electron');
 
 const api = require('./api');
 const state = require('./state');
@@ -25,6 +25,15 @@ function createPkcePair() {
     return { verifier, challenge };
 }
 
+function isDeepLinkReady() {
+    try {
+        if (app.isPackaged) return app.isDefaultProtocolClient('luxclient');
+        return app.isDefaultProtocolClient('luxclient', process.execPath, [app.getAppPath()]);
+    } catch {
+        return true;
+    }
+}
+
 function emitAccountChanged(reason) {
     getAccount()
         .then((account) => events.emit('account-changed', { reason, account }))
@@ -42,6 +51,7 @@ async function getAccount() {
             platform: process.platform
         },
         loginTimeoutMs: LOGIN_TIMEOUT_MS,
+        deepLinkReady: isDeepLinkReady(),
         linkedAt: current.linkedAt || null,
         baseUrl: getBaseUrl()
     };

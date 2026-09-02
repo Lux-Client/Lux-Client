@@ -277,6 +277,14 @@ const LuxAccountPanel = () => {
                             <p className="text-sm text-muted-foreground">
                                 {t('settings.lux_account.signed_out_desc', 'Optional. Lux works fully without a Lux account — signing in adds cloud sync for your instances across your PCs.')}
                             </p>
+
+                            {!account.deepLinkReady && (
+                                <p className="rounded-lg border border-amber-400/25 bg-amber-500/[0.08] p-3 text-xs leading-relaxed text-amber-200/85">
+                                    {t('settings.lux_account.no_deep_link',
+                                        'This system cannot hand the browser result back to Lux automatically. '
+                                        + 'Sign in as usual, then type the six-character code the website shows into the field below.')}
+                                </p>
+                            )}
                             <div className="flex flex-wrap items-center gap-3">
                                 <Button onClick={() => account.signIn()} disabled={signingIn}>
                                     {signingIn ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}

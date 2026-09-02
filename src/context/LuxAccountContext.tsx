@@ -37,6 +37,7 @@ type LuxAccountState = {
     signingIn: boolean;
     signInDeadline: number | null;
     loginTimeoutMs: number | null;
+    deepLinkReady: boolean;
     loggedIn: boolean;
     offline: boolean;
     user: LuxAccountUser | null;
@@ -63,6 +64,7 @@ const INITIAL: LuxAccountState = {
     signingIn: false,
     signInDeadline: null,
     loginTimeoutMs: null,
+    deepLinkReady: true,
     loggedIn: false,
     offline: false,
     user: null,
@@ -121,7 +123,8 @@ export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) 
                 settings: null,
                 quota: null,
                 devices: [],
-                loginTimeoutMs: account.loginTimeoutMs || null
+                loginTimeoutMs: account.loginTimeoutMs || null,
+                deepLinkReady: account.deepLinkReady !== false
             });
             return;
         }
@@ -139,6 +142,7 @@ export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) 
             loggedIn: true,
             offline,
             loginTimeoutMs: account.loginTimeoutMs || null,
+            deepLinkReady: account.deepLinkReady !== false,
             user: (meResult && meResult.success && meResult.me.user) || account.user,
             device: account.device,
             settings: meResult && meResult.success ? meResult.me.settings : null,
