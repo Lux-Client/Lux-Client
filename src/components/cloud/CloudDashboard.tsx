@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    Cloud, CloudDownload, RefreshCw, HardDrive, Clock, AlertTriangle, Monitor, Trash2
+    Cloud, CloudDownload, RefreshCw, HardDrive, Clock, AlertTriangle, Monitor, Trash2, Undo2
 } from 'lucide-react';
 
 import { useLuxAccount } from '../../context/LuxAccountContext';
@@ -40,6 +40,7 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
     const [busy, setBusy] = useState<string | null>(null);
     const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [trashed, setTrashed] = useState<any[]>([]);
 
     const loadLocal = useCallback(async () => {
         const api = bridge();
@@ -50,7 +51,14 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
         }
     }, []);
 
-    useEffect(() => { loadLocal(); }, [loadLocal]);
+    const loadTrash = useCallback(async () => {
+        const api = bridge();
+        if (!api || typeof api.luxCloudListCloudInstances !== 'function') return;
+        const result = await api.luxCloudListCloudInstances('trashed');
+        setTrashed(result && result.success !== false ? (result.instances || []) : []);
+    }, []);
+
+    useEffect(() => { loadLocal(); loadTrash(); }, [loadLocal, loadTrash]);
 
     const refresh = sync ? sync.refresh : null;
     const reloadAccount = account ? account.reload : null;
@@ -87,6 +95,26 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
         }
     };
 
+    const restoreFromTrash = async (instance: any) => {
+        const api = bridge();
+        if (!api || typeof api.luxCloudRestoreCloudInstance !== 'function') return;
+
+        setBusy(instance.instanceUuid);
+        setError(null);
+        try {
+            const result = await api.luxCloudRestoreCloudInstance(instance.instanceUuid);
+            if (result && result.success === false) {
+                setError(result.message || result.error);
+                return;
+            }
+            await loadTrash();
+            await sync?.refresh();
+            await account.reload();
+        } finally {
+            setBusy(null);
+        }
+    };
+
     const removeFromCloud = async (instance: any) => {
         const api = bridge();
         if (!api || typeof api.luxCloudDeleteCloudInstance !== 'function') return;
@@ -101,6 +129,7 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
             }
             setConfirmRemove(null);
             await sync?.refresh();
+            await loadTrash();
             await account.reload();
         } finally {
             setBusy(null);
@@ -299,6 +328,46 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
                     <p className="m-4 rounded-lg bg-red-500/10 p-3 text-xs text-red-200">{error}</p>
                 )}
             </div>
+
+            {trashed.length > 0 && (
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                    <h3 className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-white">
+                        <Trash2 size={13} />
+                        {t('cloud.dashboard.trash', 'Trash')}
+                    </h3>
+                    <p className="mb-3 text-xs text-white/40">
+                        {t('cloud.dashboard.trash_hint', 'Deleted cloud instances stay here for 30 days. They do not count against your instance limit, but they still use storage.')}
+                    </p>
+                    <div className="space-y-2">
+                        {trashed.map((instance) => {
+                            const days = daysUntil(instance.purgesAt);
+                            return (
+                                <div
+                                    key={instance.instanceUuid}
+                                    className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="truncate text-xs text-white/70">{instance.name}</p>
+                                        <p className="text-[11px] text-white/35">
+                                            {formatBytes(instance.logicalBytes || 0)}
+                                            {days !== null ? ` · ${t('cloud.dashboard.purges_in', 'gone in')} ${days}d` : ''}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={busy === instance.instanceUuid}
+                                        onClick={() => restoreFromTrash(instance)}
+                                        className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-white/60 transition hover:border-emerald-400/30 hover:text-emerald-300 disabled:opacity-40"
+                                    >
+                                        <Undo2 size={12} />
+                                        {t('cloud.dashboard.restore', 'Restore')}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {account.devices && account.devices.length > 0 && (
                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">

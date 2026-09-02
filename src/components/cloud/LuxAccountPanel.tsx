@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     CloudOff,
@@ -94,6 +94,41 @@ const DeviceRow = ({
     </div>
 );
 
+function formatCountdown(seconds: number) {
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    return `${minutes}:${String(rest).padStart(2, '0')}`;
+}
+
+function useCountdown(deadline: number | null, onExpire: () => void) {
+    const [remaining, setRemaining] = useState<number | null>(null);
+    const expired = useRef(false);
+
+    useEffect(() => {
+        if (!deadline) {
+            expired.current = false;
+            setRemaining(null);
+            return;
+        }
+
+        expired.current = false;
+        const tick = () => {
+            const left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+            setRemaining(left);
+            if (left === 0 && !expired.current) {
+                expired.current = true;
+                onExpire();
+            }
+        };
+
+        tick();
+        const timer = setInterval(tick, 1000);
+        return () => clearInterval(timer);
+    }, [deadline, onExpire]);
+
+    return remaining;
+}
+
 const LuxAccountPanel = () => {
     const { t } = useTranslation();
     const account = useLuxAccount();
@@ -114,6 +149,15 @@ const LuxAccountPanel = () => {
     const reload = account ? account.reload : null;
 
     useEffect(() => { if (reload) reload(); }, [reload]);
+
+    const cancelSignIn = account ? account.cancelSignIn : null;
+    const expireSignIn = useCallback(() => {
+        if (cancelSignIn) cancelSignIn();
+    }, [cancelSignIn]);
+    const remainingSeconds = useCountdown(
+        account && account.signingIn ? account.signInDeadline : null,
+        expireSignIn
+    );
 
     if (!account || !account.supported) return null;
 
@@ -168,6 +212,7 @@ const LuxAccountPanel = () => {
         quota,
         settings,
         signingIn,
+        signInDeadline,
         user
     } = account;
 
@@ -198,6 +243,7 @@ const LuxAccountPanel = () => {
             description: t('settings.lux_account.sync_screenshots_desc', 'Off by default.')
         }
     ];
+
 
     const handleRevoke = async () => {
         if (!pendingRevoke) return;
@@ -236,7 +282,9 @@ const LuxAccountPanel = () => {
                                     {signingIn ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                                     <span>
                                         {signingIn
-                                            ? t('settings.lux_account.waiting_for_browser', 'Waiting for your browser...')
+                                            ? `${t('settings.lux_account.waiting_for_browser', 'Waiting for your browser...')}${
+                                                remainingSeconds !== null ? ` (${formatCountdown(remainingSeconds)})` : ''
+                                            }`
                                             : t('settings.lux_account.sign_in', 'Sign in with a Lux account')}
                                     </span>
                                 </Button>

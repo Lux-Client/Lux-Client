@@ -23,7 +23,7 @@ export type CloudInstance = {
     lastForeignPullAt: string | null;
 };
 
-export type SyncPhase = 'idle' | 'manifest' | 'negotiate' | 'upload' | 'commit' | 'download' | 'done';
+export type SyncPhase = 'idle' | 'manifest' | 'negotiate' | 'upload' | 'commit' | 'download' | 'done' | 'error';
 
 export type SyncStatus =
     | 'local'
@@ -41,7 +41,17 @@ export type InstanceProgress = {
     sentBytes?: number;
     downloadedBytes?: number;
     done?: number;
+    processedBytes?: number;
+    networkBytes?: number;
     auto?: boolean;
+};
+
+export type TransferFailure = {
+    instanceName: string;
+    error: string;
+    message: string;
+    path?: string;
+    at: number;
 };
 
 export type ConflictInfo = {
@@ -61,6 +71,7 @@ type LuxSyncState = {
     statuses: Record<string, SyncStatus>;
     conflicts: Record<string, ConflictInfo>;
     sessionWarning: { instanceName: string; others: { deviceName: string }[] } | null;
+    transferFailures: Record<string, TransferFailure>;
     error: { code: string; message: string } | null;
 };
 
@@ -71,6 +82,7 @@ type LuxSyncApi = LuxSyncState & {
     resolveConflict: (instanceName: string, choice: 'local' | 'remote') => Promise<any>;
     dismissConflict: (instanceName: string) => void;
     dismissSessionWarning: () => void;
+    dismissTransferFailure: (instanceName: string) => void;
     statusFor: (instanceName: string, instanceId?: string | null) => SyncStatus;
     activeTransfers: { instanceName: string; progress: InstanceProgress }[];
 };
@@ -84,6 +96,7 @@ const INITIAL: LuxSyncState = {
     statuses: {},
     conflicts: {},
     sessionWarning: null,
+    transferFailures: {},
     error: null
 };
 
@@ -126,7 +139,16 @@ export const LuxSyncProvider = ({
             return;
         }
         if (!loggedIn) {
-            patch({ cloudInstances: [], loading: false, offline: false });
+            patch({
+                cloudInstances: [],
+                loading: false,
+                offline: false,
+                progress: {},
+                statuses: {},
+                conflicts: {},
+                transferFailures: {},
+                sessionWarning: null
+            });
             return;
         }
 
@@ -161,11 +183,29 @@ export const LuxSyncProvider = ({
         const unsubscribers: Array<() => void> = [];
 
         const onProgress = (payload: any) => {
-            if (!payload || !payload.instanceName) return;
+            const name = payload && (payload.instanceName || payload.instanceUuid);
+            if (!payload || !name) return;
+            payload = { ...payload, instanceName: name };
             setState((current) => {
                 const phase = payload.phase as SyncPhase;
                 const nextProgress = { ...current.progress };
                 const nextStatuses = { ...current.statuses };
+                const nextFailures = { ...current.transferFailures };
+
+                if (phase === 'error') {
+                    delete nextProgress[payload.instanceName];
+                    nextStatuses[payload.instanceName] = 'pending';
+                    nextFailures[payload.instanceName] = {
+                        instanceName: payload.instanceName,
+                        error: payload.error || 'unknown_error',
+                        message: payload.message || 'The transfer stopped',
+                        path: payload.path,
+                        at: Date.now()
+                    };
+                    return { ...current, progress: nextProgress, statuses: nextStatuses, transferFailures: nextFailures };
+                }
+
+                delete nextFailures[payload.instanceName];
 
                 if (phase === 'done') {
                     delete nextProgress[payload.instanceName];
@@ -178,11 +218,18 @@ export const LuxSyncProvider = ({
                         sentBytes: payload.sentBytes,
                         downloadedBytes: payload.downloadedBytes,
                         done: payload.done,
+                        processedBytes: payload.processedBytes,
+                        networkBytes: payload.networkBytes,
                         auto: payload.auto
                     };
                     nextStatuses[payload.instanceName] = 'syncing';
                 }
-                return { ...current, progress: nextProgress, statuses: nextStatuses };
+                return {
+                    ...current,
+                    progress: nextProgress,
+                    statuses: nextStatuses,
+                    transferFailures: nextFailures
+                };
             });
         };
 
@@ -225,11 +272,22 @@ export const LuxSyncProvider = ({
         };
     }, [patch, refresh]);
 
+    const clearProgress = useCallback((instanceName?: string | null) => {
+        if (!instanceName) return;
+        setState((current) => {
+            if (!current.progress[instanceName]) return current;
+            const progress = { ...current.progress };
+            delete progress[instanceName];
+            return { ...current, progress };
+        });
+    }, []);
+
     const syncInstance = useCallback(async (instanceName: string, options: any = {}) => {
         const api = bridge();
         if (!api || typeof api.luxCloudSyncInstance !== 'function') return null;
 
         const result = await api.luxCloudSyncInstance(instanceName, options);
+        clearProgress(instanceName);
         if (result && result.success === false) {
             if (result.error === 'revision_conflict') {
                 setState((current) => ({
@@ -258,16 +316,17 @@ export const LuxSyncProvider = ({
 
         await refresh();
         return result;
-    }, [refresh]);
+    }, [refresh, clearProgress]);
 
     const restoreInstance = useCallback(async (instanceUuid: string, options: any = {}) => {
         const api = bridge();
         if (!api || typeof api.luxCloudRestoreInstance !== 'function') return null;
 
         const result = await api.luxCloudRestoreInstance(instanceUuid, options);
+        clearProgress(options.instanceName || instanceUuid);
         await refresh();
         return result;
-    }, [refresh]);
+    }, [refresh, clearProgress]);
 
     const resolveConflict = useCallback(async (instanceName: string, choice: 'local' | 'remote') => {
         const api = bridge();
@@ -294,6 +353,14 @@ export const LuxSyncProvider = ({
             const conflicts = { ...current.conflicts };
             delete conflicts[instanceName];
             return { ...current, conflicts };
+        });
+    }, []);
+
+    const dismissTransferFailure = useCallback((instanceName: string) => {
+        setState((current) => {
+            const transferFailures = { ...current.transferFailures };
+            delete transferFailures[instanceName];
+            return { ...current, transferFailures };
         });
     }, []);
 
@@ -326,10 +393,11 @@ export const LuxSyncProvider = ({
         resolveConflict,
         dismissConflict,
         dismissSessionWarning,
+        dismissTransferFailure,
         statusFor,
         activeTransfers
     }), [state, refresh, syncInstance, restoreInstance, resolveConflict,
-        dismissConflict, dismissSessionWarning, statusFor, activeTransfers]);
+        dismissConflict, dismissSessionWarning, dismissTransferFailure, statusFor, activeTransfers]);
 
     return <LuxSyncContext.Provider value={value}>{children}</LuxSyncContext.Provider>;
 };

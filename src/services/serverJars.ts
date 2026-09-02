@@ -1,6 +1,7 @@
 const PAPERMC_API_URL = 'https://api.papermc.io/v2/projects';
 const PURPUR_API_URL = 'https://api.purpurmc.org/v2/purpur';
 const PUFFERFISH_API_URL = 'https://ci.pufferfish.host';
+const MOHIST_API_URL = 'https://api.mohistmc.com/project/mohist';
 const FABRIC_API_URL = 'https://meta.fabricmc.net/v2/versions';
 const VANILLA_VERSIONS_API_URL = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
 const NEOFORGE_MAVEN_METADATA_URL = 'https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml';
@@ -45,6 +46,7 @@ const manualJars = {
 
 const platformInfo = [
     { platform: 'purpur', display: 'Purpur' },
+    { platform: 'mohist', display: 'Mohist' },
     { platform: 'pufferfish', display: 'Pufferfish' },
     { platform: 'paper', display: 'Paper' },
     { platform: 'spigot', display: 'Spigot' },
@@ -62,6 +64,18 @@ const platformInfo = [
 const aliasMap = {
     bukkit: 'craftbukkit',
     bungeecord: 'waterfall'
+};
+
+const compareMinecraftVersionsDesc = (left, right) => {
+    const parts = (value) => String(value).split('.').map((piece) => Number(piece) || 0);
+    const a = parts(left);
+    const b = parts(right);
+
+    for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+        const diff = (b[i] || 0) - (a[i] || 0);
+        if (diff !== 0) return diff;
+    }
+    return 0;
 };
 
 const safeFetchJson = async (url) => {
@@ -97,6 +111,10 @@ const handle = async (handleVersions, platform, version) => {
         case 'purpur':
             versions = await fetchPurpurVersions();
             return handleVersions ? versions : fetchPurpurDetailsFor(await handleVersion(version, versions));
+
+        case 'mohist':
+            versions = await fetchMohistVersions();
+            return handleVersions ? versions : fetchMohistDetailsFor(await handleVersion(version, versions));
 
         case 'pufferfish':
             versions = await fetchPufferfishVersions();
@@ -198,6 +216,54 @@ export const fetchPaperMcDetailsFor = async (platform, version) => {
 export const fetchPurpurVersions = async () => {
     const data = await safeFetchJson(PURPUR_API_URL);
     return [...(data.versions || [])].reverse();
+};
+
+export const fetchMohistVersions = async () => {
+    const cached = versionCache.get('mohist');
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
+
+    const data = await safeFetchJson(`${MOHIST_API_URL}/versions`);
+    const names = (Array.isArray(data) ? data : [])
+        .map((entry) => (typeof entry === 'string' ? entry : entry && entry.name))
+        .filter(Boolean)
+        .sort(compareMinecraftVersionsDesc);
+
+    const buildCounts = await Promise.all(names.map(async (name) => {
+        try {
+            return (await fetchMohistBuilds(name)).length;
+        } catch {
+            return 0;
+        }
+    }));
+
+    const usable = names.filter((_, index) => buildCounts[index] > 0);
+    versionCache.set('mohist', { data: usable, timestamp: Date.now() });
+    return usable;
+};
+
+export const fetchMohistBuilds = async (version) => {
+    const data = await safeFetchJson(`${MOHIST_API_URL}/${version}/builds`);
+    return Array.isArray(data) ? data : [];
+};
+
+export const fetchMohistDetailsFor = async (version) => {
+    const builds = await fetchMohistBuilds(version);
+    if (builds.length === 0) {
+        throw new Error(`Mohist has no build for ${version} yet`);
+    }
+
+    const latest = builds.reduce((best, entry) => (
+        Number(entry.id) > Number(best.id) ? entry : best
+    ), builds[0]);
+
+    return {
+        platform: 'mohist',
+        display: 'Mohist',
+        version,
+        build: latest.id,
+        release: latest.build_date ? formatDate(new Date(latest.build_date)) : '',
+        downloadUrl: `${MOHIST_API_URL}/${version}/builds/${latest.id}/download`
+    };
 };
 
 export const fetchPurpurDetailsFor = async (version) => {

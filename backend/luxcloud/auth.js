@@ -41,6 +41,7 @@ async function getAccount() {
             name: state.getDeviceName(),
             platform: process.platform
         },
+        loginTimeoutMs: LOGIN_TIMEOUT_MS,
         linkedAt: current.linkedAt || null,
         baseUrl: getBaseUrl()
     };
@@ -215,13 +216,17 @@ async function getValidAccessToken() {
 }
 
 async function handleRevocation(err) {
+    const stopped = api.abortAll('signed_out');
     await state.clearSession();
+    api.resetAbortReason();
+    events.emit('cloud-aborted', { reason: 'device_revoked', stopped });
     emitAccountChanged('revoked');
     console.warn(`[LuxCloud] Signed out locally: ${err ? err.code : 'device_revoked'}`);
 }
 
 async function logout() {
     cancelPendingLogin('Signed out');
+    cancelPairing('Signed out');
 
     try {
         await api.authed({ method: 'POST', url: '/api/auth/device/revoke' }, { allowRetry: false });
@@ -229,7 +234,14 @@ async function logout() {
         console.warn(`[LuxCloud] Server-side sign-out failed (${err.code}) - clearing local session anyway.`);
     }
 
+    const stopped = api.abortAll('signed_out');
+    if (stopped > 0) {
+        console.warn(`[LuxCloud] Sign-out stopped ${stopped} running cloud request(s).`);
+    }
+
     await state.clearSession();
+    api.resetAbortReason();
+    events.emit('cloud-aborted', { reason: 'signed_out', stopped });
     emitAccountChanged('logout');
     return getAccount();
 }

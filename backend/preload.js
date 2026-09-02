@@ -401,6 +401,7 @@ const electronAPI = {
     luxCloudSetWorldSelection: (instanceId, worldNames) => ipcRenderer.invoke('luxcloud:set-world-selection', instanceId, worldNames),
     luxCloudGetWorldSelection: (instanceId) => ipcRenderer.invoke('luxcloud:get-world-selection', instanceId),
     luxCloudSyncInstance: (instanceName, options) => ipcRenderer.invoke('luxcloud:sync-instance', instanceName, options),
+    luxCloudRestoreCloudInstance: (instanceUuid) => ipcRenderer.invoke('luxcloud:restore-cloud-instance', instanceUuid),
     luxCloudRestoreInstance: (instanceUuid, options) => ipcRenderer.invoke('luxcloud:restore-instance', instanceUuid, options),
     luxCloudListRevisions: (instanceUuid) => ipcRenderer.invoke('luxcloud:list-revisions', instanceUuid),
     luxCloudBlobCacheStats: () => ipcRenderer.invoke('luxcloud:blob-cache-stats'),

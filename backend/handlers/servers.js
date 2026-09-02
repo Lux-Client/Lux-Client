@@ -241,7 +241,7 @@ async function downloadPlayitPlugin(serverDir, software, version, serverName, ma
             console.log('[Servers] No versions found for Playit plugin');
             return false;
         }
-        const isPaperLike = ['paper', 'spigot', 'bukkit', 'purpur', 'folia'].includes(softwareLower);
+        const isPaperLike = ['paper', 'spigot', 'bukkit', 'purpur', 'folia', 'mohist'].includes(softwareLower);
         const targetLoaders = isPaperLike ? ['paper', 'spigot', 'bukkit'] : [loader.toLowerCase()];
 
         const matchingVersion = versionsResponse.data.find(v => {
@@ -1656,6 +1656,7 @@ eula=false
                 'spigot': 'paper',
                 'bukkit': 'paper',
                 'folia': 'paper',
+                'mohist': 'forge',
                 'fabric': 'fabric',
                 'forge': 'forge',
                 'neoforge': 'neoforge',

@@ -60,6 +60,7 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
     const [confirmRemove, setConfirmRemove] = useState(false);
     const [scope, setScope] = useState<Record<string, boolean>>({});
     const [message, setMessage] = useState<string | null>(null);
+    const [trashedUuid, setTrashedUuid] = useState<string | null>(null);
 
     const cloudInstance = (sync?.cloudInstances || []).find(
         (entry) => entry.instanceUuid === instanceId || entry.name === instanceName
@@ -82,9 +83,16 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
     const runSync = async () => {
         setBusy(true);
         setMessage(null);
+        setTrashedUuid(null);
         try {
             const result = await sync?.syncInstance(instanceName, {});
-            if (result && result.success === false) {
+            if (result && result.error === 'instance_trashed') {
+                setTrashedUuid(result.instanceUuid || cloudInstance?.instanceUuid || null);
+                setMessage(t(
+                    'cloud.instance.trashed',
+                    'This instance is in the cloud trash. Restore it to sync again.'
+                ));
+            } else if (result && result.success === false) {
                 setMessage(result.message || result.error);
             } else if (result && result.skipped) {
                 setMessage(t('cloud.instance.nothing_changed', 'Nothing changed since the last sync.'));
@@ -93,6 +101,26 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
         } finally {
             setBusy(false);
         }
+    };
+
+    const restoreFromTrash = async () => {
+        const api = bridge();
+        if (!api || !trashedUuid || typeof api.luxCloudRestoreCloudInstance !== 'function') return;
+
+        setBusy(true);
+        try {
+            const result = await api.luxCloudRestoreCloudInstance(trashedUuid);
+            if (result && result.success === false) {
+                setMessage(result.message || result.error);
+                return;
+            }
+            setTrashedUuid(null);
+            setMessage(null);
+            await sync?.refresh();
+        } finally {
+            setBusy(false);
+        }
+        await runSync();
     };
 
     const patchScope = async (patch: Record<string, boolean>) => {
@@ -316,7 +344,19 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
             )}
 
             {message && (
-                <p className="mt-3 rounded-lg bg-white/[0.04] p-2.5 text-xs text-white/60">{message}</p>
+                <div className="mt-3 rounded-lg bg-white/[0.04] p-2.5">
+                    <p className="text-xs text-white/60">{message}</p>
+                    {trashedUuid && (
+                        <button
+                            type="button"
+                            disabled={busy}
+                            onClick={restoreFromTrash}
+                            className="mt-2 rounded-lg border border-emerald-400/30 px-2.5 py-1.5 text-xs text-emerald-300 transition hover:bg-emerald-500/10 disabled:opacity-40"
+                        >
+                            {t('cloud.instance.restore_and_sync', 'Restore from trash and sync')}
+                        </button>
+                    )}
+                </div>
             )}
 
             <WorldSelectionModal

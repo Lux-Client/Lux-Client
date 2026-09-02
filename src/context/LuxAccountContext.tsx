@@ -35,6 +35,8 @@ type LuxAccountState = {
     supported: boolean;
     loading: boolean;
     signingIn: boolean;
+    signInDeadline: number | null;
+    loginTimeoutMs: number | null;
     loggedIn: boolean;
     offline: boolean;
     user: LuxAccountUser | null;
@@ -59,6 +61,8 @@ const INITIAL: LuxAccountState = {
     supported: true,
     loading: true,
     signingIn: false,
+    signInDeadline: null,
+    loginTimeoutMs: null,
     loggedIn: false,
     offline: false,
     user: null,
@@ -82,6 +86,9 @@ function bridge(): any {
 export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) => {
     const [state, setState] = useState<LuxAccountState>(INITIAL);
     const mounted = useRef(true);
+    const stateRef = useRef(state);
+
+    useEffect(() => { stateRef.current = state; }, [state]);
 
     const patch = useCallback((next: Partial<LuxAccountState>) => {
         if (!mounted.current) return;
@@ -113,7 +120,8 @@ export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) 
                 device: account.device,
                 settings: null,
                 quota: null,
-                devices: []
+                devices: [],
+                loginTimeoutMs: account.loginTimeoutMs || null
             });
             return;
         }
@@ -130,6 +138,7 @@ export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) 
             loading: false,
             loggedIn: true,
             offline,
+            loginTimeoutMs: account.loginTimeoutMs || null,
             user: (meResult && meResult.success && meResult.me.user) || account.user,
             device: account.device,
             settings: meResult && meResult.success ? meResult.me.settings : null,
@@ -158,9 +167,12 @@ export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) 
         const api = bridge();
         if (!api || typeof api.luxCloudLogin !== 'function') return false;
 
-        patch({ signingIn: true, error: null });
+        const timeoutMs = Number(stateRef.current.loginTimeoutMs) > 0
+            ? Number(stateRef.current.loginTimeoutMs)
+            : 3 * 60 * 1000;
+        patch({ signingIn: true, signInDeadline: Date.now() + timeoutMs, error: null });
         const result = await api.luxCloudLogin();
-        patch({ signingIn: false });
+        patch({ signingIn: false, signInDeadline: null });
 
         if (!result || !result.success) {
             const silent = ['login_cancelled', 'login_denied'];
@@ -179,7 +191,7 @@ export const LuxAccountProvider = ({ children }: { children: React.ReactNode }) 
         if (api && typeof api.luxCloudCancelLogin === 'function') {
             await api.luxCloudCancelLogin();
         }
-        patch({ signingIn: false });
+        patch({ signingIn: false, signInDeadline: null });
     }, [patch]);
 
     const signOut = useCallback(async () => {

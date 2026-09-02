@@ -625,7 +625,8 @@ function createWindow() {
         { name: 'external', path: '../backend/handlers/external' },
         { name: 'updater', path: '../backend/handlers/updater' },
         { name: 'status', path: '../backend/handlers/status' },
-        { name: 'luxcloud', path: '../backend/handlers/luxcloud' }
+        { name: 'luxcloud', path: '../backend/handlers/luxcloud' },
+        { name: 'remoteControl', path: '../backend/handlers/remoteControl' }
     ];
 
     for (const h of handlers) {

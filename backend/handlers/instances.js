@@ -1320,6 +1320,7 @@ const CURSEFORGE_AUTOINSTALL_LOADER_ALIASES = {
     bukkit: ['bukkit', 'paper', 'spigot', 'purpur', 'folia'],
     purpur: ['purpur', 'paper', 'spigot', 'bukkit', 'folia'],
     folia: ['folia', 'paper', 'spigot', 'bukkit', 'purpur'],
+    mohist: ['mohist', 'forge', 'paper', 'spigot', 'bukkit'],
     vanilla: []
 };
 

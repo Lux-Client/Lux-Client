@@ -257,6 +257,7 @@ interface ElectronAPI {
   luxCloudSetWorldSelection: (instanceId: string, worldNames: string[]) => Promise<any>;
   luxCloudGetWorldSelection: (instanceId: string) => Promise<any>;
   luxCloudSyncInstance: (instanceName: string, options?: any) => Promise<any>;
+  luxCloudRestoreCloudInstance: (instanceUuid: string) => Promise<any>;
   luxCloudRestoreInstance: (instanceUuid: string, options?: any) => Promise<any>;
   luxCloudListRevisions: (instanceUuid: string) => Promise<any>;
   luxCloudBlobCacheStats: () => Promise<any>;

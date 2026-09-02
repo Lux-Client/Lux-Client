@@ -154,17 +154,28 @@ async function restoreInstance({
     onProgress = null,
     instanceName = null
 } = {}) {
+    let reportName = instanceName || instanceUuid;
     const report = (phase, detail = {}) => {
-        if (onProgress) onProgress({ instanceUuid, instanceName, phase, ...detail });
+        if (onProgress) onProgress({ instanceUuid, instanceName: reportName, phase, ...detail });
     };
 
     report('manifest');
-    const payload = await api.authed({
-        method: 'GET',
-        url: `/api/cloud/instances/${instanceUuid}/manifest?revision=${encodeURIComponent(revision)}&touch=1`
-    });
+    let payload;
+    try {
+        payload = await api.authed({
+            method: 'GET',
+            url: `/api/cloud/instances/${instanceUuid}/manifest?revision=${encodeURIComponent(revision)}&touch=1`
+        });
+    } catch (err) {
+        const failure = api.normalizeError(err);
+        report('error', { error: failure.code, message: failure.message });
+        throw failure;
+    }
 
     const manifest = payload.manifest;
+    if (!instanceName && typeof manifest.name === 'string' && manifest.name) {
+        reportName = manifest.name;
+    }
     const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
 
     for (const entry of entries) {
@@ -179,34 +190,45 @@ async function restoreInstance({
     const totalBytes = entries.reduce((sum, entry) => sum + (Number(entry.size) || 0), 0);
     const counters = { local: 0, cache: 0, modrinth: 0, server: 0, chunks: 0, unavailable: 0 };
     const unavailable = [];
-    let downloadedBytes = 0;
+    let processedBytes = 0;
+    let networkBytes = 0;
     let done = 0;
+    let aborted = null;
 
-    report('download', { files: entries.length, totalBytes, downloadedBytes: 0, done: 0 });
+    report('download', { files: entries.length, totalBytes, processedBytes: 0, networkBytes: 0, done: 0 });
 
     let cursor = 0;
     const worker = async () => {
-        while (cursor < entries.length) {
+        while (cursor < entries.length && !aborted) {
             const entry = entries[cursor];
             cursor += 1;
 
-            const resolved = await resolveEntry(entry, instanceDir);
-            counters[resolved.source] = (counters[resolved.source] || 0) + 1;
+            try {
+                const resolved = await resolveEntry(entry, instanceDir);
+                counters[resolved.source] = (counters[resolved.source] || 0) + 1;
 
-            if (resolved.source === 'unavailable') {
-                unavailable.push({ path: entry.path, reason: resolved.reason });
-            } else if (resolved.buffer) {
-                const staged = path.join(stagingRoot, `${entry.sha256}.part`);
-                await fs.writeFile(staged, resolved.buffer);
+                if (resolved.source === 'unavailable') {
+                    unavailable.push({ path: entry.path, reason: resolved.reason });
+                } else if (resolved.buffer) {
+                    const staged = path.join(stagingRoot, `${entry.sha256}.part`);
+                    await fs.writeFile(staged, resolved.buffer);
 
-                const target = path.join(instanceDir, entry.path);
-                await fs.ensureDir(path.dirname(target));
-                await fs.move(staged, target, { overwrite: true });
+                    const target = path.join(instanceDir, entry.path);
+                    await fs.ensureDir(path.dirname(target));
+                    await fs.move(staged, target, { overwrite: true });
+                }
+
+                networkBytes += resolved.bytes || 0;
+                processedBytes += Number(entry.size) || 0;
+            } catch (err) {
+                const failure = api.normalizeError(err);
+                failure.details = { ...(failure.details || {}), path: entry.path };
+                aborted = failure;
+                return;
             }
 
-            downloadedBytes += resolved.bytes || 0;
             done += 1;
-            report('download', { files: entries.length, totalBytes, downloadedBytes, done });
+            report('download', { files: entries.length, totalBytes, processedBytes, networkBytes, done });
         }
     };
 
@@ -214,15 +236,25 @@ async function restoreInstance({
         new Array(Math.min(PARALLEL_DOWNLOADS, entries.length || 1)).fill(null).map(() => worker())
     );
 
+    if (aborted) {
+        await fs.remove(stagingRoot).catch(() => {});
+        report('error', { error: aborted.code, message: aborted.message, path: aborted.details.path });
+        throw aborted;
+    }
+
     await fs.remove(stagingRoot).catch(() => {});
 
-    await rememberRevision(manifest.instanceId, {
-        instanceName: instanceName || manifest.name,
-        lastKnownRevision: payload.revision,
-        lastManifestHash: payload.manifestHash,
-        lastSyncedAt: Date.now(),
-        dirty: false
-    });
+    try {
+        await rememberRevision(manifest.instanceId, {
+            instanceName: instanceName || manifest.name,
+            lastKnownRevision: payload.revision,
+            lastManifestHash: payload.manifestHash,
+            lastSyncedAt: Date.now(),
+            dirty: false
+        });
+    } catch (err) {
+        console.warn('[LuxCloud] Could not remember the restored revision:', err.message);
+    }
 
     report('done', { revision: payload.revision, unavailable: unavailable.length });
 
@@ -232,7 +264,8 @@ async function restoreInstance({
         name: manifest.name,
         runtime: manifest.runtime || null,
         files: entries.length,
-        downloadedBytes,
+        downloadedBytes: networkBytes,
+        restoredBytes: processedBytes,
         counters,
         unavailable
     };

@@ -140,12 +140,38 @@ module.exports = (ipcMain, mainWindow) => {
         }
     });
 
+    async function fetchCloudScope(instanceId) {
+        try {
+            const result = await api.authed({ method: 'GET', url: '/api/cloud/instances?status=all' });
+            const found = (result.instances || []).find((entry) => entry.instanceUuid === String(instanceId));
+            if (!found) return null;
+            return {
+                syncWorlds: found.syncWorlds,
+                syncScreenshots: found.syncScreenshots,
+                crossPlatform: found.crossPlatform
+            };
+        } catch (err) {
+            console.warn(`[LuxCloud] Could not read the cloud sync scope (${err.code}), using the local one.`);
+            return null;
+        }
+    }
+
     async function withSyncScope(instanceId, options = {}) {
         const tracked = (await readInstanceState(String(instanceId)).catch(() => null)) || {};
+        const remote = await fetchCloudScope(instanceId);
         const merged = { ...options };
 
         for (const key of ['syncWorlds', 'syncScreenshots', 'crossPlatform']) {
-            if (typeof merged[key] !== 'boolean' && typeof tracked[key] === 'boolean') merged[key] = tracked[key];
+            if (typeof merged[key] === 'boolean') continue;
+            if (remote && typeof remote[key] === 'boolean') {
+                merged[key] = remote[key];
+                continue;
+            }
+            if (typeof tracked[key] === 'boolean') merged[key] = tracked[key];
+        }
+
+        if (remote) {
+            await rememberRevision(String(instanceId), remote).catch(() => {});
         }
         if (!Array.isArray(merged.worldNames) && Array.isArray(tracked.syncWorldNames)) {
             merged.worldNames = tracked.syncWorldNames;
@@ -622,6 +648,22 @@ module.exports = (ipcMain, mainWindow) => {
         }
     });
 
+    ipcMain.handle('luxcloud:restore-cloud-instance', async (_event, instanceUuid) => {
+        try {
+            if (typeof instanceUuid !== 'string' || instanceUuid.length === 0) {
+                return { success: false, error: 'invalid_request', message: 'Missing instance id' };
+            }
+
+            const result = await api.authed({
+                method: 'POST',
+                url: `/api/cloud/instances/${encodeURIComponent(instanceUuid)}/restore`
+            });
+            return ok({ instance: result.instance });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
     ipcMain.handle('luxcloud:sync-instance', async (_event, instanceName, options = {}) => {
         try {
             const instanceDir = resolveInstanceDirByName(instanceName);
@@ -651,7 +693,12 @@ module.exports = (ipcMain, mainWindow) => {
 
             return ok({ ...result, durationMs: Date.now() - started });
         } catch (err) {
-            return fail(err);
+            const failure = fail(err);
+            if (failure.error === 'instance_trashed') {
+                const dir = resolveInstanceDirByName(instanceName);
+                failure.instanceUuid = dir ? await readInstanceId(dir) : null;
+            }
+            return failure;
         }
     });
 
