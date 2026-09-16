@@ -2233,7 +2233,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                         </div>
 
                         { }
-                        <div ref={logContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-xs text-foreground custom-scrollbar">
+                        {/* select-text, weil der Body der App auf select-none steht -- sinnvoll
+                            fuer eine Oberflaeche, die man bedient, aber nicht fuer ein Log, das
+                            man liest und weitergibt. Ohne das liess sich hier keine einzige
+                            Zeile markieren, und der Copy-Knopf daneben nimmt immer alles. */}
+                        <div ref={logContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-xs text-foreground custom-scrollbar select-text cursor-text">
                             {visibleLogLines.length > 0 ? (
                                 <>
                                     {hiddenLogLineCount > 0 && (

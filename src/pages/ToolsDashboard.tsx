@@ -565,7 +565,7 @@ function ToolsDashboard() {
                                             <X className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>
-                                    <div className="h-52 overflow-auto bg-black/50 px-4 py-3 font-mono text-xs text-green-400 leading-relaxed">
+                                    <div className="h-52 overflow-auto bg-black/50 px-4 py-3 font-mono text-xs text-green-400 leading-relaxed select-text cursor-text">
                                         {compatLog.length === 0 ? (
                                             <span className="text-muted-foreground">
                                                 No output yet — run a scan first.

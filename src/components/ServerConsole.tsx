@@ -258,8 +258,15 @@ function ServerConsole({ server, onClose, onServerAction }) {
             { }
             <div
                 ref={consoleRef}
-                className="flex-1 overflow-y-auto p-4 font-mono text-sm bg-black/40 custom-scrollbar"
-                onClick={() => commandInputRef.current?.focus()}
+                className="flex-1 overflow-y-auto p-4 font-mono text-sm bg-black/40 custom-scrollbar select-text cursor-text"
+                onClick={() => {
+                    // Ein Klick ins Leere springt weiter in die Befehlszeile. Hat der Nutzer
+                    // aber gerade etwas markiert, darf das nicht passieren: das Fokussieren
+                    // eines anderen Elements verwirft die Auswahl noch vor dem Kopieren.
+                    const selection = typeof window !== 'undefined' ? window.getSelection() : null;
+                    if (selection && !selection.isCollapsed) return;
+                    commandInputRef.current?.focus();
+                }}
             >
                 {logs.length === 0 ? (
                     <div className="text-muted-foreground text-center mt-10">
