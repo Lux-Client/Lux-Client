@@ -309,6 +309,47 @@
   -webkit-app-region: no-drag;
 }
 
+/* Everything inside a drag region belongs to the window handle unless it says
+   otherwise, so the opt-out has to sit on the controls themselves -- never on
+   the layout containers around them. Marking the containers was what left the
+   window with no handle at all: the flex row spans the whole bar, so the only
+   draggable pixels were the few above and below the buttons, and a header
+   extension tall enough to fill the bar swallowed those too.
+
+   Listing the interactive elements here also means an extension that drops a
+   button into the header keeps working clicks without ever having heard of
+   app regions, while the empty space around it stays draggable. */
+.titlebar a[href],
+.titlebar button,
+.titlebar input,
+.titlebar select,
+.titlebar textarea,
+.titlebar [contenteditable='true'],
+.titlebar [role='button'],
+.titlebar [role='checkbox'],
+.titlebar [role='combobox'],
+.titlebar [role='link'],
+.titlebar [role='menuitem'],
+.titlebar [role='radio'],
+.titlebar [role='slider'],
+.titlebar [role='switch'],
+.titlebar [role='tab'],
+.titlebar [role='textbox'],
+.titlebar [tabindex]:not([tabindex='-1']),
+/* Tooltips and menus that Radix renders inline instead of through a portal.
+   They are positioned outside the bar, so leaving them draggable would put a
+   window handle on top of the page underneath. */
+.titlebar [data-radix-popper-content-wrapper],
+.titlebar [data-no-drag] {
+  -webkit-app-region: no-drag;
+}
+
+/* The way back for a widget that wants to hand its own background to the
+   window again -- a header extension with a wide, mostly decorative bar. */
+.titlebar [data-drag] {
+  -webkit-app-region: drag;
+}
+
 /* Chromium never forwards clicks inside a drag region to the renderer, so a
    popover anchored in the title bar could not be dismissed by clicking the bare
    bar next to it. While one is open the title bar stops being draggable. */

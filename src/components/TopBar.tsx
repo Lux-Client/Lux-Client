@@ -198,8 +198,8 @@ function TopBar({
 
   return (
     <div className="h-16 w-full titlebar flex items-center gap-2 px-3 lg:px-5 border-b border-border bg-background/80 backdrop-blur-md flex-none relative z-[60]">
-      <div className="flex items-center gap-1.5 lg:gap-2.5 no-drag shrink-0">
-        <ExtensionSlot name="header.left" className="flex min-w-0 items-center gap-2 overflow-hidden" />
+      <div className="flex items-center gap-1.5 lg:gap-2.5 shrink-0">
+        <ExtensionSlot name="header.left" className="flex min-w-0 items-center gap-2 overflow-hidden no-drag" />
         <div className="w-10 h-10 bg-primary/15 rounded-xl flex items-center justify-center text-primary font-bold text-base border border-primary/20 overflow-hidden">
           <img src="./icon.png" alt="Lux" className="w-full h-full object-cover" />
         </div>
@@ -293,14 +293,19 @@ function TopBar({
         {searchPosition === 'left' && searchButton}
       </div>
 
-      <div className="flex flex-1 min-w-0 items-center justify-center gap-2 no-drag">
+      {/* Kein no-drag auf diesen drei Behaeltern: der mittlere ist flex-1 und damit so
+          breit wie die ganze Leiste. Ihn als "nicht ziehbar" zu markieren nahm dem
+          Fenster jeden Griff ausser den paar Pixeln ueber und unter den Knoepfen -- und
+          die verschwinden, sobald eine Erweiterung ein hohes Element einhaengt. Was
+          angeklickt werden soll, meldet sich selbst ab (siehe .titlebar in index.css). */}
+      <div className="flex flex-1 min-w-0 items-center justify-center gap-2">
         {searchPosition === 'center' && searchButton}
-        <ExtensionSlot name="header.center" className="flex min-w-0 items-center gap-2 overflow-hidden" />
+        <ExtensionSlot name="header.center" className="flex min-w-0 items-center gap-2 overflow-hidden no-drag" />
       </div>
 
-      <div className="flex items-center justify-end gap-1.5 lg:gap-2 no-drag shrink-0">
+      <div className="flex items-center justify-end gap-1.5 lg:gap-2 shrink-0">
         {searchPosition === 'right' && searchButton}
-        <ExtensionSlot name="header.right" className="hidden sm:flex min-w-0 items-center gap-2 overflow-hidden" />
+        <ExtensionSlot name="header.right" className="hidden sm:flex min-w-0 items-center gap-2 overflow-hidden no-drag" />
 
         {activeDownloadCount > 0 && (
           <DropdownMenu>

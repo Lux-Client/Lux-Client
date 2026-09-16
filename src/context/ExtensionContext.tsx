@@ -24,6 +24,12 @@ export const ExtensionProvider = ({ children }: { children: React.ReactNode }) =
     const createExtensionApi = (extensionId, localPath) => {
         const api = {
             ui: {
+                // Zu den 'header.*'-Slots: die obere Leiste ist der Griff, mit dem das
+                // Fenster verschoben wird. Der Slot selbst ist deshalb von der Ziehflaeche
+                // ausgenommen, damit Klicks im Widget ankommen -- der Rest der Leiste
+                // bleibt ziehbar. Ein Widget, das eine breite, rein dekorative Flaeche
+                // mitbringt, kann sie mit `data-drag` wieder dem Fenster ueberlassen;
+                // umgekehrt meldet `data-no-drag` einzelne Elemente ab.
                 registerView: (slotName, component, options: { width?: number } = {}) => {
                     const width = Number(options.width);
                     setViews(prev => {
