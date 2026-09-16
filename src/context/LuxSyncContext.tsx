@@ -250,14 +250,21 @@ export const LuxSyncProvider = ({
             if (!payload || !payload.instanceName) return;
             setState((current) => {
                 const nextStatuses = { ...current.statuses };
-                if (payload.event === 'error') {
+                if (payload.event === 'scheduled') {
+                    // Eine erkannte Aenderung wartet auf ihren Upload. Ohne diesen Zustand
+                    // sah die Instanz bis zum Start der Uebertragung aus wie eine, an der
+                    // nichts zu tun ist.
+                    nextStatuses[payload.instanceName] = 'pending';
+                } else if (payload.event === 'error') {
                     nextStatuses[payload.instanceName] = payload.retryable ? 'pending' : 'conflict';
                 } else if (payload.event === 'done') {
                     // A skipped run is not a completed sync. Reporting the trashed case as
                     // 'synced' was what made the panel claim everything was up to date.
-                    nextStatuses[payload.instanceName] = payload.result?.reason === 'instance_trashed'
-                        ? 'trashed'
-                        : 'synced';
+                    const reason = payload.result?.reason;
+                    if (reason === 'instance_trashed') nextStatuses[payload.instanceName] = 'trashed';
+                    else if (reason === 'revision_conflict') nextStatuses[payload.instanceName] = 'conflict';
+                    else if (reason === 'update_available') nextStatuses[payload.instanceName] = 'pending';
+                    else nextStatuses[payload.instanceName] = 'synced';
                 }
                 return { ...current, statuses: nextStatuses };
             });

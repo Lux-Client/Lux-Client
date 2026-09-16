@@ -6,6 +6,7 @@ const api = require('./api');
 const blobStore = require('./blobStore');
 const { compressIfWorthwhile } = require('./compression');
 const { buildManifestInWorker } = require('./manifestRunner');
+const localChanges = require('./localChanges');
 const { readInstanceState, rememberRevision } = require('./syncState');
 const transfers = require('./transfers');
 const manifestSnapshot = require('./manifestSnapshot');
@@ -179,6 +180,19 @@ async function runUpload({
     const maxBatchBytes = Number(capabilities.maxBatchBytes) || DEFAULT_MAX_BATCH_BYTES;
     const maxBatchEntries = Number(capabilities.maxBatchEntries) || DEFAULT_MAX_BATCH_ENTRIES;
 
+    // Muss VOR dem Manifest genommen werden: was waehrend des Uploads noch geschrieben
+    // wird, ergibt danach einen anderen Fingerabdruck und wird von der
+    // Hintergrundkontrolle als das erkannt, was es ist -- eine Aenderung, die diese
+    // Revision nicht mehr enthaelt. Umgekehrt (erst am Ende gemessen) waere sie verloren.
+    const localSignature = await localChanges
+        .signatureOf(instanceDir, {
+            syncWorlds: Boolean(options.syncWorlds),
+            syncScreenshots: Boolean(options.syncScreenshots),
+            worldNames: Array.isArray(options.worldNames) ? options.worldNames : null
+        })
+        .then((result) => result.signature)
+        .catch(() => null);
+
     report('manifest');
     const built = await buildManifestInWorker({
         instanceDir,
@@ -218,7 +232,16 @@ async function runUpload({
     const unchanged = contentUnchanged && localRevision === cloudRevision && cloudRevision > 0;
 
     if (unchanged && options.force !== true) {
-        await rememberRevision(instanceId, { instanceName, lastCheckedAt: Date.now(), dirty: false });
+        await rememberRevision(instanceId, {
+            instanceName,
+            lastCheckedAt: Date.now(),
+            dirty: false,
+            // Nichts hochzuladen ist auch ein Gleichstand mit der Cloud. Ohne diesen Wert
+            // meldet die Hintergrundkontrolle dieselbe (inhaltlich folgenlose) Aenderung
+            // bei jedem Takt erneut -- typischerweise die von Minecraft neu geschriebene
+            // options.txt.
+            ...(localSignature ? { lastLocalSignature: localSignature, lastLocalSignatureAt: Date.now() } : {})
+        });
         report('done', { revision: instance.revision, skipped: true });
 
         return {
@@ -238,6 +261,17 @@ async function runUpload({
     // hand the decision back to the caller: a clean instance can simply be updated, a
     // changed one is a real conflict the user has to settle.
     if (options.force !== true && cloudRevision > localRevision) {
+        // Der lokale Stand ist hier gemessen und beurteilt worden; ihn festzuhalten hindert
+        // die Hintergrundkontrolle daran, denselben Konflikt im Minutentakt neu einzuplanen.
+        // Aendert der Nutzer danach etwas, ergibt das einen neuen Fingerabdruck und der
+        // Anstoss kommt wieder.
+        if (localSignature) {
+            await rememberRevision(instanceId, {
+                lastLocalSignature: localSignature,
+                lastLocalSignatureAt: Date.now()
+            }).catch(() => {});
+        }
+
         report('done', { revision: cloudRevision, skipped: true });
 
         return {
@@ -359,7 +393,8 @@ async function runUpload({
         lastContentHash: built.contentHash,
         lastInstanceConfigHash: instanceConfigHashOf(built.manifest),
         lastSyncedAt: Date.now(),
-        dirty: false
+        dirty: false,
+        ...(localSignature ? { lastLocalSignature: localSignature, lastLocalSignatureAt: Date.now() } : {})
     });
 
     await manifestSnapshot.save(instanceId, built.manifest).catch(() => {});

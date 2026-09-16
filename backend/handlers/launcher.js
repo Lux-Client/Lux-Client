@@ -2444,6 +2444,18 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                     .catch(() => {});
             }
 
+            // Die Sperre auf der Instanz muss auf JEDEM Weg wieder fallen, nicht nur nach
+            // einer regulaer beendeten Sitzung. Ein Start, der unterwegs scheitert, liess
+            // die Instanz sonst bis zum naechsten Neustart des Launchers pausiert zurueck
+            // -- und eine pausierte Instanz nimmt keinen einzigen Upload mehr an.
+            let cloudHoldReleased = false;
+            const releaseCloudHold = async () => {
+                if (!cloudInstanceId || cloudHoldReleased) return;
+                cloudHoldReleased = true;
+                await cloudSession.end(cloudInstanceId).catch(() => {});
+                autoSync.resume(instanceName);
+            };
+
             try {
                 const discord = require('./discord');
                 discord.setActivity(`Playing ${instanceName}`, 'Starting Game...', 'lux_icon', 'Lux', runningInstances.get(instanceName));
@@ -2503,12 +2515,13 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                     playtimeSessionId = null;
 
                     if (cloudInstanceId) {
-                        await cloudSession.end(cloudInstanceId).catch(() => {});
+                        await releaseCloudHold();
                         await cloudPlaytime.seedIfNeeded(cloudInstanceId, instanceDir).catch(() => {});
                         await cloudPlaytime.creditSession(cloudInstanceId, sessionTime).catch(() => {});
                         cloudPlaytime.push(cloudInstanceId).catch(() => {});
-                        autoSync.resume(instanceName);
-                        autoSync.notifyChanged(instanceName, 'after-play');
+                        autoSync.notifyChanged(instanceName, 'after-play', {
+                            delayMs: autoSync.AFTER_PLAY_DEBOUNCE_MS
+                        });
                     }
 
                     try {
@@ -2609,6 +2622,7 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
             try {
                 if (activeLaunches.get(instanceName)?.cancelled) {
                     console.log(`[Launcher] Launch aborted before spawn for ${instanceName}`);
+                    await releaseCloudHold();
                     stopLaunchWorker(instanceName);
                     clearLaunchLogBuffer(instanceName);
                     activeLaunches.delete(instanceName);
@@ -2769,6 +2783,7 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                 });
 
                 if (!launchResult?.success) {
+                    await releaseCloudHold();
                     stopLaunchWorker(instanceName);
                     console.error('[Launcher] Launch failed in worker:', launchResult?.error || 'Unknown error');
                     clearLaunchLogBuffer(instanceName);
@@ -2780,6 +2795,7 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                 }
             } catch (e) {
                 console.error('Launch error:', e);
+                await releaseCloudHold();
                 stopLaunchWorker(instanceName);
                 clearLaunchLogBuffer(instanceName);
                 runningInstances.delete(instanceName);
@@ -2799,6 +2815,9 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
             return { success: true };
         } catch (e) {
             console.error('Initial launch error:', e);
+            // cloudInstanceId ist hier nicht mehr im Sichtbereich; resume ist auf einer
+            // nicht pausierten Instanz folgenlos, deshalb genuegt der pauschale Aufruf.
+            autoSync.resume(instanceName);
             clearLaunchLogBuffer(instanceName);
             activeLaunches.delete(instanceName);
             runningInstances.delete(instanceName);

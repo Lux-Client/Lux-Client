@@ -4,7 +4,7 @@
 > Sie sagt dir, wo wir stehen und was als Nächstes dran ist.
 > Du musst die Repos **nicht** neu analysieren — das steht in `01-ANALYSE.md`.
 
-**Zuletzt aktualisiert:** 2026-09-01
+**Zuletzt aktualisiert:** 2026-09-16
 **Aktuelle Phase:** Phase 11 — **fertig**, Phase 12 als Nächstes
 **Geschriebener Code:** Client `backend/luxcloud/` (30 Module), Manifest-Worker,
 UI-Anbindung, `tests/` (161 Tests), Cloud-UI (13 Komponenten) · Website
@@ -826,6 +826,53 @@ schreibt die Reichweite deshalb lokal mit, nicht nur zum Server.
 Unterschied zwischen „frisch eingeschaltet, noch nichts ausgewählt" und
 „ausgewählt und alles abgewählt"; ohne die Trennung hätte ein frisches
 Opt-in gar nichts hochgeladen.
+
+---
+
+## Bugfix-Runde vom 2026-09-16: der Upload lief nur nach dem Spielen
+
+Gemeldetes Fehlerbild: eine Änderung an einer Instanz (Mod gelöscht,
+Tastenbelegung umgestellt) landete nie in der Cloud. Erst ein Druck auf
+„Sync now" lud sie hoch — egal, ob vorher gespielt wurde oder nicht.
+
+| Fehlerbild | Ursache | Behoben in |
+|---|---|---|
+| Lokale Änderungen wurden nie von allein hochgeladen | `autoSync.notifyChanged()` hatte im ganzen Client **genau einen** Aufrufer: das Ende einer Spielsitzung. Es gab keine Instanz, die Änderungen überhaupt bemerkt hätte — weder die des Launchers selbst (Mod löschen, Einstellung ändern) noch die im Dateimanager. | `backend/luxcloud/localChanges.js`, `backend/luxcloud/changeMonitor.js` (neu), angebunden in `backend/handlers/luxcloud.js` |
+| Ein fehlgeschlagener Start legte den Auto-Sync der Instanz still | `autoSync.suspend()` beim Start, `resume()` nur im regulären Sitzungsende. Brach der Start vorher ab, blieb die Instanz bis zum Neustart des Launchers pausiert — und eine pausierte Instanz nimmt keinen Upload an. | `backend/handlers/launcher.js` (`releaseCloudHold`) |
+| Ein anstehender Upload ging verloren, wenn der Launcher direkt nach dem Spielen geschlossen wurde | Die Warteschlange lebte nur im Arbeitsspeicher, und nach dem Spielen wurden volle 30 Sekunden gewartet. | Wartezeit nach dem Spielen auf 8 s (`AFTER_PLAY_DEBOUNCE_MS`); der Vergleichswert steht jetzt dauerhaft im `syncState`, die erste Kontrolle nach dem Start holt Liegengebliebenes nach |
+| Im Log war vom Auto-Sync nichts zu sehen | Die Warteschlange meldete nur über IPC an die Oberfläche, nie ins Log. | `backend/luxcloud/autoSync.js` protokolliert Einplanen, Start, Ergebnis und Fehlschlag |
+| Ein eingeplanter Upload war im UI nicht von „nichts zu tun" zu unterscheiden | Es gab nur `start`, `done` und `error`. | Neues Ereignis `scheduled` → Status `pending` in `LuxSyncContext` |
+
+### Wie die Erkennung funktioniert
+
+`localChanges.signatureOf()` bildet einen Fingerabdruck aus Pfad, Größe und
+mtime **jeder Datei, die nach `syncPolicy` in die Cloud gehört** — ohne eine
+einzige Datei zu lesen. `changeMonitor` vergleicht ihn alle 45 Sekunden mit
+dem Wert, den der letzte erfolgreiche Sync hinterlassen hat
+(`syncState.lastLocalSignature`), und stößt bei einem Unterschied die
+bestehende Warteschlange aus `autoSync.js` an.
+
+Bewusste Entscheidungen dabei:
+
+- **Kein `fs.watch`.** Ein rekursiver Watcher bedeutet unter Linux einen
+  inotify-Watch je Unterordner; eine gewachsene Instanz hat davon
+  zehntausende (`assets`, `libraries`, `versions`), und in einer
+  Flatpak-Umgebung ist das Limit schnell erreicht. Der Watcher fiele dann
+  still aus — genau dort, wo man sich am meisten auf ihn verlassen würde.
+- **Nicht der `contentHash` des Manifests.** Der kostet das Lesen und Hashen
+  jeder Datei. Ein Fehlalarm des Fingerabdrucks (gleicher Inhalt, neue mtime
+  — Minecraft schreibt `options.txt` bei jedem Beenden neu) ist billiger: der
+  Upload erkennt ihn und endet ohne neue Revision.
+- **Der Vergleichswert wird erst nach einem erfolgreichen Sync geschrieben,
+  nicht schon beim Einplanen.** Sonst wäre eine Änderung, die der Launcher
+  beim Schließen nicht mehr hochgeladen hat, für immer verloren — so erkennt
+  die erste Kontrolle nach dem nächsten Start sie erneut.
+- **Upload und Download schreiben den Wert selbst** (`uploader.js`,
+  `downloader.js`). Damit gibt es genau zwei Stellen, an denen lokaler Stand
+  und Cloud übereinstimmen, und ein frisch heruntergeladener Ordner schiebt
+  nicht sofort einen Upload hinterher.
+
+Tests: `tests/luxcloud.autoupload.test.js` (23 Prüfungen).
 
 ---
 

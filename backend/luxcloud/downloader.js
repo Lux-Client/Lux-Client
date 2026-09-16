@@ -8,6 +8,7 @@ const blobStore = require('./blobStore');
 const { decompress } = require('./compression');
 const { validRelPath } = require('./pathRules');
 const { rememberRevision } = require('./syncState');
+const { rememberLocalSignature } = require('./localChanges');
 const {
     buildNormalizedInstanceJson,
     contentHashOf,
@@ -420,6 +421,12 @@ async function runRestore({
             lastSyncedAt: Date.now(),
             dirty: false
         });
+
+        // Erst nach rememberRevision, denn der Fingerabdruck wird mit dem gerade
+        // geschriebenen Sync-Umfang gebildet. Ohne ihn saehe die Hintergrundkontrolle die
+        // frischen mtimes der heruntergeladenen Dateien als lokale Aenderung und schoebe
+        // unmittelbar nach jedem Download einen Upload hinterher.
+        await rememberLocalSignature(manifest.instanceId, instanceDir);
     } catch (err) {
         console.warn('[LuxCloud] Could not remember the restored revision:', err.message);
     }

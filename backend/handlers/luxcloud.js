@@ -7,13 +7,22 @@ const api = require('../luxcloud/api');
 const auth = require('../luxcloud/auth');
 const autoSync = require('../luxcloud/autoSync');
 const blobStore = require('../luxcloud/blobStore');
+const changeMonitor = require('../luxcloud/changeMonitor');
 const conflict = require('../luxcloud/conflict');
 const downloader = require('../luxcloud/downloader');
 const cloudPlaytime = require('../luxcloud/playtime');
 const preLaunch = require('../luxcloud/preLaunch');
 const uploader = require('../luxcloud/uploader');
 const luxState = require('../luxcloud/state');
-const { forgetInstance, isTrashed, readInstanceState, rememberRevision, setTrashed } = require('../luxcloud/syncState');
+const { scopeOf } = require('../luxcloud/localChanges');
+const {
+    forgetInstance,
+    isTrashed,
+    listTrackedInstances,
+    readInstanceState,
+    rememberRevision,
+    setTrashed
+} = require('../luxcloud/syncState');
 const { withSyncScope } = require('../luxcloud/syncScope');
 const transfers = require('../luxcloud/transfers');
 const { summarize } = require('../luxcloud/manifest');
@@ -66,6 +75,44 @@ async function nameForInstanceId(instanceUuid) {
         if (await readInstanceId(candidate) === instanceUuid) return entry.name;
     }
     return null;
+}
+
+// Welche Instanzen die Hintergrundkontrolle ueberhaupt ansehen muss.
+//
+// Ausgelassen wird, was gerade gespielt wird (dafuer gibt es den Anstoss nach dem
+// Spielen) und was ohnehin gerade uebertragen wird -- in beiden Faellen ist der Ordner in
+// Bewegung, und ein Fingerabdruck davon sagt nichts.
+async function collectSyncCandidates() {
+    if (!await luxState.isLoggedIn().catch(() => false)) return [];
+
+    const candidates = [];
+
+    for (const entry of await listTrackedInstances().catch(() => [])) {
+        if (!entry.cloudLinked || entry.trashed) continue;
+
+        let instanceName = entry.instanceName || null;
+        let instanceDir = instanceName ? resolveInstanceDirByName(instanceName) : null;
+
+        // Der Ordner kann seit dem letzten Sync umbenannt worden sein; dann gilt die UUID.
+        if (!instanceDir) {
+            instanceName = await nameForInstanceId(entry.instanceId).catch(() => null);
+            instanceDir = instanceName ? resolveInstanceDirByName(instanceName) : null;
+        }
+
+        if (!instanceName || !instanceDir) continue;
+        if (autoSync.isSuspended(instanceName)) continue;
+        if (transfers.list().some((transfer) => transfer.instanceName === instanceName)) continue;
+
+        candidates.push({
+            instanceId: entry.instanceId,
+            instanceName,
+            instanceDir,
+            options: scopeOf(entry),
+            lastSignature: entry.lastLocalSignature || null
+        });
+    }
+
+    return candidates;
 }
 
 async function resolveRestoreDir(instanceUuid, targetName) {
@@ -270,6 +317,14 @@ module.exports = (ipcMain, mainWindow) => {
                 url: '/api/cloud/me/settings',
                 data: patch || {}
             });
+
+            // Wer den automatischen Sync gerade wieder einschaltet, erwartet nicht, jede
+            // Datei noch einmal anfassen zu muessen, damit sie doch noch hochgeht.
+            if (patch && patch.autoSync === true) {
+                changeMonitor.forgetAll();
+                changeMonitor.scan().catch(() => {});
+            }
+
             return ok({ settings: result.settings });
         } catch (err) {
             return fail(err);
@@ -327,7 +382,25 @@ module.exports = (ipcMain, mainWindow) => {
         return result;
     });
 
-    for (const event of ['start', 'done', 'error']) {
+    // Ein Upload braucht einen Ausloeser. Bis hierher gab es genau einen -- das Ende einer
+    // Spielsitzung. Wer eine Mod loeschte oder eine Einstellung aenderte, ohne danach zu
+    // spielen, sah in der Cloud nie etwas davon und musste "Jetzt synchronisieren"
+    // druecken. Diese Kontrolle bemerkt die Aenderung von allein.
+    changeMonitor.configure({
+        candidates: collectSyncCandidates,
+        onChanged: ({ instanceName, instanceId, files, firstCheck }) => {
+            console.log(`[LuxCloud] "${instanceName}" changed locally (${files} synced files`
+                + `${firstCheck ? ', first check since this update' : ''}) - queueing an upload.`);
+            const queued = autoSync.notifyChanged(instanceName, 'local-change');
+
+            // Abgelehnt (Auto-Sync aus, Instanz pausiert): dann darf die Meldung nicht als
+            // erledigt gelten, sonst faellt dieselbe Aenderung spaeter unter den Tisch.
+            if (!queued) changeMonitor.forget(instanceId);
+        }
+    });
+    changeMonitor.start();
+
+    for (const event of ['scheduled', 'start', 'done', 'error']) {
         autoSync.events.on(event, (payload) => {
             sendProgress('luxcloud:auto-sync', {
                 event,
@@ -647,7 +720,11 @@ module.exports = (ipcMain, mainWindow) => {
 
     ipcMain.handle('luxcloud:auto-sync-state', async () => {
         try {
-            return ok({ enabled: autoSync.isEnabled(), pending: autoSync.pendingInstances() });
+            return ok({
+                enabled: autoSync.isEnabled(),
+                pending: autoSync.pendingInstances(),
+                monitoring: changeMonitor.isRunning()
+            });
         } catch (err) {
             return fail(err);
         }
