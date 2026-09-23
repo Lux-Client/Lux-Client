@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, PencilLine, Sparkles, Globe, Package, SunMedium, Grip } from 'lucide-react';
+import { LayoutGrid, PencilLine, Sparkles, Globe, Package, SunMedium, Grip, Server } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
@@ -45,6 +45,12 @@ const sections = [
         title: 'Recent Worlds',
         description: 'Keep quick access to the last worlds you opened.',
         icon: Globe,
+    },
+    {
+        id: 'saved-servers',
+        title: 'Your Servers',
+        description: 'Show the servers saved in your instances with players, MOTD and ping.',
+        icon: Server,
     },
     {
         id: 'modpacks',

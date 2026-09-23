@@ -2657,7 +2657,10 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                         opts.quickPlay = { type: 'singleplayer', identifier: quickPlay.world };
                         console.log(`[Launcher] QuickPlay: World "${quickPlay.world}"`);
                     } else if (quickPlay.server) {
-                        opts.quickPlay = { type: 'multiplayer', identifier: quickPlay.server };
+                        // --quickPlayMultiplayer only exists since 1.20; older clients take --server/--port.
+                        const release = String(opts.version.number || '').match(/^1\.(\d+)/);
+                        const type = release && Number(release[1]) < 20 ? 'legacy' : 'multiplayer';
+                        opts.quickPlay = { type, identifier: quickPlay.server };
                         console.log(`[Launcher] QuickPlay: Server "${quickPlay.server}"`);
                     }
                 }

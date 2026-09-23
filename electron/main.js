@@ -616,6 +616,7 @@ function createWindow() {
         { name: 'instances', path: '../backend/handlers/instances' },
         { name: 'launcher', path: '../backend/handlers/launcher' },
         { name: 'servers', path: '../backend/handlers/servers' },
+        { name: 'serverStatus', path: '../backend/handlers/serverStatus' },
         { name: 'modrinth', path: '../backend/handlers/modrinth' },
         { name: 'data', path: '../backend/handlers/data' },
         { name: 'settings', path: '../backend/handlers/settings' },

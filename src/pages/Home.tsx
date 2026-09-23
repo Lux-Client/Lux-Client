@@ -3,6 +3,7 @@ import DashboardCustomizer from "../components/DashboardCustomizer";
 import modOfTheDayData from "../data/modOfTheDay.json";
 import ExtensionSlot from "../components/Extensions/ExtensionSlot";
 import ProjectContextMenu from "../components/ProjectContextMenu";
+import SavedServersSection from "../components/SavedServersSection";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "../context/NotificationContext";
 import PageHeader from "../components/layout/PageHeader";
@@ -112,6 +113,11 @@ function Home({
       },
       {
         id: "recent-worlds",
+        visible: true,
+        width: 12,
+      },
+      {
+        id: "saved-servers",
         visible: true,
         width: 12,
       },
@@ -253,6 +259,23 @@ function Home({
             visible: true,
             width: 12,
           });
+          await window.electronAPI.saveSettings({
+            ...res.settings,
+            dashboard: settings,
+          });
+        }
+        if (
+          settings.layout &&
+          !settings.layout.find((l) => l.id === "saved-servers")
+        ) {
+          const worldsIndex = settings.layout.findIndex(
+            (l) => l.id === "recent-worlds",
+          );
+          settings.layout.splice(
+            worldsIndex === -1 ? settings.layout.length : worldsIndex + 1,
+            0,
+            { id: "saved-servers", visible: true, width: 12 },
+          );
           await window.electronAPI.saveSettings({
             ...res.settings,
             dashboard: settings,
@@ -478,6 +501,34 @@ function Home({
             ...prev,
           };
           delete n[instance.name];
+          return n;
+        });
+      });
+  };
+
+  const handleJoinServer = (instanceName, address) => {
+    if (isGuest) {
+      addNotification("To do that you have to be logged in", "error");
+      return;
+    }
+    if (pendingLaunches[instanceName]) return;
+
+    setPendingLaunches((prev) => ({
+      ...prev,
+      [instanceName]: true,
+    }));
+    window.electronAPI
+      .launchGame(instanceName, { server: address })
+      .then((r) => {
+        if (!r.success) console.error(r.error);
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        setPendingLaunches((prev) => {
+          const n = {
+            ...prev,
+          };
+          delete n[instanceName];
           return n;
         });
       });
@@ -810,6 +861,15 @@ function Home({
               })}{" "}
             </div>
           </div>
+        )}{" "}
+        {section.id === "saved-servers" && (
+          <SavedServersSection
+            instances={instances}
+            runningInstances={runningInstances}
+            activeDownloads={activeDownloads}
+            pendingLaunches={pendingLaunches}
+            onJoin={handleJoinServer}
+          />
         )}{" "}
         {section.id === "modpacks" && (
           <div className="mb-8">

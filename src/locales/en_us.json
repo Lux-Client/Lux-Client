@@ -167,7 +167,11 @@
         "save_layout": "Save Layout",
         "by_author": "by {{author}}",
         "drag_to_reorder": "Drag to reorder",
-        "welcome_back_name": "Welcome back, {{name}}!"
+        "welcome_back_name": "Welcome back, {{name}}!",
+        "saved_servers": "Your Servers",
+        "refresh_servers": "Refresh",
+        "server_offline": "Offline",
+        "join_server": "Join"
     },
     "dashboard": {
         "title": "Library",

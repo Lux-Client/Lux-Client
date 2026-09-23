@@ -226,6 +226,8 @@ const electronAPI = {
         ipcRenderer.on('window-state', subscription);
         return () => ipcRenderer.removeListener('window-state', subscription);
     },
+    getSavedServers: (instanceName) => ipcRenderer.invoke('instance:get-saved-servers', instanceName),
+    pingMinecraftServer: (address, options) => ipcRenderer.invoke('server-status:ping', address, options),
     getServers: () => ipcRenderer.invoke('server:get-all'),
     createServer: (data) => ipcRenderer.invoke('server:create', data),
     deleteServer: (name) => ipcRenderer.invoke('server:delete', name),

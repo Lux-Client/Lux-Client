@@ -59,6 +59,25 @@ interface ElectronAPI {
   getLog: (instanceName: string, filename: string) => Promise<any>;
   uploadInstanceLog: (instanceName: string, filename: string) => Promise<any>;
   launchGame: (instanceName: string, quickPlay?: any) => Promise<any>;
+  getSavedServers: (instanceName: string) => Promise<{
+    success: boolean;
+    error?: string;
+    servers: { name: string; address: string; icon: string | null }[];
+  }>;
+  pingMinecraftServer: (address: string, options?: { force?: boolean }) => Promise<{
+    success: boolean;
+    error?: string;
+    status?: {
+      online: boolean;
+      error?: string;
+      latency?: number;
+      version?: string | null;
+      protocol?: number | null;
+      players?: { online: number; max: number; sample: string[] };
+      motd?: unknown;
+      favicon?: string | null;
+    };
+  }>;
   getLiveLogs: (instanceName: string) => Promise<any>;
   killGame: (instanceName: string) => Promise<any>;
   abortLaunch: (instanceName: string) => Promise<any>;
