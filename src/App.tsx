@@ -23,6 +23,13 @@ const Login = React.lazy(() => import('./pages/Login'));
 const News = React.lazy(() => import('./pages/News'));
 const Status = React.lazy(() => import('./pages/Status'));
 const Maintenance = React.lazy(() => import('./pages/Maintenance'));
+// First-run and guide dialogs are rarely shown, so they stay out of the startup bundle.
+const AgreementModal = React.lazy(() => import('./components/AgreementModal'));
+const LanguageSelectionModal = React.lazy(() => import('./components/LanguageSelectionModal'));
+const ThemeModeSelectionModal = React.lazy(() => import('./components/ThemeModeSelectionModal'));
+const StartupModeSelectionModal = React.lazy(() => import('./components/StartupDefaultModeModal'));
+const GuidePromptModal = React.lazy(() => import('./components/GuidePromptModal'));
+const GuideOverlay = React.lazy(() => import('./components/GuideOverlay'));
 import { isFeatureEnabled } from './config/featureFlags';
 
 import AppSidebar from './components/AppSidebar';
@@ -30,18 +37,12 @@ import TopBar from './components/TopBar';
 import CloudOverlays from './components/cloud/CloudOverlays';
 import CommandPalette from './components/CommandPalette';
 import UpdateNotification from './components/UpdateNotification';
-import AgreementModal from './components/AgreementModal';
-import LanguageSelectionModal from './components/LanguageSelectionModal';
-import ThemeModeSelectionModal from './components/ThemeModeSelectionModal';
-import StartupModeSelectionModal from './components/StartupDefaultModeModal';
 import LoadingOverlay from './components/LoadingOverlay';
 import BackgroundVideo from './components/BackgroundVideo';
 import WindowControls from './components/WindowControls';
 import AccountSwitcher from './components/AccountSwitcher';
 import CrashModal from './components/CrashModal';
 import JavaRequiredModal from './components/JavaRequiredModal';
-import GuidePromptModal from './components/GuidePromptModal';
-import GuideOverlay from './components/GuideOverlay';
 import { resolveModeView, resolveStartupDestination } from './lib/startupPages';
 import { syncCustomFonts } from './services/fontManager';
 import { updateShadcnVars } from './lib/utils';
@@ -366,14 +367,43 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const warmupTimer = window.setTimeout(() => {
-            import('./pages/Settings').catch(() => {
-                // Ignore prefetch failures; lazy loading still handles normal navigation.
-            });
-        }, 1200);
+        // Pages are split into their own chunks. Once the app is idle, warm up the ones
+        // people open most so navigating to them doesn't show a spinner.
+        const prefetchers = [
+            () => import('./pages/Settings'),
+            () => import('./pages/InstanceDetails'),
+            () => import('./pages/Search'),
+            () => import('./pages/Dashboard'),
+            () => import('./pages/Home')
+        ];
+        let cancelled = false;
+        let idleHandle: number | null = null;
+
+        const runNext = () => {
+            const next = prefetchers.shift();
+            if (cancelled || !next) return;
+            next()
+                .catch(() => {
+                    // Ignore prefetch failures; lazy loading still handles normal navigation.
+                })
+                .finally(schedule);
+        };
+        const schedule = () => {
+            if (cancelled) return;
+            idleHandle = typeof window.requestIdleCallback === 'function'
+                ? window.requestIdleCallback(runNext, { timeout: 3000 })
+                : window.setTimeout(runNext, 200);
+        };
+
+        const warmupTimer = window.setTimeout(schedule, 1200);
 
         return () => {
+            cancelled = true;
             window.clearTimeout(warmupTimer);
+            if (idleHandle !== null) {
+                if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idleHandle);
+                else window.clearTimeout(idleHandle);
+            }
         };
     }, []);
 
@@ -1505,46 +1535,58 @@ function App() {
             {isInitialLoading && <LoadingOverlay message="Starting..." />}
 
             {!isInitialLoading && appSettings.hasSelectedLanguage === false && (
-                <LanguageSelectionModal onSelect={handleLanguageSelect} />
+                <React.Suspense fallback={null}>
+                    <LanguageSelectionModal onSelect={handleLanguageSelect} />
+                </React.Suspense>
             )}
 
             {!isInitialLoading && appSettings.hasSelectedLanguage === true && appSettings.hasAcceptedToS === false && (
-                <AgreementModal
-                    onAccept={handleAcceptAgreement}
-                    onDecline={handleDeclineAgreement}
-                />
+                <React.Suspense fallback={null}>
+                    <AgreementModal
+                        onAccept={handleAcceptAgreement}
+                        onDecline={handleDeclineAgreement}
+                    />
+                </React.Suspense>
             )}
 
             {isThemeModeSelectionOpen && (
-                <ThemeModeSelectionModal onSelect={handleThemeModeSelect} />
+                <React.Suspense fallback={null}>
+                    <ThemeModeSelectionModal onSelect={handleThemeModeSelect} />
+                </React.Suspense>
             )}
 
             {isStartupModeSelectionOpen && (
-                <StartupModeSelectionModal
-                    onSelect={handleStartupModeSelect}
-                    canAccessSkins={canAccessSkins}
-                />
+                <React.Suspense fallback={null}>
+                    <StartupModeSelectionModal
+                        onSelect={handleStartupModeSelect}
+                        canAccessSkins={canAccessSkins}
+                    />
+                </React.Suspense>
             )}
 
             {guidePromptMode && (
-                <GuidePromptModal
-                    mode={guidePromptMode}
-                    doNotShowAgain={guidePromptDoNotShowAgain}
-                    onDoNotShowAgainChange={setGuidePromptDoNotShowAgain}
-                    onStart={handleGuidePromptStart}
-                    onSkip={handleGuidePromptSkip}
-                />
+                <React.Suspense fallback={null}>
+                    <GuidePromptModal
+                        mode={guidePromptMode}
+                        doNotShowAgain={guidePromptDoNotShowAgain}
+                        onDoNotShowAgainChange={setGuidePromptDoNotShowAgain}
+                        onStart={handleGuidePromptStart}
+                        onSkip={handleGuidePromptSkip}
+                    />
+                </React.Suspense>
             )}
 
             {isGuideRunning && guideSteps.length > 0 && (
-                <GuideOverlay
-                    steps={guideSteps}
-                    stepIndex={guideStepIndex}
-                    onPrevious={handleGuidePrevious}
-                    onNext={handleGuideNext}
-                    onFinish={handleGuideFinish}
-                    onSkip={handleGuideFinish}
-                />
+                <React.Suspense fallback={null}>
+                    <GuideOverlay
+                        steps={guideSteps}
+                        stepIndex={guideStepIndex}
+                        onPrevious={handleGuidePrevious}
+                        onNext={handleGuideNext}
+                        onFinish={handleGuideFinish}
+                        onSkip={handleGuideFinish}
+                    />
+                </React.Suspense>
             )}
 
             <CloudOverlays />

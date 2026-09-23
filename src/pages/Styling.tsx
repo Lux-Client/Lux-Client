@@ -9,7 +9,6 @@ import Dropdown from "../components/Dropdown";
 import ThemeExportModal from "../components/ThemeExportModal";
 import { syncCustomFonts } from "../services/fontManager";
 import { updateShadcnVars } from "../lib/utils";
-import ThemeMarketplace from "./ThemeMarketplace";
 import PageHeader from "../components/layout/PageHeader";
 import PageContent from "../components/layout/PageContent";
 import { Button } from "../components/ui/button";
@@ -33,6 +32,8 @@ import {
   Save,
   Type,
 } from "lucide-react";
+
+const ThemeMarketplace = React.lazy(() => import("./ThemeMarketplace"));
 
 const PRESETS = [
   {
@@ -776,7 +777,15 @@ function Styling() {
 
       <PageContent>
         {activeView === "marketplace" ? (
-          <ThemeMarketplace />
+          <React.Suspense
+            fallback={
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              </div>
+            }
+          >
+            <ThemeMarketplace />
+          </React.Suspense>
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
