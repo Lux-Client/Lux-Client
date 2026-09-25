@@ -108,7 +108,8 @@ async function collectSyncCandidates() {
             instanceName,
             instanceDir,
             options: scopeOf(entry),
-            lastSignature: entry.lastLocalSignature || null
+            lastSignature: entry.lastLocalSignature || null,
+            queued: autoSync.isQueued(instanceName)
         });
     }
 
@@ -410,7 +411,7 @@ module.exports = (ipcMain, mainWindow) => {
         if (typeof contentChangeTimer.unref === 'function') contentChangeTimer.unref();
     });
 
-    for (const event of ['scheduled', 'start', 'done', 'error']) {
+    for (const event of ['scheduled', 'start', 'done', 'error', 'cancelled']) {
         autoSync.events.on(event, (payload) => {
             sendProgress('luxcloud:auto-sync', {
                 event,

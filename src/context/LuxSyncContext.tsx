@@ -255,6 +255,9 @@ export const LuxSyncProvider = ({
                     // sah die Instanz bis zum Start der Uebertragung aus wie eine, an der
                     // nichts zu tun ist.
                     nextStatuses[payload.instanceName] = 'pending';
+                } else if (payload.event === 'cancelled') {
+                    // Nichts steht mehr an: zurueck zu dem, was die Cloud-Liste sagt.
+                    if (nextStatuses[payload.instanceName] === 'pending') delete nextStatuses[payload.instanceName];
                 } else if (payload.event === 'error') {
                     nextStatuses[payload.instanceName] = payload.retryable ? 'pending' : 'conflict';
                 } else if (payload.event === 'done') {

@@ -173,7 +173,8 @@ function Home({
           status === "stopped" ||
           status === "ready" ||
           status === "error" ||
-          status === "deleted"
+          status === "deleted" ||
+          status === "installing"
         ) {
           loadInstances();
         }

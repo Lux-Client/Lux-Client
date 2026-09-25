@@ -13,6 +13,10 @@ const { signatureOf } = require('./localChanges');
 
 const DEFAULT_INTERVAL_MS = 45 * 1000;
 const DEFAULT_INITIAL_DELAY_MS = 10 * 1000;
+// Wie lange eine gemeldete, aber nie hochgeladene Aenderung ruht, bevor sie erneut gemeldet
+// wird. Ohne das genuegte ein einziger verlorener Lauf (Timer in einer Spielpause, Abbruch,
+// Fehler), und die Instanz stand bis zum Neustart des Launchers auf "wartet auf Sync".
+const REANNOUNCE_AFTER_MS = 5 * 60 * 1000;
 
 let timer = null;
 let initialTimer = null;
@@ -69,9 +73,15 @@ async function inspect(candidate) {
         announced.delete(key);
         return null;
     }
-    if (announced.get(key) === scanned.signature) return null;
+    const previous = announced.get(key);
+    if (previous && previous.signature === scanned.signature) {
+        // Noch eingeplant oder unterwegs: nicht dazwischenfunken, sonst wartet ein Backoff
+        // nie zu Ende. Erst wenn nichts mehr ansteht, darf dieselbe Aenderung neu anklopfen.
+        if (candidate.queued) return null;
+        if (Date.now() - previous.at < REANNOUNCE_AFTER_MS) return null;
+    }
 
-    announced.set(key, scanned.signature);
+    announced.set(key, { signature: scanned.signature, at: Date.now() });
     return {
         ...candidate,
         signature: scanned.signature,
@@ -151,6 +161,7 @@ function reset() {
 module.exports = {
     DEFAULT_INITIAL_DELAY_MS,
     DEFAULT_INTERVAL_MS,
+    REANNOUNCE_AFTER_MS,
     configure,
     forget,
     forgetAll,

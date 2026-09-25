@@ -1261,9 +1261,14 @@ function setCachedMergedInstances(instances) {
     mergedInstancesCacheAt = Date.now();
 }
 
+// Bumped on every invalidation so a scan started before a change never repopulates the cache.
+let mergedInstancesGeneration = 0;
+
 function invalidateMergedInstancesCache() {
+    mergedInstancesGeneration += 1;
     mergedInstancesCacheAt = 0;
     mergedInstancesCache = [];
+    mergedInstancesRefreshPromise = null;
 }
 
 async function refreshMergedInstancesCache(force = false) {
@@ -1276,16 +1281,24 @@ async function refreshMergedInstancesCache(force = false) {
         return mergedInstancesRefreshPromise;
     }
 
-    mergedInstancesRefreshPromise = (async () => {
+    const generation = mergedInstancesGeneration;
+    const refreshPromise = (async () => {
         const merged = await getMergedInstances();
+        if (generation !== mergedInstancesGeneration) {
+            // Invalidated while scanning: the result may be stale, so scan again.
+            return refreshMergedInstancesCache(true);
+        }
         setCachedMergedInstances(merged);
         return getCachedMergedInstances();
     })();
+    mergedInstancesRefreshPromise = refreshPromise;
 
     try {
-        return await mergedInstancesRefreshPromise;
+        return await refreshPromise;
     } finally {
-        mergedInstancesRefreshPromise = null;
+        if (mergedInstancesRefreshPromise === refreshPromise) {
+            mergedInstancesRefreshPromise = null;
+        }
     }
 }
 
@@ -3153,6 +3166,7 @@ module.exports = (ipcMain, win) => {
                 });
 
                 await fs.writeJson(path.join(targetDir, 'instance.json'), instanceConfig, { spaces: 4 });
+                invalidateMergedInstancesCache();
                 await (async () => {
                     try {
                         const sendProgress = (progress, status) => {
@@ -3314,6 +3328,7 @@ module.exports = (ipcMain, win) => {
                 });
 
                 await fs.writeJson(path.join(targetDir, 'instance.json'), instanceConfig, { spaces: 4 });
+                invalidateMergedInstancesCache();
 
                 await (async () => {
                     try {
@@ -3464,6 +3479,7 @@ module.exports = (ipcMain, win) => {
                     instanceConfig.imported = Date.now();
                     instanceConfig.status = 'installing';
                     await fs.writeJson(path.join(targetDir, 'instance.json'), instanceConfig, { spaces: 4 });
+                    invalidateMergedInstancesCache();
                     if (win && win.webContents) {
                         win.webContents.send('instance:status', { instanceName, status: 'installing' });
                     }
@@ -4058,6 +4074,7 @@ module.exports = (ipcMain, win) => {
                 }
 
                 await fs.writeJson(path.join(dir, 'instance.json'), config, { spaces: 4 });
+                invalidateMergedInstancesCache();
                 await fs.writeFile(path.join(dir, 'playtime.txt'), '0');
                 await writeInstanceActionLog('create-instance', {
                     instanceName: finalName,
@@ -4575,8 +4592,8 @@ module.exports = (ipcMain, win) => {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                 }
-                win.webContents.send('instance:status', { instanceName: name, status: 'deleted' });
                 invalidateMergedInstancesCache();
+                win.webContents.send('instance:status', { instanceName: name, status: 'deleted' });
 
                 return { success: true };
             } catch (e) {

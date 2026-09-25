@@ -184,6 +184,64 @@ async function main() {
     check('eine laufende Instanz nimmt nichts an', rejected === false, rejected);
     check('und meldet dann auch nichts', events.length === before, events.length);
 
+    section('4) Ein verlorener Lauf bleibt nicht fuer immer liegen');
+
+    // Faellig waehrend einer Spielpause: frueher still verworfen.
+    autoSync.reset();
+    const runs = [];
+    autoSync.setRunner(async (name, { reason }) => { runs.push(reason); return { revision: 2 }; });
+    autoSync.notifyChanged('Test', 'local-change', { delayMs: 5 });
+    autoSync.suspend('Test');
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    check('in der Pause laeuft nichts', runs.length === 0, runs);
+    check('bleibt aber vorgemerkt', autoSync.isQueued('Test') === true);
+    autoSync.resume('Test');
+    check('nach der Pause wird neu eingeplant', autoSync.pendingInstances().includes('Test'));
+    await autoSync.flush();
+    check('und dann hochgeladen', runs.length === 1, runs);
+
+    const cancelledEvents = [];
+    autoSync.events.on('cancelled', (payload) => cancelledEvents.push(payload));
+    autoSync.notifyChanged('Test', 'local-change');
+    autoSync.cancel('Test');
+    check('ein Abbruch meldet sich', cancelledEvents.length === 1, cancelledEvents);
+    check('und nichts steht mehr an', autoSync.isQueued('Test') === false);
+
+    // Dieselbe Aenderung, nie hochgeladen: nach der Ruhezeit meldet sie sich erneut --
+    // aber nicht, solange noch etwas eingeplant ist.
+    changeMonitor.reset();
+    const reannounced = [];
+    let queuedFlag = false;
+    changeMonitor.configure({
+        candidates: async () => ([{
+            instanceId: 'uuid-1',
+            instanceName: 'Test',
+            instanceDir,
+            options: {},
+            lastSignature: 'alt',
+            queued: queuedFlag
+        }]),
+        onChanged: (hit) => { reannounced.push(hit); }
+    });
+    const realNow = Date.now;
+    try {
+        await changeMonitor.scan();
+        await changeMonitor.scan();
+        check('dieselbe Aenderung wird nicht sofort erneut gemeldet', reannounced.length === 1, reannounced.length);
+
+        const later = realNow() + changeMonitor.REANNOUNCE_AFTER_MS + 1000;
+        Date.now = () => later;
+        queuedFlag = true;
+        await changeMonitor.scan();
+        check('auch spaeter nicht, solange sie eingeplant ist', reannounced.length === 1, reannounced.length);
+
+        queuedFlag = false;
+        await changeMonitor.scan();
+        check('liegt sie verloren, meldet sie sich erneut', reannounced.length === 2, reannounced.length);
+    } finally {
+        Date.now = realNow;
+    }
+
     autoSync.reset();
     changeMonitor.reset();
     await fs.remove(tmp);
