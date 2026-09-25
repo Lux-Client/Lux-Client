@@ -360,6 +360,19 @@ module.exports = (ipcMain, mainWindow) => {
         const me = await api.authed({ method: 'GET', url: '/api/cloud/me' });
         if (me.settings && me.settings.autoSync === false) return { skipped: true, reason: 'auto_sync_off' };
 
+        // Der Hintergrund-Sync aktualisiert nur, was schon in der Cloud liegt. Eine Instanz
+        // neu in die Cloud zu bringen ist eine Entscheidung des Nutzers ("Jetzt
+        // synchronisieren") -- sonst landet jede gespielte Instanz ungefragt dort.
+        try {
+            await api.authed({ method: 'GET', url: `/api/cloud/instances/${instanceId}/head` });
+        } catch (err) {
+            if (err && err.code === 'not_found') {
+                console.log(`[LuxCloud] "${instanceName}" has no cloud copy - the background sync does not create one.`);
+                return { skipped: true, reason: 'not_in_cloud' };
+            }
+            throw err;
+        }
+
         const result = await uploader.uploadInstance({
             instanceDir,
             instanceId,

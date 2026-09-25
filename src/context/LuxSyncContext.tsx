@@ -267,6 +267,7 @@ export const LuxSyncProvider = ({
                     if (reason === 'instance_trashed') nextStatuses[payload.instanceName] = 'trashed';
                     else if (reason === 'revision_conflict') nextStatuses[payload.instanceName] = 'conflict';
                     else if (reason === 'update_available') nextStatuses[payload.instanceName] = 'pending';
+                    else if (reason === 'not_in_cloud') delete nextStatuses[payload.instanceName];
                     else nextStatuses[payload.instanceName] = 'synced';
                 }
                 return { ...current, statuses: nextStatuses };

@@ -10,9 +10,13 @@ async function rememberRevision(instanceId, patch) {
     const state = await readState();
     const instances = { ...(state.instances || {}) };
 
+    // Verknuepft wird nur, wer es ausdruecklich sagt (Upload, Download). Frueher machte
+    // jeder beliebige Vermerk -- Spielzeit, Weltauswahl, Umfang -- aus einer rein lokalen
+    // Instanz eine verknuepfte, und der automatische Sync lud sie ungefragt hoch.
+    const existing = instances[instanceId] || {};
     instances[instanceId] = {
-        ...(instances[instanceId] || {}),
-        cloudLinked: true,
+        ...existing,
+        cloudLinked: Boolean(existing.cloudLinked),
         ...patch
     };
 

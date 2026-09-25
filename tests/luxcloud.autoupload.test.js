@@ -242,6 +242,18 @@ async function main() {
         Date.now = realNow;
     }
 
+    section('5) Ein Vermerk allein bringt keine Instanz in die Cloud');
+
+    const { rememberRevision, readInstanceState } = require('../backend/luxcloud/syncState');
+    await rememberRevision('uuid-local-only', { deviceTotalMs: 1000, syncWorldNames: ['Welt'] });
+    const localOnly = await readInstanceState('uuid-local-only');
+    check('Spielzeit oder Weltauswahl verknuepfen nicht', localOnly && localOnly.cloudLinked === false, localOnly);
+
+    await rememberRevision('uuid-local-only', { cloudLinked: true, lastKnownRevision: 1 });
+    await rememberRevision('uuid-local-only', { deviceTotalMs: 2000 });
+    const linked = await readInstanceState('uuid-local-only');
+    check('eine echte Verknuepfung bleibt bei spaeteren Vermerken erhalten', linked && linked.cloudLinked === true, linked);
+
     autoSync.reset();
     changeMonitor.reset();
     await fs.remove(tmp);

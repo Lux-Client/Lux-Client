@@ -411,6 +411,7 @@ async function runRestore({
 
         await rememberRevision(manifest.instanceId, {
             instanceName: instanceName || manifest.name,
+            cloudLinked: true,
             lastKnownRevision: payload.revision,
             lastManifestHash: payload.manifestHash,
             // Without these two the very next sync saw an unknown content hash, judged the
