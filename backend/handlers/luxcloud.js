@@ -794,6 +794,271 @@ module.exports = (ipcMain, mainWindow) => {
         }
     });
 
+    // ---- Zusammenarbeit ---------------------------------------------------------------
+    // Die Grenze (was Mitglieder sehen und aendern duerfen) zieht der Server; hier wird
+    // nur uebersetzt: Instanzname -> UUID, und die Buchfuehrung dieses PCs nachgezogen.
+
+    const instanceIdForName = async (instanceName) => {
+        const instanceDir = resolveInstanceDirByName(instanceName);
+        if (!instanceDir) return { error: { success: false, error: 'not_found', message: `Unknown instance: ${instanceName}` } };
+        const instanceId = await readInstanceId(instanceDir);
+        if (!instanceId) return { error: { success: false, error: 'not_in_cloud', message: 'Sync this instance to Lux Cloud first.' } };
+        return { instanceId, instanceDir };
+    };
+
+    const notInCloud = (err) => (err && err.code === 'not_found'
+        ? { success: false, error: 'not_in_cloud', message: 'Sync this instance to Lux Cloud first, then you can invite people.' }
+        : null);
+
+    ipcMain.handle('luxcloud:list-shared', async () => {
+        try {
+            const result = await api.authed({ method: 'GET', url: '/api/cloud/shared' });
+            return ok({ instances: result.instances || [] });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:list-members', async (_event, instanceName) => {
+        try {
+            const target = await instanceIdForName(instanceName);
+            if (target.error) return target.error;
+            const result = await api.authed({ method: 'GET', url: `/api/cloud/instances/${target.instanceId}/members` });
+            return ok(result);
+        } catch (err) {
+            return notInCloud(err) || fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:add-member', async (_event, instanceName, email) => {
+        try {
+            const target = await instanceIdForName(instanceName);
+            if (target.error) return target.error;
+            const result = await api.authed({
+                method: 'POST',
+                url: `/api/cloud/instances/${target.instanceId}/members`,
+                data: { email: String(email || '') }
+            });
+            return ok(result);
+        } catch (err) {
+            if (err && err.code === 'not_found' && !/member/i.test(String(err.message || ''))) {
+                return notInCloud(err);
+            }
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:remove-member', async (_event, instanceName, userId) => {
+        try {
+            const target = await instanceIdForName(instanceName);
+            if (target.error) return target.error;
+            const result = await api.authed({
+                method: 'DELETE',
+                url: `/api/cloud/instances/${target.instanceId}/members/${Number(userId)}`
+            });
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    // Eine geteilte Instanz verlassen. Die Dateien bleiben als rein lokale Kopie liegen;
+    // nur die Verknuepfung mit der Cloud faellt weg, damit nichts mehr hochgeladen wird.
+    ipcMain.handle('luxcloud:leave-shared', async (_event, instanceName) => {
+        try {
+            const target = await instanceIdForName(instanceName);
+            if (target.error) return target.error;
+
+            const members = await api.authed({ method: 'GET', url: `/api/cloud/instances/${target.instanceId}/members` });
+            const me = (members.members || []).find((member) => member.isMe);
+            if (!me) return { success: false, error: 'invalid_request', message: 'You are the host of this instance.' };
+
+            await api.authed({
+                method: 'DELETE',
+                url: `/api/cloud/instances/${target.instanceId}/members/${me.userId}`
+            });
+
+            autoSync.cancel(instanceName);
+            await rememberRevision(target.instanceId, { cloudLinked: false, shareRole: null, leftSharedAt: Date.now() });
+            return ok({ left: true });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    // Holt eine geteilte Instanz auf diesen PC (oder bringt eine vorhandene Kopie auf den
+    // neuesten Stand). Der Server liefert einem Mitglied nur den gemeinsamen Teil.
+    ipcMain.handle('luxcloud:join-shared', async (_event, instanceUuid, options = {}) => {
+        try {
+            if (typeof instanceUuid !== 'string' || instanceUuid.length === 0) {
+                return { success: false, error: 'invalid_request', message: 'Missing instance id' };
+            }
+            const targetName = typeof options.instanceName === 'string' && options.instanceName.trim()
+                ? options.instanceName.trim()
+                : null;
+
+            const instanceDir = await resolveRestoreDir(instanceUuid, targetName);
+            const instanceName = path.basename(instanceDir);
+            const started = Date.now();
+
+            const result = await downloader.restoreInstance({
+                instanceUuid,
+                instanceDir,
+                instanceName,
+                modCachePath: path.join(app.getPath('userData'), 'mod_cache.json'),
+                shareInfo: { owner: options.owner || null },
+                onProgress: (progress) => sendProgress('luxcloud:restore-progress', progress)
+            });
+
+            await ensureInstanceIdFor(instanceDir, instanceUuid);
+            app.emit('lux:instances-changed');
+
+            return ok({ ...result, instanceDir, instanceName, durationMs: Date.now() - started });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:update-member-permissions', async (_event, instanceName, userId, permissions) => {
+        try {
+            const target = await instanceIdForName(instanceName);
+            if (target.error) return target.error;
+            const result = await api.authed({
+                method: 'PATCH',
+                url: `/api/cloud/instances/${target.instanceId}/members/${Number(userId)}`,
+                data: { permissions: permissions || {} }
+            });
+            return ok(result);
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    // ---- Umbenennen gemeinsamer Instanzen ----------------------------------------------
+    // Der Ordnername ist im Launcher die Identitaet einer Instanz, der Cloud-Name ist das,
+    // worauf sich alle Beteiligten geeinigt haben. `cloudName` in der Buchfuehrung merkt
+    // sich, zu welchem Cloud-Namen der lokale Ordner zuletzt passte.
+
+    const folderNameFor = (name) => String(name || '')
+        .replace(/[\\/:*?"<>|]/g, '-')
+        .replace(/[. ]+$/, '')
+        .trim()
+        .slice(0, 120);
+
+    // Lokal umbenannt: bei einer verknuepften Instanz den neuen Namen auch in die Cloud
+    // bringen. Ein Mitglied ohne Recht dazu benennt nur seine eigene Kopie um.
+    app.on('lux:instance-renamed', async ({ oldName, newName, instanceDir }) => {
+        try {
+            const instanceId = await readInstanceId(instanceDir);
+            if (!instanceId) return;
+            const tracked = await readInstanceState(instanceId);
+            if (!tracked || !tracked.cloudLinked) return;
+
+            await rememberRevision(instanceId, { instanceName: newName });
+            autoSync.cancel(oldName);
+            if (!await luxState.isLoggedIn().catch(() => false)) return;
+
+            try {
+                await api.authed({
+                    method: 'PATCH',
+                    url: `/api/cloud/instances/${instanceId}/name`,
+                    data: { name: newName }
+                });
+                await rememberRevision(instanceId, { cloudName: newName });
+                console.log(`[LuxCloud] Renamed "${oldName}" to "${newName}" in the cloud as well.`);
+            } catch (err) {
+                console.log(`[LuxCloud] "${newName}" was only renamed on this PC (${err.code || err.message}).`);
+            }
+        } catch (err) {
+            console.warn('[LuxCloud] Could not follow up on a rename:', err.message);
+        }
+    });
+
+    const requestLocalRename = (oldName, newName) => new Promise((resolve) => {
+        const timer = setTimeout(() => resolve({ success: false, error: 'timeout' }), 15000);
+        app.emit('lux:rename-instance-request', {
+            oldName,
+            newName,
+            done: (result) => { clearTimeout(timer); resolve(result); }
+        });
+    });
+
+    // Hat jemand die Instanz in der Cloud umbenannt, folgt der lokale Ordner -- aber nur,
+    // wenn er noch zum alten Cloud-Namen passt (wer seine Kopie selbst umbenannt hat,
+    // behaelt seinen Namen) und die Instanz gerade weder laeuft noch synchronisiert.
+    const applyCloudRename = async (instanceUuid, cloudName) => {
+        const tracked = await readInstanceState(instanceUuid);
+        if (!tracked || !tracked.cloudLinked || !cloudName) return null;
+
+        const localName = await nameForInstanceId(instanceUuid).catch(() => null);
+        if (!localName) return null;
+
+        if (!tracked.cloudName) {
+            await rememberRevision(instanceUuid, { cloudName });
+            return null;
+        }
+        if (tracked.cloudName === cloudName) return null;
+
+        if (localName !== folderNameFor(tracked.cloudName) && localName !== tracked.cloudName) {
+            await rememberRevision(instanceUuid, { cloudName });
+            return null;
+        }
+        if (autoSync.isSuspended(localName) || transfers.list().some((t) => t.instanceName === localName)) {
+            return null;
+        }
+
+        const newName = folderNameFor(cloudName);
+        if (!newName || newName === localName) {
+            await rememberRevision(instanceUuid, { cloudName });
+            return null;
+        }
+
+        const result = await requestLocalRename(localName, newName);
+        if (!result || !result.success) {
+            console.warn(`[LuxCloud] Could not follow the cloud rename of "${localName}" to "${newName}": ${result && result.error}`);
+            // Ein belegter Name loest sich nicht von selbst; nicht bei jedem Refresh erneut versuchen.
+            if (result && /already exists/i.test(String(result.error))) {
+                await rememberRevision(instanceUuid, { cloudName });
+            }
+            return null;
+        }
+
+        autoSync.cancel(localName);
+        await rememberRevision(instanceUuid, { cloudName, instanceName: newName });
+        app.emit('lux:instances-changed');
+        console.log(`[LuxCloud] "${localName}" was renamed to "${newName}" in the cloud; followed on this PC.`);
+        return { from: localName, to: newName };
+    };
+
+    ipcMain.handle('luxcloud:apply-cloud-names', async (_event, entries) => {
+        try {
+            const renamed = [];
+            for (const entry of Array.isArray(entries) ? entries.slice(0, 200) : []) {
+                if (!entry || typeof entry.instanceUuid !== 'string' || typeof entry.name !== 'string') continue;
+                const result = await applyCloudRename(entry.instanceUuid, entry.name).catch(() => null);
+                if (result) renamed.push(result);
+            }
+            return ok({ renamed });
+        } catch (err) {
+            return fail(err);
+        }
+    });
+
+    ipcMain.handle('luxcloud:get-authors', async (_event, instanceName) => {
+        try {
+            const target = await instanceIdForName(instanceName);
+            if (target.error) return target.error;
+            const tracked = await readInstanceState(target.instanceId);
+            if (!tracked || !tracked.cloudLinked) return ok({ authors: {}, owner: null, linked: false });
+
+            const result = await api.authed({ method: 'GET', url: `/api/cloud/instances/${target.instanceId}/authors` });
+            return ok({ ...result, linked: true, shareRole: tracked.shareRole || null });
+        } catch (err) {
+            if (err && err.code === 'not_found') return ok({ authors: {}, owner: null, linked: false });
+            return fail(err);
+        }
+    });
+
     ipcMain.handle('luxcloud:restore-cloud-instance', async (_event, instanceUuid) => {
         try {
             if (typeof instanceUuid !== 'string' || instanceUuid.length === 0) {
@@ -931,6 +1196,7 @@ module.exports = (ipcMain, mainWindow) => {
             });
 
             await ensureInstanceIdFor(instanceDir, instanceUuid);
+            app.emit('lux:instances-changed');
 
             return ok({ ...result, instanceDir, durationMs: Date.now() - started });
         } catch (err) {

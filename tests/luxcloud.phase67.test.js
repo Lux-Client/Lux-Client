@@ -326,7 +326,9 @@ async function main() {
     const ahead = await uploader.uploadInstance({ ...common, options: { enableChunking: false } });
 
     const { rememberRevision } = require('../backend/luxcloud/syncState');
-    await fs.writeFile(path.join(syncDir, 'config', 'a.json'), '{"fov":70}');
+    // Dieselbe Datei, auf beiden Seiten verschieden geaendert: der einzige Fall, der
+    // noch ein Konflikt ist (verschiedene Dateien werden zusammengefuehrt, siehe 10).
+    await fs.writeFile(path.join(syncDir, 'config', 'a.json'), '{"fov":55}');
     await rememberRevision(instanceId, { lastKnownRevision: ahead.revision - 1 });
 
     gate = await preLaunch.checkBeforeLaunch({
@@ -348,6 +350,31 @@ async function main() {
     check('bei sauberem Stand wird vor dem Start aktualisiert',
         gate.decision === 'updated' && gate.canLaunch === true, gate.decision);
     check('und der Start bleibt erlaubt', gate.canLaunch === true, gate);
+
+    section('10) Verschiedene Dateien auf beiden Seiten werden zusammengefuehrt');
+
+    // Die Cloud aendert config/a.json, dieser PC (auf der Revision davor) eine andere Datei.
+    const beforeCloud = await uploader.uploadInstance({ ...common, options: { enableChunking: false } });
+    await fs.writeFile(path.join(syncDir, 'config', 'a.json'), '{"fov":12}');
+    const cloudAhead = await uploader.uploadInstance({ ...common, options: { enableChunking: false } });
+    await fs.writeFile(path.join(syncDir, 'config', 'a.json'), '{"fov":30}');
+    await fs.writeFile(path.join(syncDir, 'config', 'b.json'), '{"lokal":true}');
+    await rememberRevision(instanceId, { lastKnownRevision: cloudAhead.revision - 1 });
+
+    gate = await preLaunch.checkBeforeLaunch({
+        instanceDir: syncDir, instanceId, instanceName: 'Skyblock', options: {}
+    });
+    check('der Start wird nicht blockiert', gate.canLaunch === true && gate.merged === true, gate.decision);
+    check('die Cloud-Aenderung ist angekommen',
+        (await fs.readFile(path.join(syncDir, 'config', 'a.json'), 'utf8')) === '{"fov":12}', null);
+    check('die eigene Aenderung ist noch da',
+        await fs.pathExists(path.join(syncDir, 'config', 'b.json')), null);
+    check('und geht mit dem naechsten Upload hoch', gate.pushAfterLaunch === true, gate);
+
+    const pushed = await uploader.uploadInstance({ ...common, options: { enableChunking: false } });
+    check('der Upload baut auf der Cloud-Revision auf',
+        pushed.skipped === false && pushed.revision === cloudAhead.revision + 1, pushed.revision);
+    void beforeCloud;
 
     h.stop();
     await fs.remove(tmp).catch(() => {});

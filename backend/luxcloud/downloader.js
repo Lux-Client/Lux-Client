@@ -7,7 +7,7 @@ const api = require('./api');
 const blobStore = require('./blobStore');
 const { decompress } = require('./compression');
 const { validRelPath } = require('./pathRules');
-const { rememberRevision } = require('./syncState');
+const { readInstanceState, rememberRevision } = require('./syncState');
 const { rememberLocalSignature } = require('./localChanges');
 const {
     buildNormalizedInstanceJson,
@@ -19,6 +19,7 @@ const transfers = require('./transfers');
 const manifestSnapshot = require('./manifestSnapshot');
 const { HashCache } = require('./hashCache');
 const { getHashCacheDir } = require('./paths');
+const { isMemberWritable, memberContentHash, memberContribution } = require('./shareScope');
 
 const INSTANCE_CONFIG = 'instance.json';
 
@@ -281,7 +282,8 @@ async function runRestore({
     revision = 'latest',
     onProgress = null,
     instanceName = null,
-    modCachePath = null
+    modCachePath = null,
+    shareInfo = null
 } = {}) {
     let reportName = instanceName || instanceUuid;
     const report = (phase, detail = {}) => {
@@ -313,84 +315,37 @@ async function runRestore({
         }
     }
 
-    const stagingRoot = path.join(instanceDir, STAGING_DIR, 'staging');
-    await fs.ensureDir(stagingRoot);
+    // Die Basis fuer das Aufraeumen muss VOR dem Schreiben gelesen werden -- danach steht
+    // dort schon der neue Stand.
+    const snapshot = await manifestSnapshot.load(manifest.instanceId).catch(() => null);
+    const trackedBefore = await readInstanceState(manifest.instanceId).catch(() => null);
+    const previous = snapshot && trackedBefore
+        && snapshot.revision !== null && snapshot.revision === Number(trackedBefore.lastKnownRevision || 0)
+        ? snapshot
+        : null;
 
-    const totalBytes = entries.reduce((sum, entry) => sum + (Number(entry.size) || 0), 0);
-    const counters = { local: 0, cache: 0, modrinth: 0, server: 0, chunks: 0, unavailable: 0 };
-    const unavailable = [];
-    let processedBytes = 0;
-    let networkBytes = 0;
-    let done = 0;
-    let aborted = null;
-
-    report('download', { files: entries.length, totalBytes, processedBytes: 0, networkBytes: 0, done: 0 });
-
-    let cursor = 0;
-    const worker = async () => {
-        while (cursor < entries.length && !aborted) {
-            const entry = entries[cursor];
-            cursor += 1;
-
-            // Zwischen zwei Dateien ist der sichere Punkt zum Aussteigen: das Staging
-            // wird unten aufgeraeumt, und bereits geschriebene Dateien sind vollstaendig.
-            if (transfers.isCancelled(reportName) || transfers.isCancelled(instanceName)) {
-                aborted = new api.LuxCloudError('cancelled', 'The transfer was cancelled');
-                aborted.details = { path: entry.path };
-                return;
-            }
-
-            try {
-                const resolved = await resolveEntry(entry, instanceDir);
-                counters[resolved.source] = (counters[resolved.source] || 0) + 1;
-
-                if (resolved.source === 'unavailable') {
-                    unavailable.push({ path: entry.path, reason: resolved.reason });
-                } else if (entry.path === INSTANCE_CONFIG && resolved.buffer) {
-                    // The cloud copy is the normalized one, without this machine's own
-                    // fields. Writing it straight out would wipe javaPath, the install
-                    // state and the playtime of the PC we are restoring onto.
-                    await writeMergedInstanceConfig(instanceDir, resolved.buffer);
-                } else if (resolved.buffer) {
-                    // The staging name must be unique per entry, not per hash. A manifest
-                    // regularly lists the same content under several paths (mod archives
-                    // unpacked by WorldEdit alone produce hundreds of identical language
-                    // files), and with parallel workers two of them would otherwise write
-                    // and move the very same `<sha256>.part` — whoever moves second finds
-                    // the file already gone and the whole restore dies with ENOENT.
-                    const staged = path.join(stagingRoot, `${entry.sha256}-${crypto.randomBytes(8).toString('hex')}.part`);
-                    await fs.writeFile(staged, resolved.buffer);
-
-                    const target = path.join(instanceDir, entry.path);
-                    await fs.ensureDir(path.dirname(target));
-                    await fs.move(staged, target, { overwrite: true });
-                }
-
-                networkBytes += resolved.bytes || 0;
-                processedBytes += Number(entry.size) || 0;
-            } catch (err) {
-                const failure = api.normalizeError(err);
-                failure.details = { ...(failure.details || {}), path: entry.path };
-                aborted = failure;
-                return;
-            }
-
-            done += 1;
-            report('download', { files: entries.length, totalBytes, processedBytes, networkBytes, done });
-        }
-    };
-
-    await Promise.all(
-        new Array(Math.min(PARALLEL_DOWNLOADS, entries.length || 1)).fill(null).map(() => worker())
-    );
-
-    if (aborted) {
-        await fs.remove(stagingRoot).catch(() => {});
-        report('error', { error: aborted.code, message: aborted.message, path: aborted.details.path });
-        throw aborted;
+    let applied;
+    try {
+        applied = await applyEntries({
+            instanceDir,
+            entries,
+            cancelKeys: [reportName, instanceName],
+            onProgress: (detail) => report('download', detail)
+        });
+    } catch (err) {
+        const failure = api.normalizeError(err);
+        report('error', { error: failure.code, message: failure.message, path: failure.details && failure.details.path });
+        throw failure;
     }
+    const { counters, unavailable, networkBytes, processedBytes } = applied;
 
-    await fs.remove(stagingRoot).catch(() => {});
+    // Was in der Cloud entfernt wurde (etwa eine Mod, die ein Mitspieler geloescht hat),
+    // verschwindet auch hier -- aber nur, wenn die Datei hier seit dem letzten Sync
+    // unveraendert ist. Eigene Aenderungen werden nie still geloescht.
+    const removed = await removeStaleFiles(instanceDir, previous, entries).catch((err) => {
+        console.warn('[LuxCloud] Could not clean up files removed in the cloud:', err.message);
+        return [];
+    });
 
     await refreshHashCache(instanceDir, manifest.instanceId, entries).catch((err) => {
         console.warn('[LuxCloud] Could not refresh the hash cache after the restore:', err.message);
@@ -404,7 +359,15 @@ async function runRestore({
 
     // Vergleichsbasis fuer den naechsten Sync: erzeugt er trotzdem eine Revision, kann er
     // benennen, welche Datei dafuer verantwortlich ist.
-    await manifestSnapshot.save(manifest.instanceId, manifest).catch(() => {});
+    // Ein Mitglied vergleicht sich nur ueber den gemeinsamen Teil; instance.json und das
+    // Icon gehoeren dem Host und waeren im naechsten Vergleich sonst "entfernt".
+    await manifestSnapshot.save(
+        manifest.instanceId,
+        payload.access === 'member' ? memberContribution(manifest) : manifest,
+        { revision: payload.revision }
+    ).catch(() => {});
+
+    const isMember = payload.access === 'member';
 
     try {
         const instanceConfigEntry = entries.find((entry) => entry.path === INSTANCE_CONFIG);
@@ -412,12 +375,18 @@ async function runRestore({
         await rememberRevision(manifest.instanceId, {
             instanceName: instanceName || manifest.name,
             cloudLinked: true,
+            // Mitglied oder Host: bestimmt, was dieser PC hochladen darf (shareScope.js).
+            shareRole: isMember ? 'member' : null,
+            // Zu welchem Cloud-Namen dieser Ordner passt (siehe applyCloudRename). Nur beim
+            // ersten Mal gesetzt -- eine spaetere Umbenennung soll erkannt werden koennen.
+            ...(trackedBefore && trackedBefore.cloudName ? {} : { cloudName: manifest.name }),
+            ...(isMember && shareInfo ? { shareOwner: shareInfo.owner || null } : {}),
             lastKnownRevision: payload.revision,
             lastManifestHash: payload.manifestHash,
             // Without these two the very next sync saw an unknown content hash, judged the
             // instance changed and committed a new revision even though the user had only
             // just downloaded it and touched nothing.
-            lastContentHash: contentHashOf(manifest),
+            lastContentHash: isMember ? memberContentHash(manifest) : contentHashOf(manifest),
             lastInstanceConfigHash: instanceConfigEntry ? instanceConfigEntry.sha256 : null,
             lastSyncedAt: Date.now(),
             dirty: false
@@ -443,13 +412,130 @@ async function runRestore({
         downloadedBytes: networkBytes,
         restoredBytes: processedBytes,
         counters,
-        unavailable
+        unavailable,
+        removed,
+        access: payload.access || 'owner'
     };
+}
+
+// Holt und schreibt die uebergebenen Manifest-Eintraege. Dateien, die hier schon
+// inhaltsgleich liegen, werden uebersprungen (resolveEntry prueft das).
+async function applyEntries({ instanceDir, entries, cancelKeys = [], onProgress = null }) {
+    const stagingRoot = path.join(instanceDir, STAGING_DIR, 'staging');
+    await fs.ensureDir(stagingRoot);
+
+    const totalBytes = entries.reduce((sum, entry) => sum + (Number(entry.size) || 0), 0);
+    const counters = { local: 0, cache: 0, modrinth: 0, server: 0, chunks: 0, unavailable: 0 };
+    const unavailable = [];
+    let processedBytes = 0;
+    let networkBytes = 0;
+    let done = 0;
+    let aborted = null;
+
+    const progress = () => {
+        if (onProgress) onProgress({ files: entries.length, totalBytes, processedBytes, networkBytes, done });
+    };
+    progress();
+
+    let cursor = 0;
+    const worker = async () => {
+        while (cursor < entries.length && !aborted) {
+            const entry = entries[cursor];
+            cursor += 1;
+
+            // Zwischen zwei Dateien ist der sichere Punkt zum Aussteigen: das Staging
+            // wird unten aufgeraeumt, und bereits geschriebene Dateien sind vollstaendig.
+            if (cancelKeys.some((key) => key && transfers.isCancelled(key))) {
+                aborted = new api.LuxCloudError('cancelled', 'The transfer was cancelled');
+                aborted.details = { path: entry.path };
+                return;
+            }
+
+            try {
+                const resolved = await resolveEntry(entry, instanceDir);
+                counters[resolved.source] = (counters[resolved.source] || 0) + 1;
+
+                if (resolved.source === 'unavailable') {
+                    unavailable.push({ path: entry.path, reason: resolved.reason });
+                } else if (entry.path === INSTANCE_CONFIG && resolved.buffer) {
+                    // The cloud copy is the normalized one, without this machine's own
+                    // fields. Writing it straight out would wipe javaPath, the install
+                    // state and the playtime of the PC we are restoring onto.
+                    await writeMergedInstanceConfig(instanceDir, resolved.buffer);
+                } else if (resolved.buffer) {
+                    // The staging name must be unique per entry, not per hash. A manifest
+                    // regularly lists the same content under several paths (mod archives
+                    // unpacked by WorldEdit alone produce hundreds of identical language
+                    // files), and with parallel workers two of them would otherwise write
+                    // and move the very same <sha256>.part - whoever moves second finds
+                    // the file already gone and the whole restore dies with ENOENT.
+                    const staged = path.join(stagingRoot, `${entry.sha256}-${crypto.randomBytes(8).toString('hex')}.part`);
+                    await fs.writeFile(staged, resolved.buffer);
+
+                    const target = path.join(instanceDir, entry.path);
+                    await fs.ensureDir(path.dirname(target));
+                    await fs.move(staged, target, { overwrite: true });
+                }
+
+                networkBytes += resolved.bytes || 0;
+                processedBytes += Number(entry.size) || 0;
+            } catch (err) {
+                const failure = api.normalizeError(err);
+                failure.details = { ...(failure.details || {}), path: entry.path };
+                aborted = failure;
+                return;
+            }
+
+            done += 1;
+            progress();
+        }
+    };
+
+    await Promise.all(
+        new Array(Math.min(PARALLEL_DOWNLOADS, entries.length || 1)).fill(null).map(() => worker())
+    );
+
+    await fs.remove(stagingRoot).catch(() => {});
+    if (aborted) throw aborted;
+
+    return { counters, unavailable, networkBytes, processedBytes, totalBytes };
+}
+
+// Entfernt Dateien, die der letzte gemeinsame Stand noch kannte, die Cloud aber nicht
+// mehr -- nur im gemeinsamen Teil (Mods, Packs, Shader, Configs) und nur, wenn die Datei
+// hier seither niemand angefasst hat.
+async function removeStaleFiles(instanceDir, previousSnapshot, currentEntries) {
+    if (!previousSnapshot || !previousSnapshot.entries) return [];
+
+    const current = new Set(currentEntries.map((entry) => entry.path));
+    const removed = [];
+
+    for (const [relPath, print] of Object.entries(previousSnapshot.entries)) {
+        if (current.has(relPath) || !isMemberWritable(relPath)) continue;
+        if (!validRelPath(relPath) || !insideInstance(instanceDir, relPath)) continue;
+        const expected = String(print || '').split('|')[0];
+        if (!expected || expected === 'null') continue;
+
+        const absPath = path.join(instanceDir, relPath);
+        if (!await fileMatches(absPath, expected)) continue;
+
+        await fs.remove(absPath);
+        removed.push(relPath);
+    }
+
+    if (removed.length > 0) {
+        console.log(`[LuxCloud] Removed ${removed.length} file(s) that were deleted in the cloud: ${removed.slice(0, 5).join(', ')}${removed.length > 5 ? ' ...' : ''}`);
+    }
+    return removed;
 }
 
 module.exports = {
     STAGING_DIR,
+    adoptModSources,
+    applyEntries,
     assembleChunks,
+    refreshHashCache,
+    removeStaleFiles,
     fetchBlob,
     fetchModrinth,
     resolveEntry,

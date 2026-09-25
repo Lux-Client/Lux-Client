@@ -645,7 +645,7 @@ function App() {
         const removeStatusListener = window.electronAPI?.onInstanceStatus(({ instanceName, status, loader, version }) => {
             setRunningInstances(prev => {
                 const next = { ...prev };
-                if (status === 'stopped' || status === 'deleted') {
+                if (status === 'stopped' || status === 'deleted' || status === 'renamed') {
                     delete next[instanceName];
                     if (status === 'stopped') Analytics.updateStatus(false, instanceName, { loader, version, mode: currentMode });
                 } else {

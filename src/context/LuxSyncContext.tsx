@@ -23,6 +23,22 @@ export type CloudInstance = {
     lastForeignPullAt: string | null;
 };
 
+// Eine Instanz, an der dieses Konto als Mitglied mitarbeitet (Host ist jemand anderes).
+export type SharePermissions = {
+    addContent: boolean;
+    removeContent: boolean;
+    editConfig: boolean;
+    rename: boolean;
+    manageMembers: boolean;
+};
+
+export type SharedInstance = CloudInstance & {
+    access: 'member';
+    owner: { userId: number; username: string | null; avatar: string | null };
+    joinedAt: string | null;
+    permissions: SharePermissions;
+};
+
 export type SyncPhase = 'idle' | 'manifest' | 'negotiate' | 'upload' | 'commit' | 'download' | 'done' | 'error';
 
 export type SyncStatus =
@@ -77,6 +93,7 @@ type LuxSyncState = {
     offline: boolean;
     preLaunch: PreLaunchState | null;
     cloudInstances: CloudInstance[];
+    sharedInstances: SharedInstance[];
     progress: Record<string, InstanceProgress>;
     statuses: Record<string, SyncStatus>;
     conflicts: Record<string, ConflictInfo>;
@@ -105,6 +122,7 @@ const INITIAL: LuxSyncState = {
     offline: false,
     preLaunch: null,
     cloudInstances: [],
+    sharedInstances: [],
     progress: {},
     statuses: {},
     conflicts: {},
@@ -154,6 +172,7 @@ export const LuxSyncProvider = ({
         if (!loggedIn) {
             patch({
                 cloudInstances: [],
+                sharedInstances: [],
                 loading: false,
                 offline: false,
                 progress: {},
@@ -176,12 +195,26 @@ export const LuxSyncProvider = ({
                 });
                 return;
             }
+            // Geteilte Instanzen sind eine Zugabe: scheitert ihre Abfrage (etwa weil der
+            // Server die Funktion noch nicht kennt), bleibt die eigene Liste trotzdem gueltig.
+            const shared = typeof api.luxCloudListShared === 'function'
+                ? await api.luxCloudListShared().catch(() => null)
+                : null;
+            const sharedList = shared && shared.success !== false ? (shared.instances || []) : [];
             patch({
                 loading: false,
                 offline: false,
                 error: null,
-                cloudInstances: result.instances || []
+                cloudInstances: result.instances || [],
+                sharedInstances: sharedList
             });
+
+            // Hat jemand eine gemeinsame Instanz umbenannt, zieht der lokale Ordner nach.
+            if (typeof api.luxCloudApplyCloudNames === 'function') {
+                const names = [...(result.instances || []), ...sharedList]
+                    .map((entry: any) => ({ instanceUuid: entry.instanceUuid, name: entry.name }));
+                api.luxCloudApplyCloudNames(names).catch(() => {});
+            }
         } catch (err: any) {
             patch({ loading: false, error: { code: 'unknown_error', message: String(err?.message || err) } });
         }
@@ -566,6 +599,7 @@ export const LuxSyncProvider = ({
 
         const linked = instanceId
             ? state.cloudInstances.some((entry) => entry.instanceUuid === instanceId)
+                || state.sharedInstances.some((entry) => entry.instanceUuid === instanceId)
             : state.cloudInstances.some((entry) => entry.name === instanceName);
 
         if (!linked) return 'local';

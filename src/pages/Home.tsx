@@ -174,7 +174,8 @@ function Home({
           status === "ready" ||
           status === "error" ||
           status === "deleted" ||
-          status === "installing"
+          status === "installing" ||
+          status === "renamed"
         ) {
           loadInstances();
         }

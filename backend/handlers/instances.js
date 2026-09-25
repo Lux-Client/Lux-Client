@@ -1271,6 +1271,10 @@ function invalidateMergedInstancesCache() {
     mergedInstancesRefreshPromise = null;
 }
 
+// Andere Module (etwa der Cloud-Download einer Instanz) legen Instanzordner an, ohne
+// hier vorbeizukommen. Sie melden das ueber dieses Ereignis.
+app.on('lux:instances-changed', () => invalidateMergedInstancesCache());
+
 async function refreshMergedInstancesCache(force = false) {
     const isFresh = (Date.now() - mergedInstancesCacheAt) < MERGED_INSTANCES_CACHE_TTL_MS;
     if (!force && isFresh && mergedInstancesCache.length > 0) {
@@ -4357,7 +4361,7 @@ module.exports = (ipcMain, win) => {
             }
         });
 
-        ipcMain.handle('instance:rename', async (_, oldName, newName) => {
+        const renameInstanceFolder = async (oldName, newName) => {
             try {
                 console.log(`Renaming instance: "${oldName}" -> "${newName}"`);
                 console.log(`Instances dir: ${instancesDir}`);
@@ -4418,6 +4422,31 @@ module.exports = (ipcMain, win) => {
                 }
                 return { success: false, error: e.message };
             }
+        };
+
+        ipcMain.handle('instance:rename', async (_, oldName, newName) => {
+            const result = await renameInstanceFolder(oldName, newName);
+            if (result && result.success && String(oldName || '') !== String(newName || '').trim()) {
+                // Lux Cloud gibt einen neuen Namen einer gemeinsamen Instanz an alle weiter.
+                app.emit('lux:instance-renamed', {
+                    oldName,
+                    newName: String(newName || '').trim(),
+                    instanceDir: path.join(instancesDir, String(newName || '').trim())
+                });
+            }
+            return result;
+        });
+
+        // Umbenennen auf Wunsch von Lux Cloud (ein Mitspieler hat den Namen geaendert).
+        app.on('lux:rename-instance-request', ({ oldName, newName, done }) => {
+            renameInstanceFolder(oldName, newName)
+                .then((result) => {
+                    if (result && result.success && win && win.webContents && !win.webContents.isDestroyed()) {
+                        win.webContents.send('instance:status', { instanceName: oldName, status: 'renamed', newName });
+                    }
+                    if (typeof done === 'function') done(result);
+                })
+                .catch((err) => { if (typeof done === 'function') done({ success: false, error: err.message }); });
         });
 
         ipcMain.handle('instance:duplicate', async (_, instanceName) => {

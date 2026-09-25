@@ -34,7 +34,7 @@ function fingerprint(entry) {
     ].join('|');
 }
 
-function describe(manifest) {
+function describe(manifest, revision = null) {
     const entries = {};
     for (const entry of (manifest && manifest.entries) || []) {
         entries[entry.path] = fingerprint(entry);
@@ -43,6 +43,9 @@ function describe(manifest) {
     return {
         version: SNAPSHOT_VERSION,
         savedAt: Date.now(),
+        // Zu welcher Revision dieses Abbild gehoert. Nur wenn sie zum lokalen Stand passt,
+        // taugt es als Basis fuer Entscheidungen (etwa: was darf geloescht werden).
+        revision: Number.isFinite(Number(revision)) && revision !== null ? Number(revision) : null,
         name: (manifest && manifest.name) || null,
         runtime: (manifest && manifest.runtime) || null,
         settings: (manifest && manifest.settings) || null,
@@ -51,10 +54,10 @@ function describe(manifest) {
     };
 }
 
-async function save(instanceId, manifest) {
+async function save(instanceId, manifest, { revision = null } = {}) {
     if (!instanceId || !manifest) return false;
     await fs.ensureDir(snapshotDir());
-    await writeJsonAtomic(snapshotFile(instanceId), describe(manifest), { spaces: 0 });
+    await writeJsonAtomic(snapshotFile(instanceId), describe(manifest, revision), { spaces: 0 });
     return true;
 }
 

@@ -67,6 +67,12 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
         (entry) => entry.instanceUuid === instanceId || entry.name === instanceName
     );
 
+    // Eine Instanz, an der dieses Konto nur mitarbeitet. Sie steht nicht in der eigenen
+    // Cloud-Liste; Umfang, Papierkorb und Revisionen verwaltet allein der Host.
+    const sharedEntry = !cloudInstance
+        ? (sync?.sharedInstances || []).find((entry) => entry.instanceUuid === instanceId)
+        : null;
+
     const status = sync ? sync.statusFor(instanceName, instanceId) : 'local';
     const progress = sync?.progress[instanceName];
 
@@ -76,10 +82,10 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
     // The cloud holds a revision this PC has never seen. Worth saying out loud, because
     // the only visible action used to be "Sync now", which pushed the older state up.
     const updateAvailable = Boolean(
-        cloudInstance
+        (cloudInstance || sharedEntry)
         && !isTrashed
         && localRevision !== null
-        && Number(cloudInstance.revision) > localRevision
+        && Number((cloudInstance || sharedEntry)!.revision) > localRevision
     );
     // A trashed instance is not in the 'active' listing, so its uuid has to come from the
     // failed sync or from the local instance itself.
@@ -281,6 +287,15 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
                 )}
             </div>
 
+            {sharedEntry && (
+                <p className="mt-3 rounded-lg border border-primary/25 bg-primary/[0.08] px-3 py-2 text-xs text-white/75">
+                    {t('cloud.instance.shared_by', {
+                        defaultValue: 'Shared by {{name}}. You can change mods, resource packs, shaders and configs; your worlds and settings stay on this PC.',
+                        name: sharedEntry.owner?.username || '?'
+                    })}
+                </p>
+            )}
+
             {progress && progress.totalBytes ? (
                 <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/10">
                     <div
@@ -433,7 +448,7 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
                             {t('cloud.instance.update_available', {
                                 defaultValue:
                                     'Another PC uploaded a newer version (v{{remote}}, you have v{{local}}).',
-                                remote: cloudInstance?.revision,
+                                remote: (cloudInstance || sharedEntry)?.revision,
                                 local: localRevision
                             })}
                         </p>

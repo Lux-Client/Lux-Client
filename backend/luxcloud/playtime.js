@@ -46,6 +46,9 @@ async function creditSession(instanceId, durationMs) {
 async function push(instanceId, { sessionId = null } = {}) {
     const tracked = await readInstanceState(instanceId);
     if (!tracked || !tracked.cloudLinked) return { skipped: true, reason: 'not_linked' };
+    // Die Spielzeit einer geteilten Instanz fuehrt der Host; der Server nimmt sie von
+    // Mitgliedern gar nicht an.
+    if (tracked.shareRole === 'member') return { skipped: true, reason: 'shared_instance' };
 
     const deviceTotalMs = Number(tracked.deviceTotalMs || 0);
     if (deviceTotalMs === Number(tracked.playtimePushedMs || -1)) {

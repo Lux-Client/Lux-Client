@@ -71,6 +71,75 @@ async function lookupVersionsByHash(hashes) {
     return found;
 }
 
+// null = Modrinth war nicht erreichbar; eine Map (auch leer) = die Antwort ist verlaesslich.
+async function lookupVersionsById(versionIds) {
+    const found = new Map();
+    for (let i = 0; i < versionIds.length; i += PROJECT_BATCH) {
+        const batch = versionIds.slice(i, i + PROJECT_BATCH);
+        try {
+            const payload = await modrinthRequest({
+                method: 'GET',
+                url: `${API}/versions`,
+                params: { ids: JSON.stringify(batch) }
+            });
+            for (const version of Array.isArray(payload) ? payload : []) {
+                if (version?.id) found.set(String(version.id), version);
+            }
+        } catch (_) {
+            return null;
+        }
+    }
+    return found;
+}
+
+// Letzter Rueckfall fuer Mods, die keine Plattform kennt (oder deren Eintrag keine Version
+// hat): die Versionsangabe, die der Mod selbst mitbringt.
+function readJarVersion(filePath) {
+    try {
+        const AdmZip = require('adm-zip');
+        const zip = new AdmZip(filePath);
+        const text = (name) => {
+            const entry = zip.getEntry(name);
+            return entry ? entry.getData().toString('utf8') : null;
+        };
+        const usable = (value) => {
+            const version = typeof value === 'string' ? value.trim() : '';
+            return version && !version.includes('${') ? version : null;
+        };
+
+        const fabric = text('fabric.mod.json');
+        if (fabric) {
+            const version = usable(JSON.parse(fabric).version);
+            if (version) return version;
+        }
+
+        const quilt = text('quilt.mod.json');
+        if (quilt) {
+            const version = usable(JSON.parse(quilt)?.quilt_loader?.version);
+            if (version) return version;
+        }
+
+        const manifestVersion = () => {
+            const manifest = text('META-INF/MANIFEST.MF') || '';
+            const match = manifest.match(/^Implementation-Version:\s*(.+)$/m);
+            return match ? usable(match[1]) : null;
+        };
+
+        const toml = text('META-INF/mods.toml') || text('META-INF/neoforge.mods.toml');
+        if (toml) {
+            const match = toml.match(/^\s*version\s*=\s*["']([^"']+)["']/m);
+            const version = match ? usable(match[1]) : null;
+            if (version) return version;
+            // "${file.jarVersion}" steht fuer die Version aus dem Manifest.
+            return manifestVersion();
+        }
+
+        return manifestVersion();
+    } catch (_) {
+        return null;
+    }
+}
+
 async function lookupProjects(projectIds) {
     const found = new Map();
     for (let i = 0; i < projectIds.length; i += PROJECT_BATCH) {
@@ -158,6 +227,36 @@ async function resolveContentMetadata({ items, modCachePath, hashFile, cacheIcon
         }
     }
 
+    // Einige Wege (Modpack-Installation, Cloud-Download) legen Eintraege nur mit projectId
+    // und versionId an. Oben wird aber nur nachgeschlagen, wenn die projectId fehlt -- die
+    // Mod stand deshalb fuer immer als "v?" da, obwohl dieselbe Datei in einer anderen
+    // Instanz ihre Version zeigte. Hier wird die Versionsnummer einmalig nachgeholt.
+    const versionTargets = new Map();
+    for (const [cacheKey, record] of records.entries()) {
+        if (record.version || record.noVersion || !record.versionId || !isModrinthEntry(record)) continue;
+        if (!versionTargets.has(record.versionId)) versionTargets.set(record.versionId, []);
+        versionTargets.get(record.versionId).push(cacheKey);
+    }
+
+    if (versionTargets.size > 0) {
+        const versions = await lookupVersionsById([...versionTargets.keys()]);
+        if (versions) {
+            for (const [versionId, cacheKeys] of versionTargets.entries()) {
+                const version = versions.get(versionId);
+                for (const cacheKey of cacheKeys) {
+                    const record = records.get(cacheKey);
+                    if (version?.version_number) {
+                        record.version = version.version_number;
+                    } else {
+                        // Bei Modrinth geloescht: nicht bei jedem Oeffnen erneut fragen.
+                        record.noVersion = true;
+                    }
+                    updates[cacheKey] = { ...(updates[cacheKey] || {}), ...record };
+                }
+            }
+        }
+    }
+
     if (detailTargets.size > 0) {
         const projects = await lookupProjects([...detailTargets.keys()]);
         const iconJobs = [];
@@ -185,6 +284,23 @@ async function resolveContentMetadata({ items, modCachePath, hashFile, cacheIcon
         }
     }
 
+    // Was jetzt noch ohne Version ist, bekommt sie aus der Jar. Gemerkt wird sie unter
+    // localVersion (Schluessel = Dateiname + Groesse, aendert sich also mit der Datei).
+    const localVersions = new Map();
+    for (const item of items) {
+        if (!item.isFile || !/\.jar(\.disabled)?$/i.test(item.fileName)) continue;
+        const record = records.get(item.cacheKey);
+        if (record?.version) continue;
+
+        let version = cache[item.cacheKey]?.localVersion || null;
+        if (!version) {
+            version = readJarVersion(item.filePath);
+            if (!version) continue;
+            updates[item.cacheKey] = { ...(updates[item.cacheKey] || {}), localVersion: version };
+        }
+        localVersions.set(item.cacheKey, version);
+    }
+
     if (Object.keys(updates).length > 0) {
         await updateModCache(modCachePath, updates).catch((error) => {
             console.error('[ModMetadata] Failed to save mod cache updates:', error.message);
@@ -197,7 +313,7 @@ async function resolveContentMetadata({ items, modCachePath, hashFile, cacheIcon
             item,
             title: record?.title || null,
             icon: record?.icon || null,
-            version: record?.version || null,
+            version: record?.version || localVersions.get(item.cacheKey) || null,
             projectId: record?.projectId,
             versionId: record?.versionId,
             source: record?.source || 'modrinth'

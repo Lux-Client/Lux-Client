@@ -9,6 +9,7 @@ import { Analytics } from '../services/Analytics';
 import ToggleBox from '../components/ToggleBox';
 import ExtensionSlot from '../components/Extensions/ExtensionSlot';
 import BackupManagerModal from '../components/BackupManagerModal';
+import CollaborateModal from '../components/cloud/CollaborateModal';
 import InstanceFileBrowser from '../components/InstanceFileBrowser';
 import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
@@ -62,6 +63,10 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [contentView, setContentView] = useState(isVanilla ? 'resourcepacks' : 'mods');
     const [searchCategory, setSearchCategory] = useState(isVanilla ? 'resourcepack' : 'mod');
     const [mods, setMods] = useState([]);
+    // Wer welche Datei in eine gemeinsam bearbeitete Instanz gebracht hat (Pfad -> Konto).
+    const [contentAuthors, setContentAuthors] = useState<Record<string, { username: string | null }>>({});
+    // Rechte in einer geteilten Instanz, an der dieses Konto nur mitarbeitet (sonst null).
+    const [sharePermissions, setSharePermissions] = useState<Record<string, boolean> | null>(null);
     const [resourcePacks, setResourcePacks] = useState([]);
     const [loadingResourcePacks, setLoadingResourcePacks] = useState(false);
     const [shaders, setShaders] = useState([]);
@@ -116,6 +121,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [lightboxIndex, setLightboxIndex] = useState(-1);
     const [worldToDelete, setWorldToDelete] = useState(null);
     const [showBackupManager, setShowBackupManager] = useState(false);
+    const [showCollaborate, setShowCollaborate] = useState(false);
     const [isBackingUp, setIsBackingUp] = useState(false);
     const instanceFileBrowserRef = useRef<InstanceFileBrowserHandle | null>(null);
     const [fileTabHasUnsavedChanges, setFileTabHasUnsavedChanges] = useState(false);
@@ -234,6 +240,42 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         if (onInstanceUpdate) {
             onInstanceUpdate(newConfig);
         }
+    };
+
+    useEffect(() => {
+        if (activeTab !== 'content' || !luxAccount?.loggedIn) return;
+        const api: any = window.electronAPI;
+        if (!api || typeof api.luxCloudGetAuthors !== 'function') return;
+        let cancelled = false;
+        api.luxCloudGetAuthors(instance.name).then((result: any) => {
+            if (cancelled || !result || result.success === false) return;
+            setContentAuthors(result.authors || {});
+            setSharePermissions(result.access === 'member' ? (result.permissions || null) : null);
+        }).catch(() => {});
+        return () => { cancelled = true; };
+    }, [activeTab, instance.name, luxAccount?.loggedIn, mods.length]);
+
+    // Was der Host diesem Mitglied nicht erlaubt hat, wird gar nicht erst ausgefuehrt --
+    // der Server wuerde es beim naechsten Sync ohnehin ablehnen.
+    const blockedByHost = (permission: 'addContent' | 'removeContent') => {
+        if (!sharePermissions || sharePermissions[permission]) return false;
+        addNotification(
+            permission === 'removeContent'
+                ? t('instance_details.content.no_delete_permission', 'The host of this shared instance has not allowed you to delete content.')
+                : t('instance_details.content.no_add_permission', 'The host of this shared instance has not allowed you to add or change content.'),
+            'error'
+        );
+        return true;
+    };
+
+    const authorChip = (relPath: string) => {
+        const author = contentAuthors[relPath];
+        if (!author || !author.username) return null;
+        return (
+            <span className="shrink-0 rounded bg-primary/10 px-1.5 text-primary" title={t('instance_details.content.added_by', { defaultValue: 'Added by {{name}}', name: author.username })}>
+                {t('instance_details.content.by', { defaultValue: 'by {{name}}', name: author.username })}
+            </span>
+        );
     };
 
     useEffect(() => {
@@ -579,11 +621,13 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         }
     };
     const handleToggleMod = async (fileName) => {
+        if (blockedByHost('addContent')) return;
         await window.electronAPI.toggleMod(instance.name, fileName);
         loadMods();
     };
 
     const handleDeleteMod = (fileName, type = 'mod') => {
+        if (blockedByHost('removeContent')) return;
         setModToDelete({ name: fileName, type });
     };
 
@@ -717,6 +761,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
     const handleUpdateMod = async (updateData, options: { suppressSuccessNotification?: boolean; suppressErrorNotification?: boolean } = {}) => {
         const { suppressSuccessNotification = false, suppressErrorNotification = false } = options;
+        if (blockedByHost('addContent')) return;
         setUpdatingMod(updateData.projectId);
         try {
             const res = await window.electronAPI.updateFile({
@@ -761,6 +806,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
     const handleUpdateAll = async () => {
         if (bulkUpdateStatus?.isRunning) return;
+        if (blockedByHost('addContent')) return;
 
         const updateList = Object.values(updates) as any[];
         if (updateList.length === 0) return;
@@ -878,6 +924,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         e.preventDefault();
         e.stopPropagation();
         setIsDragging(false);
+        if (blockedByHost('addContent')) return;
 
         if (contentView !== 'mods' && contentView !== 'resourcepacks' && contentView !== 'shaders') return;
 
@@ -943,6 +990,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     };
 
     const handleInstall = async (project) => {
+        if (blockedByHost('addContent')) return;
         try {
             setInstallationStatus(prev => ({ ...prev, [project.project_id]: 'installing' }));
             const loaders = (searchCategory === 'resourcepack' || searchCategory === 'shader' || !instance.loader || instance.loader.toLowerCase() === 'vanilla')
@@ -1016,6 +1064,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     };
 
     const handleInstallVersion = async (version) => {
+        if (blockedByHost('addContent')) return;
         try {
             setInstallationStatus(prev => ({ ...prev, [selectedProject.project_id]: 'installing' }));
             const file = version.files.find(f => f.primary) || version.files[0];
@@ -1357,6 +1406,18 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 <button
                                     onClick={() => {
                                         setShowMenu(false);
+                                        setShowCollaborate(true);
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-accent flex items-center gap-3 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    {t('dashboard.context.collaborate', 'Collaborate')}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowMenu(false);
                                         setShowBackupManager(true);
                                     }}
                                     className="w-full text-left px-4 py-3 hover:bg-accent flex items-center gap-3 transition-colors text-primary"
@@ -1682,6 +1743,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                         <div className={`truncate font-bold ${!mod.enabled ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{mod.title || mod.name}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
                                                             <span className="bg-background px-1.5 rounded">{mod.version || 'v?'}</span>
+                                                            {authorChip(`mods/${mod.name}`)}
                                                             <span className="truncate opacity-50">{mod.name}</span>
                                                         </div>
                                                     </div>
@@ -1775,6 +1837,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                         <div className="truncate font-bold text-foreground">{pack.title}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
                                                             {pack.version && <span className="bg-background px-1.5 rounded">{pack.version}</span>}
+                                                            {authorChip(`resourcepacks/${pack.name}`)}
                                                             <span className="truncate opacity-50">{pack.name}</span>
                                                         </div>
                                                     </div>
@@ -1863,6 +1926,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                     <div className="min-w-0">
                                                         <div className="truncate font-bold text-foreground">{shader.title}</div>
                                                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                                            {authorChip(`shaderpacks/${shader.name}`)}
                                                             <span className="truncate opacity-50">{shader.name}</span>
                                                         </div>
                                                         <button
@@ -2647,6 +2711,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     </div>
                 )
             }
+
+            <CollaborateModal
+                open={showCollaborate}
+                instanceName={instance.name}
+                onClose={() => setShowCollaborate(false)}
+                onLeft={() => {
+                    setShowCollaborate(false);
+                    onBack && onBack();
+                }}
+            />
 
             { }
             {

@@ -65,7 +65,10 @@ import {
   FileDown,
   Zap,
   ImageIcon,
+  Users,
+  CloudDownload,
 } from "lucide-react";
+import CollaborateModal from "../components/cloud/CollaborateModal";
 
 const DEFAULT_ICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
@@ -155,6 +158,7 @@ const InstanceCard = React.memo(function InstanceCard({
   t,
   isGuest,
   cloudStatus,
+  sharedHost,
 }: any) {
   const formatPlaytime = (ms) => {
     if (!ms || ms <= 0) return t("common.time.0h");
@@ -231,6 +235,12 @@ const InstanceCard = React.memo(function InstanceCard({
           <h3 className="text-sm font-medium text-foreground truncate">
             {instance.name}
           </h3>
+          {sharedHost && (
+            <p className="flex items-center gap-1 truncate text-[10px] text-primary/90">
+              <Users className="h-2.5 w-2.5 shrink-0" />
+              {t("dashboard.shared.by", { defaultValue: "Shared by {{name}}", name: sharedHost })}
+            </p>
+          )}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
             <span className="capitalize">
               {String(instance.loader || "Vanilla").trim() || "Vanilla"}
@@ -447,6 +457,8 @@ function Dashboard({
   const [groupBySourceEnabled, setGroupBySourceEnabled] = useState(true);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showExportChoiceModal, setShowExportChoiceModal] = useState(false);
+  const [collabTarget, setCollabTarget] = useState(null);
+  const [joiningShared, setJoiningShared] = useState(null);
   const [showExportCodeModal, setShowExportCodeModal] = useState(false);
   const [exportTargetInstance, setExportTargetInstance] = useState(null);
   const [exportCodeInstanceData, setExportCodeInstanceData] = useState(null);
@@ -534,7 +546,8 @@ function Dashboard({
           status === "ready" ||
           status === "error" ||
           status === "deleted" ||
-          status === "installing"
+          status === "installing" ||
+          status === "renamed"
         ) {
           loadInstances();
         }
@@ -968,6 +981,9 @@ function Dashboard({
           addNotification(`Duplicate failed: ${e.message}`, "error");
         }
         break;
+      case "collaborate":
+        setCollabTarget(instance);
+        break;
       case "export":
         setExportTargetInstance(instance);
         setShowExportChoiceModal(true);
@@ -1175,6 +1191,53 @@ function Dashboard({
     return 0;
   });
 
+  // Instanzen, an denen dieses Konto als Mitglied mitarbeitet (Host ist jemand anderes).
+  const sharedInstances = luxSync?.sharedInstances || [];
+  const sharedByUuid = useMemo(
+    () => new Map(sharedInstances.map((entry) => [entry.instanceUuid, entry])),
+    [sharedInstances],
+  );
+  const localInstanceIds = useMemo(
+    () => new Set(instances.map((inst) => inst.instanceId).filter(Boolean)),
+    [instances],
+  );
+  const sharedNotLocal = sharedInstances.filter(
+    (entry) => !localInstanceIds.has(entry.instanceUuid),
+  );
+
+  const joinShared = async (entry) => {
+    if (!window.electronAPI?.luxCloudJoinShared) return;
+    setJoiningShared(entry.instanceUuid);
+    try {
+      const result = await window.electronAPI.luxCloudJoinShared(entry.instanceUuid, {
+        instanceName: entry.name,
+        owner: entry.owner,
+      });
+      if (result && result.success === false) {
+        addNotification(
+          t("dashboard.shared.join_failed", {
+            defaultValue: "Could not download {{name}}: {{error}}",
+            name: entry.name,
+            error: result.message || result.error,
+          }),
+          "error",
+        );
+        return;
+      }
+      addNotification(
+        t("dashboard.shared.joined", {
+          defaultValue: "{{name}} is now on this PC.",
+          name: result?.instanceName || entry.name,
+        }),
+        "success",
+      );
+      await loadInstances();
+      luxSync?.refresh();
+    } finally {
+      setJoiningShared(null);
+    }
+  };
+
   const isSelectableInstance = (_instance = null) => true;
 
   const selectableVisibleInstanceNames = sortedInstances
@@ -1318,6 +1381,12 @@ function Dashboard({
       });
     };
 
+    // Geteilte Instanzen bekommen ihre eigene Kategorie am Ende der Liste.
+    const sharedLocal = sortedInstances.filter((inst) => sharedByUuid.has(inst.instanceId));
+    const ownInstances = sharedLocal.length > 0
+      ? sortedInstances.filter((inst) => !sharedByUuid.has(inst.instanceId))
+      : sortedInstances;
+
     if (groupBySourceEnabled) {
       const sourceGroups = {
         LuxClient: [],
@@ -1326,7 +1395,7 @@ function Dashboard({
         External: [],
       };
 
-      sortedInstances.forEach((inst) => {
+      ownInstances.forEach((inst) => {
         const sourceLabel = getSourceGroupLabel(inst);
         if (!sourceGroups[sourceLabel]) sourceGroups[sourceLabel] = [];
         sourceGroups[sourceLabel].push(inst);
@@ -1340,10 +1409,16 @@ function Dashboard({
         },
       );
     } else {
-      buildSections(sortedInstances, null);
+      buildSections(ownInstances, sharedLocal.length > 0 ? t("dashboard.shared.own", "My Instances") : null);
+    }
+    if (sharedLocal.length > 0) {
+      data.push({
+        title: t("dashboard.shared.title", "Shared Instances"),
+        tree: buildFolderTree(sharedLocal),
+      });
     }
     return data;
-  }, [sortedInstances, groupMethod, groupBySourceEnabled]);
+  }, [sortedInstances, groupMethod, groupBySourceEnabled, sharedByUuid, t]);
 
   const virtualItems = useMemo(() => {
     const items = [];
@@ -1422,6 +1497,10 @@ function Dashboard({
         <Download className="w-4 h-4 mr-2" />
         {t("dashboard.context.export")}
       </ContextMenuItem>
+      <ContextMenuItem onClick={() => handleContextAction("collaborate", instance)}>
+        <Users className="w-4 h-4 mr-2" />
+        {t("dashboard.context.collaborate", "Collaborate")}
+      </ContextMenuItem>
       <ContextMenuItem onClick={() => handleContextAction("folder", instance)}>
         <FolderOpen className="w-4 h-4 mr-2" />
         {t("dashboard.context.folder")}
@@ -1479,6 +1558,7 @@ function Dashboard({
         <InstanceCard
           instance={instance}
           cloudStatus={luxSync ? luxSync.statusFor(instance.name, instance.instanceId) : null}
+          sharedHost={sharedByUuid.get(instance.instanceId)?.owner?.username || null}
           runningInstances={runningInstances}
           installState={installState}
           pendingLaunches={pendingLaunches}
@@ -1534,6 +1614,15 @@ function Dashboard({
               >
                 <Download className="w-4 h-4 mr-2" />
                 {t("dashboard.context.export")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleContextAction("collaborate", instance);
+                }}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                {t("dashboard.context.collaborate", "Collaborate")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
@@ -1785,6 +1874,51 @@ function Dashboard({
               </div>
             )}
           </div>
+
+          {sharedNotLocal.length > 0 && (
+            <div className="rounded-2xl border border-primary/25 bg-primary/[0.06] p-3">
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+                <Users className="h-3.5 w-3.5 text-primary" />
+                {t("dashboard.shared.title", "Shared Instances")}
+                <span className="font-normal text-muted-foreground">
+                  {t("dashboard.shared.not_local", "— not on this PC yet")}
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {sharedNotLocal.map((entry) => (
+                  <div
+                    key={entry.instanceUuid}
+                    className="flex items-center gap-3 rounded-xl border border-border/80 bg-card/70 px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{entry.name}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {[entry.loader, entry.mcVersion].filter(Boolean).join(" · ") || "—"}
+                        {" · "}
+                        {t("dashboard.shared.by", {
+                          defaultValue: "Shared by {{name}}",
+                          name: entry.owner?.username || "?",
+                        })}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1 rounded-lg text-xs"
+                      disabled={joiningShared !== null}
+                      onClick={() => joinShared(entry)}
+                    >
+                      {joiningShared === entry.instanceUuid ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <CloudDownload className="h-3.5 w-3.5" />
+                      )}
+                      {t("dashboard.shared.download", "Download")}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {isEmpty ? (
             <div className="flex min-h-0 flex-1 items-center justify-center">
@@ -2190,6 +2324,15 @@ function Dashboard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CollaborateModal
+        open={!!collabTarget}
+        instanceName={collabTarget?.name || null}
+        onClose={() => setCollabTarget(null)}
+        onLeft={() => {
+          loadInstances();
+        }}
+      />
 
       <Dialog
         open={showExportChoiceModal}

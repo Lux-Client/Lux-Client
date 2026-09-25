@@ -23,7 +23,8 @@ function ModpackCodeModal({
     const [selectedTypes, setSelectedTypes] = useState({
         mods: true,
         resourcePacks: true,
-        shaders: true
+        shaders: true,
+        settings: true
     });
 
     const { addNotification } = useNotification();
@@ -78,6 +79,7 @@ function ModpackCodeModal({
                 shaders: selectedTypes.shaders ? shaders : [],
                 instanceVersion: instanceData?.version,
                 instanceLoader: instanceData?.loader,
+                includeSettings: selectedTypes.settings,
                 icon: instanceData?.icon || null
             };
 
@@ -206,8 +208,9 @@ function ModpackCodeModal({
                                             {[
                                                 { id: 'mods', label: 'Mods', count: mods.length },
                                                 { id: 'resourcePacks', label: 'Resource Packs', count: resourcePacks.length },
-                                                { id: 'shaders', label: 'Shaders', count: shaders.length }
-                                            ].map(type => (
+                                                { id: 'shaders', label: 'Shaders', count: shaders.length },
+                                                { id: 'settings', label: 'Settings', hint: 'Keybinds & game options' }
+                                            ].map((type: any) => (
                                                 <label key={type.id} className="flex items-center gap-3 p-3 bg-muted rounded-xl border border-border cursor-pointer hover:bg-accent transition-colors group">
                                                     <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${selectedTypes[type.id] ? 'bg-primary border-primary' : 'border-border'}`}>
                                                         {selectedTypes[type.id] && (
@@ -223,7 +226,11 @@ function ModpackCodeModal({
                                                         className="hidden"
                                                     />
                                                     <span className="flex-1 text-sm font-bold text-foreground transition-colors">{type.label}</span>
-                                                    <span className="text-xs text-muted-foreground font-bold bg-muted px-2 py-1 rounded-md">{type.count}</span>
+                                                    {type.count !== undefined ? (
+                                                        <span className="text-xs text-muted-foreground font-bold bg-muted px-2 py-1 rounded-md">{type.count}</span>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">{type.hint}</span>
+                                                    )}
                                                 </label>
                                             ))}
                                         </div>
@@ -324,7 +331,7 @@ function ModpackCodeModal({
                                     autoFocus
                                 />
                                 <p className="text-xs text-muted-foreground mt-3 font-bold text-center">
-                                    Import mods, resource packs, and shaders instantly.
+                                    Import mods, resource packs, shaders and settings instantly.
                                 </p>
                             </div>
 

@@ -66,6 +66,8 @@ module.exports = (ipcMain, win) => {
         console.log('[ModpackCode-Handler] 📤 Export handler AUFGERUFEN', data);
         try {
             const { name, mods, resourcePacks, shaders, instanceVersion, instanceLoader, instanceName, icon } = data;
+            // Aeltere Aufrufer kennen den Schalter nicht und haben die Einstellungen immer mitgeschickt.
+            const includeSettings = data.includeSettings !== false;
 
             const Store = require('electron-store');
             const store = new Store();
@@ -73,7 +75,7 @@ module.exports = (ipcMain, win) => {
             const ownerUuid = profile ? profile.uuid : null;
 
             let optionsContent = null;
-            if (instanceName) {
+            if (instanceName && includeSettings) {
                 const optionsPath = path.join(instancesDir, instanceName, 'options.txt');
                 if (await fs.pathExists(optionsPath)) {
                     optionsContent = await fs.readFile(optionsPath, 'utf8');

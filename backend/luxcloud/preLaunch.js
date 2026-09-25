@@ -4,6 +4,8 @@ const downloader = require('./downloader');
 const { readInstanceState } = require('./syncState');
 const { buildManifestInWorker } = require('./manifestRunner');
 const { getHashCacheDir } = require('./paths');
+const { isMemberState, memberContentHash } = require('./shareScope');
+const { rebaseOntoCloud } = require('./rebase');
 
 const HEAD_TIMEOUT_MS = 2500;
 
@@ -71,9 +73,13 @@ async function isDirtySinceLastSync(instanceDir, instanceId, tracked, options) {
             parentRevision: Number(tracked.lastKnownRevision || 0)
         });
 
-        const changed = built.contentHash !== tracked.lastContentHash;
+        // Ein Mitglied misst nur den gemeinsamen Teil -- seine eigenen Einstellungen und
+        // Welten gehen die Cloud nichts an und machen die Instanz nicht "geaendert".
+        const contentHash = isMemberState(tracked) ? memberContentHash(built.manifest) : built.contentHash;
+        const changed = contentHash !== tracked.lastContentHash;
         return {
             dirty: changed,
+            manifest: built.manifest,
             reason: changed ? 'content-hash' : 'clean',
             // Die Pfadliste stammt weiter aus dem Scan; sie ist nur Anzeige. Wenn der
             // Hash eine Aenderung sieht, der Scan aber nichts auflisten kann, bleibt die
@@ -176,6 +182,41 @@ async function checkBeforeLaunch({
             downloadedBytes: restored.downloadedBytes,
             unavailable: restored.unavailable
         };
+    }
+
+    // Beide Seiten haben sich bewegt. Meist betrifft das aber verschiedene Dateien (ein
+    // Mitspieler hat eine Mod hinzugefuegt, hier wurde nur gespielt) -- dann wird
+    // zusammengefuehrt und gestartet, und die eigenen Aenderungen gehen nach dem Spielen
+    // hoch. Nur wenn dieselbe Datei auf beiden Seiten verschieden geaendert wurde, bleibt
+    // es ein Konflikt, den der Nutzer entscheidet.
+    if (dirty.manifest) {
+        let merged = null;
+        try {
+            report('updating', { from: localRevision, to: remoteRevision, merging: true });
+            merged = await rebaseOntoCloud({
+                instanceDir,
+                instanceId,
+                instanceName,
+                member: isMemberState(tracked),
+                localManifest: dirty.manifest,
+                localRevision,
+                options
+            });
+        } catch (err) {
+            console.warn(`[LuxCloud] Could not merge "${instanceName}" before launch: ${err.message}`);
+        }
+
+        if (merged && merged.rebased) {
+            report('ready', { revision: merged.revision });
+            return {
+                ...base,
+                decision: DECISION.UPDATED,
+                canLaunch: true,
+                revision: merged.revision,
+                merged: true,
+                pushAfterLaunch: true
+            };
+        }
     }
 
     report('conflict', { localRevision, remoteRevision });

@@ -202,7 +202,8 @@
             "folder": "Open Folder",
             "delete": "Delete",
             "move_to_folder": "Move to folder",
-            "remove_from_folder": "Remove from folder"
+            "remove_from_folder": "Remove from folder",
+            "collaborate": "Collaborate"
         },
         "version": "Version",
         "dev_builds": "Dev Builds",
@@ -243,6 +244,15 @@
             "not_selectable": "Not selectable",
             "select_all": "Select all",
             "toggle": "Toggle selection"
+        },
+        "shared": {
+            "title": "Shared Instances",
+            "own": "My Instances",
+            "by": "Shared by {{name}}",
+            "not_local": "— not on this PC yet",
+            "download": "Download",
+            "joined": "{{name}} is now on this PC.",
+            "join_failed": "Could not download {{name}}: {{error}}"
         }
     },
     "pixel_editor": {
@@ -306,7 +316,9 @@
             "failed_shaders": "Failed to load shaders.",
             "delete_mod": "Delete Mod",
             "delete_resourcepack": "Delete Resource Pack",
-            "delete_shader": "Delete Shader"
+            "delete_shader": "Delete Shader",
+            "by": "by {{name}}",
+            "added_by": "Added by {{name}}"
         },
         "search": {
             "placeholder": "Enter Modrinth ID or search mod name...",

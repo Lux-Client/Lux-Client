@@ -11,6 +11,8 @@ const { readInstanceState, rememberRevision } = require('./syncState');
 const transfers = require('./transfers');
 const manifestSnapshot = require('./manifestSnapshot');
 const { seedIfNeeded: seedPlaytime, push: pushPlaytime } = require('./playtime');
+const { isMemberState, isMemberWritable, memberContentHash, memberContribution } = require('./shareScope');
+const { rebaseOntoCloud } = require('./rebase');
 
 const BATCH_THRESHOLD_BYTES = 256 * 1024;
 const DEFAULT_MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -163,14 +165,48 @@ async function ensureCloudInstance({ instanceUuid, manifest, options }) {
     return result.instance;
 }
 
-async function runUpload({
-    instanceDir,
-    instanceId,
-    instanceName,
-    options = {},
-    capabilities = {},
-    onProgress = null
-} = {}) {
+// Ein Mitglied laedt nur den gemeinsamen Teil hoch. Alles Private (Welten, options.txt,
+// servers.dat ...) bleibt auf seinem PC; der Server fuehrt den Beitrag mit dem Stand des
+// Hosts zusammen.
+function narrowForMember(built) {
+    const manifest = memberContribution(built.manifest);
+    const paths = new Set(manifest.entries.map((entry) => entry.path));
+    const uploads = built.uploads.filter((upload) => paths.has(upload.path) && isMemberWritable(upload.path));
+    const uploadBytes = uploads.reduce((sum, upload) => sum + (Number(upload.size) || 0), 0);
+    return {
+        ...built,
+        fullManifest: built.manifest,
+        manifest,
+        uploads,
+        contentHash: memberContentHash(built.manifest),
+        stats: { ...built.stats, uploadBytes }
+    };
+}
+
+// Der Kopf einer geteilten Instanz. Ein Mitglied darf die Instanz nicht per POST
+// /instances "anlegen" -- das ergaebe eine eigene, gleichnamige Instanz in SEINER Cloud.
+async function fetchSharedHead(instanceId) {
+    try {
+        const head = await api.authed({ method: 'GET', url: `/api/cloud/instances/${instanceId}/head` });
+        return { revision: Number(head.revision || 0), manifestHash: null, access: head.access || 'member' };
+    } catch (err) {
+        if (err && err.code === 'not_found') {
+            throw new api.LuxCloudError('share_revoked',
+                'You no longer have access to this shared instance. The host may have removed you.');
+        }
+        throw err;
+    }
+}
+
+async function runUpload(args = {}) {
+    const {
+        instanceDir,
+        instanceId,
+        instanceName,
+        options = {},
+        capabilities = {},
+        onProgress = null
+    } = args;
     const report = (phase, detail = {}) => {
         if (onProgress) onProgress({ instanceName, instanceId, phase, ...detail });
     };
@@ -194,7 +230,7 @@ async function runUpload({
         .catch(() => null);
 
     report('manifest');
-    const built = await buildManifestInWorker({
+    let built = await buildManifestInWorker({
         instanceDir,
         instanceId,
         name: instanceName,
@@ -209,10 +245,16 @@ async function runUpload({
         onProgress: (progress) => report('manifest', progress)
     });
 
-    const instance = await ensureCloudInstance({ instanceUuid: instanceId, manifest: built.manifest, options });
+    const member = isMemberState(await readInstanceState(instanceId));
+    if (member) built = narrowForMember(built);
+
+    const instance = member
+        ? await fetchSharedHead(instanceId)
+        : await ensureCloudInstance({ instanceUuid: instanceId, manifest: built.manifest, options });
 
     await rememberRevision(instanceId, { instanceName, cloudLinked: true });
-    await seedPlaytime(instanceId, instanceDir).catch(() => {});
+    // Die Spielzeit einer geteilten Instanz fuehrt der Host.
+    if (!member) await seedPlaytime(instanceId, instanceDir).catch(() => {});
 
     const tracked = await readInstanceState(instanceId);
     const localRevision = Number((tracked && tracked.lastKnownRevision) || 0);
@@ -261,6 +303,28 @@ async function runUpload({
     // hand the decision back to the caller: a clean instance can simply be updated, a
     // changed one is a real conflict the user has to settle.
     if (options.force !== true && cloudRevision > localRevision) {
+        let merge = null;
+        if (!options.rebased) {
+            try {
+                merge = await rebaseOntoCloud({
+                    instanceDir,
+                    instanceId,
+                    instanceName,
+                    member,
+                    localManifest: built.fullManifest || built.manifest,
+                    localRevision,
+                    options,
+                    report
+                });
+            } catch (err) {
+                console.warn(`[LuxCloud] ${instanceName}: could not merge with the cloud (${err.message}).`);
+                merge = null;
+            }
+        }
+        if (merge && merge.rebased) {
+            return runUpload({ ...args, options: { ...options, rebased: true } });
+        }
+
         // Der lokale Stand ist hier gemessen und beurteilt worden; ihn festzuhalten hindert
         // die Hintergrundkontrolle daran, denselben Konflikt im Minutentakt neu einzuplanen.
         // Aendert der Nutzer danach etwas, ergibt das einen neuen Fingerabdruck und der
@@ -283,6 +347,7 @@ async function runUpload({
             skipped: true,
             pullRequired: true,
             contentUnchanged,
+            conflictingPaths: merge && merge.conflicts ? merge.conflicts.slice(0, 200) : undefined,
             uploadedBlobs: 0,
             uploadedBytes: 0,
             skippedBlobs: 0,
@@ -392,13 +457,14 @@ async function runUpload({
         lastManifestHash: committed.manifestHash,
         lastContentHash: built.contentHash,
         lastInstanceConfigHash: instanceConfigHashOf(built.manifest),
+        ...(tracked && tracked.cloudName ? {} : { cloudName: (committed.instance && committed.instance.name) || instanceName }),
         lastSyncedAt: Date.now(),
         dirty: false,
         ...(localSignature ? { lastLocalSignature: localSignature, lastLocalSignatureAt: Date.now() } : {})
     });
 
-    await manifestSnapshot.save(instanceId, built.manifest).catch(() => {});
-    await pushPlaytime(instanceId).catch(() => {});
+    await manifestSnapshot.save(instanceId, built.manifest, { revision: committed.revision }).catch(() => {});
+    if (!member) await pushPlaytime(instanceId).catch(() => {});
 
     report('done', { revision: committed.revision });
 

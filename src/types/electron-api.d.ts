@@ -278,6 +278,15 @@ interface ElectronAPI {
   luxCloudSyncInstance: (instanceName: string, options?: any) => Promise<any>;
   luxCloudRestoreCloudInstance: (instanceUuid: string) => Promise<any>;
   luxCloudRestoreInstance: (instanceUuid: string, options?: any) => Promise<any>;
+  luxCloudListShared: () => Promise<any>;
+  luxCloudListMembers: (instanceName: string) => Promise<any>;
+  luxCloudAddMember: (instanceName: string, email: string) => Promise<any>;
+  luxCloudRemoveMember: (instanceName: string, userId: number) => Promise<any>;
+  luxCloudLeaveShared: (instanceName: string) => Promise<any>;
+  luxCloudJoinShared: (instanceUuid: string, options?: { instanceName?: string; owner?: any }) => Promise<any>;
+  luxCloudGetAuthors: (instanceName: string) => Promise<any>;
+  luxCloudUpdateMemberPermissions: (instanceName: string, userId: number, permissions: Record<string, boolean>) => Promise<any>;
+  luxCloudApplyCloudNames: (entries: { instanceUuid: string; name: string }[]) => Promise<any>;
   luxCloudListRevisions: (instanceUuid: string) => Promise<any>;
   luxCloudBlobCacheStats: () => Promise<any>;
   luxCloudPruneBlobCache: (maxBytes?: number) => Promise<any>;
