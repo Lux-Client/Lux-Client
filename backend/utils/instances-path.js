@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const { app } = require('electron');
+const { getDevProfile } = require('./devProfile');
 
 function normalizeDir(dir) {
     if (typeof dir !== 'string') return '';
@@ -67,6 +68,9 @@ function resolvePrimaryInstancesDir() {
 }
 
 function getLegacyInstanceDirs() {
+    // A dev profile must not pick up the real launcher's old instance folders.
+    if (getDevProfile()) return [];
+
     const appData = app.getPath('appData');
 
     return [

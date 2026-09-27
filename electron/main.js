@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Readable } = require('stream');
 const pkg = require('../package.json');
-const { describeSandbox } = require('../backend/utils/sandbox');
+const { applyDevProfile, registerProtocolClient } = require('../backend/utils/devProfile');
 
 if (process.platform === 'linux' && process.env.XDG_CURRENT_DESKTOP === 'COSMIC') {
     process.env.XDG_CURRENT_DESKTOP = 'Unity';
@@ -15,6 +15,7 @@ app.setAboutPanelOptions({
     applicationName: pkg.productName || 'Lux Client',
     applicationVersion: pkg.version
 });
+const devProfile = applyDevProfile();
 
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
@@ -536,7 +537,7 @@ function createWindow() {
         height: 900,
         minWidth: 900,
         minHeight: 600,
-        title: 'Lux',
+        title: devProfile ? `Lux [${devProfile}]` : 'Lux',
         frame: false,
         icon: path.join(__dirname, '../resources/icon.png'),
         backgroundColor: '#121212',
@@ -568,6 +569,10 @@ function createWindow() {
     }
 
     mainWindow = new BrowserWindow(windowOptions);
+    if (devProfile) {
+        // Keep the profile in the taskbar title so the two windows can be told apart.
+        mainWindow.on('page-title-updated', (event) => event.preventDefault());
+    }
 
     mainWindow.once('ready-to-show', () => {
         sendSplashStatus({ status: 'Starting', detail: 'Finalizing interface...' });
@@ -1065,24 +1070,10 @@ app.on('open-url', (event, url) => {
 });
 
 app.whenReady().then(() => {
-    const sandbox = describeSandbox();
-    if (sandbox.confined) {
-        // Registering a scheme from inside a Flatpak/Snap sandbox cannot work: the write
-        // lands in the sandboxed ~/.local/share the host never reads, and process.execPath
-        // points at a path that only exists in here. The handler has to come from the
-        // package's own desktop entry (MimeType=x-scheme-handler/luxclient) instead, so
-        // do not pretend otherwise - the sign-in falls back to the pairing code.
-        console.log(`[DeepLink] ${sandbox.kind} build (${sandbox.appId || 'unknown app id'}) — leaving luxclient:// registration to the package.`);
-    } else if (!app.isPackaged) {
-        const appPath = app.getAppPath();
-        const result = app.setAsDefaultProtocolClient('luxclient', process.execPath, [appPath]);
-        console.log('[DeepLink] dev mode registration — execPath:', process.execPath);
-        console.log('[DeepLink] dev mode registration — appPath:', appPath);
-        console.log('[DeepLink] setAsDefaultProtocolClient result:', result);
-    } else {
-        const result = app.setAsDefaultProtocolClient('luxclient');
-        console.log('[DeepLink] prod mode setAsDefaultProtocolClient result:', result);
-    }
+    // app.quit() above is async; a process that only forwarded its argv must not boot anything.
+    if (!gotTheLock) return;
+
+    registerProtocolClient();
     if (process.platform === 'darwin') {
         const dockIconPath = path.join(__dirname, '../resources/icon-mac.png');
         if (fs.existsSync(dockIconPath)) {

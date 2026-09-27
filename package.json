@@ -7,6 +7,8 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "dev:second": "wait-on http://localhost:3000 && cross-env NODE_ENV=development LUX_PROFILE=dev2 electron .",
+    "dev:dual": "concurrently -k -n vite,lux,dev2 \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development LUX_PROFILE=dev2 electron .\"",
     "build": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

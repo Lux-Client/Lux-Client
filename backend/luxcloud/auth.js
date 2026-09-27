@@ -5,6 +5,7 @@ const { app, shell } = require('electron');
 const api = require('./api');
 const state = require('./state');
 const { describeSandbox, isConfined } = require('../utils/sandbox');
+const { registerProtocolClient } = require('../utils/devProfile');
 const {
     ACCESS_TOKEN_REFRESH_MARGIN_MS,
     LOGIN_TIMEOUT_MS,
@@ -124,6 +125,10 @@ async function login({ appVersion } = {}) {
             }, LOGIN_TIMEOUT_MS)
         };
     });
+
+    // With two dev instances running (npm run dev:dual) the callback has to reach the one
+    // that started this sign-in, not whichever registered luxclient:// last.
+    if (!app.isPackaged) registerProtocolClient();
 
     try {
         await shell.openExternal(`${getBaseUrl()}/auth/device?${params.toString()}`);
