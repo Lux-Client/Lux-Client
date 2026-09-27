@@ -302,6 +302,7 @@ function App() {
     const [isMaximized, setIsMaximized] = useState(false);
     const [searchCategory, setSearchCategory] = useState(null);
     const [triggerCreateInstance, setTriggerCreateInstance] = useState(false);
+    const [pendingModpackCode, setPendingModpackCode] = useState<string | null>(null);
     const [appSettings, setAppSettings] = useState<any>({});
     const startupPageOptions = React.useMemo(() => ({
         openClientEnabled: isFeatureEnabled('openClientPage')
@@ -717,6 +718,18 @@ function App() {
             setJavaRequirement(data || null);
         });
 
+        // luxclient://modpack?code=... from the code preview page on the website: open the
+        // library with the import dialog prefilled. Nothing is installed until the user confirms.
+        const removeOpenModpackCodeListener = window.electronAPI?.onOpenModpackCode?.((payload) => {
+            const code = String(payload?.code || '').trim();
+            if (!/^[A-Za-z0-9]{8}$/.test(code)) return;
+            startTransition(() => {
+                setCurrentMode('launcher');
+                setCurrentView('library');
+            });
+            setPendingModpackCode(code);
+        });
+
         const removeInstallFromMarketplaceListener = window.electronAPI?.onInstallFromMarketplace?.(async (payload) => {
             if (!payload?.url) return;
             console.log('[App] Install from marketplace deep link:', payload);
@@ -780,6 +793,7 @@ function App() {
             if (removeCrashReportListener) removeCrashReportListener();
             if (removeJavaRequiredListener) removeJavaRequiredListener();
             if (removeInstallFromMarketplaceListener) removeInstallFromMarketplaceListener();
+            if (removeOpenModpackCodeListener) removeOpenModpackCodeListener();
         };
     }, [startupPageOptions]);
 
@@ -1246,7 +1260,7 @@ function App() {
             }
 
             if (currentView === 'library') {
-                return <Dashboard onInstanceClick={handleInstanceClick} runningInstances={runningInstances} activeDownloads={activeDownloads} triggerCreate={triggerCreateInstance} onCreateHandled={() => setTriggerCreateInstance(false)} isGuest={isGuest} />;
+                return <Dashboard onInstanceClick={handleInstanceClick} runningInstances={runningInstances} activeDownloads={activeDownloads} triggerCreate={triggerCreateInstance} onCreateHandled={() => setTriggerCreateInstance(false)} pendingImportCode={pendingModpackCode} onImportCodeHandled={() => setPendingModpackCode(null)} isGuest={isGuest} />;
             }
 
             if (currentView === 'search') {

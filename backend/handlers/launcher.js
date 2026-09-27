@@ -15,6 +15,7 @@ const cloudPlaytime = require('../luxcloud/playtime');
 const preLaunch = require('../luxcloud/preLaunch');
 const { withSyncScope } = require('../luxcloud/syncScope');
 const { readInstanceState } = require('../luxcloud/syncState');
+const sharedImportState = require('../utils/sharedImportState');
 
 function normalizeExternalRequestName(value) {
     return String(value || '').trim().toLowerCase();
@@ -1849,6 +1850,18 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                 runningInstances.delete(instanceName);
                 childProcesses.delete(instanceName);
             }
+        }
+
+        // Ein Code-Import laedt nach dem Spiel noch Mods & Co. nach -- vorher starten
+        // wuerde die Instanz mit halb heruntergeladenen Dateien hochfahren.
+        try {
+            const importBlock = await sharedImportState.getLaunchBlock(instanceName, resolveInstanceDirByName(instanceName));
+            if (importBlock) {
+                console.warn(`[Launcher] Blocked launch of ${instanceName}: shared import still running.`);
+                return { success: false, error: importBlock.error };
+            }
+        } catch (e) {
+            console.error('[Launcher] Shared import check failed:', e);
         }
 
         activeLaunches.set(instanceName, { cancelled: false });

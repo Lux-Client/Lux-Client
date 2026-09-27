@@ -410,8 +410,10 @@ function Dashboard({
   activeDownloads = {},
   triggerCreate,
   onCreateHandled,
+  pendingImportCode = null,
+  onImportCodeHandled = null,
   isGuest,
-}) {
+}: any) {
   const { addNotification } = useNotification();
   const { t } = useTranslation();
   const luxSync = useLuxSync();
@@ -456,6 +458,14 @@ function Dashboard({
   const [groupMethod, setGroupMethod] = useState("none");
   const [groupBySourceEnabled, setGroupBySourceEnabled] = useState(true);
   const [showCodeModal, setShowCodeModal] = useState(false);
+  const [codeModalInitialCode, setCodeModalInitialCode] = useState("");
+
+  useEffect(() => {
+    if (!pendingImportCode) return;
+    setCodeModalInitialCode(pendingImportCode);
+    setShowCodeModal(true);
+    if (onImportCodeHandled) onImportCodeHandled();
+  }, [pendingImportCode]);
   const [showExportChoiceModal, setShowExportChoiceModal] = useState(false);
   const [collabTarget, setCollabTarget] = useState(null);
   const [joiningShared, setJoiningShared] = useState(null);
@@ -2243,7 +2253,11 @@ function Dashboard({
           isOpen={showCodeModal}
           mode="import"
           instance={null}
-          onClose={() => setShowCodeModal(false)}
+          initialCode={codeModalInitialCode}
+          onClose={() => {
+            setShowCodeModal(false);
+            setCodeModalInitialCode("");
+          }}
           onImportComplete={handleCodeImportComplete}
         />
       )}

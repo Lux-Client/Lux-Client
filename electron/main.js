@@ -173,6 +173,7 @@ let splashWindow;
 let tray = null;
 let isQuiting = false;
 let pendingDeepLink = null;
+let pendingModpackCode = null;
 const isDeveloperMode = process.env.NODE_ENV === 'development';
 const updateAttemptStatePath = path.join(app.getPath('userData'), 'update-attempt-state.json');
 
@@ -611,6 +612,11 @@ function createWindow() {
                 mainWindow.webContents.send('extension:install-from-marketplace', pendingDeepLink);
                 pendingDeepLink = null;
             }
+            if (pendingModpackCode) {
+                console.log('[DeepLink] flushing pending modpack code after window shown:', pendingModpackCode);
+                mainWindow.webContents.send('modpack:open-code', { code: pendingModpackCode });
+                pendingModpackCode = null;
+            }
         }, 500);
     });
 
@@ -1005,6 +1011,37 @@ const handleDeepLink = (argv) => {
                 if (mainWindow) {
                     if (mainWindow.isMinimized()) mainWindow.restore();
                     mainWindow.focus();
+                }
+                return;
+            }
+
+            // luxclient://modpack?code=XXXXXXXX (Button auf der Code-Vorschauseite der Website).
+            // Oeffnet nur den Import-Dialog mit vorausgefuelltem Code; installiert wird erst,
+            // wenn der Nutzer dort bestaetigt.
+            if (parsed.hostname === 'modpack') {
+                const rawCode = parsed.searchParams.get('code') || parsed.pathname.replace(/^\/+/, '');
+                const code = String(rawCode || '').trim();
+                if (!/^[A-Za-z0-9]{8}$/.test(code)) {
+                    console.warn('[DeepLink] Ignoring luxclient://modpack with invalid code:', rawCode);
+                    return;
+                }
+                console.log('[DeepLink] luxclient://modpack received:', code);
+
+                const send = () => {
+                    if (mainWindow && mainWindow.webContents) {
+                        mainWindow.webContents.send('modpack:open-code', { code });
+                        if (mainWindow.isMinimized()) mainWindow.restore();
+                        mainWindow.focus();
+                        pendingModpackCode = null;
+                    }
+                };
+
+                if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isLoading()) {
+                    send();
+                } else if (mainWindow) {
+                    mainWindow.once('ready-to-show', send);
+                } else {
+                    pendingModpackCode = code;
                 }
                 return;
             }

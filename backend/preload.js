@@ -330,6 +330,11 @@ const electronAPI = {
         ipcRenderer.on('extension:open-file', subscription);
         return () => ipcRenderer.removeListener('extension:open-file', subscription);
     },
+    onOpenModpackCode: (callback) => {
+        const subscription = (_event, payload) => callback(payload);
+        ipcRenderer.on('modpack:open-code', subscription);
+        return () => ipcRenderer.removeListener('modpack:open-code', subscription);
+    },
     onInstallFromMarketplace: (callback) => {
         const subscription = (_event, payload) => callback(payload);
         ipcRenderer.on('extension:install-from-marketplace', subscription);

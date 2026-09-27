@@ -152,6 +152,7 @@ interface ElectronAPI {
   onLaunchProgress: (callback: IpcCallback) => UnsubscribeFn;
   onLaunchLog: (callback: IpcCallback) => UnsubscribeFn;
   onInstanceStatus: (callback: IpcCallback) => UnsubscribeFn;
+  onOpenModpackCode?: (callback: (payload: { code: string }) => void) => UnsubscribeFn;
   onInstallProgress: (callback: IpcCallback) => UnsubscribeFn;
   onLoginSuccess: (callback: IpcCallback) => UnsubscribeFn;
   onThemeUpdated: (callback: IpcCallback) => UnsubscribeFn;

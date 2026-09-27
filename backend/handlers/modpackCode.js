@@ -4,7 +4,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { app, net } = require('electron');
 const { installModInternal } = require('./modrinth');
-const { resolvePrimaryInstancesDir } = require('../utils/instances-path');
+const { resolvePrimaryInstancesDir, resolveInstanceDirByName, getAllInstanceDirsSync } = require('../utils/instances-path');
+const sharedImportState = require('../utils/sharedImportState');
 const { getUserProfile } = require('../utils/secureProfileStore');
 const SERVER_URL = 'https://lux.pluginhub.de';
 
@@ -192,308 +193,321 @@ module.exports = (ipcMain, win) => {
             };
         }
     });
+    const MODRINTH_HEADERS = { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' };
+
+    const getInstanceDir = (instanceName) => resolveInstanceDirByName(instanceName) || path.join(instancesDir, instanceName);
+
+    const canSend = () => win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed();
+
+    const sendProgress = (instanceName, progress, status) => {
+        if (!canSend()) return;
+        win.webContents.send('install:progress', { instanceName, progress, status });
+    };
+
+    const sendStatus = (instanceName, status) => {
+        if (!canSend()) return;
+        win.webContents.send('instance:status', { instanceName, status });
+    };
+
+    const updateConfig = async (instanceDir, mutate) => {
+        const configPath = path.join(instanceDir, 'instance.json');
+        if (!await fs.pathExists(configPath)) return null;
+        const config = await fs.readJson(configPath);
+        mutate(config);
+        await fs.writeJson(configPath, config, { spaces: 4 });
+        app.emit('lux:instances-changed');
+        return config;
+    };
+
+    const resolveModrinthDownloadUrl = async (item, gameVersion, normalizedLoader) => {
+        try {
+            let versionData = null;
+
+            if (item.versionId) {
+                const versionRes = await axios.get(`https://api.modrinth.com/v2/version/${item.versionId}`, {
+                    headers: MODRINTH_HEADERS,
+                    timeout: 10000
+                });
+                versionData = versionRes.data;
+            } else if (item.projectId) {
+                const params = {};
+                if (gameVersion) params.game_versions = JSON.stringify([String(gameVersion)]);
+                if (normalizedLoader && item.kind === 'mod') params.loaders = JSON.stringify([normalizedLoader]);
+
+                const versionsRes = await axios.get(`https://api.modrinth.com/v2/project/${item.projectId}/version`, {
+                    headers: MODRINTH_HEADERS,
+                    params,
+                    timeout: 10000
+                });
+
+                const versions = Array.isArray(versionsRes.data) ? versionsRes.data : [];
+                versionData = versions.find(v => Array.isArray(v.files) && v.files.length > 0) || null;
+            }
+
+            if (!versionData || !Array.isArray(versionData.files) || versionData.files.length === 0) {
+                return null;
+            }
+
+            const file = versionData.files.find(f => f.primary) || versionData.files[0];
+            return {
+                url: file.url,
+                filename: file.filename,
+                versionNumber: versionData.version_number,
+                versionId: versionData.id
+            };
+        } catch (e) {
+            console.error(`[ModpackCode-Handler] Failed to resolve URL for item ${item?.projectId || item?.versionId || 'unknown'}:`, e.message);
+            return null;
+        }
+    };
+
+    const saveModCache = async (localModCache) => {
+        if (Object.keys(localModCache).length === 0) return;
+        try {
+            let currentCache = {};
+            if (await fs.pathExists(modCachePath)) {
+                try {
+                    currentCache = await fs.readJson(modCachePath);
+                } catch (e) { }
+            }
+            await fs.writeJson(modCachePath, { ...currentCache, ...localModCache });
+            console.log('[ModpackCode-Handler] Cache safely updated.');
+        } catch (e) {
+            console.error('[ModpackCode-Handler] Failed to save mods cache:', e);
+        }
+    };
+
+    const KIND_LABELS = { mod: 'mod', resourcepack: 'pack', shader: 'shader' };
+
+    // Arbeitet die Liste aus instance.json ab. Jeder Eintrag gilt erst als erledigt, wenn
+    // seine Datei wirklich im Instanzordner liegt; was im ersten Durchgang fehlt, wird ein
+    // zweites Mal versucht und erst danach als fehlgeschlagen verbucht. Die Instanz bleibt
+    // so lange im Status "installing" und laesst sich nicht starten (siehe
+    // utils/sharedImportState.js und launcher.js).
+    const processSharedImport = async (instanceName) => {
+        const instanceDir = getInstanceDir(instanceName);
+        const config = await sharedImportState.readConfig(instanceDir);
+        if (!sharedImportState.hasPendingImport(config)) return { success: true };
+
+        const marker = config.sharedImport;
+        const items = Array.isArray(marker.items) ? marker.items : [];
+        const gameVersion = marker.gameVersion || config.version || null;
+        const normalizedLoader = marker.loader ? String(marker.loader).toLowerCase() : null;
+        const localModCache = {};
+
+        const persistItems = () => updateConfig(instanceDir, (c) => {
+            c.status = 'installing';
+            c.sharedImport = { ...(c.sharedImport || marker), items };
+        });
+
+        const reportProgress = (status) => {
+            const { total, installed, failed } = sharedImportState.summarize(items);
+            const done = installed + failed;
+            // Nie 100 melden, bevor alles nachgezaehlt ist -- 100 heisst fuer die Oberflaeche "fertig".
+            const progress = total > 0 ? Math.min(99, Math.round((done / total) * 100)) : 99;
+            sendProgress(instanceName, progress, status || `Importing modpack: ${done}/${total}`);
+        };
+
+        // Was laut Marker schon installiert war, aber nicht mehr auf der Platte liegt, neu laden.
+        await sharedImportState.verifyItems(instanceDir, items);
+
+        const MAX_PASSES = 2;
+        for (let pass = 1; pass <= MAX_PASSES; pass++) {
+            const isLastPass = pass === MAX_PASSES;
+            const pendingItems = items.filter((item) => item.state === 'pending');
+            if (pendingItems.length === 0) break;
+
+            for (const item of pendingItems) {
+                reportProgress(`Downloading ${KIND_LABELS[item.kind] || 'file'}: ${item.title}`);
+
+                const resolved = await resolveModrinthDownloadUrl(item, gameVersion, normalizedLoader);
+                if (!resolved) {
+                    console.error(`[ModpackCode-Handler] Could not resolve download URL for ${item.title} (pass ${pass})`);
+                    if (isLastPass) item.state = 'failed';
+                    await persistItems();
+                    reportProgress();
+                    continue;
+                }
+
+                const fileName = path.basename(String(resolved.filename || item.fileName || ''));
+                if (!fileName) {
+                    item.state = 'failed';
+                    await persistItems();
+                    reportProgress();
+                    continue;
+                }
+                item.fileName = fileName;
+                item.versionId = item.versionId || resolved.versionId;
+
+                try {
+                    await installModInternal(win, {
+                        instanceName,
+                        projectId: item.projectId,
+                        versionId: item.versionId,
+                        filename: fileName,
+                        url: resolved.url,
+                        projectType: item.kind
+                    });
+                } catch (e) {
+                    console.error(`[ModpackCode-Handler] Install of ${item.title} threw:`, e.message);
+                }
+
+                if (await sharedImportState.isItemOnDisk(instanceDir, item)) {
+                    item.state = 'installed';
+                    try {
+                        const fsStats = await fs.stat(sharedImportState.itemPath(instanceDir, item));
+                        localModCache[`${fileName}-${fsStats.size}`] = {
+                            title: item.title,
+                            icon: item.icon,
+                            version: resolved.versionNumber,
+                            projectId: item.projectId,
+                            versionId: item.versionId,
+                            timestamp: Date.now()
+                        };
+                    } catch (cacheErr) {
+                        console.error('[ModpackCode-Handler] Failed to cache metadata for', item.title, cacheErr);
+                    }
+                } else if (isLastPass) {
+                    console.error(`[ModpackCode-Handler] ${item.title} is still missing after ${pass} attempts.`);
+                    item.state = 'failed';
+                }
+
+                await persistItems();
+                reportProgress();
+            }
+
+            // Nachzaehlen: liegt wirklich alles im Ordner, was als installiert gilt?
+            await sharedImportState.verifyItems(instanceDir, items);
+        }
+
+        for (const item of items) {
+            if (item.state === 'pending') item.state = 'failed';
+        }
+
+        await saveModCache(localModCache);
+
+        const summary = sharedImportState.summarize(items);
+        const failedTitles = items.filter((item) => item.state === 'failed').map((item) => item.title);
+
+        await updateConfig(instanceDir, (c) => {
+            delete c.sharedImport;
+            c.status = 'ready';
+        });
+
+        console.log(`[ModpackCode-Handler] Import for ${instanceName} finished: ${summary.installed}/${summary.total} installed, ${summary.failed} failed.`);
+        if (failedTitles.length > 0) {
+            console.warn('[ModpackCode-Handler] Could not install:', failedTitles.join(', '));
+        }
+
+        sendProgress(
+            instanceName,
+            100,
+            summary.failed > 0
+                ? `Installed ${summary.installed}/${summary.total} (${summary.failed} could not be installed)`
+                : 'Installation complete!'
+        );
+        sendStatus(instanceName, 'stopped');
+
+        return { success: true, installed: summary.installed, failed: failedTitles };
+    };
+
+    const runTracked = async (instanceName, work) => {
+        if (sharedImportState.isActive(instanceName)) {
+            return { success: false, error: 'An import is already running for this instance.' };
+        }
+        sharedImportState.markActive(instanceName);
+        try {
+            return await work();
+        } catch (error) {
+            console.error('[ModpackCode-Handler] Background install failed:', error);
+            // Der Marker bleibt stehen: die Instanz bleibt gesperrt und der Import wird beim
+            // naechsten Startversuch (oder Launcher-Start) fortgesetzt.
+            try {
+                await updateConfig(getInstanceDir(instanceName), (c) => { c.status = 'ready'; });
+            } catch (e) { }
+            sendProgress(instanceName, 100, 'Error during installation');
+            sendStatus(instanceName, 'stopped');
+            return { success: false, error: error.message };
+        } finally {
+            sharedImportState.markInactive(instanceName);
+        }
+    };
+
+    const resumeSharedImport = (instanceName) => runTracked(instanceName, async () => {
+        console.log(`[ModpackCode-Handler] Resuming interrupted import for ${instanceName}`);
+        await updateConfig(getInstanceDir(instanceName), (c) => { c.status = 'installing'; });
+        sendStatus(instanceName, 'installing');
+        return processSharedImport(instanceName);
+    });
+
+    sharedImportState.setResumeHandler(resumeSharedImport);
+
     ipcMain.handle('modpack:install-shared-content', async (event, { instanceName, modpackData }) => {
         console.log(`[ModpackCode-Handler] Starting background install for: ${instanceName}`);
 
-        const gameVersion = modpackData?.instanceVersion || modpackData?.version || null;
-        const loader = modpackData?.instanceLoader || modpackData?.loader || null;
-        const normalizedLoader = loader ? String(loader).toLowerCase() : null;
-        const normalizeContentItem = (item) => {
-            if (typeof item === 'string') {
-                return {
-                    projectId: item,
-                    title: item,
-                    fileName: item
-                };
-            }
-            return item || {};
-        };
+        return runTracked(instanceName, async () => {
+            const instanceDir = getInstanceDir(instanceName);
+            const items = sharedImportState.buildImportItems(modpackData);
+            const gameVersion = modpackData?.instanceVersion || modpackData?.version || null;
+            const loader = modpackData?.instanceLoader || modpackData?.loader || null;
 
-        const normalizedMods = (modpackData.mods || []).map(normalizeContentItem);
-        const normalizedResourcePacks = (modpackData.resourcePacks || []).map(normalizeContentItem);
-        const normalizedShaders = (modpackData.shaders || []).map(normalizeContentItem);
-
-        const totalItems = normalizedMods.length +
-            normalizedResourcePacks.length +
-            normalizedShaders.length;
-        win.webContents.send('install:progress', {
-            instanceName: instanceName,
-            progress: 0,
-            status: 'Preparing installation...'
-        });
-        const localModCache = {};
-        const saveModCache = async () => {
-            try {
-                let currentCache = {};
-                if (await fs.pathExists(modCachePath)) {
-                    try {
-                        currentCache = await fs.readJson(modCachePath);
-                    } catch (e) { }
+            // Erst die komplette Liste festhalten, dann laden: ab hier ist die Instanz
+            // gesperrt, auch wenn das Spiel selbst schon fertig installiert ist.
+            await updateConfig(instanceDir, (c) => {
+                if (items.length > 0) {
+                    c.status = 'installing';
+                    c.sharedImport = {
+                        pending: true,
+                        code: modpackData?.code || null,
+                        gameVersion,
+                        loader,
+                        startedAt: Date.now(),
+                        items
+                    };
+                } else {
+                    delete c.sharedImport;
                 }
-                const merged = { ...currentCache, ...localModCache };
-                await fs.writeJson(modCachePath, merged);
-                console.log('[ModpackCode-Handler] Cache safely updated.');
-            } catch (e) {
-                console.error('[ModpackCode-Handler] Failed to save mods cache:', e);
-            }
-        };
-
-        if (totalItems === 0) {
-            if (modpackData.keybinds) {
-                const optionsPath = path.join(instancesDir, instanceName, 'options.txt');
-                await fs.writeFile(optionsPath, modpackData.keybinds);
-            }
-            return { success: true };
-        }
-
-        let installedCount = 0;
-
-        const reportProgress = (status, individualProgress = null) => {
-
-            const overallProgress = Math.round((installedCount / totalItems) * 100);
-
-            win.webContents.send('install:progress', {
-                instanceName: instanceName,
-                progress: individualProgress !== null ? individualProgress : overallProgress,
-                status: status || `Importing modpack: ${installedCount}/${totalItems}`
             });
-        };
 
-        try {
-
-            try {
-                const instanceJsonPath = path.join(instancesDir, instanceName, 'instance.json');
-                if (await fs.pathExists(instanceJsonPath)) {
-                    const config = await fs.readJson(instanceJsonPath);
-                    config.status = 'installing';
-                    await fs.writeJson(instanceJsonPath, config);
-                }
-            } catch (e) {
-                console.error('[ModpackCode-Handler] Failed to set instance status:', e);
-            }
-            if (modpackData.keybinds) {
-                const optionsPath = path.join(instancesDir, instanceName, 'options.txt');
-                await fs.writeFile(optionsPath, modpackData.keybinds);
+            if (modpackData?.keybinds) {
+                await fs.writeFile(path.join(instanceDir, 'options.txt'), modpackData.keybinds);
                 console.log('[ModpackCode-Handler] Keybinds restored.');
             }
-            const resolveModrinthDownloadUrl = async (item, projectType) => {
-                try {
-                    let versionData = null;
 
-                    if (item.versionId) {
-                        const versionRes = await axios.get(`https://api.modrinth.com/v2/version/${item.versionId}`, {
-                            headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
-                            timeout: 10000
-                        });
-                        versionData = versionRes.data;
-                    } else if (item.projectId) {
-                        const params = {};
-                        if (gameVersion) params.game_versions = JSON.stringify([String(gameVersion)]);
-                        if (normalizedLoader && projectType === 'mod') params.loaders = JSON.stringify([normalizedLoader]);
-
-                        const versionsRes = await axios.get(`https://api.modrinth.com/v2/project/${item.projectId}/version`, {
-                            headers: { 'User-Agent': 'Client/Lux/1.0 (fernsehheft@pluginhub.de)' },
-                            params,
-                            timeout: 10000
-                        });
-
-                        const versions = Array.isArray(versionsRes.data) ? versionsRes.data : [];
-                        versionData = versions.find(v => Array.isArray(v.files) && v.files.length > 0) || null;
-                    }
-
-                    if (!versionData || !Array.isArray(versionData.files) || versionData.files.length === 0) {
-                        return null;
-                    }
-
-                    const file = versionData.files.find(f => f.primary) || versionData.files[0];
-                    return {
-                        url: file.url,
-                        filename: file.filename,
-                        versionNumber: versionData.version_number,
-                        versionId: versionData.id
-                    };
-                } catch (e) {
-                    console.error(`[ModpackCode-Handler] Failed to resolve URL for item ${item?.projectId || item?.versionId || 'unknown'}:`, e.message);
-                    return null;
-                }
-            };
-            for (const mod of normalizedMods) {
-                reportProgress(`Downloading mod: ${mod.title}`);
-                const resolved = await resolveModrinthDownloadUrl(mod, 'mod');
-                if (!resolved) {
-                    console.error(`[ModpackCode-Handler] Skipping mod ${mod.title}: could not resolve download URL`);
-                    installedCount++;
-                    reportProgress();
-                    continue;
-                }
-
-                const result = await installModInternal(win, {
-                    instanceName,
-                    projectId: mod.projectId,
-                    versionId: mod.versionId || resolved.versionId,
-                    filename: resolved.filename || mod.fileName,
-                    url: resolved.url,
-                    projectType: 'mod'
-                });
-
-                if (result.success) {
-                    if (result.skipped) {
-                        console.log(`[ModpackCode-Handler] Skipped mod: ${mod.title} (Reason: ${result.error || 'Download failed'})`);
-                    } else {
-                        try {
-                            const actualFileName = resolved.filename || mod.fileName;
-                            const filePath = path.join(instancesDir, instanceName, 'mods', actualFileName);
-                            if (await fs.pathExists(filePath)) {
-                                const fsStats = await fs.stat(filePath);
-                                const cacheKey = `${actualFileName}-${fsStats.size}`;
-                                localModCache[cacheKey] = {
-                                    title: mod.title,
-                                    icon: mod.icon,
-                                    version: resolved.versionNumber,
-                                    projectId: mod.projectId,
-                                    versionId: mod.versionId || resolved.versionId,
-                                    timestamp: Date.now()
-                                };
-                                console.log(`[ModpackCode-Handler] Cached metadata for mod: ${mod.title} (Key: ${cacheKey})`);
-                            }
-                        } catch (cacheErr) {
-                            console.error('Failed to update cache for mod', mod.title, cacheErr);
-                        }
-                    }
-                }
-                installedCount++;
-                reportProgress();
-            }
-            for (const pack of normalizedResourcePacks) {
-                reportProgress(`Downloading pack: ${pack.title}`);
-
-                const resolved = await resolveModrinthDownloadUrl(pack, 'resourcepack');
-                if (!resolved) {
-                    console.error(`[ModpackCode-Handler] Skipping pack ${pack.title}: could not resolve download URL`);
-                    installedCount++;
-                    reportProgress();
-                    continue;
-                }
-
-                const result = await installModInternal(win, {
-                    instanceName,
-                    projectId: pack.projectId,
-                    versionId: pack.versionId || resolved.versionId,
-                    filename: resolved.filename || pack.fileName,
-                    url: resolved.url,
-                    projectType: 'resourcepack'
-                });
-
-                if (result.success) {
-                    if (result.skipped) {
-                        console.log(`[ModpackCode-Handler] Skipped resourcepack: ${pack.title} (Reason: ${result.error || 'Download failed'})`);
-                    } else {
-                        try {
-                            const actualFileName = resolved.filename || pack.fileName;
-                            const filePath = path.join(instancesDir, instanceName, 'resourcepacks', actualFileName);
-                            if (await fs.pathExists(filePath)) {
-                                const fsStats = await fs.stat(filePath);
-                                const cacheKey = `${actualFileName}-${fsStats.size}`;
-                                localModCache[cacheKey] = {
-                                    title: pack.title,
-                                    icon: pack.icon,
-                                    version: resolved.versionNumber,
-                                    projectId: pack.projectId,
-                                    versionId: pack.versionId || resolved.versionId,
-                                    timestamp: Date.now()
-                                };
-                                console.log(`[ModpackCode-Handler] Cached metadata for resourcepack: ${pack.title} (Key: ${cacheKey})`);
-                            }
-                        } catch (cacheErr) {
-                            console.error('Failed to update cache for resourcepack', pack.title, cacheErr);
-                        }
-                    }
-                }
-                installedCount++;
-                reportProgress();
-            }
-            for (const shader of normalizedShaders) {
-                reportProgress(`Downloading shader: ${shader.title}`);
-
-                const resolved = await resolveModrinthDownloadUrl(shader, 'shader');
-                if (!resolved) {
-                    console.error(`[ModpackCode-Handler] Skipping shader ${shader.title}: could not resolve download URL`);
-                    installedCount++;
-                    reportProgress();
-                    continue;
-                }
-
-                const result = await installModInternal(win, {
-                    instanceName,
-                    projectId: shader.projectId,
-                    versionId: shader.versionId || resolved.versionId,
-                    filename: resolved.filename || shader.fileName,
-                    url: resolved.url,
-                    projectType: 'shader'
-                });
-
-                if (result.success) {
-                    if (result.skipped) {
-                        console.log(`[ModpackCode-Handler] Skipped shader: ${shader.title} (Reason: ${result.error || 'Download failed'})`);
-                    } else {
-                        try {
-                            const actualFileName = resolved.filename || shader.fileName;
-                            const filePath = path.join(instancesDir, instanceName, 'shaderpacks', actualFileName);
-                            if (await fs.pathExists(filePath)) {
-                                const fsStats = await fs.stat(filePath);
-                                const cacheKey = `${actualFileName}-${fsStats.size}`;
-                                localModCache[cacheKey] = {
-                                    title: shader.title,
-                                    icon: shader.icon,
-                                    version: resolved.versionNumber,
-                                    projectId: shader.projectId,
-                                    versionId: shader.versionId || resolved.versionId,
-                                    timestamp: Date.now()
-                                };
-                                console.log(`[ModpackCode-Handler] Cached metadata for shader: ${shader.title} (Key: ${cacheKey})`);
-                            }
-                        } catch (cacheErr) {
-                            console.error('Failed to update cache for shader', shader.title, cacheErr);
-                        }
-                    }
-                }
-                installedCount++;
-                reportProgress();
+            if (items.length === 0) {
+                return { success: true };
             }
 
-            await saveModCache();
-            reportProgress('Installation complete!', 100);
-            try {
-                const instanceJsonPath = path.join(instancesDir, instanceName, 'instance.json');
-                if (await fs.pathExists(instanceJsonPath)) {
-                    const config = await fs.readJson(instanceJsonPath);
-                    config.status = 'ready';
-                    await fs.writeJson(instanceJsonPath, config);
-                }
-            } catch (e) {
-                console.error('[ModpackCode-Handler] Failed to reset instance status:', e);
-            }
+            sendStatus(instanceName, 'installing');
+            sendProgress(instanceName, 0, 'Preparing installation...');
 
-            return { success: true };
-        } catch (error) {
-            console.error('[ModpackCode-Handler] Background install failed:', error);
-            try {
-                const instanceJsonPath = path.join(instancesDir, instanceName, 'instance.json');
-                if (await fs.pathExists(instanceJsonPath)) {
-                    const config = await fs.readJson(instanceJsonPath);
-                    config.status = 'ready';
-                    await fs.writeJson(instanceJsonPath, config);
-                }
-            } catch (e) { }
-
-            win.webContents.send('install:progress', {
-                instanceName: instanceName,
-                progress: 100,
-                status: 'Error during installation'
-            });
-            return { success: false, error: error.message };
-        }
+            return processSharedImport(instanceName);
+        });
     });
+
+    // Imports, die beim letzten Beenden noch liefen, nach dem Start fortsetzen.
+    setTimeout(async () => {
+        try {
+            for (const baseDir of getAllInstanceDirsSync()) {
+                let entries = [];
+                try {
+                    entries = await fs.readdir(baseDir, { withFileTypes: true });
+                } catch (_) {
+                    continue;
+                }
+                for (const entry of entries) {
+                    if (!entry.isDirectory()) continue;
+                    const config = await sharedImportState.readConfig(path.join(baseDir, entry.name));
+                    if (!sharedImportState.hasPendingImport(config)) continue;
+                    const instanceName = config.name || entry.name;
+                    if (sharedImportState.isActive(instanceName)) continue;
+                    resumeSharedImport(instanceName).catch((e) => console.error('[ModpackCode-Handler] Resume failed:', e));
+                }
+            }
+        } catch (e) {
+            console.error('[ModpackCode-Handler] Failed to scan for interrupted imports:', e);
+        }
+    }, 10000);
 
     console.log('[ModpackCode-Handler] ALLE Handler registriert!');
 };

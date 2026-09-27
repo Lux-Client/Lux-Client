@@ -2523,13 +2523,24 @@ module.exports = (ipcMain, win) => {
 
                     sendCompletion = async (success, error = null) => {
                         if (task.aborted) return;
+                        // Laeuft noch ein Code-Import (Mods, Packs, Shader), meldet erst der
+                        // die Instanz als fertig -- sonst liesse sie sich mittendrin starten.
+                        let sharedImportPending = false;
                         try {
                             const configPath = path.join(dir, 'instance.json');
                             const updatedConfig = await fs.readJson(configPath);
-                            updatedConfig.status = success ? 'ready' : 'error';
+                            sharedImportPending = success && Boolean(updatedConfig.sharedImport?.pending);
+                            updatedConfig.status = sharedImportPending ? 'installing' : (success ? 'ready' : 'error');
                             await fs.writeJson(configPath, updatedConfig, { spaces: 4 });
                             invalidateMergedInstancesCache();
                         } catch (e) { console.error('Failed to update instance config:', e); }
+
+                        if (sharedImportPending) {
+                            if (win && win.webContents) {
+                                win.webContents.send('instance:status', { instanceName: finalName, status: 'installing' });
+                            }
+                            return;
+                        }
 
                         if (win && win.webContents) {
                             sendProgress(100, success ? 'Completed' : 'Failed');

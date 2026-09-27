@@ -3,6 +3,11 @@ import { useNotification } from '../context/NotificationContext';
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from './ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 
+// Public preview page for a code on the website: shows everything inside the pack
+// (mods, packs, shaders, settings) without installing anything first.
+const CODE_PREVIEW_BASE_URL = 'https://lux.pluginhub.de/code/';
+const getCodePreviewUrl = (code) => `${CODE_PREVIEW_BASE_URL}${encodeURIComponent(code)}`;
+
 function ModpackCodeModal({
     isOpen,
     onClose,
@@ -12,6 +17,7 @@ function ModpackCodeModal({
     mods = [],
     resourcePacks = [],
     shaders = [],
+    initialCode = '',
     onImportComplete
 }: any) {
     const [mode, setMode] = useState(initialMode);
@@ -35,6 +41,18 @@ function ModpackCodeModal({
             fetchMyCodes();
         }
     }, [isOpen, initialMode]);
+
+    useEffect(() => {
+        if (isOpen && initialCode) {
+            setMode('import');
+            setCode(String(initialCode).slice(0, 8));
+        }
+    }, [isOpen, initialCode]);
+
+    const copyPreviewLink = (value) => {
+        navigator.clipboard.writeText(getCodePreviewUrl(value));
+        addNotification('Preview link copied to clipboard!', 'success');
+    };
 
     const fetchMyCodes = async () => {
         try {
@@ -162,6 +180,24 @@ function ModpackCodeModal({
                                         <div className="text-sm text-muted-foreground mb-2">Your export code:</div>
                                         <div className="text-5xl font-mono font-bold bg-primary/20 text-primary p-6 rounded-xl border border-primary/30 tracking-tight">
                                             {exportedCode}
+                                        </div>
+                                    </div>
+                                    <div className="mb-6 text-left">
+                                        <div className="text-sm text-muted-foreground mb-2">Preview in the browser:</div>
+                                        <div className="flex items-center gap-2 bg-muted border border-border rounded-xl p-3">
+                                            <span className="flex-1 font-mono text-xs text-foreground truncate">{getCodePreviewUrl(exportedCode)}</span>
+                                            <button
+                                                onClick={() => copyPreviewLink(exportedCode)}
+                                                className="px-3 py-1.5 bg-card hover:bg-accent rounded-lg text-xs font-bold text-foreground transition-colors"
+                                            >
+                                                Copy Link
+                                            </button>
+                                            <button
+                                                onClick={() => window.electronAPI.openExternal(getCodePreviewUrl(exportedCode))}
+                                                className="px-3 py-1.5 bg-card hover:bg-accent rounded-lg text-xs font-bold text-foreground transition-colors"
+                                            >
+                                                Open
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
@@ -293,6 +329,15 @@ function ModpackCodeModal({
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => copyPreviewLink(item.code)}
+                                                className="p-2 bg-muted hover:bg-primary hover:text-black rounded-lg transition-colors"
+                                                title="Copy Preview Link"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                                 </svg>
                                             </button>
                                             <button
