@@ -80,6 +80,8 @@ const NEVER_SYNC_FILES = new Set([
     'session.lock',
     'servers.dat_old',
     'install.log',
+    // Lokaler Fortschritt eines Code-Imports (utils/sharedImportState.js).
+    '.lux-shared-import.json',
     '.ds_store',
     'thumbs.db',
     'desktop.ini'

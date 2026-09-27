@@ -4,9 +4,16 @@ const fs = require('fs-extra');
 // Ein Code-Import legt zuerst die Instanz an (Spiel + Loader) und laedt danach Mods,
 // Resource Packs und Shader nach. Sobald das Spiel fertig ist, meldet die Instanz sich
 // aber schon als startbereit -- und ein Start mitten im Mod-Download kann die Instanz
-// kaputt machen. Deshalb merkt sich instance.json unter `sharedImport` die komplette
-// Liste der erwarteten Inhalte, und gestartet wird erst, wenn jeder Eintrag entweder
-// wirklich als Datei im Instanzordner liegt oder endgueltig nicht installierbar war.
+// kaputt machen. Deshalb liegt waehrend des Imports eine eigene Datei im Instanzordner
+// (MARKER_FILE) mit der kompletten Liste der erwarteten Inhalte. Gestartet wird erst,
+// wenn jeder Eintrag wirklich als Datei im Instanzordner liegt oder endgueltig nicht
+// installierbar war.
+//
+// Bewusst NICHT in instance.json: der Spiel-Installer liest, aendert und schreibt
+// instance.json waehrend der Installation mehrmals und wuerde den Marker dabei mit
+// seinem alten Stand ueberschreiben.
+
+const MARKER_FILE = '.lux-shared-import.json';
 
 const CONTENT_FOLDERS = {
     mod: 'mods',
@@ -91,16 +98,31 @@ function summarize(items) {
     };
 }
 
-async function readConfig(instanceDir) {
+function markerPath(instanceDir) {
+    return path.join(instanceDir, MARKER_FILE);
+}
+
+async function readMarker(instanceDir) {
+    if (!instanceDir) return null;
     try {
-        return await fs.readJson(path.join(instanceDir, 'instance.json'));
+        const marker = await fs.readJson(markerPath(instanceDir));
+        return marker && marker.pending ? marker : null;
     } catch (_) {
         return null;
     }
 }
 
-function hasPendingImport(config) {
-    return Boolean(config && config.sharedImport && config.sharedImport.pending);
+async function writeMarker(instanceDir, marker) {
+    const target = markerPath(instanceDir);
+    const temp = `${target}.tmp`;
+    await fs.writeJson(temp, marker, { spaces: 2 });
+    await fs.move(temp, target, { overwrite: true });
+}
+
+async function clearMarker(instanceDir) {
+    try {
+        await fs.remove(markerPath(instanceDir));
+    } catch (_) { }
 }
 
 function markActive(instanceName) {
@@ -122,22 +144,22 @@ function setResumeHandler(handler) {
 // Wird vor jedem Start aufgerufen. Liefert null, wenn gestartet werden darf, sonst
 // eine Fehlermeldung fuer die Oberflaeche.
 async function getLaunchBlock(instanceName, instanceDir) {
-    if (!instanceDir) return null;
-    const config = await readConfig(instanceDir);
-    if (!hasPendingImport(config)) return null;
+    const marker = await readMarker(instanceDir);
+    const running = isActive(instanceName);
+    if (!marker && !running) return null;
 
-    const items = Array.isArray(config.sharedImport.items) ? config.sharedImport.items : [];
-    const { total, installed, failed } = summarize(items);
+    const { total, installed, failed } = summarize(marker ? marker.items : []);
 
-    if (!isActive(instanceName) && resumeHandler) {
+    if (marker && !running && resumeHandler) {
         // Abgebrochener Import aus einer frueheren Sitzung: im Hintergrund weitermachen.
         Promise.resolve()
             .then(() => resumeHandler(instanceName))
             .catch((e) => console.error('[SharedImport] Resume failed:', e));
     }
 
+    const progress = total > 0 ? ` (${installed + failed}/${total})` : '';
     return {
-        error: `Shared content is still being installed (${installed + failed}/${total}). Please wait until the import has finished before starting the game.`
+        error: `Mods are still being installed${progress}. Please wait until the import has finished before starting the game.`
     };
 }
 
@@ -148,8 +170,10 @@ module.exports = {
     isItemOnDisk,
     verifyItems,
     summarize,
-    readConfig,
-    hasPendingImport,
+    MARKER_FILE,
+    readMarker,
+    writeMarker,
+    clearMarker,
     markActive,
     markInactive,
     isActive,

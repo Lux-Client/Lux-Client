@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const sharedImportState = require('../utils/sharedImportState');
 const { Client } = require('minecraft-launcher-core');
 const Store = require('electron-store');
 const store = new Store();
@@ -2525,11 +2526,12 @@ module.exports = (ipcMain, win) => {
                         if (task.aborted) return;
                         // Laeuft noch ein Code-Import (Mods, Packs, Shader), meldet erst der
                         // die Instanz als fertig -- sonst liesse sie sich mittendrin starten.
-                        let sharedImportPending = false;
+                        const sharedImportPending = success && (
+                            sharedImportState.isActive(finalName) || Boolean(await sharedImportState.readMarker(dir))
+                        );
                         try {
                             const configPath = path.join(dir, 'instance.json');
                             const updatedConfig = await fs.readJson(configPath);
-                            sharedImportPending = success && Boolean(updatedConfig.sharedImport?.pending);
                             updatedConfig.status = sharedImportPending ? 'installing' : (success ? 'ready' : 'error');
                             await fs.writeJson(configPath, updatedConfig, { spaces: 4 });
                             invalidateMergedInstancesCache();

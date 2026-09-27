@@ -43,11 +43,8 @@ async function main() {
         section('launch gate');
         check('no marker -> launch allowed', (await state.getLaunchBlock('Pack', instanceDir)) === null);
 
-        await fs.writeJson(path.join(instanceDir, 'instance.json'), {
-            name: 'Pack',
-            status: 'installing',
-            sharedImport: { pending: true, items }
-        });
+        await fs.writeJson(path.join(instanceDir, 'instance.json'), { name: 'Pack', status: 'installing' });
+        await state.writeMarker(instanceDir, { pending: true, instanceName: 'Pack', items });
 
         let resumed = null;
         state.setResumeHandler((name) => { resumed = name; });
@@ -89,9 +86,22 @@ async function main() {
         const summary = state.summarize(items);
         check('summary counts', summary.total === 4 && summary.installed === 1 && summary.failed === 1 && summary.pending === 2, summary);
 
+        section('marker survives instance.json rewrites');
+        // The game installer reads, edits and rewrites instance.json while mods are
+        // downloading; that used to wipe the import list and unlock Play too early.
+        await fs.writeJson(path.join(instanceDir, 'instance.json'), { name: 'Pack', status: 'ready', versionId: '1.20.1-fabric' });
+        check('rewritten instance.json -> still blocked', Boolean(await state.getLaunchBlock('Pack', instanceDir)));
+
+        section('running import without marker');
+        state.setResumeHandler(null);
+        await state.clearMarker(instanceDir);
+        state.markActive('Pack');
+        check('active import blocks even without marker', Boolean(await state.getLaunchBlock('Pack', instanceDir)));
+        state.markInactive('Pack');
+
         section('finished import');
-        await fs.writeJson(path.join(instanceDir, 'instance.json'), { name: 'Pack', status: 'ready' });
         check('marker removed -> launch allowed', (await state.getLaunchBlock('Pack', instanceDir)) === null);
+        check('marker file is gone', !(await fs.pathExists(path.join(instanceDir, state.MARKER_FILE))));
     } finally {
         state.setResumeHandler(null);
         await fs.remove(root);

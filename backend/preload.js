@@ -330,6 +330,12 @@ const electronAPI = {
         ipcRenderer.on('extension:open-file', subscription);
         return () => ipcRenderer.removeListener('extension:open-file', subscription);
     },
+    getModpackImportStates: () => ipcRenderer.invoke('modpack:get-import-states'),
+    onModpackImportState: (callback) => {
+        const subscription = (_event, payload) => callback(payload);
+        ipcRenderer.on('modpack:import-state', subscription);
+        return () => ipcRenderer.removeListener('modpack:import-state', subscription);
+    },
     onOpenModpackCode: (callback) => {
         const subscription = (_event, payload) => callback(payload);
         ipcRenderer.on('modpack:open-code', subscription);

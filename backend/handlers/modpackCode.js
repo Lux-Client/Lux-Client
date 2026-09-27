@@ -209,6 +209,21 @@ module.exports = (ipcMain, win) => {
         win.webContents.send('instance:status', { instanceName, status });
     };
 
+    // Eigener Kanal fuer die Oberflaeche: solange hier pending=true gemeldet wird, zeigt
+    // sie die Instanz als "installing" und sperrt den Play-Button -- unabhaengig davon,
+    // was der Spiel-Installer zwischendurch an Status-Events schickt.
+    const sendImportState = (instanceName, items, pending) => {
+        if (!canSend()) return;
+        const { total, installed, failed } = sharedImportState.summarize(items || []);
+        win.webContents.send('modpack:import-state', {
+            instanceName,
+            pending: Boolean(pending),
+            total,
+            installed,
+            failed
+        });
+    };
+
     const updateConfig = async (instanceDir, mutate) => {
         const configPath = path.join(instanceDir, 'instance.json');
         if (!await fs.pathExists(configPath)) return null;
@@ -279,26 +294,28 @@ module.exports = (ipcMain, win) => {
 
     const KIND_LABELS = { mod: 'mod', resourcepack: 'pack', shader: 'shader' };
 
-    // Arbeitet die Liste aus instance.json ab. Jeder Eintrag gilt erst als erledigt, wenn
+    // Arbeitet die Liste aus der Marker-Datei ab. Jeder Eintrag gilt erst als erledigt, wenn
     // seine Datei wirklich im Instanzordner liegt; was im ersten Durchgang fehlt, wird ein
     // zweites Mal versucht und erst danach als fehlgeschlagen verbucht. Die Instanz bleibt
     // so lange im Status "installing" und laesst sich nicht starten (siehe
     // utils/sharedImportState.js und launcher.js).
     const processSharedImport = async (instanceName) => {
         const instanceDir = getInstanceDir(instanceName);
-        const config = await sharedImportState.readConfig(instanceDir);
-        if (!sharedImportState.hasPendingImport(config)) return { success: true };
+        const marker = await sharedImportState.readMarker(instanceDir);
+        if (!marker) {
+            sendImportState(instanceName, [], false);
+            return { success: true };
+        }
 
-        const marker = config.sharedImport;
         const items = Array.isArray(marker.items) ? marker.items : [];
-        const gameVersion = marker.gameVersion || config.version || null;
+        const gameVersion = marker.gameVersion || null;
         const normalizedLoader = marker.loader ? String(marker.loader).toLowerCase() : null;
         const localModCache = {};
 
-        const persistItems = () => updateConfig(instanceDir, (c) => {
-            c.status = 'installing';
-            c.sharedImport = { ...(c.sharedImport || marker), items };
-        });
+        const persistItems = async () => {
+            await sharedImportState.writeMarker(instanceDir, { ...marker, items });
+            sendImportState(instanceName, items, true);
+        };
 
         const reportProgress = (status) => {
             const { total, installed, failed } = sharedImportState.summarize(items);
@@ -389,10 +406,13 @@ module.exports = (ipcMain, win) => {
         const summary = sharedImportState.summarize(items);
         const failedTitles = items.filter((item) => item.state === 'failed').map((item) => item.title);
 
-        await updateConfig(instanceDir, (c) => {
-            delete c.sharedImport;
-            c.status = 'ready';
-        });
+        await sharedImportState.clearMarker(instanceDir);
+        try {
+            await updateConfig(instanceDir, (c) => { c.status = 'ready'; });
+        } catch (e) {
+            console.error('[ModpackCode-Handler] Failed to reset instance status:', e);
+        }
+        sendImportState(instanceName, items, false);
 
         console.log(`[ModpackCode-Handler] Import for ${instanceName} finished: ${summary.installed}/${summary.total} installed, ${summary.failed} failed.`);
         if (failedTitles.length > 0) {
@@ -427,6 +447,7 @@ module.exports = (ipcMain, win) => {
             } catch (e) { }
             sendProgress(instanceName, 100, 'Error during installation');
             sendStatus(instanceName, 'stopped');
+            sendImportState(instanceName, [], false);
             return { success: false, error: error.message };
         } finally {
             sharedImportState.markInactive(instanceName);
@@ -435,7 +456,8 @@ module.exports = (ipcMain, win) => {
 
     const resumeSharedImport = (instanceName) => runTracked(instanceName, async () => {
         console.log(`[ModpackCode-Handler] Resuming interrupted import for ${instanceName}`);
-        await updateConfig(getInstanceDir(instanceName), (c) => { c.status = 'installing'; });
+        const marker = await sharedImportState.readMarker(getInstanceDir(instanceName));
+        sendImportState(instanceName, marker ? marker.items : [], true);
         sendStatus(instanceName, 'installing');
         return processSharedImport(instanceName);
     });
@@ -453,21 +475,21 @@ module.exports = (ipcMain, win) => {
 
             // Erst die komplette Liste festhalten, dann laden: ab hier ist die Instanz
             // gesperrt, auch wenn das Spiel selbst schon fertig installiert ist.
-            await updateConfig(instanceDir, (c) => {
-                if (items.length > 0) {
-                    c.status = 'installing';
-                    c.sharedImport = {
-                        pending: true,
-                        code: modpackData?.code || null,
-                        gameVersion,
-                        loader,
-                        startedAt: Date.now(),
-                        items
-                    };
-                } else {
-                    delete c.sharedImport;
-                }
-            });
+            if (items.length > 0) {
+                sendImportState(instanceName, items, true);
+                await sharedImportState.writeMarker(instanceDir, {
+                    pending: true,
+                    instanceName,
+                    code: modpackData?.code || null,
+                    gameVersion,
+                    loader,
+                    startedAt: Date.now(),
+                    items
+                });
+                try {
+                    await updateConfig(instanceDir, (c) => { c.status = 'installing'; });
+                } catch (e) { }
+            }
 
             if (modpackData?.keybinds) {
                 await fs.writeFile(path.join(instanceDir, 'options.txt'), modpackData.keybinds);
@@ -485,24 +507,49 @@ module.exports = (ipcMain, win) => {
         });
     });
 
+    const findPendingImports = async () => {
+        const found = [];
+        const seen = new Set();
+        for (const baseDir of getAllInstanceDirsSync()) {
+            let entries = [];
+            try {
+                entries = await fs.readdir(baseDir, { withFileTypes: true });
+            } catch (_) {
+                continue;
+            }
+            for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+                const marker = await sharedImportState.readMarker(path.join(baseDir, entry.name));
+                if (!marker) continue;
+                const instanceName = marker.instanceName || entry.name;
+                if (seen.has(instanceName)) continue;
+                seen.add(instanceName);
+                found.push({ instanceName, items: marker.items || [] });
+            }
+        }
+        return found;
+    };
+
+    // Beim Laden der Oberflaeche (auch nach einem Reload) den aktuellen Stand abfragen.
+    ipcMain.handle('modpack:get-import-states', async () => {
+        try {
+            const pending = await findPendingImports();
+            return pending.map(({ instanceName, items }) => {
+                const { total, installed, failed } = sharedImportState.summarize(items);
+                return { instanceName, pending: true, total, installed, failed };
+            });
+        } catch (e) {
+            console.error('[ModpackCode-Handler] Failed to list import states:', e);
+            return [];
+        }
+    });
+
     // Imports, die beim letzten Beenden noch liefen, nach dem Start fortsetzen.
     setTimeout(async () => {
         try {
-            for (const baseDir of getAllInstanceDirsSync()) {
-                let entries = [];
-                try {
-                    entries = await fs.readdir(baseDir, { withFileTypes: true });
-                } catch (_) {
-                    continue;
-                }
-                for (const entry of entries) {
-                    if (!entry.isDirectory()) continue;
-                    const config = await sharedImportState.readConfig(path.join(baseDir, entry.name));
-                    if (!sharedImportState.hasPendingImport(config)) continue;
-                    const instanceName = config.name || entry.name;
-                    if (sharedImportState.isActive(instanceName)) continue;
-                    resumeSharedImport(instanceName).catch((e) => console.error('[ModpackCode-Handler] Resume failed:', e));
-                }
+            for (const { instanceName } of await findPendingImports()) {
+                if (sharedImportState.isActive(instanceName)) continue;
+                resumeSharedImport(instanceName).catch((e) => console.error('[ModpackCode-Handler] Resume failed:', e));
             }
         } catch (e) {
             console.error('[ModpackCode-Handler] Failed to scan for interrupted imports:', e);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ExtensionProvider } from './context/ExtensionContext';
 import { Analytics } from './services/Analytics';
 import ExtensionSlot from './components/Extensions/ExtensionSlot';
@@ -298,6 +298,18 @@ function App() {
     const [selectedInstance, setSelectedInstance] = useState(null);
     const [selectedServer, setSelectedServer] = useState(null);
     const [runningInstances, setRunningInstances] = useState({});
+    // Code imports that are still downloading mods/packs/shaders. The backend reports these
+    // on their own channel so a late "stopped" from the game installer can't unlock Play.
+    const [pendingSharedImports, setPendingSharedImports] = useState<Record<string, boolean>>({});
+    const effectiveRunningInstances = useMemo(() => {
+        const names = Object.keys(pendingSharedImports);
+        if (names.length === 0) return runningInstances;
+        const next = { ...runningInstances };
+        for (const name of names) {
+            if (next[name] !== 'running' && next[name] !== 'launching') next[name] = 'installing';
+        }
+        return next;
+    }, [runningInstances, pendingSharedImports]);
     const [activeDownloads, setActiveDownloads] = useState({});
     const [isMaximized, setIsMaximized] = useState(false);
     const [searchCategory, setSearchCategory] = useState(null);
@@ -720,6 +732,24 @@ function App() {
 
         // luxclient://modpack?code=... from the code preview page on the website: open the
         // library with the import dialog prefilled. Nothing is installed until the user confirms.
+        const applyImportState = (state) => {
+            if (!state?.instanceName) return;
+            setPendingSharedImports(prev => {
+                if (state.pending) {
+                    if (prev[state.instanceName]) return prev;
+                    return { ...prev, [state.instanceName]: true };
+                }
+                if (!prev[state.instanceName]) return prev;
+                const next = { ...prev };
+                delete next[state.instanceName];
+                return next;
+            });
+        };
+        const removeImportStateListener = window.electronAPI?.onModpackImportState?.(applyImportState);
+        window.electronAPI?.getModpackImportStates?.()
+            .then((states) => (states || []).forEach(applyImportState))
+            .catch(() => { });
+
         const removeOpenModpackCodeListener = window.electronAPI?.onOpenModpackCode?.((payload) => {
             const code = String(payload?.code || '').trim();
             if (!/^[A-Za-z0-9]{8}$/.test(code)) return;
@@ -794,6 +824,7 @@ function App() {
             if (removeJavaRequiredListener) removeJavaRequiredListener();
             if (removeInstallFromMarketplaceListener) removeInstallFromMarketplaceListener();
             if (removeOpenModpackCodeListener) removeOpenModpackCodeListener();
+            if (removeImportStateListener) removeImportStateListener();
         };
     }, [startupPageOptions]);
 
@@ -1256,11 +1287,11 @@ function App() {
     const renderCurrentPage = () => {
         if (currentMode === 'launcher') {
             if (currentView === 'dashboard') {
-                return <Home onInstanceClick={handleInstanceClick} runningInstances={runningInstances} isGuest={isGuest} userProfile={userProfile} activeDownloads={activeDownloads} onNavigateSearch={(category) => { setSearchCategory(category); setCurrentView('search'); }} />;
+                return <Home onInstanceClick={handleInstanceClick} runningInstances={effectiveRunningInstances} isGuest={isGuest} userProfile={userProfile} activeDownloads={activeDownloads} onNavigateSearch={(category) => { setSearchCategory(category); setCurrentView('search'); }} />;
             }
 
             if (currentView === 'library') {
-                return <Dashboard onInstanceClick={handleInstanceClick} runningInstances={runningInstances} activeDownloads={activeDownloads} triggerCreate={triggerCreateInstance} onCreateHandled={() => setTriggerCreateInstance(false)} pendingImportCode={pendingModpackCode} onImportCodeHandled={() => setPendingModpackCode(null)} isGuest={isGuest} />;
+                return <Dashboard onInstanceClick={handleInstanceClick} runningInstances={effectiveRunningInstances} activeDownloads={activeDownloads} triggerCreate={triggerCreateInstance} onCreateHandled={() => setTriggerCreateInstance(false)} pendingImportCode={pendingModpackCode} onImportCodeHandled={() => setPendingModpackCode(null)} isGuest={isGuest} />;
             }
 
             if (currentView === 'search') {
@@ -1280,7 +1311,7 @@ function App() {
             }
 
             if (currentView === 'instance-details' && selectedInstance) {
-                return <InstanceDetails instance={selectedInstance} onBack={handleBackToDashboard} runningInstances={runningInstances} onInstanceUpdate={handleInstanceUpdate} isGuest={isGuest} />;
+                return <InstanceDetails instance={selectedInstance} onBack={handleBackToDashboard} runningInstances={effectiveRunningInstances} onInstanceUpdate={handleInstanceUpdate} isGuest={isGuest} />;
             }
 
             if (currentView === 'extensions') {
@@ -1443,7 +1474,7 @@ function App() {
                         isMaximized={isMaximized}
                         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
                         onNavigate={handleNavigate}
-                        runningInstances={runningInstances}
+                        runningInstances={effectiveRunningInstances}
                         activeDownloads={activeDownloads}
                         appSettings={appSettings}
                         isCommandPaletteAvailable={isCommandPaletteAvailable}

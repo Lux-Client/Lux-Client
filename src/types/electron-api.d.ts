@@ -152,6 +152,8 @@ interface ElectronAPI {
   onLaunchProgress: (callback: IpcCallback) => UnsubscribeFn;
   onLaunchLog: (callback: IpcCallback) => UnsubscribeFn;
   onInstanceStatus: (callback: IpcCallback) => UnsubscribeFn;
+  getModpackImportStates?: () => Promise<Array<{ instanceName: string; pending: boolean; total: number; installed: number; failed: number }>>;
+  onModpackImportState?: (callback: (payload: { instanceName: string; pending: boolean; total: number; installed: number; failed: number }) => void) => UnsubscribeFn;
   onOpenModpackCode?: (callback: (payload: { code: string }) => void) => UnsubscribeFn;
   onInstallProgress: (callback: IpcCallback) => UnsubscribeFn;
   onLoginSuccess: (callback: IpcCallback) => UnsubscribeFn;
