@@ -535,7 +535,8 @@
         "enter_name": "Enter a theme name",
         "export_desc": "Export the current theme so it can be imported later.",
         "no_custom_themes": "No custom themes yet",
-        "theme_name": "Theme Name"
+        "theme_name": "Theme Name",
+        "account_bg_synced": "Mit deinem Lux-Konto synchronisiert. Speichern ändert ihn auf allen Geräten, auf denen du angemeldet bist."
     },
     "login": {
         "title": "Anmeldung",
@@ -767,6 +768,19 @@
             "search_empty": "Keine Kategorie gefunden.",
             "search_placeholder_all": "Alle Einstellungen durchsuchen (z. B. Modrinth, Java, RAM...)",
             "search_empty_all": "Keine Einstellung passt zur Suche."
+        },
+        "account_bg": {
+            "title": "Hintergrund",
+            "sync": "Hintergrund mit Lux-Konto synchronisieren",
+            "sync_desc": "An: Der Hintergrund, den du hier oder im Styling wählst, gilt auf jedem Gerät, auf dem du angemeldet bist. Aus: Dieses Gerät behält seinen eigenen Hintergrund.",
+            "local_only": "Dieses Gerät hat seinen eigenen Hintergrund.",
+            "signed_out": "Melde dich mit deinem Lux-Konto an, um den Hintergrund zu synchronisieren.",
+            "uploading": "Wird in dein Konto hochgeladen...",
+            "downloading": "Hintergrund wird aus deinem Konto geladen...",
+            "offline": "Lux Cloud ist nicht erreichbar, der Hintergrund wird später synchronisiert.",
+            "sync_failed": "Hintergrund-Sync fehlgeschlagen",
+            "synced": "Mit deinem Lux-Konto synchronisiert.",
+            "sync_now": "Jetzt synchronisieren"
         }
     },
     "extensions": {

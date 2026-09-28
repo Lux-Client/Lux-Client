@@ -30,6 +30,9 @@ const electronAPI = {
     removeAccount: (uuid) => ipcRenderer.invoke('auth:remove-account', uuid),
     selectBackgroundMedia: () => ipcRenderer.invoke('settings:select-background'),
     deleteBackgroundMedia: (path) => ipcRenderer.invoke('settings:delete-background', path),
+    setBackgroundMedia: (media) => ipcRenderer.invoke('settings:set-background-media', media),
+    setAccountBackgroundSync: (enabled) => ipcRenderer.invoke('settings:set-account-background-sync', enabled),
+    syncAccountBackground: () => ipcRenderer.invoke('settings:sync-account-background'),
     selectCustomFont: () => ipcRenderer.invoke('settings:select-font'),
     deleteCustomFont: (fontId) => ipcRenderer.invoke('settings:delete-font', fontId),
     getCustomPresets: () => ipcRenderer.invoke('theme:get-custom-presets'),
@@ -210,6 +213,11 @@ const electronAPI = {
         const subscription = (_event, value) => callback(value);
         ipcRenderer.on('settings:updated', subscription);
         return () => ipcRenderer.removeListener('settings:updated', subscription);
+    },
+    onAccountBackgroundStatus: (callback) => {
+        const subscription = (_event, value) => callback(value);
+        ipcRenderer.on('settings:account-background-status', subscription);
+        return () => ipcRenderer.removeListener('settings:account-background-status', subscription);
     },
     onJavaProgress: (callback) => {
         const subscription = (_event, value) => callback(value);

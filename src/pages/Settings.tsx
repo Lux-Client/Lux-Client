@@ -8,6 +8,7 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import ToggleBox from '../components/ToggleBox';
 import ConfirmationModal from '../components/ConfirmationModal';
 import LuxAccountPanel from '../components/cloud/LuxAccountPanel';
+import AccountBackgroundCard from '../components/cloud/AccountBackgroundCard';
 import { getDefaultStartupValueForMode, getStartupModes, normalizeStartupPageValue } from '../lib/startupPages';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -770,7 +771,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
             label: t('settings.system.account', 'Lux Account'),
             description: t('settings.system.account_desc', 'Optional Lux account and cloud sync across your PCs.'),
             icon: UserCircle2,
-            keywords: ['account', 'lux', 'login', 'sign in', 'cloud sync', 'devices', 'storage', 'quota']
+            keywords: ['account', 'lux', 'login', 'sign in', 'cloud sync', 'devices', 'storage', 'quota', 'background', 'hintergrund']
         },
         {
             id: 'cloud',
@@ -1787,6 +1788,7 @@ function Settings({ mode = 'default', onRestartGuide = null, onClose = null, dis
 
                     <TabsContent value="account" className="mt-0 space-y-5" data-settings-section="account" {...(settingsSearchActive ? { forceMount: true } : {})}>
                         <LuxAccountPanel />
+                        <AccountBackgroundCard />
                     </TabsContent>
 
                     <TabsContent value="cloud" className="mt-0 space-y-5" data-settings-section="cloud" {...(settingsSearchActive ? { forceMount: true } : {})}>
