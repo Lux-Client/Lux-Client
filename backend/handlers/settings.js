@@ -2,9 +2,15 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 
+const { createAccountBackgroundSync } = require('../luxcloud/accountBackground');
+
+const ACCOUNT_BACKGROUND_FIELDS = ['accountBackgroundSync', 'accountBackgroundBase', 'localBgMedia'];
+const ACCOUNT_BACKGROUND_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
 module.exports = (ipcMain) => {
     const settingsPath = path.join(app.getPath('userData'), 'settings.json');
     const fontsDir = path.join(app.getPath('userData'), 'fonts');
+    const backgroundsDir = path.join(app.getPath('userData'), 'backgrounds');
 
     const defaultSettings = {
         analyticsEnabled: true,
@@ -62,6 +68,9 @@ module.exports = (ipcMain) => {
         hasSelectedStartupMode: true,
         showModrinthInstancesInLibrary: true,
         showCurseforgeInstancesInLibrary: true,
+        accountBackgroundSync: false,
+        accountBackgroundBase: null,
+        localBgMedia: null,
         guidePrompts: {
             launcher: true,
             server: true,
@@ -119,6 +128,70 @@ module.exports = (ipcMain) => {
         return buildSettings();
     };
 
+    const writeSettingsFile = async (settings) => {
+        const merged = buildSettings(settings);
+        await fs.writeJson(settingsPath, merged, { spaces: 4 });
+        emitSettings(merged);
+        return merged;
+    };
+
+    let settingsWriteChain = Promise.resolve();
+    const patchSettingsFile = (update) => {
+        const next = settingsWriteChain.then(async () => {
+            const current = await readSettingsFile().catch((error) => {
+                console.error('Failed to read settings, starting from defaults:', error);
+                return buildSettings();
+            });
+            const patched = update(current);
+            return patched ? writeSettingsFile(patched) : current;
+        });
+        settingsWriteChain = next.catch(() => {});
+        return next;
+    };
+
+    const emitAccountBackgroundStatus = (status) => {
+        BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('settings:account-background-status', status);
+        });
+    };
+
+    const luxApi = require('../luxcloud/api');
+    const luxAuth = require('../luxcloud/auth');
+    const luxState = require('../luxcloud/state');
+
+    const accountBackground = createAccountBackgroundSync({
+        backgroundsDir,
+        readSettings: readSettingsFile,
+        patchSettings: patchSettingsFile,
+        api: luxApi,
+        isLoggedIn: () => luxState.isLoggedIn().catch(() => false),
+        getUserId: async () => {
+            const state = await luxState.readState();
+            return state && state.user ? state.user.id : null;
+        },
+        onStatus: emitAccountBackgroundStatus
+    });
+
+    luxAuth.events.on('account-changed', ({ reason } = {}) => {
+        if (reason === 'logout' || reason === 'revoked') {
+            accountBackground.handleSignedOut().catch((err) => {
+                console.warn('[LuxCloud] Could not restore the local background after sign-out:', err.message);
+            });
+        } else if (reason === 'login') {
+            accountBackground.reconcile('login');
+        }
+    });
+
+    let lastBackgroundCheck = 0;
+    const checkAccountBackground = (reason) => {
+        if (Date.now() - lastBackgroundCheck < ACCOUNT_BACKGROUND_CHECK_INTERVAL_MS) return;
+        lastBackgroundCheck = Date.now();
+        accountBackground.reconcile(reason);
+    };
+
+    app.on('browser-window-focus', () => checkAccountBackground('focus'));
+    setTimeout(() => checkAccountBackground('startup'), 5000);
+
     const normalizeFontName = (filePath) => {
         const baseName = path.basename(filePath, path.extname(filePath)).trim();
         return (baseName || 'Custom Font').replace(/[_-]+/g, ' ');
@@ -139,14 +212,63 @@ module.exports = (ipcMain) => {
 
     ipcMain.handle('settings:save', async (_, newSettings) => {
         try {
-            const mergedSettings = buildSettings(newSettings);
-            await fs.writeJson(settingsPath, mergedSettings, { spaces: 4 });
-            emitSettings(mergedSettings);
+            // Pages hold their own copy of the settings, which can predate a background the
+            // account sync just pulled. The sync fields therefore only change through their
+            // own handlers, and a plain save never brings back an older background.
+            await patchSettingsFile((current) => {
+                const next = { ...(newSettings || {}) };
+                for (const key of ACCOUNT_BACKGROUND_FIELDS) next[key] = current[key];
+                if (current.accountBackgroundSync) {
+                    next.theme = { ...(next.theme || {}), bgMedia: current.theme.bgMedia };
+                }
+                return next;
+            });
             return { success: true };
         } catch (error) {
             console.error('Failed to save settings:', error);
             return { success: false, error: error.message };
         }
+    });
+
+    ipcMain.handle('settings:set-background-media', async (_, media) => {
+        try {
+            const bgMedia = media && typeof media.url === 'string' && media.url
+                ? { url: media.url.replace(/\\/g, '/'), type: media.type === 'video' ? 'video' : 'image' }
+                : { url: '', type: 'none' };
+
+            const normalize = (p) => path.normalize(p).toLowerCase();
+            if (bgMedia.url && !normalize(bgMedia.url).startsWith(normalize(backgroundsDir + path.sep))) {
+                return { success: false, error: 'Invalid file path' };
+            }
+
+            const saved = await patchSettingsFile((current) => {
+                if ((current.theme.bgMedia && current.theme.bgMedia.url) === bgMedia.url) return null;
+                return { ...current, theme: { ...current.theme, bgMedia } };
+            });
+
+            if (saved.accountBackgroundSync) {
+                accountBackground.reconcile('local');
+            }
+            return { success: true, settings: saved };
+        } catch (error) {
+            console.error('Failed to set background:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('settings:set-account-background-sync', async (_, enabled) => {
+        try {
+            const result = await accountBackground.setEnabled(Boolean(enabled));
+            return { success: true, result, settings: await readSettingsFile() };
+        } catch (error) {
+            console.error('Failed to toggle account background sync:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('settings:sync-account-background', async () => {
+        const result = await accountBackground.reconcile('manual');
+        return { success: result.state !== 'error', result };
     });
 
     ipcMain.handle('settings:select-background', async () => {

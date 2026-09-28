@@ -24,6 +24,9 @@ interface ElectronAPI {
   removeAccount: (uuid: string) => Promise<any>;
   selectBackgroundMedia: () => Promise<any>;
   deleteBackgroundMedia: (path: string) => Promise<any>;
+  setBackgroundMedia: (media: { url: string; type: string } | null) => Promise<any>;
+  setAccountBackgroundSync: (enabled: boolean) => Promise<any>;
+  syncAccountBackground: () => Promise<any>;
   selectCustomFont: () => Promise<any>;
   deleteCustomFont: (fontId: string) => Promise<any>;
   getCustomPresets: () => Promise<any>;
@@ -159,6 +162,7 @@ interface ElectronAPI {
   onLoginSuccess: (callback: IpcCallback) => UnsubscribeFn;
   onThemeUpdated: (callback: IpcCallback) => UnsubscribeFn;
   onSettingsUpdated: (callback: IpcCallback) => UnsubscribeFn;
+  onAccountBackgroundStatus: (callback: (status: { state: string; action?: string; error?: string; message?: string }) => void) => UnsubscribeFn;
   onJavaProgress: (callback: IpcCallback) => UnsubscribeFn;
   onJavaRequired: (callback: IpcCallback) => UnsubscribeFn;
   onWindowStateChange: (callback: IpcCallback) => UnsubscribeFn;

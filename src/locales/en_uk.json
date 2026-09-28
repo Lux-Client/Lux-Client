@@ -520,7 +520,8 @@
         "enter_name": "Enter a theme name",
         "export_desc": "Export the current theme so it can be imported later.",
         "no_custom_themes": "No custom themes yet",
-        "theme_name": "Theme Name"
+        "theme_name": "Theme Name",
+        "account_bg_synced": "Synced with your Lux account. Saving changes it on every device you are signed in on."
     },
     "login": {
         "title": "Minecraft Launcher",
@@ -747,6 +748,19 @@
             "search_empty": "No categories found.",
             "search_placeholder_all": "Search all settings (e.g. Modrinth, Java, RAM...)",
             "search_empty_all": "No settings match your search."
+        },
+        "account_bg": {
+            "title": "Background",
+            "sync": "Sync background with Lux account",
+            "sync_desc": "On: the background you pick here or in Styling applies on every device you are signed in on. Off: this device keeps its own background.",
+            "local_only": "This device keeps its own background.",
+            "signed_out": "Sign in to your Lux account to sync the background.",
+            "uploading": "Uploading to your account...",
+            "downloading": "Loading the background from your account...",
+            "offline": "Lux Cloud is not reachable, the background syncs later.",
+            "sync_failed": "Background sync failed",
+            "synced": "Synced with your Lux account.",
+            "sync_now": "Sync now"
         }
     },
     "extensions": {
