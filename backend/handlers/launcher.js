@@ -1852,6 +1852,9 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
             }
         }
 
+        // Aus einem Live-Code installiert? Dann zuerst die neueste Revision des Codes holen.
+        await sharedImportState.runLiveUpdate(instanceName);
+
         // Ein Code-Import laedt nach dem Spiel noch Mods & Co. nach -- vorher starten
         // wuerde die Instanz mit halb heruntergeladenen Dateien hochfahren.
         try {

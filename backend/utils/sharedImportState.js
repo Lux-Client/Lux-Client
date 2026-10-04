@@ -26,6 +26,7 @@ const CONTENT_FOLDERS = {
 // fortgesetzt statt die Instanz fuer immer zu sperren.
 const activeImports = new Set();
 let resumeHandler = null;
+let liveUpdateHandler = null;
 
 function normalizeItem(item, kind) {
     if (typeof item === 'string') {
@@ -141,6 +142,22 @@ function setResumeHandler(handler) {
     resumeHandler = typeof handler === 'function' ? handler : null;
 }
 
+function setLiveUpdateHandler(handler) {
+    liveUpdateHandler = typeof handler === 'function' ? handler : null;
+}
+
+// Vor jedem Start: Instanzen aus einem Live-Code auf die neueste Revision bringen.
+// Fehler (offline, Server weg) halten niemanden vom Spielen ab.
+async function runLiveUpdate(instanceName) {
+    if (!liveUpdateHandler || isActive(instanceName)) return null;
+    try {
+        return await liveUpdateHandler(instanceName);
+    } catch (e) {
+        console.error('[SharedImport] Live update failed:', e);
+        return null;
+    }
+}
+
 // Wird vor jedem Start aufgerufen. Liefert null, wenn gestartet werden darf, sonst
 // eine Fehlermeldung fuer die Oberflaeche.
 async function getLaunchBlock(instanceName, instanceDir) {
@@ -178,5 +195,7 @@ module.exports = {
     markInactive,
     isActive,
     setResumeHandler,
+    setLiveUpdateHandler,
+    runLiveUpdate,
     getLaunchBlock
 };

@@ -7,7 +7,10 @@ const { installModInternal } = require('./modrinth');
 const { resolvePrimaryInstancesDir, resolveInstanceDirByName, getAllInstanceDirsSync } = require('../utils/instances-path');
 const sharedImportState = require('../utils/sharedImportState');
 const { getUserProfile } = require('../utils/secureProfileStore');
+const liveCodeState = require('../utils/liveCodeState');
+const cloudApi = require('../luxcloud/api');
 const SERVER_URL = 'https://lux.pluginhub.de';
+const LIVE_CHECK_TIMEOUT_MS = 8000;
 
 console.log('[ModpackCode-Handler] 🔧 Modul wird geladen...');
 
@@ -57,62 +60,128 @@ async function resolveIconForExport(iconValue) {
     return undefined;
 }
 
+const mapContent = (list) => list?.map(item => ({
+    projectId: item.projectId,
+    versionId: item.versionId,
+    fileName: item.name || item.fileName,
+    title: item.title || item.name,
+    icon: item.icon
+})) || [];
+
+// Fehler aus dem Lux-Konto-Client: der Codes-Server schickt { error: '<Text>' }, das landet
+// in err.code. Fuer die Oberflaeche den lesbaren Text nehmen.
+function describeCloudError(err) {
+    if (!err) return 'Unknown error';
+    if (err.code === 'unauthorized') return 'Sign in to your Lux account first.';
+    if (typeof err.code === 'string' && err.code.includes(' ')) return err.code;
+    return err.message || err.code || 'Request failed';
+}
+
 module.exports = (ipcMain, win) => {
     console.log('[ModpackCode-Handler] 🔌 Registriere Handler...');
 
     const appData = app.getPath('userData');
     const instancesDir = resolvePrimaryInstancesDir();
     const modCachePath = path.join(appData, 'mods_cache.json');
+    const buildExportPayload = async (data) => {
+        const { name, mods, resourcePacks, shaders, instanceVersion, instanceLoader, instanceName, icon } = data;
+        // Aeltere Aufrufer kennen den Schalter nicht und haben die Einstellungen immer mitgeschickt.
+        const includeSettings = data.includeSettings !== false;
+
+        let optionsContent = null;
+        if (instanceName && includeSettings) {
+            const optionsPath = path.join(instancesDir, instanceName, 'options.txt');
+            if (await fs.pathExists(optionsPath)) {
+                optionsContent = await fs.readFile(optionsPath, 'utf8');
+            }
+        }
+        return {
+            name: name || 'My Modpack',
+            mods: mapContent(mods),
+            resourcePacks: mapContent(resourcePacks),
+            shaders: mapContent(shaders),
+            instanceVersion,
+            instanceLoader,
+            keybinds: optionsContent,
+            icon: await resolveIconForExport(icon)
+        };
+    };
+
+    // Admin-Funktionen (Live-Codes, eigene Laufzeit) laufen ueber das Lux-Konto.
+    ipcMain.handle('modpack:admin-status', async () => {
+        try {
+            const result = await cloudApi.authed({ method: 'GET', url: '/api/modpack/admin/status', timeout: 10000 });
+            return { success: true, isAdmin: Boolean(result && result.isAdmin) };
+        } catch (err) {
+            return { success: true, isAdmin: false };
+        }
+    });
+
+    ipcMain.handle('modpack:update-live-code', async (event, code, data) => {
+        try {
+            const payload = await buildExportPayload(data || {});
+            const result = await cloudApi.authed({
+                method: 'PUT',
+                url: `/api/modpack/${encodeURIComponent(code)}/content`,
+                data: payload,
+                timeout: 15000
+            });
+            console.log(`[ModpackCode-Handler] Live code ${code} updated to revision ${result.revision}`);
+            return result;
+        } catch (err) {
+            console.error('[ModpackCode-Handler] Live code update failed:', err);
+            return { success: false, error: describeCloudError(err) };
+        }
+    });
+
+    ipcMain.handle('modpack:set-code-settings', async (event, code, settings) => {
+        try {
+            const body = {};
+            if (typeof settings?.live === 'boolean') body.live = settings.live;
+            if (settings?.expiry !== undefined) body.expiry = settings.expiry;
+            return await cloudApi.authed({
+                method: 'PATCH',
+                url: `/api/modpack/${encodeURIComponent(code)}/settings`,
+                data: body,
+                timeout: 10000
+            });
+        } catch (err) {
+            console.error('[ModpackCode-Handler] Code settings update failed:', err);
+            return { success: false, error: describeCloudError(err) };
+        }
+    });
+
     ipcMain.handle('modpack:export-code', async (event, data) => {
         console.log('[ModpackCode-Handler] 📤 Export handler AUFGERUFEN', data);
         try {
-            const { name, mods, resourcePacks, shaders, instanceVersion, instanceLoader, instanceName, icon } = data;
-            // Aeltere Aufrufer kennen den Schalter nicht und haben die Einstellungen immer mitgeschickt.
-            const includeSettings = data.includeSettings !== false;
+            const adminOptions = {};
+            if (data.live === true) adminOptions.live = true;
+            if (data.expiry !== undefined && data.expiry !== null && data.expiry !== '') adminOptions.expiry = data.expiry;
 
             const Store = require('electron-store');
             const store = new Store();
             const profile = getUserProfile(store);
             const ownerUuid = profile ? profile.uuid : null;
 
-            let optionsContent = null;
-            if (instanceName && includeSettings) {
-                const optionsPath = path.join(instancesDir, instanceName, 'options.txt');
-                if (await fs.pathExists(optionsPath)) {
-                    optionsContent = await fs.readFile(optionsPath, 'utf8');
-                    console.log('[ModpackCode-Handler] ✅ Keybinds (options.txt) included in export');
+            const exportData = { ...(await buildExportPayload(data)), ownerUuid };
+            if (exportData.keybinds) {
+                console.log('[ModpackCode-Handler] ✅ Keybinds (options.txt) included in export');
+            }
+
+            if (Object.keys(adminOptions).length > 0) {
+                try {
+                    const result = await cloudApi.authed({
+                        method: 'POST',
+                        url: '/api/modpack/save',
+                        data: { ...exportData, ...adminOptions },
+                        timeout: 15000
+                    });
+                    return { success: true, code: result.code, live: result.live, revision: result.revision };
+                } catch (err) {
+                    return { success: false, error: describeCloudError(err) };
                 }
             }
-            const resolvedIcon = await resolveIconForExport(icon);
-            const exportData = {
-                name: name || 'My Modpack',
-                mods: mods?.map(m => ({
-                    projectId: m.projectId,
-                    versionId: m.versionId,
-                    fileName: m.name || m.fileName,
-                    title: m.title || m.name,
-                    icon: m.icon
-                })) || [],
-                resourcePacks: resourcePacks?.map(p => ({
-                    projectId: p.projectId,
-                    versionId: p.versionId,
-                    fileName: p.name || p.fileName,
-                    title: p.title || p.name,
-                    icon: p.icon
-                })) || [],
-                shaders: shaders?.map(s => ({
-                    projectId: s.projectId,
-                    versionId: s.versionId,
-                    fileName: s.name || s.fileName,
-                    title: s.title || s.name,
-                    icon: s.icon
-                })) || [],
-                instanceVersion,
-                instanceLoader,
-                keybinds: optionsContent,
-                icon: resolvedIcon,
-                ownerUuid
-            };
+
             const response = await axios.post(`${SERVER_URL}/api/modpack/save`, exportData, {
                 timeout: 10000,
                 headers: { 'Content-Type': 'application/json' }
@@ -406,6 +475,21 @@ module.exports = (ipcMain, win) => {
         const summary = sharedImportState.summarize(items);
         const failedTitles = items.filter((item) => item.state === 'failed').map((item) => item.title);
 
+        if (marker.live && marker.live.code) {
+            try {
+                await liveCodeState.writeLiveState(instanceDir, {
+                    code: marker.live.code,
+                    revision: Number(marker.live.revision) || 1,
+                    gameVersion,
+                    loader: marker.loader || null,
+                    updatedAt: Date.now(),
+                    items: items.filter((item) => item.state === 'installed').map(liveCodeState.trackedItem)
+                });
+            } catch (e) {
+                console.error('[ModpackCode-Handler] Failed to remember live code:', e);
+            }
+        }
+
         await sharedImportState.clearMarker(instanceDir);
         try {
             await updateConfig(instanceDir, (c) => { c.status = 'ready'; });
@@ -464,6 +548,70 @@ module.exports = (ipcMain, win) => {
 
     sharedImportState.setResumeHandler(resumeSharedImport);
 
+    // Vor jedem Start: neue Revision eines Live-Codes einspielen. Nur die Dateien, die der
+    // Code mitgebracht hat, werden ausgetauscht; Einstellungen (options.txt) bleiben.
+    const checkLiveUpdate = async (instanceName) => {
+        const instanceDir = getInstanceDir(instanceName);
+        const state = await liveCodeState.readLiveState(instanceDir);
+        if (!state) return null;
+
+        let remote;
+        try {
+            const response = await axios.get(`${SERVER_URL}/api/modpack/${encodeURIComponent(state.code)}/live`, {
+                timeout: LIVE_CHECK_TIMEOUT_MS
+            });
+            remote = response.data && response.data.data;
+        } catch (error) {
+            if (error.response?.status === 404) {
+                console.log(`[ModpackCode-Handler] Live code ${state.code} no longer exists, stopping updates for ${instanceName}.`);
+                await liveCodeState.clearLiveState(instanceDir);
+            } else {
+                console.warn(`[ModpackCode-Handler] Live code check for ${instanceName} failed (${error.code || error.message}), starting as is.`);
+            }
+            return null;
+        }
+
+        if (!remote || !remote.live || !liveCodeState.isNewer(state, remote)) return null;
+
+        if (liveCodeState.targetChanged(state, remote)) {
+            console.warn(`[ModpackCode-Handler] Live code ${state.code} moved to ${remote.version}/${remote.loader}; `
+                + `${instanceName} is on ${state.gameVersion}/${state.loader}. Not updating automatically.`);
+            return null;
+        }
+
+        const { items, remove } = await liveCodeState.planUpdate(instanceDir, state, remote);
+        console.log(`[ModpackCode-Handler] Updating ${instanceName} from live code ${state.code} `
+            + `revision ${state.revision} -> ${remote.revision} (${remove.length} removed, `
+            + `${items.filter((item) => item.state === 'pending').length} to download).`);
+
+        return runTracked(instanceName, async () => {
+            for (const filePath of remove) {
+                try {
+                    await fs.remove(filePath);
+                } catch (e) {
+                    console.warn('[ModpackCode-Handler] Could not remove old file', filePath, e.message);
+                }
+            }
+
+            await sharedImportState.writeMarker(instanceDir, {
+                pending: true,
+                instanceName,
+                code: state.code,
+                live: { code: state.code, revision: Number(remote.revision) },
+                gameVersion: state.gameVersion || remote.version || null,
+                loader: state.loader || remote.loader || null,
+                startedAt: Date.now(),
+                items
+            });
+            sendImportState(instanceName, items, true);
+            sendStatus(instanceName, 'installing');
+            sendProgress(instanceName, 0, `Updating modpack to revision ${remote.revision}...`);
+            return processSharedImport(instanceName);
+        });
+    };
+
+    sharedImportState.setLiveUpdateHandler(checkLiveUpdate);
+
     ipcMain.handle('modpack:install-shared-content', async (event, { instanceName, modpackData }) => {
         console.log(`[ModpackCode-Handler] Starting background install for: ${instanceName}`);
 
@@ -481,6 +629,9 @@ module.exports = (ipcMain, win) => {
                     pending: true,
                     instanceName,
                     code: modpackData?.code || null,
+                    live: modpackData?.live && modpackData?.code
+                        ? { code: modpackData.code, revision: Number(modpackData.revision) || 1 }
+                        : null,
                     gameVersion,
                     loader,
                     startedAt: Date.now(),

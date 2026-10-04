@@ -8,6 +8,17 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 const CODE_PREVIEW_BASE_URL = 'https://lux.pluginhub.de/code/';
 const getCodePreviewUrl = (code) => `${CODE_PREVIEW_BASE_URL}${encodeURIComponent(code)}`;
 
+// Only admins (role on the Lux account) can pick these; everyone else keeps the default.
+const EXPIRY_OPTIONS = [
+    { value: 'default', label: 'Default (7 days)' },
+    { value: '30', label: '30 days' },
+    { value: '90', label: '90 days' },
+    { value: '365', label: '1 year' },
+    { value: 'never', label: 'Never expires' }
+];
+
+const toExpiryValue = (choice) => (choice === 'never' ? 'never' : Number(choice));
+
 function ModpackCodeModal({
     isOpen,
     onClose,
@@ -33,12 +44,20 @@ function ModpackCodeModal({
         settings: true
     });
 
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [liveExport, setLiveExport] = useState(false);
+    const [expiryChoice, setExpiryChoice] = useState('default');
+    const [busyCode, setBusyCode] = useState('');
+
     const { addNotification } = useNotification();
 
     useEffect(() => {
         setMode(initialMode);
         if (isOpen && initialMode === 'export') {
             fetchMyCodes();
+            window.electronAPI.getModpackAdminStatus?.()
+                .then((result) => setIsAdmin(Boolean(result?.isAdmin)))
+                .catch(() => setIsAdmin(false));
         }
     }, [isOpen, initialMode]);
 
@@ -81,6 +100,56 @@ function ModpackCodeModal({
         }
     };
 
+    const buildExportData = () => ({
+        name: modpackName || `${instanceData?.name || 'Modpack'} Export`,
+        instanceName: instanceData?.name,
+        mods: selectedTypes.mods ? mods : [],
+        resourcePacks: selectedTypes.resourcePacks ? resourcePacks : [],
+        shaders: selectedTypes.shaders ? shaders : [],
+        instanceVersion: instanceData?.version,
+        instanceLoader: instanceData?.loader,
+        includeSettings: selectedTypes.settings,
+        icon: instanceData?.icon || null
+    });
+
+    // Admins: replace what a live code installs with this instance's current content.
+    const handlePushLiveUpdate = async (item) => {
+        if (!instanceData) return;
+        if (!confirm(`Replace the content of ${item.code} with "${instanceData.name}"? Everyone who installed it gets the update on their next start.`)) return;
+        setBusyCode(item.code);
+        try {
+            const data = { ...buildExportData(), name: modpackName || item.name };
+            const result = await window.electronAPI.updateLiveModpackCode(item.code, data);
+            if (result?.success) {
+                addNotification(`${item.code} updated (revision ${result.revision})`, 'success');
+                fetchMyCodes();
+            } else {
+                addNotification(`Update failed: ${result?.error || 'Unknown error'}`, 'error');
+            }
+        } catch (e) {
+            addNotification(`Update failed: ${e.message}`, 'error');
+        } finally {
+            setBusyCode('');
+        }
+    };
+
+    const handleCodeSettings = async (item, settings) => {
+        setBusyCode(item.code);
+        try {
+            const result = await window.electronAPI.setModpackCodeSettings(item.code, settings);
+            if (result?.success) {
+                addNotification(`${item.code} updated`, 'success');
+                fetchMyCodes();
+            } else {
+                addNotification(`Failed: ${result?.error || 'Unknown error'}`, 'error');
+            }
+        } catch (e) {
+            addNotification(`Failed: ${e.message}`, 'error');
+        } finally {
+            setBusyCode('');
+        }
+    };
+
     const handleExport = async () => {
         if (!mods.length && !resourcePacks.length && !shaders.length) {
             addNotification('No content to export!', 'error');
@@ -89,23 +158,19 @@ function ModpackCodeModal({
 
         setLoading(true);
         try {
-            const exportData = {
-                name: modpackName || `${instanceData?.name || 'Modpack'} Export`,
-                instanceName: instanceData?.name,
-                mods: selectedTypes.mods ? mods : [],
-                resourcePacks: selectedTypes.resourcePacks ? resourcePacks : [],
-                shaders: selectedTypes.shaders ? shaders : [],
-                instanceVersion: instanceData?.version,
-                instanceLoader: instanceData?.loader,
-                includeSettings: selectedTypes.settings,
-                icon: instanceData?.icon || null
-            };
+            const exportData: any = buildExportData();
+            if (isAdmin) {
+                if (liveExport) exportData.live = true;
+                if (expiryChoice !== 'default') exportData.expiry = toExpiryValue(expiryChoice);
+            }
 
             const result = await window.electronAPI.exportModpackAsCode(exportData);
 
             if (result.success) {
                 setExportedCode(result.code);
-                addNotification(`Successfully exported! Code: ${result.code}`, 'success');
+                addNotification(result.live
+                    ? `Live code created: ${result.code}. Push updates from "My Codes".`
+                    : `Successfully exported! Code: ${result.code}`, 'success');
                 fetchMyCodes();
             } else {
                 addNotification(`Export failed: ${result.error}`, 'error');
@@ -272,6 +337,38 @@ function ModpackCodeModal({
                                         </div>
                                     </div>
 
+                                    {isAdmin && (
+                                        <div className="mb-6 p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3">
+                                            <div className="text-xs font-bold uppercase tracking-widest text-primary">Admin</div>
+                                            <label className="flex items-start gap-3 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={liveExport}
+                                                    onChange={(e) => setLiveExport(e.target.checked)}
+                                                    className="mt-1 accent-[var(--primary)]"
+                                                />
+                                                <span>
+                                                    <span className="block text-sm font-bold text-foreground">Live code</span>
+                                                    <span className="block text-xs text-muted-foreground">
+                                                        The code stays the same. Push new mods from "My Codes" and every install updates itself on its next start.
+                                                    </span>
+                                                </span>
+                                            </label>
+                                            <div>
+                                                <label className="block text-sm font-bold text-foreground mb-1">Expires</label>
+                                                <select
+                                                    value={expiryChoice}
+                                                    onChange={(e) => setExpiryChoice(e.target.value)}
+                                                    className="w-full bg-card border border-border rounded-lg p-2 text-sm text-foreground outline-none focus:border-primary"
+                                                >
+                                                    {EXPIRY_OPTIONS.map((option) => (
+                                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <button
                                         onClick={handleExport}
                                         disabled={loading || (!mods.length && !resourcePacks.length && !shaders.length) || (modpackName && !/^[a-zA-Z0-9-_\s]+$/.test(modpackName)) || myCodes.length >= 10}
@@ -308,14 +405,22 @@ function ModpackCodeModal({
                                 </div>
                             ) : (
                                 myCodes.map(item => (
-                                    <div key={item.code} className="bg-muted border border-border rounded-xl p-4 flex items-center justify-between group hover:bg-accent transition-all">
+                                    <div key={item.code} className="bg-muted border border-border rounded-xl p-4 group hover:bg-accent transition-all">
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            <div className="text-lg font-mono font-bold text-primary mb-1">{item.code}</div>
+                                            <div className="text-lg font-mono font-bold text-primary mb-1 flex items-center gap-2">
+                                                {item.code}
+                                                {item.live && (
+                                                    <span className="text-[10px] font-sans font-bold uppercase px-2 py-0.5 rounded-md bg-primary/20 text-primary">
+                                                        Live · rev {item.revision || 1}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="text-xs font-bold text-foreground truncate max-w-[200px] mb-1">{item.name}</div>
                                             <div className="text-[10px] text-muted-foreground uppercase font-bold flex gap-2">
                                                 <span>{item.uses} uses</span>
                                                 <span className="opacity-30">•</span>
-                                                <span>Exp: {new Date(item.expires).toLocaleDateString()}</span>
+                                                <span>{item.expires ? `Exp: ${new Date(item.expires).toLocaleDateString()}` : 'Never expires'}</span>
                                             </div>
                                         </div>
                                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -350,6 +455,40 @@ function ModpackCodeModal({
                                                 </svg>
                                             </button>
                                         </div>
+                                    </div>
+                                    {isAdmin && (
+                                        <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-2">
+                                            {item.live ? (
+                                                <button
+                                                    onClick={() => handlePushLiveUpdate(item)}
+                                                    disabled={!instanceData || busyCode === item.code}
+                                                    title={instanceData ? `Use the content of "${instanceData.name}"` : 'Open this from an instance to push its content'}
+                                                    className="px-3 py-1.5 bg-primary text-black rounded-lg text-xs font-bold disabled:opacity-50"
+                                                >
+                                                    {busyCode === item.code ? 'Updating...' : 'Push update from this instance'}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleCodeSettings(item, { live: true })}
+                                                    disabled={busyCode === item.code}
+                                                    className="px-3 py-1.5 bg-card hover:bg-accent rounded-lg text-xs font-bold text-foreground disabled:opacity-50"
+                                                >
+                                                    Make live
+                                                </button>
+                                            )}
+                                            <select
+                                                value=""
+                                                disabled={busyCode === item.code}
+                                                onChange={(e) => e.target.value && handleCodeSettings(item, { expiry: toExpiryValue(e.target.value) })}
+                                                className="bg-card border border-border rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
+                                            >
+                                                <option value="">Change expiry...</option>
+                                                {EXPIRY_OPTIONS.filter((option) => option.value !== 'default').map((option) => (
+                                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
                                     </div>
                                 ))
                             )}
