@@ -997,6 +997,13 @@ function App() {
     };
 
     const handleLoginSuccess = async (profile) => {
+        // login() liefert nur Name + UUID; ohne Token kann der Skin-Kopf nicht geladen werden.
+        if (profile && !profile.access_token && window.electronAPI?.getProfile) {
+            try {
+                const fullProfile = await window.electronAPI.getProfile();
+                if (fullProfile && fullProfile.uuid === profile.uuid) profile = fullProfile;
+            } catch (e) { }
+        }
         if (profile && profile.access_token && window.electronAPI.getCurrentSkin) {
             try {
                 let skinRes = await window.electronAPI.getCurrentSkin(profile.access_token);

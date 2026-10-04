@@ -5,6 +5,7 @@ const { fork } = require('child_process');
 const Store = require('electron-store');
 const store = new Store();
 const { getUserProfile } = require('../utils/secureProfileStore');
+const { ensureValidSession, LAUNCH_REFRESH_MARGIN_MS } = require('../utils/minecraftSession');
 const backupManager = require('../backupManager');
 const { getProcessStats } = require('../utils/process-utils');
 const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
@@ -1943,9 +1944,23 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
                 backupManager.startScheduler(instanceName, backupConfig.backupSettings.interval);
             }
 
-            const userProfile = getUserProfile(store);
+            let userProfile = getUserProfile(store);
             if (!userProfile || !userProfile.access_token) {
                 return { success: false, error: 'Not logged in. Please login first.' };
+            }
+
+            // Abgelaufene Minecraft-Tokens fuehren im Spiel zu "Invalid session".
+            // Deshalb vor jedem Start pruefen und automatisch per Refresh-Token erneuern.
+            try {
+                const session = await ensureValidSession(store, { minValidityMs: LAUNCH_REFRESH_MARGIN_MS });
+                userProfile = session.profile;
+            } catch (e) {
+                if (e.authRejected) {
+                    console.error('[Launcher] Session refresh rejected:', e.message);
+                    return { success: false, error: 'Your Minecraft session has expired. Please sign in to your account again.' };
+                }
+                // Offline/Netzwerkfehler: mit dem vorhandenen Token weiterstarten.
+                console.warn('[Launcher] Could not refresh session, launching with existing token:', e.message);
             }
 
             const settingsPath = path.join(app.getPath('userData'), 'settings.json');

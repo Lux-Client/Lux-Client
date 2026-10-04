@@ -1,7 +1,8 @@
-const { Auth, mcTokenToolbox, wrapError } = require('msmc');
+const { Auth, wrapError } = require('msmc');
 const Store = require('electron-store');
 const store = new Store();
 const { getUserProfile, setUserProfile, getAccounts, setAccounts } = require('../utils/secureProfileStore');
+const { ensureValidSession } = require('../utils/minecraftSession');
 
 const authManager = new Auth('select_account');
 
@@ -155,54 +156,15 @@ module.exports = (ipcMain, mainWindow) => {
         if (!profile || !profile.access_token) return { success: false, error: 'Not logged in' };
 
         try {
-
-            const isLocalValid = mcTokenToolbox.validate({ exp: profile.exp });
-
-            if (isLocalValid) {
-
-                try {
-                    const { getCachedProfile } = require('../utils/profileCache');
-                    await getCachedProfile(profile.access_token);
-                    return { success: true };
-                } catch (e) {
-                    if (e.response?.status === 401) {
-                        console.log("Token locally valid but rejected by Mojang, needing refresh.");
-
-                    } else {
-
-                        return { success: true };
-                    }
-                }
-            }
-            if (profile.refresh_token) {
-                console.log("Session expired, attempting refresh for", profile.name);
-                const xboxManager = await authManager.refresh(profile.refresh_token);
-                const token = await xboxManager.getMinecraft();
-
-                const newAccessToken = token.mcToken || token.access_token;
-                const newRefreshToken = xboxManager.save();
-
-                const updatedProfile = {
-                    ...profile,
-                    access_token: newAccessToken,
-                    refresh_token: newRefreshToken,
-                    exp: token.exp,
-                    xuid: token.xuid || profile.xuid || ''
-                };
-                let accounts = getAccounts(store);
-                const idx = accounts.findIndex(a => a.uuid === profile.uuid);
-                if (idx !== -1) {
-                    accounts[idx] = updatedProfile;
-                    setAccounts(store, accounts);
-                }
-                setUserProfile(store, updatedProfile);
-                console.log("Refresh successful for", profile.name);
-                return { success: true, refreshed: true };
-            }
-
-            throw new Error("Session expired and no refresh token available");
+            const { refreshed } = await ensureValidSession(store);
+            return refreshed ? { success: true, refreshed: true } : { success: true };
         } catch (e) {
             console.error("Validation/Refresh failed:", e.message);
+
+            if (!e.authRejected) {
+                // Netzwerkfehler o.ae.: Account nicht abmelden, beim naechsten Mal erneut versuchen.
+                return { success: true, offline: true };
+            }
 
             store.delete('user_profile');
             return { success: false, error: 'Session expired', loggedOut: true };

@@ -124,7 +124,9 @@ function TopBar({
     try {
       const res = await window.electronAPI.login();
       if (res?.success) {
-        onProfileUpdate(res.profile);
+        // login() liefert nur Name + UUID; das volle Profil enthaelt den Token fuer den Skin-Kopf.
+        const fullProfile = await window.electronAPI.getProfile().catch(() => null);
+        onProfileUpdate(fullProfile?.uuid === res.profile?.uuid ? fullProfile : res.profile);
       } else {
         addNotification(res?.error || t('login.failed'), 'error');
       }
