@@ -8,6 +8,7 @@ const { resolvePrimaryInstancesDir, resolveInstanceDirByName, getAllInstanceDirs
 const sharedImportState = require('../utils/sharedImportState');
 const { getUserProfile } = require('../utils/secureProfileStore');
 const liveCodeState = require('../utils/liveCodeState');
+const { removeDuplicateMods } = require('../luxcloud/modDuplicates');
 const cloudApi = require('../luxcloud/api');
 const SERVER_URL = 'https://lux.pluginhub.de';
 const LIVE_CHECK_TIMEOUT_MS = 8000;
@@ -482,11 +483,25 @@ module.exports = (ipcMain, win) => {
                     revision: Number(marker.live.revision) || 1,
                     gameVersion,
                     loader: marker.loader || null,
-                    updatedAt: Date.now(),
+                    // Bewusst ohne Zeitstempel: die Datei geht mit dem Cloud-Sync mit. Holen
+                    // sich zwei PCs dieselbe Revision, muss dabei dieselbe Datei entstehen,
+                    // sonst haelt der Abgleich das fuer einen Konflikt und blockiert den Start.
                     items: items.filter((item) => item.state === 'installed').map(liveCodeState.trackedItem)
                 });
             } catch (e) {
                 console.error('[ModpackCode-Handler] Failed to remember live code:', e);
+            }
+
+            // Hat der Spieler (oder ein anderer PC ueber den Cloud-Sync) eine Mod des Codes
+            // inzwischen selbst auf eine andere Version gebracht, laege sie jetzt doppelt
+            // da. Fuer die Dateien, die der Code mitbringt, gilt der Code.
+            try {
+                const codeFiles = new Set(items
+                    .filter((item) => item.state === 'installed' && item.kind === 'mod' && item.fileName)
+                    .map((item) => `mods/${path.basename(String(item.fileName))}`));
+                await removeDuplicateMods(instanceDir, { prefer: codeFiles });
+            } catch (e) {
+                console.error('[ModpackCode-Handler] Failed to check for duplicate mods:', e);
             }
         }
 

@@ -20,6 +20,7 @@ const manifestSnapshot = require('./manifestSnapshot');
 const { HashCache } = require('./hashCache');
 const { getHashCacheDir } = require('./paths');
 const { isMemberWritable, memberContentHash, memberContribution } = require('./shareScope');
+const { removeDuplicateMods } = require('./modDuplicates');
 
 const INSTANCE_CONFIG = 'instance.json';
 
@@ -347,6 +348,20 @@ async function runRestore({
         return [];
     });
 
+    const isMember = payload.access === 'member';
+
+    // Liegt dieselbe Mod danach mehrfach da (Altlast frueherer Syncs, oder eine eigene
+    // Version, die die Cloud nicht kennt), bleibt die der Cloud. Ein Mitglied raeumt nur
+    // eigene Dateien weg; die des Hosts darf es nicht entfernen.
+    const cloudPaths = new Set(entries.map((entry) => entry.path));
+    const duplicates = await removeDuplicateMods(
+        instanceDir,
+        isMember ? { prefer: cloudPaths, protect: cloudPaths } : { prefer: cloudPaths }
+    ).catch((err) => {
+        console.warn('[LuxCloud] Could not check for duplicate mods after the restore:', err.message);
+        return { removed: [] };
+    });
+
     await refreshHashCache(instanceDir, manifest.instanceId, entries).catch((err) => {
         console.warn('[LuxCloud] Could not refresh the hash cache after the restore:', err.message);
     });
@@ -366,8 +381,6 @@ async function runRestore({
         payload.access === 'member' ? memberContribution(manifest) : manifest,
         { revision: payload.revision }
     ).catch(() => {});
-
-    const isMember = payload.access === 'member';
 
     try {
         const instanceConfigEntry = entries.find((entry) => entry.path === INSTANCE_CONFIG);
@@ -396,7 +409,12 @@ async function runRestore({
         // geschriebenen Sync-Umfang gebildet. Ohne ihn saehe die Hintergrundkontrolle die
         // frischen mtimes der heruntergeladenen Dateien als lokale Aenderung und schoebe
         // unmittelbar nach jedem Download einen Upload hinterher.
-        await rememberLocalSignature(manifest.instanceId, instanceDir);
+        // Wurden Duplikate entfernt, weicht dieser PC jetzt bewusst von der Cloud ab: dann
+        // keinen Fingerabdruck festschreiben, damit die Hintergrundkontrolle die
+        // Bereinigung hochlaedt und die Cloud (und damit jeder andere PC) sie uebernimmt.
+        if (duplicates.removed.length === 0) {
+            await rememberLocalSignature(manifest.instanceId, instanceDir);
+        }
     } catch (err) {
         console.warn('[LuxCloud] Could not remember the restored revision:', err.message);
     }
@@ -414,6 +432,7 @@ async function runRestore({
         counters,
         unavailable,
         removed,
+        duplicatesRemoved: duplicates.removed,
         access: payload.access || 'owner'
     };
 }
