@@ -9,6 +9,7 @@ const { contentHashOf } = require('./manifest');
 const { rememberRevision } = require('./syncState');
 const { memberContentHash } = require('./shareScope');
 const { planMerge } = require('./reconcile');
+const { removeDuplicateMods } = require('./modDuplicates');
 
 // Die Cloud ist weiter, dieser PC hat aber auch etwas geaendert. Statt das sofort zum
 // Konflikt zu erklaeren, werden die Aenderungen Datei fuer Datei zusammengefuehrt (siehe
@@ -53,6 +54,16 @@ async function rebaseOntoCloud({ instanceDir, instanceId, instanceName, member, 
     await downloader.removeStaleFiles(instanceDir, toRemove, []);
     await downloader.adoptModSources(options.modCachePath, plan.fetch).catch(() => {});
 
+    // Der Abgleich kennt nur Pfade. Hat die Cloud eine Mod auf eine Version gebracht und
+    // dieser PC dieselbe Mod auf eine andere (andere Dateinamen), laegen jetzt beide
+    // nebeneinander -- und gingen mit dem Upload gemeinsam hoch. Die neuere bleibt. Ein
+    // Mitglied entfernt dabei nichts, was der Cloud gehoert.
+    const remotePaths = new Set((remote.manifest.entries || []).map((entry) => entry.path));
+    const duplicates = await removeDuplicateMods(instanceDir, member ? { protect: remotePaths } : {}).catch((err) => {
+        console.warn(`[LuxCloud] ${instanceName}: could not check for duplicate mods after merging (${err.message}).`);
+        return { removed: [] };
+    });
+
     const instanceConfig = (remote.manifest.entries || []).find((entry) => entry.path === 'instance.json');
     await rememberRevision(instanceId, {
         lastKnownRevision: Number(remote.revision),
@@ -63,7 +74,13 @@ async function rebaseOntoCloud({ instanceDir, instanceId, instanceName, member, 
     await manifestSnapshot.save(instanceId, remote.manifest, { revision: remote.revision }).catch(() => {});
 
     console.log(`[LuxCloud] ${instanceName}: merged revision ${remote.revision} from the cloud (${plan.fetch.length} file(s) updated, ${plan.remove.length} removed) before uploading.`);
-    return { rebased: true, revision: Number(remote.revision), fetched: plan.fetch.length, removed: plan.remove.length };
+    return {
+        rebased: true,
+        revision: Number(remote.revision),
+        fetched: plan.fetch.length,
+        removed: plan.remove.length,
+        duplicatesRemoved: duplicates.removed
+    };
 }
 
 module.exports = { rebaseOntoCloud };

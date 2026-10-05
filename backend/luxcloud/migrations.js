@@ -2,8 +2,9 @@ const { getAllInstanceDirsSync, resolveInstanceDirByName } = require('../utils/i
 const { ensureAllInstanceIds } = require('./instanceIdentity');
 const { extractAllIcons } = require('./instanceIcon');
 const { recoverOrphanedSessions } = require('./playtimeSession');
+const { cleanupLinkedInstances } = require('./modDuplicates');
 
-// Einmalige Aufraeumarbeiten beim App-Start. Alle drei Schritte sind idempotent und
+// Einmalige Aufraeumarbeiten beim App-Start. Alle Schritte sind idempotent und
 // laufen bei jedem Start -- sie kosten bei bereits migrierten Instanzen nur ein paar
 // Dateizugriffe und heilen dabei alles, was zwischendurch wieder inkonsistent wurde
 // (etwa weil eine aeltere Lux-Version dazwischen lief).
@@ -13,7 +14,7 @@ const { recoverOrphanedSessions } = require('./playtimeSession');
 // aber vollstaendig funktionsfaehig.
 
 async function runStartupMigrations({ log = console.log, logError = console.error } = {}) {
-    const summary = { instanceIds: null, icons: null, playtime: null, errors: [] };
+    const summary = { instanceIds: null, icons: null, playtime: null, duplicateMods: null, errors: [] };
     const baseDirs = getAllInstanceDirsSync();
 
     // 1. Stabile Identitaet. Muss vor allem anderen laufen, weil der Hash-Cache und
@@ -65,6 +66,23 @@ async function runStartupMigrations({ log = console.log, logError = console.erro
     } catch (error) {
         logError('[LuxCloud] Nachbuchen abgebrochener Sessions fehlgeschlagen:', error.message);
         summary.errors.push({ step: 'playtime', message: error.message });
+    }
+
+    // 4. Doppelt abgelegte Mods in Cloud-Instanzen entfernen (einmal je Instanz). Bis zu
+    //    dieser Version konnte ein Sync mehrere Versionen derselben Mod nebeneinander
+    //    hinterlassen (modDuplicates.js).
+    try {
+        const result = await cleanupLinkedInstances({
+            resolveInstanceDir: (name) => resolveInstanceDirByName(name)
+        });
+        summary.duplicateMods = result;
+
+        for (const entry of result.cleaned) {
+            log(`[LuxCloud] ${entry.instanceName}: ${entry.removed.length} doppelte Mod-Datei(en) entfernt.`);
+        }
+    } catch (error) {
+        logError('[LuxCloud] Aufraeumen doppelter Mods fehlgeschlagen:', error.message);
+        summary.errors.push({ step: 'duplicateMods', message: error.message });
     }
 
     return summary;
