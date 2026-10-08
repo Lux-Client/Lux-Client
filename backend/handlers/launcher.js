@@ -6,6 +6,7 @@ const Store = require('electron-store');
 const store = new Store();
 const { getUserProfile } = require('../utils/secureProfileStore');
 const { ensureValidSession, LAUNCH_REFRESH_MARGIN_MS } = require('../utils/minecraftSession');
+const { redactSecrets } = require('../utils/redactSecrets');
 const backupManager = require('../backupManager');
 const { getProcessStats } = require('../utils/process-utils');
 const { resolvePrimaryInstancesDir, resolveInstanceDirByName } = require('../utils/instances-path');
@@ -2518,7 +2519,7 @@ $targetTitle = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromB
             let closeHandled = false;
 
             const appendLog = (data) => {
-                const line = data.toString();
+                const line = redactSecrets(data.toString(), [userProfile.access_token]);
 
                 if (!logCrashDetected && !gameStarted) {
                     for (const pattern of crashPatterns) {

@@ -1,4 +1,5 @@
 const { Client } = require('minecraft-launcher-core');
+const { redactSecrets } = require('../utils/redactSecrets');
 
 let launcher = null;
 let started = false;
@@ -18,16 +19,20 @@ async function startLaunch(instanceName, opts) {
     started = true;
     launcher = new Client();
 
+    // MCLC loggt die kompletten Startargumente inkl. --accessToken; nie ungeschwaerzt weitergeben.
+    const secrets = [opts?.authorization?.access_token];
+    const clean = (line) => redactSecrets(line, secrets);
+
     launcher.on('debug', (line) => {
-        sendMessage('debug', { line: String(line ?? '') });
+        sendMessage('debug', { line: clean(line) });
     });
 
     launcher.on('data', (line) => {
-        sendMessage('data', { line: String(line ?? '') });
+        sendMessage('data', { line: clean(line) });
     });
 
     launcher.on('stderr', (line) => {
-        sendMessage('stderr', { line: String(line ?? '') });
+        sendMessage('stderr', { line: clean(line) });
     });
 
     launcher.on('progress', (payload) => {
@@ -53,7 +58,7 @@ async function startLaunch(instanceName, opts) {
 
         sendMessage('spawn', { pid: proc.pid });
     } catch (error) {
-        sendMessage('launch-error', { error: error?.message || 'Unknown launch error in worker' });
+        sendMessage('launch-error', { error: redactSecrets(error?.message || 'Unknown launch error in worker') });
         process.exit(1);
     }
 }
