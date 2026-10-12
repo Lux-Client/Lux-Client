@@ -131,6 +131,7 @@ jobs:
           path: |
             release/*.exe
             release/*.dmg
+            release/*.zip
             release/*.AppImage
             release/*.deb
             release/*.rpm
@@ -166,7 +167,7 @@ jobs:
               release_id: releaseId,
               per_page: 100
             });
-            const installerExts = ['.exe', '.dmg', '.AppImage', '.deb', '.rpm'];
+            const installerExts = ['.exe', '.dmg', '.zip', '.AppImage', '.deb', '.rpm'];
             const toDelete = assets.filter(a => installerExts.some(ext => a.name.endsWith(ext)));
             for (const asset of toDelete) {
               core.info(`Deleting old asset: ${asset.name}`);
@@ -206,6 +207,7 @@ jobs:
           gh release upload "$TAG" \
             release-artifacts/*.exe \
             release-artifacts/*.dmg \
+            release-artifacts/*.zip \
             release-artifacts/*.AppImage \
             release-artifacts/*.deb \
             release-artifacts/*.rpm \
