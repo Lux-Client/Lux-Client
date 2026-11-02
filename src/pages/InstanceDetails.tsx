@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useStoredBoolean } from '../hooks/useStoredBoolean';
 import { useTranslation } from 'react-i18next';
 import Dropdown from '../components/Dropdown';
 import InstanceSettingsModal from '../components/InstanceSettingsModal';
@@ -95,7 +96,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         error: true,
         debug: false
     });
-    const [autoScroll, setAutoScroll] = useState(true);
+    const [autoScroll, setAutoScroll] = useStoredBoolean('lux:logs:autoScroll', true);
     const [isUploadingLog, setIsUploadingLog] = useState(false);
     const logContainerRef = useRef(null);
     const liveLogBufferRef = useRef('');

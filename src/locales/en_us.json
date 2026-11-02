@@ -1111,8 +1111,15 @@
             "upload_results": "Upload results",
             "upload_success": "Files uploaded successfully",
             "upload_title": "Upload Files",
-            "uploading": "Uploading files..."
-        }
+            "uploading": "Uploading files...",
+            "selected_count": "{{count}} selected",
+            "delete_selected": "Delete",
+            "clear_selection": "Clear selection",
+            "select_all": "Select all",
+            "bulk_delete_confirm": "Delete {{count}} selected item(s)? This cannot be undone.",
+            "bulk_delete_success": "{{count}} item(s) deleted"
+        },
+        "open_folder": "Open server folder"
     },
     "setup": {
         "chooseLanguage": "Choose Your Language",

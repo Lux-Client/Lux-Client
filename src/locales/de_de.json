@@ -1110,8 +1110,15 @@
             "upload_results": "Upload results",
             "upload_success": "Files uploaded successfully",
             "upload_title": "Upload Files",
-            "uploading": "Uploading files..."
-        }
+            "uploading": "Uploading files...",
+            "selected_count": "{{count}} ausgewählt",
+            "delete_selected": "Löschen",
+            "clear_selection": "Auswahl aufheben",
+            "select_all": "Alle auswählen",
+            "bulk_delete_confirm": "{{count}} ausgewählte Elemente löschen? Das kann nicht rückgängig gemacht werden.",
+            "bulk_delete_success": "{{count}} Element(e) gelöscht"
+        },
+        "open_folder": "Server-Ordner öffnen"
     },
     "setup": {
         "chooseLanguage": "Sprache auswählen",

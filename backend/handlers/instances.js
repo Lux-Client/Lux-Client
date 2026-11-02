@@ -4496,8 +4496,13 @@ module.exports = (ipcMain, win) => {
 
                 const destPath = path.join(instancesDir, newName);
                 let lastReportedProgress = 1;
+                // Lux Cloud keeps its per-instance working data (staging, conflict and
+                // duplicate backups) in .lux-sync. That belongs to the original's cloud
+                // link; the copy starts out as a plain local instance.
+                const cloudWorkDir = path.join(sourcePath, '.lux-sync');
                 await fs.copy(sourcePath, destPath, {
                     filter: (src) => {
+                        if (src === cloudWorkDir || src.startsWith(cloudWorkDir + path.sep)) return false;
                         copiedItems++;
                         const progress = Math.min(99, Math.floor((copiedItems / totalItems) * 99));
                         if (progress !== lastReportedProgress && win && win.webContents) {

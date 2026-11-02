@@ -63,8 +63,10 @@ export default function InstanceCloudPanel({ instanceName, instanceId }: Props) 
     const [trashedUuid, setTrashedUuid] = useState<string | null>(null);
     const [localRevision, setLocalRevision] = useState<number | null>(null);
 
+    // Match by UUID whenever the instance has one. Matching by name as well made a
+    // duplicated instance (same modpack, never uploaded) look like the cloud original.
     const cloudInstance = (sync?.cloudInstances || []).find(
-        (entry) => entry.instanceUuid === instanceId || entry.name === instanceName
+        (entry) => (instanceId ? entry.instanceUuid === instanceId : entry.name === instanceName)
     );
 
     // Eine Instanz, an der dieses Konto nur mitarbeitet. Sie steht nicht in der eigenen

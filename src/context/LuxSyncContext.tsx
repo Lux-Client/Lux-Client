@@ -296,11 +296,19 @@ export const LuxSyncProvider = ({
                 } else if (payload.event === 'done') {
                     // A skipped run is not a completed sync. Reporting the trashed case as
                     // 'synced' was what made the panel claim everything was up to date.
-                    const reason = payload.result?.reason;
+                    const result = payload.result || {};
+                    const reason = result.reason;
                     if (reason === 'instance_trashed') nextStatuses[payload.instanceName] = 'trashed';
                     else if (reason === 'revision_conflict') nextStatuses[payload.instanceName] = 'conflict';
                     else if (reason === 'update_available') nextStatuses[payload.instanceName] = 'pending';
-                    else if (reason === 'not_in_cloud') delete nextStatuses[payload.instanceName];
+                    else if (reason === 'already_running') { /* the running sync reports its own end */ }
+                    else if (result.skipped) {
+                        // Nothing was uploaded (e.g. 'not_linked' for a local-only copy of a
+                        // cloud instance). Pinning 'synced' here made such a copy claim it
+                        // was up to date in the cloud although it was never uploaded, so
+                        // fall back to what the cloud listing says instead.
+                        delete nextStatuses[payload.instanceName];
+                    }
                     else nextStatuses[payload.instanceName] = 'synced';
                 }
                 return { ...current, statuses: nextStatuses };
