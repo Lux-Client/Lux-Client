@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useStoredBoolean } from '../hooks/useStoredBoolean';
 import { createPortal } from 'react-dom';
 
 function ServerConsole({ server, onClose, onServerAction }) {
     const [logs, setLogs] = useState([]);
     const [command, setCommand] = useState('');
     const [isConnected, setIsConnected] = useState(false);
-    const [autoScroll, setAutoScroll] = useState(true);
+    const [autoScroll, setAutoScroll] = useStoredBoolean('lux:logs:autoScroll', true);
     const [stats, setStats] = useState({
         cpu: 0,
         memory: 0,
