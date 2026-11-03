@@ -1387,5 +1387,21 @@
         "subtitle": "Pick the Minecraft account you want to play with.",
         "empty": "No saved accounts left. Add one to continue.",
         "remove": "Remove this account"
+    },
+    "lux_mod": {
+        "create_label": "Instance type",
+        "standalone": "Standalone Instance",
+        "standalone_hint": "Minecraft without the Lux Client mod",
+        "with_lux": "With Lux Client",
+        "with_lux_hint": "Downloads the Lux Client mod (Fabric)",
+        "unsupported_versions": "Available for {{versions}}",
+        "offer_title": "Do you also want to install the Lux Client mod?",
+        "offer_hint": "Lux Client is available for {{loader}} {{version}}. Restart the game afterwards for the full Lux experience.",
+        "update_title": "A new Lux Client version is available",
+        "install": "Install Lux Client",
+        "update": "Update Lux Client",
+        "installed": "Lux Client installed.",
+        "installed_restart": "Lux Client installed. Restart the game to use it.",
+        "install_failed": "Could not install Lux Client: {{error}}"
     }
 }

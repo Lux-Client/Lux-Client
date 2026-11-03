@@ -69,6 +69,8 @@ function createWindow() {
         }
         console.log('[Main] Registering modrinth handler...');
         require('./handlers/modrinth')(ipcMain, mainWindow);
+        console.log('[Main] Registering Lux mod handler...');
+        require('./handlers/luxMod')(ipcMain, mainWindow);
         console.log('[Main] Registering data handler...');
         require('./handlers/data')(ipcMain, mainWindow);
         console.log('[Main] Registering settings handler...');

@@ -1398,5 +1398,21 @@
         "subtitle": "Wähle das Minecraft-Konto, mit dem du spielen möchtest.",
         "empty": "Keine gespeicherten Konten mehr. Füge eines hinzu, um fortzufahren.",
         "remove": "Dieses Konto entfernen"
+    },
+    "lux_mod": {
+        "create_label": "Instanztyp",
+        "standalone": "Standalone-Instanz",
+        "standalone_hint": "Minecraft ohne die Lux Client Mod",
+        "with_lux": "Mit Lux Client",
+        "with_lux_hint": "Lädt die Lux Client Mod mit herunter (Fabric)",
+        "unsupported_versions": "Verfügbar für {{versions}}",
+        "offer_title": "Möchtest du die Lux Client Mod auch installieren?",
+        "offer_hint": "Lux Client gibt es für {{loader}} {{version}}. Starte das Spiel danach neu für das komplette Lux-Erlebnis.",
+        "update_title": "Eine neue Lux Client Version ist verfügbar",
+        "install": "Lux Client installieren",
+        "update": "Lux Client aktualisieren",
+        "installed": "Lux Client installiert.",
+        "installed_restart": "Lux Client installiert. Starte das Spiel neu, um ihn zu nutzen.",
+        "install_failed": "Lux Client konnte nicht installiert werden: {{error}}"
     }
 }

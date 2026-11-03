@@ -111,6 +111,9 @@ interface ElectronAPI {
   deleteServerMod: (serverName: string, fileName: string, type?: string) => Promise<any>;
   installMod: (data: any) => Promise<any>;
   modrinthInstall: (data: any) => Promise<any>;
+  getLuxModInfo: (options?: { force?: boolean }) => Promise<any>;
+  getLuxModStatus: (instanceName: string, options?: { force?: boolean }) => Promise<any>;
+  installLuxMod: (instanceName: string) => Promise<any>;
   installLocalMod: (instanceName: string, filePath: string, type?: string) => Promise<any>;
   getModVersions: (projectId: string, loaders?: any, gameVersions?: any, fallbackCurseForgeProjectId?: string | null) => Promise<any>;
   getModrinthProject: (projectId: string) => Promise<any>;

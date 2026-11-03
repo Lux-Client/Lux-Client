@@ -629,6 +629,7 @@ function createWindow() {
         { name: 'servers', path: '../backend/handlers/servers' },
         { name: 'serverStatus', path: '../backend/handlers/serverStatus' },
         { name: 'modrinth', path: '../backend/handlers/modrinth' },
+        { name: 'luxMod', path: '../backend/handlers/luxMod' },
         { name: 'data', path: '../backend/handlers/data' },
         { name: 'settings', path: '../backend/handlers/settings' },
         { name: 'skins', path: '../backend/handlers/skins' },

@@ -19,6 +19,7 @@ import InstanceCloudPanel from '../components/cloud/InstanceCloudPanel';
 import CloudStatusBadge from '../components/cloud/CloudStatusBadge';
 import { useLuxAccount } from '../context/LuxAccountContext';
 import { useLuxSync } from '../context/LuxSyncContext';
+import { installLuxClientMod, isLuxModSupported, useLuxModVersions } from '../utils/luxMod';
 
 function RetryableListIcon({ src, className, fallback }) {
     const [attempt, setAttempt] = useState(0);
@@ -587,6 +588,57 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     }, [status]);
 
     const { addNotification } = useNotification();
+
+    // Lux Client mod: offer it on instances whose version and loader match a published build.
+    const luxModVersions = useLuxModVersions();
+    const luxModSupported = isLuxModSupported(luxModVersions, instance.version, instance.loader);
+    const [luxModStatus, setLuxModStatus] = useState<any>(null);
+    const [installingLuxMod, setInstallingLuxMod] = useState(false);
+
+    const refreshLuxModStatus = async () => {
+        if (!luxModSupported) {
+            setLuxModStatus(null);
+            return;
+        }
+        try {
+            const res = await window.electronAPI.getLuxModStatus(instance.name);
+            setLuxModStatus(res?.success ? res : null);
+        } catch (error) {
+            console.warn('[LuxMod] Status check failed:', error);
+        }
+    };
+
+    useEffect(() => {
+        refreshLuxModStatus();
+    }, [instance.name, luxModSupported, mods]);
+
+    const handleInstallLuxMod = async () => {
+        if (installingLuxMod) return;
+        setInstallingLuxMod(true);
+        try {
+            const res = await installLuxClientMod(instance.name, instance.version);
+            if (res?.success) {
+                addNotification(
+                    isRunning
+                        ? t('lux_mod.installed_restart', 'Lux Client installed. Restart the game to use it.')
+                        : t('lux_mod.installed', 'Lux Client installed.'),
+                    'success'
+                );
+                if (loadedContentTypesRef.current.mod) {
+                    await loadMods();
+                }
+            } else {
+                addNotification(t('lux_mod.install_failed', 'Could not install Lux Client: {{error}}', { error: res?.error || 'unknown error' }), 'error');
+            }
+        } catch (error) {
+            addNotification(t('lux_mod.install_failed', 'Could not install Lux Client: {{error}}', { error: error.message }), 'error');
+        } finally {
+            setInstallingLuxMod(false);
+            refreshLuxModStatus();
+        }
+    };
+
+    const showLuxModOffer = luxModSupported && luxModStatus?.available && (!luxModStatus.installed || luxModStatus.disabled || luxModStatus.updateAvailable);
 
     const handleCopyLog = () => {
         navigator.clipboard.writeText(log).then(() => {
@@ -1448,6 +1500,35 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             <div className="px-8 mt-4">
                 <ExtensionSlot name="instance.details" context={{ instanceName: instance.name, status, isRunning }} className="w-full flex gap-4 overflow-visible" />
             </div>
+
+            {showLuxModOffer && (
+                <div className="px-8 mt-4">
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3">
+                        <div className="min-w-0">
+                            <div className="text-sm font-bold text-foreground">
+                                {luxModStatus.updateAvailable
+                                    ? t('lux_mod.update_title', 'A new Lux Client version is available')
+                                    : t('lux_mod.offer_title', 'Do you also want to install the Lux Client mod?')}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {t('lux_mod.offer_hint', 'Lux Client is available for {{loader}} {{version}}. Restart the game afterwards for the full Lux experience.', { loader: 'Fabric', version: instance.version })}
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleInstallLuxMod}
+                            disabled={installingLuxMod || status === 'installing'}
+                            className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold bg-primary text-black hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            {installingLuxMod
+                                ? t('common.installing', 'Installing...')
+                                : luxModStatus.updateAvailable
+                                    ? t('lux_mod.update', 'Update Lux Client')
+                                    : t('lux_mod.install', 'Install Lux Client')}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             { }
             <div className="px-8 mt-4 flex gap-2 border-b border-border">
