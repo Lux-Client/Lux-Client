@@ -766,9 +766,13 @@ function Dashboard({
   };
 
   const luxClientAvailableForVersion = luxModVersions.includes(selectedVersion);
-  const createWithLuxClient =
-    withLuxClient &&
-    isLuxModSupported(luxModVersions, selectedVersion, selectedLoader);
+  // The choice only appears for a loader and version the mod exists for.
+  const showLuxClientChoice = isLuxModSupported(
+    luxModVersions,
+    selectedVersion,
+    selectedLoader,
+  );
+  const createWithLuxClient = withLuxClient && showLuxClientChoice;
 
   // "With Lux Client" only works for a supported version on Fabric; fall back
   // to a standalone instance as soon as either no longer fits.
@@ -781,12 +785,7 @@ function Dashboard({
     }
   }, [withLuxClient, luxClientAvailableForVersion, selectedLoader]);
 
-  const selectLuxClientMode = (enabled) => {
-    setWithLuxClient(enabled);
-    if (enabled && selectedLoader.toLowerCase() !== "fabric") {
-      setSelectedLoader("Fabric");
-    }
-  };
+  const selectLuxClientMode = (enabled) => setWithLuxClient(enabled);
 
   const performCreation = async () => {
     setIsCreating(true);
@@ -2161,6 +2160,7 @@ function Dashboard({
                   </div>
                 </div>
 
+                {showLuxClientChoice && (
                 <div className="space-y-1.5">
                   <Label className="text-xs">
                     {t("lux_mod.create_label", "Instance type")}
@@ -2184,9 +2184,8 @@ function Dashboard({
                     </button>
                     <button
                       type="button"
-                      disabled={!luxClientAvailableForVersion}
                       onClick={() => selectLuxClientMode(true)}
-                      className={`rounded-lg border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
                         withLuxClient
                           ? "border-primary bg-primary/10"
                           : "border-border bg-muted hover:border-primary/50"
@@ -2196,15 +2195,12 @@ function Dashboard({
                         {t("lux_mod.with_lux", "With Lux Client")}
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        {luxClientAvailableForVersion
-                          ? t("lux_mod.with_lux_hint", "Downloads the Lux Client mod (Fabric)")
-                          : t("lux_mod.unsupported_versions", "Available for {{versions}}", {
-                              versions: luxModVersions.join(", "),
-                            })}
+                        {t("lux_mod.with_lux_hint", "Downloads the Lux Client mod (Fabric)")}
                       </div>
                     </button>
                   </div>
                 </div>
+                )}
               </>
             )}
 
