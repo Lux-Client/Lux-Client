@@ -1,6 +1,6 @@
 // Die Grenze der Zusammenarbeit, aus Sicht des Launchers.
 //
-// Muss zu MCLC-Website/cloudShare.js passen: der Server setzt sie durch (ein Mitglied
+// Muss zu Lux-Website/cloudShare.js passen: der Server setzt sie durch (ein Mitglied
 // bekommt nur diese Dateien zu sehen und kann nur diese aendern), der Client haelt sich
 // daran, damit er nichts Privates hochlaedt und seine Buchfuehrung dieselbe Sicht hat wie
 // der Server.

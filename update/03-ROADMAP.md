@@ -4,7 +4,7 @@
 Reihenfolge ist bindend, wo Abhängigkeiten stehen.
 Fortschritt wird in `STATUS.md` gepflegt, **nicht hier**.
 
-Legende der Repos: **[C]** = `MCLC-Client`, **[W]** = `MCLC-Website`.
+Legende der Repos: **[C]** = `Lux-Client`, **[W]** = `Lux-Website`.
 
 ---
 
@@ -73,7 +73,7 @@ in dem der vorherige Token noch akzeptiert wird.
 Refresh-Reuse → Kette invalidiert · gebannter User bekommt kein Token ·
 Gerät auf der Website abmelden → Client bemerkt 401.
 
-**Abnahme:** Nach diesem Punkt zeigt der Client „Angemeldet als beatv" und listet
+**Abnahme:** Nach diesem Punkt zeigt der Client „Angemeldet als testuser" und listet
 die Geräte. Alles andere ist unverändert.
 
 ---

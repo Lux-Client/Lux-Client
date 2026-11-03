@@ -229,9 +229,9 @@ async function main() {
     await h.start();
     process.env.LUXCLOUD_BASE_URL = `http://127.0.0.1:${h.server.address().port}`;
 
-    const userId = await h.createUser({ googleId: 'g-p67', username: 'beatv' });
+    const userId = await h.createUser({ googleId: 'g-p67', username: 'testuser' });
     const tokens = await h.authorizeDevice({
-        user: { id: userId, username: 'beatv', role: 'user', banned: false },
+        user: { id: userId, username: 'testuser', role: 'user', banned: false },
         deviceUuid: 'dev-p67-0001'
     });
 

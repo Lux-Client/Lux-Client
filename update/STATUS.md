@@ -23,14 +23,10 @@ UI-Anbindung, `tests/` (161 Tests), Cloud-UI (13 Komponenten) · Website
 4. `03-ROADMAP.md` — Phasen 0–12 mit Aufgaben, Dateien, Risiken, Tests
 5. diese Datei — Fortschritt
 
-**Repos (Pfade auf diesem PC)**
-- Client: `C:\Users\Max\Documents\GitHub\MCLC-Client` — Electron/React, „Lux" v1.10.0
-- Website: `C:\Users\Max\Documents\GitHub\Lux-Website` — Express/Postgres, `lux.pluginhub.de`
-
-> ⚠️ Die älteren Dokumente nennen die Pfade des ersten PCs
-> (`C:\Users\beatv\…`) und das Website-Repo unter dem Namen **MCLC-Website**.
-> Dasselbe Repo heißt hier **Lux-Website**. Inhaltlich identisch, nur der
-> Ordnername ist ein anderer.
+**Repos**
+- Client: dieses Repo (Electron/React, „Lux")
+- Website: separates Repo Lux-Website (Express/Postgres, `lux.pluginhub.de`),
+  liegt als Nachbarordner neben dem Client
 
 > ℹ️ Dieser Ordner heißt jetzt `update/` und wird **versioniert** (`git
 > check-ignore` schlägt nicht mehr an). Das Problem mit `docs/*` in der
@@ -124,7 +120,7 @@ Website-Account verbinden. Kein Sync, keine Instanzen, keine Dateien.
 
 Neue Abhängigkeiten: `jsonwebtoken`, `express-rate-limit`, `pg-mem` (nur dev).
 
-### Client (`MCLC-Client`)
+### Client (`Lux-Client`)
 
 | Datei | Inhalt |
 |---|---|
@@ -1043,9 +1039,8 @@ mit Datum und Fundstelle.)*
   winzig und nicht wiederherstellbar, ihr Verlust wäre beim PC-Wechsel der
   ärgerlichste Teil. Wirkung: 488 MB → 134 MB, 6.738 → 338 Dateien.
 
-- **2026-08-31 — Website-Repo heißt hier `Lux-Website`.** `01-ANALYSE.md §1` und
-  `00-PROMPT.md` sprechen von `MCLC-Website`. Es ist dasselbe Repo; alle
-  Aussagen der Analyse dazu haben sich als korrekt bestätigt.
+- **2026-08-31 — Website-Repo heißt `Lux-Website`.** Alle Aussagen aus
+  `01-ANALYSE.md §1` dazu haben sich als korrekt bestätigt.
 
 - **2026-08-31 — `routes/api.js`, `routes/auth.js` und `routes/extensions.js`
   der Website sind nirgends eingehängt.** `server.js` enthält alle Routen selbst;
@@ -1155,12 +1150,12 @@ mit Datum und Fundstelle.)*
 8. Neue Website-Endpunkte bekommen eine eigene Testdatei unter `tests/`, die
    `luxcloudHarness.js` benutzt, plus einen Eintrag im Skript `test:cloud`.
    `npm run test:cloud` braucht keine Datenbank und kein Docker.
-9. Neuer Client-Code bekommt Tests in `MCLC-Client/tests/`, aufrufbar über
+9. Neuer Client-Code bekommt Tests in `Lux-Client/tests/`, aufrufbar über
    `npm run test:luxcloud`. Läuft ohne Electron.
 11. `npm run luxcloud:preview -- --all` zeigt für die echten Instanzen dieses
    PCs, was ein Sync kosten würde. Reines Node, kein Electron, schreibt nichts.
 10. **Die Pfadregeln stehen doppelt** — `Lux-Website/routes/manifestSchema.js`
-   und `MCLC-Client/backend/luxcloud/pathRules.js`. Das ist Absicht (`§F.5`
+   und `Lux-Client/backend/luxcloud/pathRules.js`. Das ist Absicht (`§F.5`
    verlangt zwei unabhängige Prüfungen), aber die beiden Funktionen müssen
    **wortgleich** bleiben. Der Client-Test vergleicht sie automatisch, wenn
    beide Repos nebeneinander liegen. Wer eine ändert, ändert beide.

@@ -99,7 +99,7 @@ tatsächlich garantiert statt nur wahrscheinlich zu machen.
 # B. Datenmodell
 
 Neue Tabellen, Stil und Konventionen exakt wie `db_init.js`.
-Neue Datei: **`MCLC-Website/db_init_cloud.js`**, aufgerufen aus `db_init.js`.
+Neue Datei: **`Lux-Website/db_init_cloud.js`**, aufgerufen aus `db_init.js`.
 
 > Beachte die `database.js`-Fallstricke aus `01-ANALYSE.md §1`:
 > `?`-Platzhalter, keine doppelten Anführungszeichen, und Composite-PK-Inserts
@@ -306,7 +306,7 @@ Regeln:
 ## B.3 Sync-Policy — was wird synchronisiert
 
 Diese Tabelle ist die einzige Wahrheit. Implementierung als geordnete Regelliste
-in **`MCLC-Client/backend/luxcloud/syncPolicy.js`** (gleiche Datei später auch
+in **`Lux-Client/backend/luxcloud/syncPolicy.js`** (gleiche Datei später auch
 serverseitig zur Validierung spiegeln).
 
 | Kategorie | Muster | Default | Begründung |
@@ -333,7 +333,7 @@ Zusätzliche Hardlimits:
 # C. API
 
 Basis: `https://lux.pluginhub.de`.
-Neue Express-Router in **`MCLC-Website/routes/cloud.js`**, `routes/deviceAuth.js`,
+Neue Express-Router in **`Lux-Website/routes/cloud.js`**, `routes/deviceAuth.js`,
 `routes/adminCloud.js` — nicht in die 1700-Zeilen-`server.js` schreiben, dort nur
 `app.use()` ergänzen.
 
@@ -371,7 +371,7 @@ auf `luxclient://auth?code=…&state=…`.
   "device_name": "DESKTOP-ABC", "platform": "win32", "app_version": "1.11.0" }
 // 200
 { "accessToken": "<JWT, 1h>", "refreshToken": "<opak, 90d>", "expiresIn": 3600,
-  "user": { "id": 42, "username": "beatv", "avatar": "https://…" } }
+  "user": { "id": 42, "username": "testuser", "avatar": "https://…" } }
 // 400 invalid_grant | 429 rate limited
 ```
 Access-Token = JWT, `HS256`, Secret aus `LUXCLOUD_JWT_SECRET`,
@@ -395,7 +395,7 @@ für den User. Das ist die Standard-Reuse-Detection und der Grund, warum
 
 ```jsonc
 // GET /api/cloud/me → 200
-{ "user": { "id": 42, "username": "beatv", "avatar": "…" },
+{ "user": { "id": 42, "username": "testuser", "avatar": "…" },
   "settings": { "cloudSyncEnabled": true, "autoSync": true,
                 "crossPlatformDefault": true, "syncWorldsDefault": false,
                 "syncScreenshotsDefault": false },
@@ -541,7 +541,7 @@ Codes: `unauthorized`, `device_revoked`, `token_expired`, `forbidden`, `not_foun
 
 # D. Sync Engine
 
-Neues Verzeichnis **`MCLC-Client/backend/luxcloud/`** (nichts davon in `instances.js`):
+Neues Verzeichnis **`Lux-Client/backend/luxcloud/`** (nichts davon in `instances.js`):
 
 ```
 backend/luxcloud/
@@ -774,7 +774,7 @@ in verschiedene Zeilen. Ein Retry schreibt denselben Wert nochmal — folgenlos.
 `%APPDATA%/lux/luxcloud/state.json`
 ```jsonc
 { "deviceUuid": "…", "deviceName": "DESKTOP-ABC",
-  "user": { "id": 42, "username": "beatv" },
+  "user": { "id": 42, "username": "testuser" },
   "instances": {
     "8f14e45f-…": { "cloudLinked": true, "lastKnownRevision": 12,
                     "lastManifestHash": "5d41…", "lastSyncedAt": 1756582980000,
@@ -797,7 +797,7 @@ oder Hetzner Object Storage wäre der Egress der dominante Kostenblock, nicht de
 Speicher.
 Zweitwahl: Backblaze B2 (Egress frei via Bandwidth Alliance/Cloudflare).
 
-Abstraktion in **`MCLC-Website/storage/index.js`** mit zwei Treibern:
+Abstraktion in **`Lux-Website/storage/index.js`** mit zwei Treibern:
 - `s3.js` (`@aws-sdk/client-s3`, funktioniert gegen R2/B2/MinIO/S3)
 - `fs.js` (lokales Verzeichnis unter `DATA_DIR/blobs`) — für Entwicklung und
   Self-Hosting ohne Cloud-Account
@@ -1074,7 +1074,7 @@ Lux Account
   [nicht angemeldet]  ->  [ Mit Lux Account anmelden ]
                           "Optional. Ohne Account funktioniert Lux vollständig."
   [angemeldet]
-     Avatar  beatv                            [ Abmelden ]
+     Avatar  testuser                            [ Abmelden ]
      ─────────────────────────────────────────────────────
      Cloud Sync           [ON ]   Instanzen mit der Cloud abgleichen
      Auto Sync            [ON ]   nach dem Spielen automatisch hochladen
@@ -1127,7 +1127,7 @@ Skyblock
 
 **Onboarding-Ablauf (Erstlogin)**
 ```
-Schritt 1  "Willkommen, beatv"
+Schritt 1  "Willkommen, testuser"
 Schritt 2  "5 lokale Instanzen gefunden — welche in die Cloud?"
              [x] Skyblock          340 MB   (12 MB Upload)
              [x] Vanilla Survival   80 MB   ( 3 MB Upload)

@@ -6,8 +6,8 @@
 
 **Datum des Auftrags:** 2026-08-30
 **Repos:**
-- Client: `C:\Users\beatv\Documents\GitHub\MCLC-Client` (Electron/React, "Lux")
-- Website: `C:\Users\beatv\Documents\GitHub\MCLC-Website` (Express/Postgres, `lux.pluginhub.de`)
+- Client: dieses Repo (Electron/React, "Lux")
+- Website: separates Repo Lux-Website (Express/Postgres, `lux.pluginhub.de`), liegt als Nachbarordner neben dem Client
 
 ## Ziel in einem Satz
 
@@ -117,7 +117,7 @@ Skyblock
 
 Globale Account-Einstellungen, Beispiel aus dem Auftrag:
 ```
-Lux Account   beatv
+Lux Account   testuser
   Cloud Sync        ON
   Auto Sync         ON
   Cross-Platform    ON

@@ -52,7 +52,7 @@ async function makeInstance(root, name, files) {
 async function main() {
     if (!WEBSITE) {
         console.log('\nWebsite-Repo nicht gefunden - Phase-5-Test uebersprungen.');
-        console.log('Erwartet wird eines von: ' + WEBSITE_CANDIDATES.join(', ') + ' neben MCLC-Client.');
+        console.log('Erwartet wird eines von: ' + WEBSITE_CANDIDATES.join(', ') + ' neben dem Client-Repo.');
         console.log('\n=== 0 bestanden, 0 fehlgeschlagen (uebersprungen) ===');
         return;
     }
@@ -67,8 +67,8 @@ async function main() {
     const port = h.server.address().port;
     process.env.LUXCLOUD_BASE_URL = `http://127.0.0.1:${port}`;
 
-    const userId = await h.createUser({ googleId: 'g-p5', username: 'beatv' });
-    const session = { id: userId, username: 'beatv', role: 'user', banned: false };
+    const userId = await h.createUser({ googleId: 'g-p5', username: 'testuser' });
+    const session = { id: userId, username: 'testuser', role: 'user', banned: false };
     const tokens = await h.authorizeDevice({ user: session, deviceUuid: 'dev-p5-0001' });
 
     const auth = require('../backend/luxcloud/auth');

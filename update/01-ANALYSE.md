@@ -6,7 +6,7 @@ Wenn du etwas hier korrigierst, notiere es in `STATUS.md` unter "Korrekturen".
 
 ---
 
-## 1. Website — `MCLC-Website`
+## 1. Website — `Lux-Website`
 
 ### Stack
 | Was | Womit |
@@ -94,7 +94,7 @@ Aktuell: overview, news, analytics, codes, moderation, users, auditlog.
 
 ---
 
-## 2. Client — `MCLC-Client` ("Lux", v1.10.0)
+## 2. Client — `Lux-Client` ("Lux", v1.10.0)
 
 ### Stack
 Electron 40 · React 18 + TypeScript · Vite 7 · Tailwind + Radix UI · `minecraft-launcher-core` ·
