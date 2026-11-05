@@ -94,8 +94,14 @@ jobs:
       actions: write
 
     steps:
-      - name: Checkout
+      - name: Checkout (with private backend submodule)
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Either a fine-grained token with read access to Lux-Launcher-Backend (BACKEND_TOKEN)
+          # or a read-only deploy key (BACKEND_DEPLOY_KEY) works.
+          token: ${{ secrets.BACKEND_TOKEN || github.token }}
+          ssh-key: ${{ secrets.BACKEND_DEPLOY_KEY }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

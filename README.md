@@ -109,12 +109,21 @@ Or download the latest installer from the [releases page](https://github.com/Lux
 - npm or yarn
 
 #### Setup
+This repository contains the **frontend** of the launcher (React, `src/`). The Electron
+main process and backend live in a private repository that is included as a Git
+submodule under `backend/`.
+
+Team members with access to the backend:
 ```bash
-git clone https://github.com/Lux-Client/LuxClient.git
-cd LuxClient
+git clone --recurse-submodules https://github.com/Lux-Client/Lux-Client.git
+cd Lux-Client
 npm install
 npm run dev
 ```
+
+Without backend access you can still work on the UI: `npm install`, then `npm run build`,
+`npm run lint` and `npm run typecheck` work on the frontend alone. Pull requests for the
+frontend are welcome.
 
 #### Scripts
 | Command | Description |
@@ -130,9 +139,8 @@ npm run dev
 ## Architecture
 
 ```
-electron/main.js       Electron main process (window, IPC, updates)
-backend/handlers/      IPC handlers (auth, instances, servers, skins, ...)
-src/                   React frontend
+backend/               Private submodule: Electron main process, IPC handlers, LuxCloud
+src/                   React frontend (talks to the backend only via window.electronAPI)
   pages/               Route components (Dashboard, Skins, Settings, ...)
   components/          Reusable UI components
   context/             React context providers
@@ -170,6 +178,10 @@ For a more detailed guide about Lux-Client, you can read our DeepWiki guide!
 ## License
 
 [PolyForm Shield License 1.0.0](LICENSE.md) — not an open-source license. See `LICENSE.md` for details.
+
+The license applies only to the source code located directly in this repository. The
+private `backend/` submodule and other code used during development and builds is not
+covered by it.
 
 ---
 
