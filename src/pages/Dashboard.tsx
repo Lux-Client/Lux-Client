@@ -74,6 +74,7 @@ import {
   CloudDownload,
 } from "lucide-react";
 import CollaborateModal from "../components/cloud/CollaborateModal";
+import LuxModInstallModal from "../components/LuxModInstallModal";
 
 const DEFAULT_ICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
@@ -438,6 +439,7 @@ function Dashboard({
   const [newInstanceName, setNewInstanceName] = useState("");
   const [newInstanceFolderPath, setNewInstanceFolderPath] = useState("");
   const [withLuxClient, setWithLuxClient] = useState(false);
+  const [showLuxModPicker, setShowLuxModPicker] = useState(false);
   const luxModVersions = useLuxModVersions();
   const [selectedVersion, setSelectedVersion] = useState("");
   const [selectedLoader, setSelectedLoader] = useState("Vanilla");
@@ -811,7 +813,9 @@ function Dashboard({
         Analytics.trackInstanceCreation(loaderForApi, selectedVersion);
 
         if (createWithLuxClient) {
-          const luxRes = await installLuxClientMod(createdName, selectedVersion);
+          const luxRes = await installLuxClientMod(createdName, selectedVersion, {
+            lock: true,
+          });
           if (luxRes?.success) {
             addNotification(
               t("lux_mod.installed", "Lux Client installed."),
@@ -1834,6 +1838,16 @@ function Dashboard({
                 </Button>
               )}
 
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowLuxModPicker(true)}
+                className="rounded-xl"
+              >
+                {t("lux_mod.picker.button", "Lux Client")}
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" className="gap-1.5 rounded-xl">
@@ -2326,6 +2340,12 @@ function Dashboard({
           </form>
         </DialogContent>
       </Dialog>
+
+      <LuxModInstallModal
+        open={showLuxModPicker}
+        onClose={() => setShowLuxModPicker(false)}
+        instances={instances}
+      />
 
       <PixelEditorModal
         isOpen={showPixelEditor}

@@ -19,7 +19,7 @@ import InstanceCloudPanel from '../components/cloud/InstanceCloudPanel';
 import CloudStatusBadge from '../components/cloud/CloudStatusBadge';
 import { useLuxAccount } from '../context/LuxAccountContext';
 import { useLuxSync } from '../context/LuxSyncContext';
-import { installLuxClientMod, isLuxModSupported, useLuxModVersions } from '../utils/luxMod';
+import { installLuxClientMod, isLuxModFileName, isLuxModSupported, useLuxModVersions } from '../utils/luxMod';
 
 function RetryableListIcon({ src, className, fallback }) {
     const [attempt, setAttempt] = useState(0);
@@ -595,8 +595,27 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [luxModStatus, setLuxModStatus] = useState<any>(null);
     const [installingLuxMod, setInstallingLuxMod] = useState(false);
 
+    const isFabricInstance = String(instance.loader || '').toLowerCase() === 'fabric';
+    const luxBannerKey = `lux-mod-banner-dismissed:${instance.instanceId || instance.name}`;
+    const [luxBannerDismissed, setLuxBannerDismissed] = useState(() => {
+        try {
+            return window.localStorage.getItem(luxBannerKey) === '1';
+        } catch (_) {
+            return false;
+        }
+    });
+
+    const dismissLuxBanner = () => {
+        setLuxBannerDismissed(true);
+        try {
+            window.localStorage.setItem(luxBannerKey, '1');
+        } catch (_) {
+            // Not persisted, it stays hidden for this session only.
+        }
+    };
+
     const refreshLuxModStatus = async () => {
-        if (!luxModSupported) {
+        if (!isFabricInstance) {
             setLuxModStatus(null);
             return;
         }
@@ -610,7 +629,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
     useEffect(() => {
         refreshLuxModStatus();
-    }, [instance.name, luxModSupported, mods]);
+    }, [instance.name, isFabricInstance, mods]);
 
     const handleInstallLuxMod = async () => {
         if (installingLuxMod) return;
@@ -638,7 +657,9 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
         }
     };
 
-    const showLuxModOffer = luxModSupported && luxModStatus?.available && (!luxModStatus.installed || luxModStatus.disabled || luxModStatus.updateAvailable);
+    const isLockedLuxMod = (fileName) => Boolean(luxModStatus?.locked && isLuxModFileName(fileName));
+
+    const showLuxModOffer = !luxBannerDismissed && luxModSupported && luxModStatus?.available && (!luxModStatus.installed || luxModStatus.disabled || luxModStatus.updateAvailable);
 
     const handleCopyLog = () => {
         navigator.clipboard.writeText(log).then(() => {
@@ -673,14 +694,18 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             setIsUploadingLog(false);
         }
     };
+    const warnLockedLuxMod = () => addNotification(t('lux_mod.locked', 'Lux Client is part of this instance and cannot be removed.'), 'warning');
+
     const handleToggleMod = async (fileName) => {
         if (blockedByHost('addContent')) return;
+        if (isLockedLuxMod(fileName)) return warnLockedLuxMod();
         await window.electronAPI.toggleMod(instance.name, fileName);
         loadMods();
     };
 
     const handleDeleteMod = (fileName, type = 'mod') => {
         if (blockedByHost('removeContent')) return;
+        if (type === 'mod' && isLockedLuxMod(fileName)) return warnLockedLuxMod();
         setModToDelete({ name: fileName, type });
     };
 
@@ -1514,6 +1539,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                 {t('lux_mod.offer_hint', 'Lux Client is available for {{loader}} {{version}}. Restart the game afterwards for the full Lux experience.', { loader: 'Fabric', version: instance.version })}
                             </div>
                         </div>
+                        <div className="flex shrink-0 items-center gap-2">
                         <button
                             type="button"
                             onClick={handleInstallLuxMod}
@@ -1526,6 +1552,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     ? t('lux_mod.update', 'Update Lux Client')
                                     : t('lux_mod.install', 'Install Lux Client')}
                         </button>
+                        <button
+                            type="button"
+                            onClick={dismissLuxBanner}
+                            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition"
+                            title={t('lux_mod.dismiss', 'Hide')}
+                            aria-label={t('lux_mod.dismiss', 'Hide')}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1850,6 +1886,14 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                             )}
                                                         </button>
                                                     )}
+                                                    {isLockedLuxMod(mod.name) ? (
+                                                        <span
+                                                            className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground"
+                                                            title={t('lux_mod.locked', 'Lux Client is part of this instance and cannot be removed.')}
+                                                        >
+                                                            {t('client_mods.locked', 'Locked')}
+                                                        </span>
+                                                    ) : (<>
                                                     <ToggleBox
                                                         checked={mod.enabled}
                                                         onChange={() => handleToggleMod(mod.name)}
@@ -1861,6 +1905,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                                                         {t('instance_details.content.delete_mod', 'Delete Mod')}
                                                     </button>
+                                                    </>)}
                                                 </div>
                                             </div>
                                             </ProjectContextMenu>

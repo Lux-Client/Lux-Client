@@ -1402,6 +1402,20 @@
         "update": "Update Lux Client",
         "installed": "Lux Client installed.",
         "installed_restart": "Lux Client installed. Restart the game to use it.",
-        "install_failed": "Could not install Lux Client: {{error}}"
+        "install_failed": "Could not install Lux Client: {{error}}",
+        "locked": "Lux Client is part of this instance and cannot be removed.",
+        "dismiss": "Hide",
+        "picker": {
+            "button": "Lux Client",
+            "title": "Install Lux Client",
+            "desc": "Choose an instance to install the Lux Client mod into.",
+            "empty": "No instances yet.",
+            "compatible": "Compatible",
+            "incompatible": "Not compatible",
+            "not_compatible": "{{name}} is not compatible with Lux Client. It needs Fabric and one of these versions: {{versions}}.",
+            "no_release": "There is no Lux Client release for Minecraft {{version}} yet.",
+            "already_installed": "Lux Client is already installed in {{name}}.",
+            "installed": "Lux Client installed in {{name}}."
+        }
     }
 }

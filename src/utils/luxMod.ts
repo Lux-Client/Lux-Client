@@ -7,7 +7,7 @@ export const LUX_MOD_FALLBACK_VERSIONS = ['1.21.11', '1.21.8', '26.2', '1.20.1']
 export const LUX_MOD_LOADERS = ['fabric'];
 export const FABRIC_API_PROJECT_ID = 'P7dR8mSH';
 
-const LUX_MOD_FILE_PATTERN = /^luxclient-.*\.jar(\.disabled)?$/i;
+const LUX_MOD_FILE_PATTERN = /^lux-?client-.*\.jar(\.disabled)?$/i;
 
 export const isLuxModFileName = (fileName: unknown) => LUX_MOD_FILE_PATTERN.test(String(fileName || ''));
 
@@ -89,8 +89,9 @@ const ensureFabricApi = async (instanceName: string, mcVersion: string) => {
     }
 };
 
-export const installLuxClientMod = async (instanceName: string, mcVersion: string) => {
-    const res = await window.electronAPI.installLuxMod(instanceName);
+// lock: the instance was made "With Lux Client", so the mod stays for good.
+export const installLuxClientMod = async (instanceName: string, mcVersion: string, options: { lock?: boolean } = {}) => {
+    const res = await window.electronAPI.installLuxMod(instanceName, options);
     if (res?.success) {
         await ensureFabricApi(instanceName, mcVersion);
     }
