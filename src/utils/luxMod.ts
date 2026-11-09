@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 // The Lux Client mod is published as release jars on Lux-Client/Lux-Mod.
 // The backend reads those releases; this list is only used until it answers
 // or when GitHub cannot be reached.
-export const LUX_MOD_FALLBACK_VERSIONS = ['1.21.11', '1.21.8', '26.2', '1.20.1'];
+export const LUX_MOD_FALLBACK_VERSIONS = ['26.3', '26.2', '26.1.2', '26.1.1', '26.1', '1.21.11', '1.21.8', '1.21.1', '1.20.1'];
 export const LUX_MOD_LOADERS = ['fabric'];
 export const FABRIC_API_PROJECT_ID = 'P7dR8mSH';
 
