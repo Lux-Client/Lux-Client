@@ -73,6 +73,7 @@ import {
   Users,
   CloudDownload,
   Sparkles,
+  ArrowRightLeft,
 } from "lucide-react";
 import CollaborateModal from "../components/cloud/CollaborateModal";
 import LuxModInstallModal from "../components/LuxModInstallModal";
@@ -1045,6 +1046,32 @@ function Dashboard({
           addNotification(`Duplicate failed: ${e.message}`, "error");
         }
         break;
+      case "convert-external":
+        try {
+          addNotification(
+            t("dashboard.context.convert_started", "Copying {{name}} into a new Lux instance...", { name: instance.name }),
+            "info",
+          );
+          const result = await window.electronAPI.convertExternalInstance(instance.name);
+          if (result?.success) {
+            addNotification(
+              t("dashboard.context.convert_done", "{{name}} is now a Lux instance. The original profile was left untouched as a backup.", { name: result.instanceName }),
+              "success",
+            );
+            await loadInstances();
+          } else {
+            addNotification(
+              t("dashboard.context.convert_failed", "Could not convert: {{error}}", { error: result?.error || "unknown error" }),
+              "error",
+            );
+          }
+        } catch (e) {
+          addNotification(
+            t("dashboard.context.convert_failed", "Could not convert: {{error}}", { error: e.message }),
+            "error",
+          );
+        }
+        break;
       case "collaborate":
         setCollabTarget(instance);
         break;
@@ -1573,6 +1600,14 @@ function Dashboard({
         <Sparkles className="w-4 h-4 mr-2" />
         {t("lux_mod.picker.title", "Install Lux Client")}
       </ContextMenuItem>
+      {String(instance?.instanceType || "").toLowerCase() === "external" && (
+        <ContextMenuItem
+          onClick={() => handleContextAction("convert-external", instance)}
+        >
+          <ArrowRightLeft className="w-4 h-4 mr-2" />
+          {t("dashboard.context.convert_external", "Convert to Lux instance")}
+        </ContextMenuItem>
+      )}
       {String(instance?.instanceType || "").toLowerCase() !== "external" && (
         <>
           <ContextMenuItem
