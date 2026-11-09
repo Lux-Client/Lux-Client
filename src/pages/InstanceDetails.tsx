@@ -19,6 +19,7 @@ import InstanceCloudPanel from '../components/cloud/InstanceCloudPanel';
 import CloudStatusBadge from '../components/cloud/CloudStatusBadge';
 import { useLuxAccount } from '../context/LuxAccountContext';
 import { useLuxSync } from '../context/LuxSyncContext';
+import LuxModInstallModal from '../components/LuxModInstallModal';
 import { installLuxClientMod, isLuxModFileName, isLuxModSupported, useLuxModVersions } from '../utils/luxMod';
 
 function RetryableListIcon({ src, className, fallback }) {
@@ -594,6 +595,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const luxModSupported = isLuxModSupported(luxModVersions, instance.version, instance.loader);
     const [luxModStatus, setLuxModStatus] = useState<any>(null);
     const [installingLuxMod, setInstallingLuxMod] = useState(false);
+    const [showLuxModPicker, setShowLuxModPicker] = useState(false);
 
     const isFabricInstance = String(instance.loader || '').toLowerCase() === 'fabric';
     const luxBannerKey = `lux-mod-banner-dismissed:${instance.instanceId || instance.name}`;
@@ -1425,6 +1427,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                             <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
                                 <button
                                     onClick={() => {
+                                        setShowMenu(false);
+                                        setShowLuxModPicker(true);
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-accent flex items-center gap-3 transition-colors text-primary"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                                    {t('lux_mod.picker.title', 'Install Lux Client')}
+                                </button>
+                                <button
+                                    onClick={() => {
                                         window.electronAPI.openInstanceFolder(instance.name);
                                         setShowMenu(false);
                                     }}
@@ -1525,6 +1537,17 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             <div className="px-8 mt-4">
                 <ExtensionSlot name="instance.details" context={{ instanceName: instance.name, status, isRunning }} className="w-full flex gap-4 overflow-visible" />
             </div>
+
+            <LuxModInstallModal
+                open={showLuxModPicker}
+                onClose={() => {
+                    setShowLuxModPicker(false);
+                    refreshLuxModStatus();
+                    if (loadedContentTypesRef.current.mod) loadMods();
+                }}
+                instances={[instance]}
+                initialName={instance.name}
+            />
 
             {showLuxModOffer && (
                 <div className="px-8 mt-4">

@@ -958,7 +958,11 @@
             "min_memory": "Minimaler Speicher",
             "max_memory": "Maximaler Speicher",
             "profile_label": "Java-Performance-Profil",
-            "profile_desc": "Überschreibt die globale Launcher-Einstellung für diese Instanz."
+            "profile_desc": "Überschreibt die globale Launcher-Einstellung für diese Instanz.",
+            "runtime_label": "Java-Version für diese Instanz",
+            "runtime_default": "Standard (globale Einstellung / automatisch)",
+            "runtime_system": "System",
+            "runtime_lux": "Lux"
         },
         "hooks": {
             "title": "Launch-Hooks",

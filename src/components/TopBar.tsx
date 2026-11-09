@@ -4,6 +4,8 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import ExtensionSlot from './Extensions/ExtensionSlot';
 import { useExtensions } from '../context/ExtensionContext';
 import PlayerHead from './PlayerHead';
+import AccountHead from './AccountHead';
+import { cacheAccountSkin } from '../utils/accountSkinCache';
 import WindowControls from './WindowControls';
 import CloudTransferPanel from './cloud/CloudTransferPanel';
 import NotificationBell from './cloud/NotificationBell';
@@ -82,6 +84,11 @@ function TopBar({
       setLiveSkin(null);
     }
   }, [userProfile]);
+
+  // Keep the active account's skin so its head stays right after switching away.
+  useEffect(() => {
+    if (liveSkin && userProfile?.uuid) cacheAccountSkin(userProfile.uuid, liveSkin);
+  }, [liveSkin, userProfile?.uuid]);
 
   const loadLiveSkin = async () => {
     if (!userProfile?.access_token) return;
@@ -423,7 +430,7 @@ function TopBar({
               {accounts.filter(a => a.uuid !== userProfile?.uuid).map(acc => (
                 <DropdownMenuItem key={acc.uuid} className="flex items-center justify-between group/acc">
                   <div className="flex items-center gap-2 min-w-0 flex-1" onClick={() => handleSwitch(acc.uuid)}>
-                    <PlayerHead uuid={acc.uuid} name={acc.name} size={20} className="rounded-sm" />
+                    <AccountHead uuid={acc.uuid} name={acc.name} size={20} className="rounded-sm" />
                     <span className="truncate text-xs">{acc.name}</span>
                   </div>
                   <button

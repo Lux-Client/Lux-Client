@@ -10,10 +10,11 @@ type Props = {
     open: boolean;
     onClose: () => void;
     instances: any[];
+    initialName?: string;
 };
 
 // Pick any instance and put the Lux Client mod on it, after checking it fits.
-function LuxModInstallModal({ open, onClose, instances }: Props) {
+function LuxModInstallModal({ open, onClose, instances, initialName = '' }: Props) {
     const { t } = useTranslation();
     const { addNotification } = useNotification();
     const luxModVersions = useLuxModVersions();
@@ -23,10 +24,10 @@ function LuxModInstallModal({ open, onClose, instances }: Props) {
 
     useEffect(() => {
         if (open) {
-            setSelectedName('');
+            setSelectedName(initialName || '');
             setError('');
         }
-    }, [open]);
+    }, [open, initialName]);
 
     const list = Array.isArray(instances) ? instances : [];
     const selected = list.find((instance) => instance?.name === selectedName) || null;

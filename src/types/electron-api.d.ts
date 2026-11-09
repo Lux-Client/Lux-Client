@@ -113,6 +113,7 @@ interface ElectronAPI {
   modrinthInstall: (data: any) => Promise<any>;
   getLuxModInfo: (options?: { force?: boolean }) => Promise<any>;
   getLuxModStatus: (instanceName: string, options?: { force?: boolean }) => Promise<any>;
+  getSkinByUuid: (uuid: string) => Promise<any>;
   installLuxMod: (instanceName: string, options?: { lock?: boolean }) => Promise<any>;
   installLocalMod: (instanceName: string, filePath: string, type?: string) => Promise<any>;
   getModVersions: (projectId: string, loaders?: any, gameVersions?: any, fallbackCurseForgeProjectId?: string | null) => Promise<any>;

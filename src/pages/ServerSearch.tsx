@@ -183,9 +183,11 @@ function Search({ initialCategory, onCategoryConsumed }: { initialCategory?: any
         setInstalling(true);
         try {
             addNotification(t('server_search.resolving_deps', { title: selectedMod.title }), 'info');
-            const loaders = (selectedMod.project_type === 'shader' || selectedMod.project_type === 'resourcepack' || !server.loader || server.loader.toLowerCase() === 'vanilla')
-                ? []
-                : [server.loader];
+            const loaders = selectedMod.project_type === 'plugin'
+                ? ['bukkit', 'spigot', 'paper', 'purpur', 'folia']
+                : (selectedMod.project_type === 'shader' || selectedMod.project_type === 'resourcepack' || !server.loader || server.loader.toLowerCase() === 'vanilla')
+                    ? []
+                    : [server.loader];
 
             const res = await window.electronAPI.getModVersions(
                 selectedMod.project_id,

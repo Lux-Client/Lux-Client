@@ -72,6 +72,7 @@ import {
   ImageIcon,
   Users,
   CloudDownload,
+  Sparkles,
 } from "lucide-react";
 import CollaborateModal from "../components/cloud/CollaborateModal";
 import LuxModInstallModal from "../components/LuxModInstallModal";
@@ -440,6 +441,11 @@ function Dashboard({
   const [newInstanceFolderPath, setNewInstanceFolderPath] = useState("");
   const [withLuxClient, setWithLuxClient] = useState(false);
   const [showLuxModPicker, setShowLuxModPicker] = useState(false);
+  const [luxModPickerInstance, setLuxModPickerInstance] = useState("");
+  const openLuxModPicker = (instanceName = "") => {
+    setLuxModPickerInstance(instanceName);
+    setShowLuxModPicker(true);
+  };
   const luxModVersions = useLuxModVersions();
   const [selectedVersion, setSelectedVersion] = useState("");
   const [selectedLoader, setSelectedLoader] = useState("Vanilla");
@@ -1563,6 +1569,10 @@ function Dashboard({
         <FolderOpen className="w-4 h-4 mr-2" />
         {t("dashboard.context.folder")}
       </ContextMenuItem>
+      <ContextMenuItem onClick={() => openLuxModPicker(instance.name)}>
+        <Sparkles className="w-4 h-4 mr-2" />
+        {t("lux_mod.picker.title", "Install Lux Client")}
+      </ContextMenuItem>
       {String(instance?.instanceType || "").toLowerCase() !== "external" && (
         <>
           <ContextMenuItem
@@ -1838,16 +1848,6 @@ function Dashboard({
                 </Button>
               )}
 
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setShowLuxModPicker(true)}
-                className="rounded-xl"
-              >
-                {t("lux_mod.picker.button", "Lux Client")}
-              </Button>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" className="gap-1.5 rounded-xl">
@@ -1860,6 +1860,10 @@ function Dashboard({
                   <DropdownMenuItem onClick={() => setShowCreateModal(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     {t("dashboard.manual_creation")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openLuxModPicker()}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {t("lux_mod.picker.title", "Install Lux Client")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -2345,6 +2349,7 @@ function Dashboard({
         open={showLuxModPicker}
         onClose={() => setShowLuxModPicker(false)}
         instances={instances}
+        initialName={luxModPickerInstance}
       />
 
       <PixelEditorModal

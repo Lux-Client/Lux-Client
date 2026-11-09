@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LogIn, Trash2, UserPlus, Loader2 } from 'lucide-react';
 
-import PlayerHead from './PlayerHead';
+import AccountHead from './AccountHead';
 import WindowControls from './WindowControls';
 
 type Account = { uuid: string; name: string; type?: string };
@@ -134,7 +134,7 @@ export default function AccountSwitcher({
                                 onClick={() => pick(account.uuid)}
                                 className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-50"
                             >
-                                <PlayerHead uuid={account.uuid} name={account.name} size={36} className="rounded-md shrink-0" />
+                                <AccountHead uuid={account.uuid} name={account.name} size={36} className="rounded-md shrink-0" />
                                 <div className="min-w-0">
                                     <div className="truncate text-sm font-medium">{account.name}</div>
                                     <div className="text-[11px] text-muted-foreground">{account.type || 'Microsoft'}</div>

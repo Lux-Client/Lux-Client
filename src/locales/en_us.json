@@ -977,7 +977,11 @@
             "min_memory": "Minimum",
             "max_memory": "Maximum",
             "profile_label": "Java Performance Profile",
-            "profile_desc": "Overrides the global launcher setting for this instance."
+            "profile_desc": "Overrides the global launcher setting for this instance.",
+            "runtime_label": "Java version for this instance",
+            "runtime_default": "Default (global setting / automatic)",
+            "runtime_system": "System",
+            "runtime_lux": "Lux"
         },
         "hooks": {
             "title": "Launch Hooks",
