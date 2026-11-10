@@ -154,7 +154,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The artifact API sometimes answers "No artifacts found for ID" right after
+      # upload. Retry once instead of failing the whole release.
       - name: Download all build artifacts
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*-${{ needs.prepare.outputs.version }}
+          merge-multiple: true
+          path: release-artifacts
+
+      - name: Wait before retrying download
+        if: steps.download.outcome == 'failure'
+        run: sleep 30
+
+      - name: Download all build artifacts (retry)
+        if: steps.download.outcome == 'failure'
         uses: actions/download-artifact@v4
         with:
           pattern: release-*-${{ needs.prepare.outputs.version }}
