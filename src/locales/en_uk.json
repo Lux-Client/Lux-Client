@@ -310,7 +310,7 @@
             "added_by": "Added by {{name}}"
         },
         "search": {
-            "placeholder": "Enter Modrinth ID or search for a mod...",
+            "placeholder": "Search by name or paste a Modrinth / CurseForge link...",
             "search_btn": "Search",
             "showing_results": "Showing {{count}} results",
             "relevance": "Relevance",
@@ -324,7 +324,11 @@
             "install": "Install",
             "previous": "Previous",
             "page_of": "Page {{count}}",
-            "next": "Next"
+            "next": "Next",
+            "link_not_found": "Could not find a project for this link",
+            "link_fallback": "Exact project not found, showing similar results",
+            "link_unsupported": "This link points to a {{type}}, which can't be added to an instance here",
+            "link_needs_loader": "Mods need a mod loader, this instance is vanilla"
         },
         "worlds": {
             "local_worlds": "Local worlds",
