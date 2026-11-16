@@ -47,6 +47,8 @@ function ModpackCodeModal({
     const [modpackName, setModpackName] = useState('');
     const [loading, setLoading] = useState(false);
     const [exportedCode, setExportedCode] = useState('');
+    const [exportScanPending, setExportScanPending] = useState(false);
+    const [importNotice, setImportNotice] = useState<{ text: string; blocked: boolean } | null>(null);
     const [myCodes, setMyCodes] = useState([]);
     const [selectedTypes, setSelectedTypes] = useState({
         mods: true,
@@ -271,6 +273,7 @@ function ModpackCodeModal({
 
             if (result.success) {
                 setExportedCode(result.code);
+                setExportScanPending(result.scan?.status === 'pending' || result.scan?.status === 'error');
                 addNotification(result.live
                     ? `Live code created: ${result.code}. Push updates from "My Codes".`
                     : result.uploads
@@ -296,8 +299,16 @@ function ModpackCodeModal({
         }
 
         setLoading(true);
+        setImportNotice(null);
         try {
             const result = await window.electronAPI.importModpackFromCode(code);
+
+            if (!result.success && ['scan_pending', 'scan_maintenance', 'scan_failed', 'file_blocked'].includes(result.reason)) {
+                // Eigene Dateien im Code sind auf dem Server noch nicht (oder nicht sauber)
+                // auf Viren geprueft. Die Meldung vom Server bleibt sichtbar stehen.
+                setImportNotice({ text: result.error, blocked: result.reason === 'file_blocked' });
+                return;
+            }
 
             if (result.success) {
                 addNotification(`Successfully loaded modpack: ${result.data.name}`, 'success');
@@ -353,6 +364,11 @@ function ModpackCodeModal({
                                             {exportedCode}
                                         </div>
                                     </div>
+                                    {exportScanPending && (
+                                        <div className="mb-4 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-left text-xs text-amber-200">
+                                            Your own files are being checked for viruses on our server. The code works for others as soon as that is done, usually within a few minutes.
+                                        </div>
+                                    )}
                                     <div className="mb-6 text-left">
                                         <div className="text-sm text-muted-foreground mb-2">Preview in the browser:</div>
                                         <div className="flex items-center gap-2 bg-muted border border-border rounded-xl p-3">
@@ -633,7 +649,7 @@ function ModpackCodeModal({
                                                     </div>
                                                     {uploadsByCode.get(item.code).files.map((file) => (
                                                         <div key={`${file.kind}:${file.fileName}`} className="text-[10px] text-muted-foreground truncate max-w-[260px]" title={file.fileName}>
-                                                            {file.fileName} · {formatBytes(file.size)}{file.scan?.status === 'infected' ? ' · blocked by the virus check' : ''}
+                                                            {file.fileName} · {formatBytes(file.size)}{file.scan?.status === 'infected' ? ' · blocked by the virus check' : file.scan?.status === 'pending' ? ' · waiting for the virus check' : file.scan?.status === 'error' ? ' · virus check failed, retrying' : ''}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -724,7 +740,7 @@ function ModpackCodeModal({
                                 <input
                                     type="text"
                                     value={code}
-                                    onChange={(e) => setCode(e.target.value.slice(0, 8))}
+                                    onChange={(e) => { setCode(e.target.value.slice(0, 8)); setImportNotice(null); }}
                                     placeholder="e.g. aB3xY7zP"
                                     maxLength={8}
                                     className="w-full bg-card border border-border rounded-xl p-4 text-foreground font-mono text-center text-3xl tracking-widest focus:border-primary outline-none transition-all shadow-inner"
@@ -733,6 +749,14 @@ function ModpackCodeModal({
                                 <p className="text-xs text-muted-foreground mt-3 font-bold text-center">
                                     Import mods, resource packs, shaders and settings instantly.
                                 </p>
+                                {importNotice && (
+                                    <div className={`mt-4 rounded-xl border p-3 text-xs ${importNotice.blocked
+                                        ? 'border-red-500/25 bg-red-500/10 text-red-200'
+                                        : 'border-amber-500/25 bg-amber-500/10 text-amber-200'}`}
+                                    >
+                                        {importNotice.text}
+                                    </div>
+                                )}
                             </div>
 
                             <button

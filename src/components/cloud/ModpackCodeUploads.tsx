@@ -113,6 +113,11 @@ export default function ModpackCodeUploads({ onChanged }: { onChanged?: () => vo
                                         : t('cloud.codes.never', 'never expires')}
                                 </span>
                             </p>
+                            {(entry.scanStatus === 'pending' || entry.scanStatus === 'error') && (
+                                <p className="mt-1 text-[11px] text-amber-300/90">
+                                    {t('cloud.codes.scan_waiting', 'This code works as soon as our server has checked its files for viruses.')}
+                                </p>
+                            )}
                             {entry.files && entry.files.length > 0 ? (
                                 <div className="mt-1.5 space-y-0.5">
                                     <p className="text-[11px] text-amber-300/80">
@@ -131,6 +136,13 @@ export default function ModpackCodeUploads({ onChanged }: { onChanged?: () => vo
                                             {file.scan?.status === 'infected' && (
                                                 <span className="shrink-0 font-medium text-red-300">
                                                     {t('cloud.codes.blocked', 'blocked by the virus check')}
+                                                </span>
+                                            )}
+                                            {(file.scan?.status === 'pending' || file.scan?.status === 'error') && (
+                                                <span className="shrink-0 font-medium text-amber-300">
+                                                    {file.scan.status === 'error'
+                                                        ? t('cloud.codes.scan_failed', 'virus check failed, retrying')
+                                                        : t('cloud.codes.scan_pending', 'waiting for the virus check')}
                                                 </span>
                                             )}
                                         </p>
