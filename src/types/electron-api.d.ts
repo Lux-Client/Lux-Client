@@ -141,6 +141,10 @@ interface ElectronAPI {
   getModpackAdminStatus: () => Promise<{ success: boolean; isAdmin: boolean }>;
   updateLiveModpackCode: (code: string, data: any) => Promise<any>;
   setModpackCodeSettings: (code: string, settings: { live?: boolean; expiry?: number | 'never' }) => Promise<any>;
+  prepareModpackExport?: (data: any) => Promise<any>;
+  getModpackCodeUploads?: () => Promise<any>;
+  deleteOwnModpackCode?: (code: string) => Promise<any>;
+  onModpackExportProgress?: (callback: (payload: { done: number; total: number; fileName: string }) => void) => UnsubscribeFn;
   installSharedContent: (instanceName: string, modpackData: any) => Promise<any>;
   getCurrentSkin: (token: string) => Promise<any>;
   uploadSkin: (token: string, skinPath: string, variant: string) => Promise<any>;

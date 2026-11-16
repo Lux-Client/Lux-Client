@@ -7,6 +7,7 @@ import {
 import { useLuxAccount } from '../../context/LuxAccountContext';
 import { useLuxSync } from '../../context/LuxSyncContext';
 import CloudStatusBadge from './CloudStatusBadge';
+import ModpackCodeUploads from './ModpackCodeUploads';
 
 function formatBytes(bytes: number) {
     if (!bytes) return '0 B';
@@ -159,6 +160,14 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
                             style={{ width: `${percent}%` }}
                         />
                     </div>
+                    {quota && quota.codeFileBytes > 0 && (
+                        <p className="mt-1.5 text-[11px] text-white/35">
+                            {t('cloud.dashboard.code_files', {
+                                defaultValue: '{{size}} of it in modpack codes',
+                                size: formatBytes(quota.codeFileBytes)
+                            })}
+                        </p>
+                    )}
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
@@ -331,6 +340,8 @@ export default function CloudDashboard({ onOpenInstance }: { onOpenInstance?: (n
                     <p className="m-4 rounded-lg bg-red-500/10 p-3 text-xs text-red-200">{error}</p>
                 )}
             </div>
+
+            <ModpackCodeUploads onChanged={() => account.reload()} />
 
             {trashed.length > 0 && (
                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">

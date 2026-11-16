@@ -3,7 +3,7 @@
   "name": "lux",
   "description": "Lux Client",
   "author": "Lux Team <lux@pluginhub.de>",
-  "version": "2.3.13",
+  "version": "2.3.14",
   "main": "backend/electron-main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
@@ -12,7 +12,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:luxcloud": "node backend/tests/luxcloud.phase4.test.js && node backend/tests/luxcloud.phase5.test.js && node backend/tests/luxcloud.phase67.test.js && node backend/tests/luxcloud.autoupload.test.js && node backend/tests/luxcloud.twopc.test.js && node backend/tests/luxcloud.duplicates.test.js && node backend/tests/luxcloud.background.test.js && node backend/tests/settingsSearch.test.js && node backend/tests/sandbox.test.js && node backend/tests/serverPing.test.js && node backend/tests/sharedImport.test.js && node backend/tests/liveCode.test.js && node backend/tests/luxMod.test.js",
+    "test:luxcloud": "node backend/tests/luxcloud.phase4.test.js && node backend/tests/luxcloud.phase5.test.js && node backend/tests/luxcloud.phase67.test.js && node backend/tests/luxcloud.autoupload.test.js && node backend/tests/luxcloud.twopc.test.js && node backend/tests/luxcloud.duplicates.test.js && node backend/tests/luxcloud.background.test.js && node backend/tests/settingsSearch.test.js && node backend/tests/sandbox.test.js && node backend/tests/serverPing.test.js && node backend/tests/sharedImport.test.js && node backend/tests/liveCode.test.js && node backend/tests/codeOwnFiles.test.js && node backend/tests/luxMod.test.js",
     "luxcloud:preview": "node backend/scripts/luxcloud-manifest-preview.js",
     "start": "electron .",
     "dist-clean": "rimraf dist && rimraf release",

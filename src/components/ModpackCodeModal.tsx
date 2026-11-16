@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNotification } from '../context/NotificationContext';
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from './ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -18,6 +18,17 @@ const EXPIRY_OPTIONS = [
 ];
 
 const toExpiryValue = (choice) => (choice === 'never' ? 'never' : Number(choice));
+
+const KIND_TO_TYPE = { mod: 'mods', resourcepack: 'resourcePacks', shader: 'shaders' };
+const KIND_LABELS = { mod: 'Mod', resourcepack: 'Resource Pack', shader: 'Shader' };
+
+function formatBytes(bytes) {
+    const value = Number(bytes) || 0;
+    if (value <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+    return `${(value / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
 
 function ModpackCodeModal({
     isOpen,
@@ -49,6 +60,13 @@ function ModpackCodeModal({
     const [expiryChoice, setExpiryChoice] = useState('default');
     const [busyCode, setBusyCode] = useState('');
 
+    // Files neither Modrinth nor CurseForge know: left out, or uploaded to the Lux account.
+    const [prepare, setPrepare] = useState<any>(null);
+    const [preparing, setPreparing] = useState(false);
+    const [uploadChoice, setUploadChoice] = useState<Record<string, boolean>>({});
+    const [uploadProgress, setUploadProgress] = useState<any>(null);
+    const [codeUploads, setCodeUploads] = useState<any>(null);
+
     const { addNotification } = useNotification();
 
     useEffect(() => {
@@ -60,6 +78,33 @@ function ModpackCodeModal({
                 .catch(() => setIsAdmin(false));
         }
     }, [isOpen, initialMode]);
+
+    useEffect(() => {
+        if (!isOpen || initialMode !== 'export' || !window.electronAPI.prepareModpackExport) return;
+        if (!mods.length && !resourcePacks.length && !shaders.length) return;
+        let cancelled = false;
+        setPreparing(true);
+        window.electronAPI.prepareModpackExport({ instanceName: instanceData?.name, mods, resourcePacks, shaders })
+            .then((result) => {
+                if (cancelled) return;
+                if (result?.success) {
+                    setPrepare(result);
+                    const choice = {};
+                    for (const file of result.unknown || []) choice[file.key] = Boolean(result.signedIn);
+                    setUploadChoice(choice);
+                } else {
+                    setPrepare(null);
+                }
+            })
+            .catch(() => !cancelled && setPrepare(null))
+            .finally(() => !cancelled && setPreparing(false));
+        return () => { cancelled = true; };
+    }, [isOpen, initialMode, instanceData?.name, mods, resourcePacks, shaders]);
+
+    useEffect(() => {
+        if (!isOpen || !window.electronAPI.onModpackExportProgress) return undefined;
+        return window.electronAPI.onModpackExportProgress((payload) => setUploadProgress(payload));
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen && initialCode) {
@@ -82,13 +127,48 @@ function ModpackCodeModal({
         } catch (e) {
             console.error('Failed to fetch codes:', e);
         }
+        try {
+            const uploads = await window.electronAPI.getModpackCodeUploads?.();
+            setCodeUploads(uploads?.success ? uploads : null);
+        } catch (e) {
+            setCodeUploads(null);
+        }
     };
 
+    const uploadsByCode = useMemo(() => {
+        const map = new Map();
+        for (const entry of codeUploads?.codes || []) map.set(entry.code, entry);
+        return map;
+    }, [codeUploads]);
+
+    // Codes of the Lux account plus the old ones that only know the Minecraft profile.
+    const listedCodes = useMemo(() => {
+        const seen = new Set(myCodes.map((item) => item.code));
+        const extra = (codeUploads?.codes || []).filter((item) => !seen.has(item.code));
+        return [...myCodes, ...extra];
+    }, [myCodes, codeUploads]);
+
+    const pendingUploads = useMemo(() => (prepare?.unknown || [])
+        .filter((file) => selectedTypes[KIND_TO_TYPE[file.kind]]), [prepare, selectedTypes]);
+    const chosenUploads = pendingUploads.filter((file) => uploadChoice[file.key]);
+    const chosenBytes = chosenUploads.reduce((sum, file) => sum + (file.size || 0), 0);
+    const quota = prepare?.quota || null;
+    const tooLargeFile = prepare?.maxFileBytes
+        ? chosenUploads.find((file) => file.size > prepare.maxFileBytes)
+        : null;
+    const overQuota = Boolean(quota && quota.quotaBytes > 0 && quota.usedBytes + chosenBytes > quota.quotaBytes);
+
     const handleDeleteCode = async (codeToDelete) => {
-        if (!confirm(`Are you sure you want to delete code ${codeToDelete}?`)) return;
+        const ownFiles = uploadsByCode.get(codeToDelete);
+        const question = ownFiles?.files?.length
+            ? `Delete code ${codeToDelete}? Its ${ownFiles.files.length} uploaded file(s) are removed from your cloud storage too.`
+            : `Are you sure you want to delete code ${codeToDelete}?`;
+        if (!confirm(question)) return;
 
         try {
-            const result = await window.electronAPI.deleteModpackCode(codeToDelete);
+            const result = ownFiles && window.electronAPI.deleteOwnModpackCode
+                ? await window.electronAPI.deleteOwnModpackCode(codeToDelete)
+                : await window.electronAPI.deleteModpackCode(codeToDelete);
             if (result.success) {
                 addNotification('Code deleted successfully', 'success');
                 fetchMyCodes();
@@ -109,7 +189,8 @@ function ModpackCodeModal({
         instanceVersion: instanceData?.version,
         instanceLoader: instanceData?.loader,
         includeSettings: selectedTypes.settings,
-        icon: instanceData?.icon || null
+        icon: instanceData?.icon || null,
+        uploadKeys: chosenUploads.map((file) => file.key)
     });
 
     // Admins: replace what a live code installs with this instance's current content.
@@ -157,6 +238,7 @@ function ModpackCodeModal({
         }
 
         setLoading(true);
+        setUploadProgress(null);
         try {
             const exportData: any = buildExportData();
             if (isAdmin) {
@@ -170,7 +252,9 @@ function ModpackCodeModal({
                 setExportedCode(result.code);
                 addNotification(result.live
                     ? `Live code created: ${result.code}. Push updates from "My Codes".`
-                    : `Successfully exported! Code: ${result.code}`, 'success');
+                    : result.uploads
+                        ? `Successfully exported! Code: ${result.code} (${result.uploads} own file(s) uploaded)`
+                        : `Successfully exported! Code: ${result.code}`, 'success');
                 fetchMyCodes();
             } else {
                 addNotification(`Export failed: ${result.error}`, 'error');
@@ -180,6 +264,7 @@ function ModpackCodeModal({
             addNotification(`Export error: ${error.message}`, 'error');
         } finally {
             setLoading(false);
+            setUploadProgress(null);
         }
     };
 
@@ -337,6 +422,85 @@ function ModpackCodeModal({
                                         </div>
                                     </div>
 
+                                    {preparing && (
+                                        <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
+                                            <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin"></div>
+                                            Checking which files Modrinth and CurseForge know...
+                                        </div>
+                                    )}
+
+                                    {!preparing && pendingUploads.length > 0 && (
+                                        <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+                                            <div>
+                                                <div className="text-sm font-bold text-foreground">
+                                                    Not on Modrinth or CurseForge ({pendingUploads.length})
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {prepare?.signedIn
+                                                        ? 'Your friend can only get these if you upload them to your Lux cloud storage. They are deleted together with the code.'
+                                                        : 'Sign in with your Lux account to upload these to your cloud storage. Without an account they are left out of the code.'}
+                                                </p>
+                                            </div>
+                                            <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                                {pendingUploads.map((file) => {
+                                                    const upload = Boolean(uploadChoice[file.key]);
+                                                    return (
+                                                        <div key={file.key} className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-2">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="truncate text-xs font-bold text-foreground" title={file.fileName}>{file.title}</div>
+                                                                <div className="text-[10px] text-muted-foreground">
+                                                                    {KIND_LABELS[file.kind] || 'File'} · {formatBytes(file.size)}{file.isDirectory ? ' · folder, sent as .zip' : ''}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex shrink-0 rounded-lg border border-border overflow-hidden text-[11px] font-bold">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={!prepare?.signedIn || loading}
+                                                                    onClick={() => setUploadChoice((prev) => ({ ...prev, [file.key]: true }))}
+                                                                    className={`px-2 py-1 transition-colors disabled:opacity-40 ${upload ? 'bg-primary text-black' : 'text-muted-foreground hover:bg-accent'}`}
+                                                                >
+                                                                    Upload
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={loading}
+                                                                    onClick={() => setUploadChoice((prev) => ({ ...prev, [file.key]: false }))}
+                                                                    className={`px-2 py-1 transition-colors ${!upload ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-accent'}`}
+                                                                >
+                                                                    Leave out
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {prepare?.signedIn && quota && (
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between text-[11px] text-muted-foreground">
+                                                        <span>Cloud storage: {formatBytes(quota.usedBytes)} of {formatBytes(quota.quotaBytes)} used</span>
+                                                        <span className={overQuota ? 'text-red-400 font-bold' : ''}>+{formatBytes(chosenBytes)}</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className={`h-full rounded-full ${overQuota ? 'bg-red-400' : 'bg-primary'}`}
+                                                            style={{ width: `${quota.quotaBytes > 0 ? Math.min(100, Math.round(((quota.usedBytes + chosenBytes) / quota.quotaBytes) * 100)) : 0}%` }}
+                                                        />
+                                                    </div>
+                                                    {overQuota && (
+                                                        <p className="text-[11px] font-bold text-red-400">
+                                                            Not enough cloud storage. Leave some files out, or delete old codes or cloud instances first.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {tooLargeFile && (
+                                                <p className="text-[11px] font-bold text-red-400">
+                                                    {tooLargeFile.title} is larger than {formatBytes(prepare.maxFileBytes)} and can't be uploaded.
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {isAdmin && (
                                         <div className="mb-6 p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3">
                                             <div className="text-xs font-bold uppercase tracking-widest text-primary">Admin</div>
@@ -371,13 +535,15 @@ function ModpackCodeModal({
 
                                     <button
                                         onClick={handleExport}
-                                        disabled={loading || (!mods.length && !resourcePacks.length && !shaders.length) || (modpackName && !/^[a-zA-Z0-9-_\s]+$/.test(modpackName)) || myCodes.length >= 10}
+                                        disabled={loading || preparing || overQuota || Boolean(tooLargeFile) || (!mods.length && !resourcePacks.length && !shaders.length) || (modpackName && !/^[a-zA-Z0-9-_\s]+$/.test(modpackName)) || myCodes.length >= 10}
                                         className="w-full py-4 bg-primary hover:bg-primary-hover text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                                     >
                                         {loading ? (
                                             <>
                                                 <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin"></div>
-                                                Generating Code...
+                                                {uploadProgress && uploadProgress.done < uploadProgress.total
+                                                    ? `Uploading ${uploadProgress.done + 1}/${uploadProgress.total}: ${uploadProgress.fileName}`
+                                                    : 'Generating Code...'}
                                             </>
                                         ) : (
                                             <>
@@ -395,7 +561,24 @@ function ModpackCodeModal({
                         </>
                     ) : mode === 'my-codes' ? (
                         <div className="space-y-2">
-                            {myCodes.length === 0 ? (
+                            {codeUploads?.quota && (
+                                <div className="mb-3 rounded-xl border border-border bg-muted p-3">
+                                    <div className="flex justify-between text-[11px] font-bold text-muted-foreground">
+                                        <span>Lux cloud storage</span>
+                                        <span>{formatBytes(codeUploads.quota.usedBytes)} / {formatBytes(codeUploads.quota.quotaBytes)}</span>
+                                    </div>
+                                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-card">
+                                        <div
+                                            className="h-full rounded-full bg-primary"
+                                            style={{ width: `${codeUploads.quota.quotaBytes > 0 ? Math.min(100, Math.round((codeUploads.quota.usedBytes / codeUploads.quota.quotaBytes) * 100)) : 0}%` }}
+                                        />
+                                    </div>
+                                    <div className="mt-1 text-[10px] text-muted-foreground">
+                                        {formatBytes(codeUploads.quota.codeFileBytes)} in code files · {formatBytes(codeUploads.quota.instanceBytes)} in cloud instances
+                                    </div>
+                                </div>
+                            )}
+                            {listedCodes.length === 0 ? (
                                 <div className="text-center py-12 text-muted-foreground">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -404,7 +587,7 @@ function ModpackCodeModal({
                                     <p className="text-xs mt-1">Export your first modpack to share it!</p>
                                 </div>
                             ) : (
-                                myCodes.map(item => (
+                                listedCodes.map(item => (
                                     <div key={item.code} className="bg-muted border border-border rounded-xl p-4 group hover:bg-accent transition-all">
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -422,6 +605,18 @@ function ModpackCodeModal({
                                                 <span className="opacity-30">•</span>
                                                 <span>{item.expires ? `Exp: ${new Date(item.expires).toLocaleDateString()}` : 'Never expires'}</span>
                                             </div>
+                                            {uploadsByCode.get(item.code)?.files?.length > 0 && (
+                                                <div className="mt-2 space-y-0.5">
+                                                    <div className="text-[10px] font-bold uppercase text-amber-400/90">
+                                                        {uploadsByCode.get(item.code).files.length} own file(s) in your cloud · {formatBytes(uploadsByCode.get(item.code).filesBytes)}
+                                                    </div>
+                                                    {uploadsByCode.get(item.code).files.map((file) => (
+                                                        <div key={`${file.kind}:${file.fileName}`} className="text-[10px] text-muted-foreground truncate max-w-[260px]" title={file.fileName}>
+                                                            {file.fileName} · {formatBytes(file.size)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
