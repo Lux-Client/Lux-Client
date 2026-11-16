@@ -20,6 +20,20 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
     const [availableVersions, setAvailableVersions] = useState([]);
     const [loadingVersions, setLoadingVersions] = useState(false);
     const [showSnapshots, setShowSnapshots] = useState(false);
+    const [javaRuntimes, setJavaRuntimes] = useState<any[]>([]);
+
+    React.useEffect(() => {
+        if (activeTab !== 'java') return;
+        let cancelled = false;
+        window.electronAPI.getJavaRuntimes?.()
+            .then((res) => {
+                if (!cancelled && res?.success && Array.isArray(res.runtimes)) setJavaRuntimes(res.runtimes);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTab]);
     const [showMigrationReview, setShowMigrationReview] = useState(false);
     const [migrationPreview, setMigrationPreview] = useState<any>(null);
     const [migrationSelection, setMigrationSelection] = useState<Record<string, boolean>>({});
@@ -398,6 +412,35 @@ function InstanceSettingsModal({ instance, instanceStatus, onClose, onSave, onDe
 
                             {activeTab === 'java' && (
                                 <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-muted-foreground">{t('instance_settings.java.runtime_label', 'Java version for this instance')}</label>
+                                        <div className="grid gap-2">
+                                            {[{ name: t('instance_settings.java.runtime_default', 'Default (global setting / automatic)'), path: '', type: 'default' }, ...javaRuntimes].map((runtime) => {
+                                                const selected = (config.javaPath || '') === runtime.path;
+                                                return (
+                                                    <button
+                                                        key={runtime.path || 'default'}
+                                                        type="button"
+                                                        onClick={() => handleChange('javaPath', runtime.path)}
+                                                        className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${selected ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}`}
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="truncate text-sm font-semibold text-foreground">{runtime.name}</div>
+                                                            {runtime.path && <div className="truncate text-[11px] text-muted-foreground">{runtime.path}</div>}
+                                                        </div>
+                                                        {runtime.type !== 'default' && (
+                                                            <span className="shrink-0 rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
+                                                                {runtime.type === 'system'
+                                                                    ? t('instance_settings.java.runtime_system', 'System')
+                                                                    : t('instance_settings.java.runtime_lux', 'Lux')}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-muted-foreground">{t('instance_settings.java.path_label')}</label>
                                         <div className="flex gap-2">

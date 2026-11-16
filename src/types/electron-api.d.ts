@@ -90,6 +90,7 @@ interface ElectronAPI {
   setInstanceFolderPath: (instanceRef: any, folderPath: string) => Promise<any>;
   previewInstanceMigration: (name: string, config: any) => Promise<any>;
   migrateInstance: (name: string, config: any) => Promise<any>;
+  convertExternalInstance: (name: string) => Promise<any>;
   reinstallInstance: (name: string, type?: string, options?: { loaderVersion?: string; fabricApiVersion?: string }) => Promise<any>;
   deleteInstance: (name: string) => Promise<any>;
   renameInstance: (oldName: string, newName: string) => Promise<any>;
@@ -111,6 +112,10 @@ interface ElectronAPI {
   deleteServerMod: (serverName: string, fileName: string, type?: string) => Promise<any>;
   installMod: (data: any) => Promise<any>;
   modrinthInstall: (data: any) => Promise<any>;
+  getLuxModInfo: (options?: { force?: boolean }) => Promise<any>;
+  getLuxModStatus: (instanceName: string, options?: { force?: boolean }) => Promise<any>;
+  getSkinByUuid: (uuid: string) => Promise<any>;
+  installLuxMod: (instanceName: string, options?: { lock?: boolean }) => Promise<any>;
   installLocalMod: (instanceName: string, filePath: string, type?: string) => Promise<any>;
   getModVersions: (projectId: string, loaders?: any, gameVersions?: any, fallbackCurseForgeProjectId?: string | null) => Promise<any>;
   getModrinthProject: (projectId: string) => Promise<any>;
@@ -136,6 +141,10 @@ interface ElectronAPI {
   getModpackAdminStatus: () => Promise<{ success: boolean; isAdmin: boolean }>;
   updateLiveModpackCode: (code: string, data: any) => Promise<any>;
   setModpackCodeSettings: (code: string, settings: { live?: boolean; expiry?: number | 'never' }) => Promise<any>;
+  prepareModpackExport?: (data: any) => Promise<any>;
+  getModpackCodeUploads?: () => Promise<any>;
+  deleteOwnModpackCode?: (code: string) => Promise<any>;
+  onModpackExportProgress?: (callback: (payload: { done: number; total: number; fileName: string }) => void) => UnsubscribeFn;
   installSharedContent: (instanceName: string, modpackData: any) => Promise<any>;
   getCurrentSkin: (token: string) => Promise<any>;
   uploadSkin: (token: string, skinPath: string, variant: string) => Promise<any>;

@@ -22,6 +22,11 @@ import CloudStatusBadge from "../components/cloud/CloudStatusBadge";
 import { useLuxSync } from "../context/LuxSyncContext";
 import { filterInstancesForMode } from "../utils/instanceTypes";
 import {
+  installLuxClientMod,
+  isLuxModSupported,
+  useLuxModVersions,
+} from "../utils/luxMod";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -67,8 +72,11 @@ import {
   ImageIcon,
   Users,
   CloudDownload,
+  Sparkles,
+  ArrowRightLeft,
 } from "lucide-react";
 import CollaborateModal from "../components/cloud/CollaborateModal";
+import LuxModInstallModal from "../components/LuxModInstallModal";
 
 const DEFAULT_ICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3Cpolyline points='3.27 6.96 12 12.01 20.73 6.96'%3E%3C/polyline%3E%3Cline x1='12' y1='22.08' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E";
@@ -432,6 +440,14 @@ function Dashboard({
   const [instanceToDelete, setInstanceToDelete] = useState(null);
   const [newInstanceName, setNewInstanceName] = useState("");
   const [newInstanceFolderPath, setNewInstanceFolderPath] = useState("");
+  const [withLuxClient, setWithLuxClient] = useState(false);
+  const [showLuxModPicker, setShowLuxModPicker] = useState(false);
+  const [luxModPickerInstance, setLuxModPickerInstance] = useState("");
+  const openLuxModPicker = (instanceName = "") => {
+    setLuxModPickerInstance(instanceName);
+    setShowLuxModPicker(true);
+  };
+  const luxModVersions = useLuxModVersions();
   const [selectedVersion, setSelectedVersion] = useState("");
   const [selectedLoader, setSelectedLoader] = useState("Vanilla");
   const [newInstanceIcon, setNewInstanceIcon] = useState(DEFAULT_ICON);
@@ -758,6 +774,28 @@ function Dashboard({
     performCreation();
   };
 
+  const luxClientAvailableForVersion = luxModVersions.includes(selectedVersion);
+  // The choice only appears for a loader and version the mod exists for.
+  const showLuxClientChoice = isLuxModSupported(
+    luxModVersions,
+    selectedVersion,
+    selectedLoader,
+  );
+  const createWithLuxClient = withLuxClient && showLuxClientChoice;
+
+  // "With Lux Client" only works for a supported version on Fabric; fall back
+  // to a standalone instance as soon as either no longer fits.
+  useEffect(() => {
+    if (
+      withLuxClient &&
+      (!luxClientAvailableForVersion || selectedLoader.toLowerCase() !== "fabric")
+    ) {
+      setWithLuxClient(false);
+    }
+  }, [withLuxClient, luxClientAvailableForVersion, selectedLoader]);
+
+  const selectLuxClientMode = (enabled) => setWithLuxClient(enabled);
+
   const performCreation = async () => {
     setIsCreating(true);
     const nameToUse = newInstanceName.trim() || "New Instance";
@@ -775,13 +813,30 @@ function Dashboard({
       );
 
       if (result.success) {
+        const createdName = result.instanceName || nameToUse;
         setShowCreateModal(false);
         await loadInstances();
-        addNotification(
-          `Started creating: ${result.instanceName || nameToUse}`,
-          "success",
-        );
+        addNotification(`Started creating: ${createdName}`, "success");
         Analytics.trackInstanceCreation(loaderForApi, selectedVersion);
+
+        if (createWithLuxClient) {
+          const luxRes = await installLuxClientMod(createdName, selectedVersion, {
+            lock: true,
+          });
+          if (luxRes?.success) {
+            addNotification(
+              t("lux_mod.installed", "Lux Client installed."),
+              "success",
+            );
+          } else {
+            addNotification(
+              t("lux_mod.install_failed", "Could not install Lux Client: {{error}}", {
+                error: luxRes?.error || "unknown error",
+              }),
+              "error",
+            );
+          }
+        }
       } else {
         addNotification(`Failed to create instance: ${result.error}`, "error");
       }
@@ -989,6 +1044,32 @@ function Dashboard({
           }
         } catch (e) {
           addNotification(`Duplicate failed: ${e.message}`, "error");
+        }
+        break;
+      case "convert-external":
+        try {
+          addNotification(
+            t("dashboard.context.convert_started", "Copying {{name}} into a new Lux instance...", { name: instance.name }),
+            "info",
+          );
+          const result = await window.electronAPI.convertExternalInstance(instance.name);
+          if (result?.success) {
+            addNotification(
+              t("dashboard.context.convert_done", "{{name}} is now a Lux instance. The original profile was left untouched as a backup.", { name: result.instanceName }),
+              "success",
+            );
+            await loadInstances();
+          } else {
+            addNotification(
+              t("dashboard.context.convert_failed", "Could not convert: {{error}}", { error: result?.error || "unknown error" }),
+              "error",
+            );
+          }
+        } catch (e) {
+          addNotification(
+            t("dashboard.context.convert_failed", "Could not convert: {{error}}", { error: e.message }),
+            "error",
+          );
         }
         break;
       case "collaborate":
@@ -1515,6 +1596,18 @@ function Dashboard({
         <FolderOpen className="w-4 h-4 mr-2" />
         {t("dashboard.context.folder")}
       </ContextMenuItem>
+      <ContextMenuItem onClick={() => openLuxModPicker(instance.name)}>
+        <Sparkles className="w-4 h-4 mr-2" />
+        {t("lux_mod.picker.title", "Install Lux Client")}
+      </ContextMenuItem>
+      {String(instance?.instanceType || "").toLowerCase() === "external" && (
+        <ContextMenuItem
+          onClick={() => handleContextAction("convert-external", instance)}
+        >
+          <ArrowRightLeft className="w-4 h-4 mr-2" />
+          {t("dashboard.context.convert_external", "Convert to Lux instance")}
+        </ContextMenuItem>
+      )}
       {String(instance?.instanceType || "").toLowerCase() !== "external" && (
         <>
           <ContextMenuItem
@@ -1802,6 +1895,10 @@ function Dashboard({
                   <DropdownMenuItem onClick={() => setShowCreateModal(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     {t("dashboard.manual_creation")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openLuxModPicker()}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {t("lux_mod.picker.title", "Install Lux Client")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -2115,6 +2212,48 @@ function Dashboard({
                     />
                   </div>
                 </div>
+
+                {showLuxClientChoice && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">
+                    {t("lux_mod.create_label", "Instance type")}
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => selectLuxClientMode(false)}
+                      className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                        !withLuxClient
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold text-foreground">
+                        {t("lux_mod.standalone", "Standalone Instance")}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {t("lux_mod.standalone_hint", "Minecraft without the Lux Client mod")}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => selectLuxClientMode(true)}
+                      className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                        withLuxClient
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold text-foreground">
+                        {t("lux_mod.with_lux", "With Lux Client")}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {t("lux_mod.with_lux_hint", "Downloads the Lux Client mod (Fabric)")}
+                      </div>
+                    </button>
+                  </div>
+                </div>
+                )}
               </>
             )}
 
@@ -2240,6 +2379,13 @@ function Dashboard({
           </form>
         </DialogContent>
       </Dialog>
+
+      <LuxModInstallModal
+        open={showLuxModPicker}
+        onClose={() => setShowLuxModPicker(false)}
+        instances={instances}
+        initialName={luxModPickerInstance}
+      />
 
       <PixelEditorModal
         isOpen={showPixelEditor}

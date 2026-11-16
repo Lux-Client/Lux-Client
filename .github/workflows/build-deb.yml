@@ -21,6 +21,8 @@ concurrency:
 
 jobs:
   build:
+    # Pull requests from forks have no access to the private backend, they only get frontend-check.yml
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     permissions:
@@ -28,8 +30,14 @@ jobs:
       actions: write
 
     steps:
-      - name: Checkout
+      - name: Checkout (with private backend submodule)
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Either a fine-grained token with read access to Lux-Launcher-Backend (BACKEND_TOKEN)
+          # or a read-only deploy key (BACKEND_DEPLOY_KEY) works.
+          token: ${{ secrets.BACKEND_TOKEN || github.token }}
+          ssh-key: ${{ secrets.BACKEND_DEPLOY_KEY }}
 
       - name: Compute build SHA (PR head or push SHA)
         id: vars

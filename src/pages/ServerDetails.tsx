@@ -904,38 +904,40 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
     };
 
     const handleStop = async () => {
-        setIsLoading(true);
+        // No blocking overlay here: the backend call waits for the process to
+        // exit, so show the new status right away like Start does.
+        const previousStatus = currentStatus;
+        setCurrentStatus('stopping');
+        addNotification(`Stopping server ${server.name}...`, 'info');
         try {
             const result = await window.electronAPI.stopServer(server.name);
-            if (result?.success) {
-                addNotification(`Stopping server ${server.name}...`, 'info');
-                setCurrentStatus('stopping');
-            } else {
+            if (!result?.success) {
+                setCurrentStatus(previousStatus);
                 addNotification(`Failed to stop server: ${result?.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to stop server:', error);
+            setCurrentStatus(previousStatus);
             addNotification(`Failed to stop server: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
         }
     };
 
     const handleRestart = async () => {
-        setIsLoading(true);
+        // No blocking overlay here: the backend call waits for the process to
+        // exit, so show the new status right away like Start does.
+        const previousStatus = currentStatus;
+        setCurrentStatus('restarting');
+        addNotification(`Restarting server ${server.name}...`, 'info');
         try {
             const result = await window.electronAPI.restartServer(server.name);
-            if (result?.success) {
-                addNotification(`Restarting server ${server.name}...`, 'info');
-                setCurrentStatus('restarting');
-            } else {
+            if (!result?.success) {
+                setCurrentStatus(previousStatus);
                 addNotification(`Failed to restart server: ${result?.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to restart server:', error);
+            setCurrentStatus(previousStatus);
             addNotification(`Failed to restart server: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -1660,6 +1662,23 @@ function ServerDetails({ server, onBack, runningInstances, onServerUpdate, isGue
                             </button>
                         </>
                     )}
+                    <button
+                        onClick={async () => {
+                            try {
+                                const result = await window.electronAPI.openServerFolder(server.name);
+                                if (result && result.success === false) {
+                                    addNotification(`Failed to open server folder: ${result.error || 'Unknown error'}`, 'error');
+                                }
+                            } catch (error) {
+                                console.error('Failed to open server folder:', error);
+                                addNotification(`Failed to open server folder: ${error.message}`, 'error');
+                            }
+                        }}
+                        className="p-2 rounded-lg bg-card hover:bg-accent text-foreground border border-border transition-colors"
+                        title={t('server_details.open_folder', { defaultValue: 'Open server folder' })}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
+                    </button>
                     <button
                         onClick={() => setShowServerSettings(true)}
                         className="p-2 rounded-lg bg-card hover:bg-accent text-foreground border border-border transition-colors"

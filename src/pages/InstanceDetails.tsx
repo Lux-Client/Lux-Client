@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useStoredBoolean } from '../hooks/useStoredBoolean';
 import { useTranslation } from 'react-i18next';
 import Dropdown from '../components/Dropdown';
+import LogFilePicker from '../components/LogFilePicker';
 import InstanceSettingsModal from '../components/InstanceSettingsModal';
 import ReinstallModal from '../components/ReinstallModal';
 import ModpackCodeModal from '../components/ModpackCodeModal';
@@ -18,6 +20,8 @@ import InstanceCloudPanel from '../components/cloud/InstanceCloudPanel';
 import CloudStatusBadge from '../components/cloud/CloudStatusBadge';
 import { useLuxAccount } from '../context/LuxAccountContext';
 import { useLuxSync } from '../context/LuxSyncContext';
+import LuxModInstallModal from '../components/LuxModInstallModal';
+import { installLuxClientMod, isLuxModFileName, isLuxModSupported, useLuxModVersions } from '../utils/luxMod';
 
 function RetryableListIcon({ src, className, fallback }) {
     const [attempt, setAttempt] = useState(0);
@@ -89,13 +93,14 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [log, setLog] = useState('');
     const [logFiles, setLogFiles] = useState([]);
     const [selectedLog, setSelectedLog] = useState('latest.log');
+    const logRequestRef = useRef(0);
     const [logFilters, setLogFilters] = useState({
         info: true,
         warn: true,
         error: true,
         debug: false
     });
-    const [autoScroll, setAutoScroll] = useState(true);
+    const [autoScroll, setAutoScroll] = useStoredBoolean('lux:logs:autoScroll', true);
     const [isUploadingLog, setIsUploadingLog] = useState(false);
     const logContainerRef = useRef(null);
     const liveLogBufferRef = useRef('');
@@ -501,22 +506,26 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     };
 
     const loadLogFiles = async () => {
+        // The backend answers with the plain array of { name, date, size }. This
+        // used to check res.success, which an array never has, so the picker
+        // only ever offered latest.log and none of the archived .log.gz files.
         const res = await window.electronAPI.getLogFiles(instance.name);
-        if (res.success) {
-
-            const names = res.files.map(f => f.name);
-            setLogFiles(names);
-        }
+        const files = Array.isArray(res) ? res : (res?.success && Array.isArray(res.files) ? res.files : []);
+        setLogFiles(files.filter(f => f && typeof f.name === 'string'));
     };
 
     const loadLog = async () => {
-
+        const requestId = ++logRequestRef.current;
         if (selectedLog === 'latest.log' && isRunning) {
             const live = await window.electronAPI.getLiveLogs(instance.name);
-            setLog(live.join('\n'));
+            if (requestId === logRequestRef.current) setLog(live.join('\n'));
         } else {
             const res = await window.electronAPI.getLog(instance.name, selectedLog);
-            if (res.success) setLog(res.content);
+            // Archived logs are unpacked on open and a big one takes a moment, so a
+            // slower answer for a file that is no longer selected is dropped.
+            if (requestId !== logRequestRef.current) return;
+            if (res?.success) setLog(res.content);
+            else setLog(`[Lux] ${t('instance_details.logs.load_failed', { file: selectedLog, defaultValue: 'Could not open {{file}}' })}${res?.error ? `: ${res.error}` : ''}`);
         }
     };
     useEffect(() => {
@@ -587,6 +596,79 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
 
     const { addNotification } = useNotification();
 
+    // Lux Client mod: offer it on instances whose version and loader match a published build.
+    const luxModVersions = useLuxModVersions();
+    const luxModSupported = isLuxModSupported(luxModVersions, instance.version, instance.loader);
+    const [luxModStatus, setLuxModStatus] = useState<any>(null);
+    const [installingLuxMod, setInstallingLuxMod] = useState(false);
+    const [showLuxModPicker, setShowLuxModPicker] = useState(false);
+
+    const isFabricInstance = String(instance.loader || '').toLowerCase() === 'fabric';
+    const luxBannerKey = `lux-mod-banner-dismissed:${instance.instanceId || instance.name}`;
+    const [luxBannerDismissed, setLuxBannerDismissed] = useState(() => {
+        try {
+            return window.localStorage.getItem(luxBannerKey) === '1';
+        } catch (_) {
+            return false;
+        }
+    });
+
+    const dismissLuxBanner = () => {
+        setLuxBannerDismissed(true);
+        try {
+            window.localStorage.setItem(luxBannerKey, '1');
+        } catch (_) {
+            // Not persisted, it stays hidden for this session only.
+        }
+    };
+
+    const refreshLuxModStatus = async () => {
+        if (!isFabricInstance) {
+            setLuxModStatus(null);
+            return;
+        }
+        try {
+            const res = await window.electronAPI.getLuxModStatus(instance.name);
+            setLuxModStatus(res?.success ? res : null);
+        } catch (error) {
+            console.warn('[LuxMod] Status check failed:', error);
+        }
+    };
+
+    useEffect(() => {
+        refreshLuxModStatus();
+    }, [instance.name, isFabricInstance, mods]);
+
+    const handleInstallLuxMod = async () => {
+        if (installingLuxMod) return;
+        setInstallingLuxMod(true);
+        try {
+            const res = await installLuxClientMod(instance.name, instance.version);
+            if (res?.success) {
+                addNotification(
+                    isRunning
+                        ? t('lux_mod.installed_restart', 'Lux Client installed. Restart the game to use it.')
+                        : t('lux_mod.installed', 'Lux Client installed.'),
+                    'success'
+                );
+                if (loadedContentTypesRef.current.mod) {
+                    await loadMods();
+                }
+            } else {
+                addNotification(t('lux_mod.install_failed', 'Could not install Lux Client: {{error}}', { error: res?.error || 'unknown error' }), 'error');
+            }
+        } catch (error) {
+            addNotification(t('lux_mod.install_failed', 'Could not install Lux Client: {{error}}', { error: error.message }), 'error');
+        } finally {
+            setInstallingLuxMod(false);
+            refreshLuxModStatus();
+        }
+    };
+
+    const isLockedLuxMod = (fileName) => Boolean(luxModStatus?.locked && isLuxModFileName(fileName));
+
+    const showLuxModOffer = !luxBannerDismissed && luxModSupported && luxModStatus?.available && (!luxModStatus.installed || luxModStatus.disabled || luxModStatus.updateAvailable);
+
     const handleCopyLog = () => {
         navigator.clipboard.writeText(log).then(() => {
             addNotification("Log copied to clipboard!", 'success');
@@ -620,14 +702,18 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             setIsUploadingLog(false);
         }
     };
+    const warnLockedLuxMod = () => addNotification(t('lux_mod.locked', 'Lux Client is part of this instance and cannot be removed.'), 'warning');
+
     const handleToggleMod = async (fileName) => {
         if (blockedByHost('addContent')) return;
+        if (isLockedLuxMod(fileName)) return warnLockedLuxMod();
         await window.electronAPI.toggleMod(instance.name, fileName);
         loadMods();
     };
 
     const handleDeleteMod = (fileName, type = 'mod') => {
         if (blockedByHost('removeContent')) return;
+        if (type === 'mod' && isLockedLuxMod(fileName)) return warnLockedLuxMod();
         setModToDelete({ name: fileName, type });
     };
 
@@ -1347,6 +1433,16 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                             <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
                                 <button
                                     onClick={() => {
+                                        setShowMenu(false);
+                                        setShowLuxModPicker(true);
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-accent flex items-center gap-3 transition-colors text-primary"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                                    {t('lux_mod.picker.title', 'Install Lux Client')}
+                                </button>
+                                <button
+                                    onClick={() => {
                                         window.electronAPI.openInstanceFolder(instance.name);
                                         setShowMenu(false);
                                     }}
@@ -1447,6 +1543,57 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             <div className="px-8 mt-4">
                 <ExtensionSlot name="instance.details" context={{ instanceName: instance.name, status, isRunning }} className="w-full flex gap-4 overflow-visible" />
             </div>
+
+            <LuxModInstallModal
+                open={showLuxModPicker}
+                onClose={() => {
+                    setShowLuxModPicker(false);
+                    refreshLuxModStatus();
+                    if (loadedContentTypesRef.current.mod) loadMods();
+                }}
+                instances={[instance]}
+                initialName={instance.name}
+            />
+
+            {showLuxModOffer && (
+                <div className="px-8 mt-4">
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3">
+                        <div className="min-w-0">
+                            <div className="text-sm font-bold text-foreground">
+                                {luxModStatus.updateAvailable
+                                    ? t('lux_mod.update_title', 'A new Lux Client version is available')
+                                    : t('lux_mod.offer_title', 'Do you also want to install the Lux Client mod?')}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {t('lux_mod.offer_hint', 'Lux Client is available for {{loader}} {{version}}. Restart the game afterwards for the full Lux experience.', { loader: 'Fabric', version: instance.version })}
+                            </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleInstallLuxMod}
+                            disabled={installingLuxMod || status === 'installing'}
+                            className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold bg-primary text-black hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            {installingLuxMod
+                                ? t('common.installing', 'Installing...')
+                                : luxModStatus.updateAvailable
+                                    ? t('lux_mod.update', 'Update Lux Client')
+                                    : t('lux_mod.install', 'Install Lux Client')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={dismissLuxBanner}
+                            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition"
+                            title={t('lux_mod.dismiss', 'Hide')}
+                            aria-label={t('lux_mod.dismiss', 'Hide')}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             { }
             <div className="px-8 mt-4 flex gap-2 border-b border-border">
@@ -1768,6 +1915,14 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                             )}
                                                         </button>
                                                     )}
+                                                    {isLockedLuxMod(mod.name) ? (
+                                                        <span
+                                                            className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground"
+                                                            title={t('lux_mod.locked', 'Lux Client is part of this instance and cannot be removed.')}
+                                                        >
+                                                            {t('client_mods.locked', 'Locked')}
+                                                        </span>
+                                                    ) : (<>
                                                     <ToggleBox
                                                         checked={mod.enabled}
                                                         onChange={() => handleToggleMod(mod.name)}
@@ -1779,6 +1934,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                                                         {t('instance_details.content.delete_mod', 'Delete Mod')}
                                                     </button>
+                                                    </>)}
                                                 </div>
                                             </div>
                                             </ProjectContextMenu>
@@ -2241,15 +2397,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     >
                         { }
                         <div className="flex items-center justify-between p-2 bg-card border-b border-border">
-                            <div className="relative w-48">
-                                <Dropdown
-                                    options={[
-                                        { value: 'latest.log', label: 'latest.log' },
-                                        ...logFiles.filter(f => f !== 'latest.log').map(f => ({ value: f, label: f }))
-                                    ]}
+                            <div className="relative w-56">
+                                <LogFilePicker
+                                    files={logFiles}
                                     value={selectedLog}
                                     onChange={setSelectedLog}
-                                    className=""
                                 />
                             </div>
 

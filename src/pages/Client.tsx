@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNotification } from '../context/NotificationContext';
 import { resolveClientAutoInstallModIds } from '../config/clientDefaults';
 import { filterInstancesForMode, getOpenClientCreateOptions } from '../utils/instanceTypes';
+import { installLuxClientMod, loadLuxModInfo } from '../utils/luxMod';
 
 function Client() {
     const { t } = useTranslation();
@@ -32,12 +33,20 @@ function Client() {
     const loadVersions = async () => {
         setIsLoadingVersions(true);
         try {
-            const supportedRes = await window.electronAPI.getSupportedGameVersions('Fabric');
+            const [supportedRes, luxInfo] = await Promise.all([
+                window.electronAPI.getSupportedGameVersions('Fabric'),
+                loadLuxModInfo()
+            ]);
 
             if (supportedRes?.success && Array.isArray(supportedRes.versions) && supportedRes.versions.length > 0) {
-                const fabricVersions = supportedRes.versions
+                const allFabricVersions = supportedRes.versions
                     .filter((version) => /^\d+\.\d+(\.\d+)?$/.test(version))
                     .map((version) => String(version));
+                // The Lux Client mod is mandatory here, so once it is released only offer versions it exists for.
+                const luxFabricVersions = luxInfo.released
+                    ? allFabricVersions.filter((version) => luxInfo.versions.includes(version))
+                    : [];
+                const fabricVersions = luxFabricVersions.length > 0 ? luxFabricVersions : allFabricVersions;
 
                 setAvailableVersions(fabricVersions);
                 setSelectedVersion((prev) => {
@@ -169,6 +178,29 @@ function Client() {
         }
     };
 
+    // Lux Client is mandatory in the client: install it, update it, or put it back if it went missing.
+    const ensureLuxMod = async (instanceName, mcVersion) => {
+        try {
+            const status = await window.electronAPI.getLuxModStatus(instanceName, { force: true });
+            // No jar published for this version (yet): nothing to enforce.
+            if (status?.success && !status.available) return true;
+            const needsInstall = !status?.success || !status.installed || status.disabled || status.updateAvailable;
+            if (!needsInstall) return true;
+
+            const res = await installLuxClientMod(instanceName, mcVersion);
+            if (res?.success) return true;
+
+            // An update that failed still leaves a working Lux Client in place.
+            if (status?.success && status.installed && !status.disabled) return true;
+
+            addNotification(t('lux_mod.install_failed', 'Could not install Lux Client: {{error}}', { error: res?.error || 'unknown error' }), 'error');
+            return false;
+        } catch (error) {
+            addNotification(t('lux_mod.install_failed', 'Could not install Lux Client: {{error}}', { error: error.message }), 'error');
+            return false;
+        }
+    };
+
     useEffect(() => {
         loadVersions();
         loadInstances();
@@ -269,6 +301,7 @@ function Client() {
                     progress: 0
                 });
                 addNotification(t('common.installing', 'Installing...'), 'info');
+                await ensureLuxMod(instanceName, selectedVersion);
                 await installConfiguredMods(instanceName, selectedVersion);
                 await loadInstances();
                 await checkForUpdates(instanceName);
@@ -287,6 +320,9 @@ function Client() {
 
         setIsBusy(true);
         try {
+            const luxReady = await ensureLuxMod(installedInstance.name, installedInstance.version);
+            if (!luxReady) return;
+
             const result = await window.electronAPI.launchGame(installedInstance.name);
             if (result?.success) {
                 addNotification(t('client_page.launching', 'Starting client...'), 'info');

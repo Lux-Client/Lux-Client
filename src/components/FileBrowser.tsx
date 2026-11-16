@@ -23,12 +23,105 @@ const FileBrowser = ({ serverName }) => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const [selectedNames, setSelectedNames] = useState<Set<string>>(() => new Set());
+    const [lastSelectedName, setLastSelectedName] = useState<string | null>(null);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const fileInputRef = useRef(null);
     const dropZoneRef = useRef(null);
 
     useEffect(() => {
         loadFiles();
+        clearSelection();
     }, [currentPath, serverName]);
+
+    const joinPath = (name) => (currentPath ? `${currentPath}/${name}` : name);
+
+    const clearSelection = () => {
+        setSelectedNames(new Set());
+        setLastSelectedName(null);
+    };
+
+    const toggleSelected = (name) => {
+        setSelectedNames(prev => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        });
+        setLastSelectedName(name);
+    };
+
+    // Shift-click selects everything between the last clicked row and this one.
+    const selectRange = (name) => {
+        const names = files.map(f => f.name);
+        const from = lastSelectedName ? names.indexOf(lastSelectedName) : -1;
+        const to = names.indexOf(name);
+        if (from === -1 || to === -1) {
+            toggleSelected(name);
+            return;
+        }
+        const [start, end] = from < to ? [from, to] : [to, from];
+        setSelectedNames(prev => {
+            const next = new Set(prev);
+            names.slice(start, end + 1).forEach(n => next.add(n));
+            return next;
+        });
+        setLastSelectedName(name);
+    };
+
+    const allSelected = files.length > 0 && files.every(f => selectedNames.has(f.name));
+
+    const toggleSelectAll = () => {
+        if (allSelected) clearSelection();
+        else setSelectedNames(new Set(files.map(f => f.name)));
+    };
+
+    const handleRowClick = (e, file) => {
+        if (e.shiftKey) {
+            e.preventDefault();
+            selectRange(file.name);
+            return;
+        }
+        if (e.ctrlKey || e.metaKey) {
+            toggleSelected(file.name);
+            return;
+        }
+        if (selectedNames.size > 0) {
+            // While a selection is active, a plain click adds or removes rows
+            // instead of navigating away and losing the selection.
+            toggleSelected(file.name);
+            return;
+        }
+        if (file.isDirectory) handleFolderClick(file.name);
+        else handleFileClick(file);
+    };
+
+    const handleBulkDelete = async () => {
+        const names = [...selectedNames];
+        setShowBulkDeleteConfirm(false);
+        if (names.length === 0) return;
+        setIsBulkDeleting(true);
+        const failed = [];
+        for (const name of names) {
+            try {
+                const res = await window.electronAPI.deleteServerFile(serverName, joinPath(name));
+                if (!res?.success) failed.push(`${name}: ${res?.error || 'unknown error'}`);
+            } catch (e) {
+                failed.push(`${name}: ${e?.message || e}`);
+            }
+        }
+        setIsBulkDeleting(false);
+        clearSelection();
+        const deleted = names.length - failed.length;
+        if (deleted > 0) {
+            addNotification(t('server_details.files.bulk_delete_success', { count: deleted, defaultValue: '{{count}} item(s) deleted' }), 'success');
+        }
+        if (failed.length > 0) {
+            addNotification(`${t('server_details.files.error_delete')}: ${failed.join(', ')}`, 'error');
+        }
+        loadFiles();
+    };
 
     const loadFiles = async () => {
         setLoading(true);
@@ -338,6 +431,28 @@ const FileBrowser = ({ serverName }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {selectedNames.size > 0 && (
+                        <div className="flex items-center gap-2 pr-2 mr-1 border-r border-border">
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                {t('server_details.files.selected_count', { count: selectedNames.size, defaultValue: '{{count}} selected' })}
+                            </span>
+                            <button
+                                onClick={() => setShowBulkDeleteConfirm(true)}
+                                disabled={isBulkDeleting}
+                                className="px-3 py-1.5 text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {isBulkDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                {t('server_details.files.delete_selected', { defaultValue: 'Delete' })}
+                            </button>
+                            <button
+                                onClick={clearSelection}
+                                className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-accent-foreground"
+                                title={t('server_details.files.clear_selection', { defaultValue: 'Clear selection' })}
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
                     {isCreatingFolder ? (
                         <div className="flex items-center gap-2 bg-black/40 p-1 pl-3 rounded-lg border border-border">
                             <input
@@ -407,6 +522,16 @@ const FileBrowser = ({ serverName }) => {
                     <table className="w-full text-left">
                         <thead className="sticky top-0 bg-card border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
                             <tr>
+                                <th className="pl-6 pr-0 py-3 w-8">
+                                    <input
+                                        type="checkbox"
+                                        checked={allSelected}
+                                        ref={el => { if (el) el.indeterminate = selectedNames.size > 0 && !allSelected; }}
+                                        onChange={toggleSelectAll}
+                                        className="h-4 w-4 accent-primary cursor-pointer align-middle"
+                                        title={t('server_details.files.select_all', { defaultValue: 'Select all' })}
+                                    />
+                                </th>
                                 <th className="px-6 py-3 font-medium">{t('common.name')}</th>
                                 <th className="px-6 py-3 font-medium text-right">{t('common.size')}</th>
                                 <th className="px-6 py-3 font-medium text-right">{t('common.modified')}</th>
@@ -417,9 +542,21 @@ const FileBrowser = ({ serverName }) => {
                             {files.map((file) => (
                                 <tr
                                     key={file.name}
-                                    className="group hover:bg-accent transition-colors cursor-pointer"
-                                    onClick={() => file.isDirectory ? handleFolderClick(file.name) : handleFileClick(file)}
+                                    className={`group hover:bg-accent transition-colors cursor-pointer select-none ${selectedNames.has(file.name) ? 'bg-primary/10' : ''}`}
+                                    onClick={(e) => handleRowClick(e, file)}
                                 >
+                                    <td className="pl-6 pr-0 py-3 w-8" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedNames.has(file.name)}
+                                            onChange={() => {}}
+                                            onClick={(e) => {
+                                                if (e.shiftKey) selectRange(file.name);
+                                                else toggleSelected(file.name);
+                                            }}
+                                            className="h-4 w-4 accent-primary cursor-pointer align-middle"
+                                        />
+                                    </td>
                                     <td className="px-6 py-3">
                                         <div className="flex items-center gap-3">
                                             {file.isDirectory ? (
@@ -459,6 +596,16 @@ const FileBrowser = ({ serverName }) => {
                     </table>
                 )}
             </div>
+
+            {showBulkDeleteConfirm && (
+                <ConfirmationModal
+                    title={t('server_details.files.delete_title')}
+                    message={t('server_details.files.bulk_delete_confirm', { count: selectedNames.size, defaultValue: 'Delete {{count}} selected item(s)? This cannot be undone.' })}
+                    onConfirm={handleBulkDelete}
+                    onCancel={() => setShowBulkDeleteConfirm(false)}
+                    type="danger"
+                />
+            )}
 
             {showDeleteConfirm && (
                 <ConfirmationModal

@@ -1,0 +1,4 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/Lux-Client/Lux-Launcher-Backend.git
+	branch = main

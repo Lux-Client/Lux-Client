@@ -6,6 +6,7 @@ import {
     sanitizeClientCustomAutoInstallModIds
 } from '../config/clientDefaults';
 import { filterInstancesForMode } from '../utils/instanceTypes';
+import { isLuxModFileName } from '../utils/luxMod';
 import { getSourceTags } from '../utils/sourceTags';
 import ProjectContextMenu from '../components/ProjectContextMenu';
 
@@ -433,10 +434,15 @@ function ClientMods() {
         addNotification(t('client_mods.auto_install_removed', 'Removed from client auto install list.'), 'success');
     };
 
+    const isLuxModItem = (modItem) => Boolean(
+        isLuxModFileName(modItem?.fileName)
+        || (Array.isArray(modItem?.instanceFiles) && modItem.instanceFiles.some((fileRef) => isLuxModFileName(fileRef?.fileName)))
+    );
+
     const handleRemoveInstalledMod = async (version, modItem) => {
         const targetKey = `${version}:${modItem.key}`;
 
-        if (modItem.projectId && DEFAULT_OPEN_CLIENT_MOD_IDS.includes(modItem.projectId)) {
+        if ((modItem.projectId && DEFAULT_OPEN_CLIENT_MOD_IDS.includes(modItem.projectId)) || isLuxModItem(modItem)) {
             addNotification(t('client_mods.default_locked', 'Default automatic mods are protected.'), 'warning');
             return;
         }
@@ -726,6 +732,10 @@ function ClientMods() {
                             {t('client_mods.default_mods', 'Default (protected)')}
                         </div>
                         <div className="space-y-2 mb-4">
+                            <div className="flex items-center justify-between bg-muted border border-border rounded-lg px-3 py-2">
+                                <span className="text-sm text-foreground truncate">Lux Client</span>
+                                <span className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground border border-border">{t('client_mods.locked', 'Locked')}</span>
+                            </div>
                             {DEFAULT_OPEN_CLIENT_MOD_IDS.map((projectId) => (
                                 <div key={projectId} className="flex items-center justify-between bg-muted border border-border rounded-lg px-3 py-2">
                                     <span className="text-sm text-foreground truncate">{projectTitles[projectId] || t('client_mods.loading_project_name', 'Loading mod name...')}</span>
@@ -780,7 +790,7 @@ function ClientMods() {
                                             ) : (
                                                 <div className="space-y-2">
                                                     {versionItems.map((modItem) => {
-                                                        const isDefaultProtected = Boolean(modItem.projectId && DEFAULT_OPEN_CLIENT_MOD_IDS.includes(modItem.projectId));
+                                                        const isDefaultProtected = Boolean(modItem.projectId && DEFAULT_OPEN_CLIENT_MOD_IDS.includes(modItem.projectId)) || isLuxModItem(modItem);
                                                         const removeKey = `${version}:${modItem.key}`;
                                                         const isRemoving = removingInstalledKey === removeKey;
 

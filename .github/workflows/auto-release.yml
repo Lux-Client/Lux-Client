@@ -94,8 +94,14 @@ jobs:
       actions: write
 
     steps:
-      - name: Checkout
+      - name: Checkout (with private backend submodule)
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Either a fine-grained token with read access to Lux-Launcher-Backend (BACKEND_TOKEN)
+          # or a read-only deploy key (BACKEND_DEPLOY_KEY) works.
+          token: ${{ secrets.BACKEND_TOKEN || github.token }}
+          ssh-key: ${{ secrets.BACKEND_DEPLOY_KEY }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -131,6 +137,7 @@ jobs:
           path: |
             release/*.exe
             release/*.dmg
+            release/*.zip
             release/*.AppImage
             release/*.deb
             release/*.rpm
@@ -147,7 +154,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The artifact API sometimes answers "No artifacts found for ID" right after
+      # upload. Retry once instead of failing the whole release.
       - name: Download all build artifacts
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*-${{ needs.prepare.outputs.version }}
+          merge-multiple: true
+          path: release-artifacts
+
+      - name: Wait before retrying download
+        if: steps.download.outcome == 'failure'
+        run: sleep 30
+
+      - name: Download all build artifacts (retry)
+        if: steps.download.outcome == 'failure'
         uses: actions/download-artifact@v4
         with:
           pattern: release-*-${{ needs.prepare.outputs.version }}
@@ -166,7 +189,7 @@ jobs:
               release_id: releaseId,
               per_page: 100
             });
-            const installerExts = ['.exe', '.dmg', '.AppImage', '.deb', '.rpm'];
+            const installerExts = ['.exe', '.dmg', '.zip', '.AppImage', '.deb', '.rpm'];
             const toDelete = assets.filter(a => installerExts.some(ext => a.name.endsWith(ext)));
             for (const asset of toDelete) {
               core.info(`Deleting old asset: ${asset.name}`);
@@ -206,6 +229,7 @@ jobs:
           gh release upload "$TAG" \
             release-artifacts/*.exe \
             release-artifacts/*.dmg \
+            release-artifacts/*.zip \
             release-artifacts/*.AppImage \
             release-artifacts/*.deb \
             release-artifacts/*.rpm \

@@ -19,6 +19,8 @@ export type LuxCloudQuota = {
     quotaBytes: number;
     instanceCount: number;
     maxInstances: number;
+    instanceBytes?: number;
+    codeFileBytes?: number;
 };
 
 export type LuxCloudDevice = {
