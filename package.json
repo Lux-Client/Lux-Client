@@ -189,7 +189,7 @@
     "autoprefixer": "^10.4.17",
     "concurrently": "^10.0.5",
     "cross-env": "^7.0.3",
-    "electron": "^41.10.3",
+    "electron": "^41.10.6",
     "electron-builder": "^26.15.3",
     "eslint": "^9.21.0",
     "eslint-plugin-react": "^7.37.5",
