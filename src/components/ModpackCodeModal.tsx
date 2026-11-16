@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNotification } from '../context/NotificationContext';
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from './ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -79,19 +79,40 @@ function ModpackCodeModal({
         }
     }, [isOpen, initialMode]);
 
+    // The parent reloads its content lists now and then (metadata, icons, file watcher),
+    // which hands us new arrays with the same files. Only scan again when the files
+    // themselves change, and keep the choices the player already made.
+    const contentRef = useRef({ mods, resourcePacks, shaders });
+    contentRef.current = { mods, resourcePacks, shaders };
+    const contentSignature = useMemo(() => JSON.stringify([mods, resourcePacks, shaders].map((list) => (list || [])
+        .map((item) => `${item.name || item.fileName}|${item.projectId || ''}|${item.size || ''}`)
+        .sort())), [mods, resourcePacks, shaders]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setPrepare(null);
+            setUploadChoice({});
+        }
+    }, [isOpen]);
+
     useEffect(() => {
         if (!isOpen || initialMode !== 'export' || !window.electronAPI.prepareModpackExport) return;
-        if (!mods.length && !resourcePacks.length && !shaders.length) return;
+        const lists = contentRef.current;
+        if (!lists.mods.length && !lists.resourcePacks.length && !lists.shaders.length) return;
         let cancelled = false;
         setPreparing(true);
-        window.electronAPI.prepareModpackExport({ instanceName: instanceData?.name, mods, resourcePacks, shaders })
+        window.electronAPI.prepareModpackExport({ instanceName: instanceData?.name, ...lists })
             .then((result) => {
                 if (cancelled) return;
                 if (result?.success) {
                     setPrepare(result);
-                    const choice = {};
-                    for (const file of result.unknown || []) choice[file.key] = Boolean(result.signedIn);
-                    setUploadChoice(choice);
+                    setUploadChoice((previous) => {
+                        const choice = {};
+                        for (const file of result.unknown || []) {
+                            choice[file.key] = file.key in previous ? previous[file.key] : Boolean(result.signedIn);
+                        }
+                        return choice;
+                    });
                 } else {
                     setPrepare(null);
                 }
@@ -99,7 +120,7 @@ function ModpackCodeModal({
             .catch(() => !cancelled && setPrepare(null))
             .finally(() => !cancelled && setPreparing(false));
         return () => { cancelled = true; };
-    }, [isOpen, initialMode, instanceData?.name, mods, resourcePacks, shaders]);
+    }, [isOpen, initialMode, instanceData?.name, contentSignature]);
 
     useEffect(() => {
         if (!isOpen || !window.electronAPI.onModpackExportProgress) return undefined;
@@ -422,14 +443,14 @@ function ModpackCodeModal({
                                         </div>
                                     </div>
 
-                                    {preparing && (
+                                    {preparing && !prepare && (
                                         <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
                                             <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin"></div>
                                             Checking which files Modrinth and CurseForge know...
                                         </div>
                                     )}
 
-                                    {!preparing && pendingUploads.length > 0 && (
+                                    {pendingUploads.length > 0 && (
                                         <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
                                             <div>
                                                 <div className="text-sm font-bold text-foreground">
@@ -437,7 +458,7 @@ function ModpackCodeModal({
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     {prepare?.signedIn
-                                                        ? 'Your friend can only get these if you upload them to your Lux cloud storage. They are deleted together with the code.'
+                                                        ? 'Your friend can only get these if you upload them to your Lux cloud storage. Every file is checked for viruses first and deleted together with the code.'
                                                         : 'Sign in with your Lux account to upload these to your cloud storage. Without an account they are left out of the code.'}
                                                 </p>
                                             </div>
@@ -612,7 +633,7 @@ function ModpackCodeModal({
                                                     </div>
                                                     {uploadsByCode.get(item.code).files.map((file) => (
                                                         <div key={`${file.kind}:${file.fileName}`} className="text-[10px] text-muted-foreground truncate max-w-[260px]" title={file.fileName}>
-                                                            {file.fileName} · {formatBytes(file.size)}
+                                                            {file.fileName} · {formatBytes(file.size)}{file.scan?.status === 'infected' ? ' · blocked by the virus check' : ''}
                                                         </div>
                                                     ))}
                                                 </div>

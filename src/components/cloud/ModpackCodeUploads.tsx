@@ -128,6 +128,11 @@ export default function ModpackCodeUploads({ onChanged }: { onChanged?: () => vo
                                             <FileArchive size={10} className="shrink-0" />
                                             <span className="truncate">{file.fileName}</span>
                                             <span className="shrink-0 text-white/25">{formatBytes(file.size)}</span>
+                                            {file.scan?.status === 'infected' && (
+                                                <span className="shrink-0 font-medium text-red-300">
+                                                    {t('cloud.codes.blocked', 'blocked by the virus check')}
+                                                </span>
+                                            )}
                                         </p>
                                     ))}
                                 </div>
