@@ -358,7 +358,19 @@
             "clear": "Leeren",
             "no_logs": "Keine aktiven Logeinträge.",
             "upload": "Upload logs",
-            "truncated": "{{amount}} ältere Zeilen ausgeblendet - nutze Kopieren oder Hochladen für das komplette Log"
+            "truncated": "{{amount}} ältere Zeilen ausgeblendet - nutze Kopieren oder Hochladen für das komplette Log",
+            "load_failed": "{{file}} konnte nicht geöffnet werden",
+            "picker": {
+                "search": "Nach Name oder Datum suchen (2026-11-15)...",
+                "current": "Aktuell",
+                "today": "Heute",
+                "yesterday": "Gestern",
+                "unknown_day": "Unbekanntes Datum",
+                "session": "Sitzung {{number}}",
+                "no_match": "Keine Logs passen zur Suche",
+                "load_more": "Mehr anzeigen (noch {{count}})",
+                "archived_count": "{{count}} archivierte Logs (.log.gz), werden beim Öffnen entpackt"
+            }
         },
         "project": {
             "compatible": "Kompatibel",

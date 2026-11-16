@@ -343,7 +343,19 @@
             "clear": "Leere",
             "no_logs": "Kei aktive Log-Iitrag.",
             "upload": "Upload logs",
-            "truncated": "{{amount}} elteri Zile usblendet - nimm Kopiere oder Uelade fürs ganze Log"
+            "truncated": "{{amount}} elteri Zile usblendet - nimm Kopiere oder Uelade fürs ganze Log",
+            "load_failed": "{{file}} konnte nicht geöffnet werden",
+            "picker": {
+                "search": "Nach Name oder Datum suchen (2026-11-15)...",
+                "current": "Aktuell",
+                "today": "Heute",
+                "yesterday": "Gestern",
+                "unknown_day": "Unbekanntes Datum",
+                "session": "Sitzung {{number}}",
+                "no_match": "Keine Logs passen zur Suche",
+                "load_more": "Mehr anzeigen (noch {{count}})",
+                "archived_count": "{{count}} archivierte Logs (.log.gz), werden beim Öffnen entpackt"
+            }
         },
         "project": {
             "compatible": "Kompatibel",

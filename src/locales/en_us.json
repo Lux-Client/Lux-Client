@@ -358,7 +358,19 @@
             "clear": "Clear",
             "no_logs": "No active logs.",
             "upload": "Upload logs",
-            "truncated": "{{amount}} older lines hidden - use Copy or Upload for the complete log"
+            "truncated": "{{amount}} older lines hidden - use Copy or Upload for the complete log",
+            "load_failed": "Could not open {{file}}",
+            "picker": {
+                "search": "Search by name or date (2026-11-15)...",
+                "current": "Current",
+                "today": "Today",
+                "yesterday": "Yesterday",
+                "unknown_day": "Unknown date",
+                "session": "Session {{number}}",
+                "no_match": "No logs match your search",
+                "load_more": "Show more ({{count}} left)",
+                "archived_count": "{{count}} archived logs (.log.gz), unpacked when opened"
+            }
         },
         "project": {
             "compatible": "Compatible",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStoredBoolean } from '../hooks/useStoredBoolean';
 import { useTranslation } from 'react-i18next';
 import Dropdown from '../components/Dropdown';
+import LogFilePicker from '../components/LogFilePicker';
 import InstanceSettingsModal from '../components/InstanceSettingsModal';
 import ReinstallModal from '../components/ReinstallModal';
 import ModpackCodeModal from '../components/ModpackCodeModal';
@@ -92,6 +93,7 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [log, setLog] = useState('');
     const [logFiles, setLogFiles] = useState([]);
     const [selectedLog, setSelectedLog] = useState('latest.log');
+    const logRequestRef = useRef(0);
     const [logFilters, setLogFilters] = useState({
         info: true,
         warn: true,
@@ -504,22 +506,26 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     };
 
     const loadLogFiles = async () => {
+        // The backend answers with the plain array of { name, date, size }. This
+        // used to check res.success, which an array never has, so the picker
+        // only ever offered latest.log and none of the archived .log.gz files.
         const res = await window.electronAPI.getLogFiles(instance.name);
-        if (res.success) {
-
-            const names = res.files.map(f => f.name);
-            setLogFiles(names);
-        }
+        const files = Array.isArray(res) ? res : (res?.success && Array.isArray(res.files) ? res.files : []);
+        setLogFiles(files.filter(f => f && typeof f.name === 'string'));
     };
 
     const loadLog = async () => {
-
+        const requestId = ++logRequestRef.current;
         if (selectedLog === 'latest.log' && isRunning) {
             const live = await window.electronAPI.getLiveLogs(instance.name);
-            setLog(live.join('\n'));
+            if (requestId === logRequestRef.current) setLog(live.join('\n'));
         } else {
             const res = await window.electronAPI.getLog(instance.name, selectedLog);
-            if (res.success) setLog(res.content);
+            // Archived logs are unpacked on open and a big one takes a moment, so a
+            // slower answer for a file that is no longer selected is dropped.
+            if (requestId !== logRequestRef.current) return;
+            if (res?.success) setLog(res.content);
+            else setLog(`[Lux] ${t('instance_details.logs.load_failed', { file: selectedLog, defaultValue: 'Could not open {{file}}' })}${res?.error ? `: ${res.error}` : ''}`);
         }
     };
     useEffect(() => {
@@ -2391,15 +2397,11 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                     >
                         { }
                         <div className="flex items-center justify-between p-2 bg-card border-b border-border">
-                            <div className="relative w-48">
-                                <Dropdown
-                                    options={[
-                                        { value: 'latest.log', label: 'latest.log' },
-                                        ...logFiles.filter(f => f !== 'latest.log').map(f => ({ value: f, label: f }))
-                                    ]}
+                            <div className="relative w-56">
+                                <LogFilePicker
+                                    files={logFiles}
                                     value={selectedLog}
                                     onChange={setSelectedLog}
-                                    className=""
                                 />
                             </div>
 
