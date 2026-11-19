@@ -15,6 +15,8 @@ import CollaborateModal from '../components/cloud/CollaborateModal';
 import InstanceFileBrowser from '../components/InstanceFileBrowser';
 import type { InstanceFileBrowserHandle } from '../components/InstanceFileBrowser';
 import { getSourceTags } from '../utils/sourceTags';
+import { parseContentLink, resolveContentLink } from '../utils/contentLinks';
+import type { ParsedContentLink } from '../utils/contentLinks';
 import ProjectContextMenu from '../components/ProjectContextMenu';
 import InstanceCloudPanel from '../components/cloud/InstanceCloudPanel';
 import CloudStatusBadge from '../components/cloud/CloudStatusBadge';
@@ -58,6 +60,14 @@ function RetryableListIcon({ src, className, fallback }) {
     );
 }
 
+const formatCompactNumber = (value: number) => {
+    const num = Number(value) || 0;
+    if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 1_000) return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(num);
+};
+
 function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate, isGuest }) {
     const { t } = useTranslation();
     const isVanilla = !instance.loader || instance.loader.toLowerCase() === 'vanilla';
@@ -84,7 +94,9 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
     const [provider, setProvider] = useState('modrinth');
     const [searchOffset, setSearchOffset] = useState(0);
     const [totalHits, setTotalHits] = useState(0);
-    const limit = 10;
+    // Results are compact cards in a grid now, so a page holds far more than the old list.
+    const limit = 24;
+    const [linkNotice, setLinkNotice] = useState<string | null>(null);
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [codeModalMode, setCodeModalMode] = useState('export');
     const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -958,8 +970,53 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
             });
         }, 5000);
     };
+    // A pasted Modrinth or CurseForge link shows exactly that project instead of a text search.
+    const handleLinkSearch = async (link: ParsedContentLink) => {
+        setSearching(true);
+        setLinkNotice(null);
+        try {
+            const { hit, fallback, projectType } = await resolveContentLink(link);
+            const type = hit?.project_type || projectType;
+            if (type && !['mod', 'resourcepack', 'shader'].includes(type)) {
+                setSearchResults([]);
+                setTotalHits(0);
+                setLinkNotice(t('instance_details.search.link_unsupported', { type }));
+                return;
+            }
+            if (type === 'mod' && isVanilla) {
+                setSearchResults([]);
+                setTotalHits(0);
+                setLinkNotice(t('instance_details.search.link_needs_loader'));
+                return;
+            }
+            if (type && type !== searchCategory) setSearchCategory(type);
+            if (link.source !== provider) setProvider(link.source);
+            if (hit) {
+                setSearchResults([hit]);
+                setTotalHits(1);
+            } else {
+                setSearchResults(fallback);
+                setTotalHits(fallback.length);
+                setLinkNotice(t(fallback.length > 0 ? 'instance_details.search.link_fallback' : 'instance_details.search.link_not_found'));
+            }
+        } catch (err) {
+            console.error('Failed to resolve content link:', err);
+            setSearchResults([]);
+            setTotalHits(0);
+            setLinkNotice(t('instance_details.search.link_not_found'));
+        } finally {
+            setSearching(false);
+        }
+    };
+
     const handleSearch = async (e?: any, isAuto = false) => {
         if (e) e.preventDefault();
+        const link = parseContentLink(searchQuery);
+        if (link) {
+            await handleLinkSearch(link);
+            return;
+        }
+        setLinkNotice(null);
         setSearching(true);
 
         const facets = [
@@ -1689,6 +1746,37 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                                     </div>
                                 )}
 
+                                {contentView === 'search' && (
+                                    <>
+                                        <div className="flex gap-1 bg-background p-1 rounded-xl border border-border animate-in zoom-in-95 duration-200">
+                                            <button
+                                                onClick={() => { setProvider('modrinth'); setSearchOffset(0); }}
+                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${provider === 'modrinth' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                            >
+                                                Modrinth
+                                            </button>
+                                            <button
+                                                onClick={() => { setProvider('curseforge'); setSearchOffset(0); }}
+                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${provider === 'curseforge' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
+                                            >
+                                                CurseForge
+                                            </button>
+                                        </div>
+                                        <div className="w-36">
+                                            <Dropdown
+                                                options={[
+                                                    { value: 'relevance', label: t('instance_details.search.relevance') },
+                                                    { value: 'downloads', label: t('instance_details.search.downloads') },
+                                                    { value: 'newest', label: t('instance_details.search.newest') },
+                                                    { value: 'updated', label: t('instance_details.search.updated') }
+                                                ]}
+                                                value={sortMethod}
+                                                onChange={(value) => { setSortMethod(value); setSearchOffset(0); }}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
                                 {(contentView === 'mods' || contentView === 'resourcepacks' || contentView === 'shaders') && (
                                     <>
                                         <button
@@ -2129,118 +2217,120 @@ function InstanceDetails({ instance, onBack, runningInstances, onInstanceUpdate,
                             </div>
                         ) : (
                             <div className="flex-1 min-h-0 flex flex-col">
-                                <form onSubmit={handleSearch} className="flex gap-3 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <div className="flex-1 relative group">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                <form onSubmit={handleSearch} className="flex items-center gap-2 mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="relative group w-full max-w-md">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                                         <input
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder={t('instance_details.search.placeholder')}
-                                            className="w-full bg-muted backdrop-blur-md border border-border rounded-xl p-3 pl-11 text-foreground focus:border-primary outline-none shadow-inner transition-all"
+                                            className="w-full h-9 bg-muted border border-border rounded-lg pl-9 pr-3 text-sm text-foreground focus:border-primary outline-none transition-all"
                                             autoFocus
                                         />
                                     </div>
-                                    <button type="submit" className="bg-primary hover:bg-primary-hover text-black font-bold px-8 rounded-xl border border-transparent transition-all shadow-lg shadow-sm">{t('instance_details.search.search_btn')}</button>
+                                    <button
+                                        type="submit"
+                                        className="h-9 px-3 shrink-0 bg-primary hover:bg-primary-hover text-black text-xs font-bold rounded-lg border border-transparent transition-all flex items-center gap-1.5"
+                                        title={t('instance_details.search.search_btn')}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                        {t('instance_details.search.search_btn')}
+                                    </button>
+                                    <div className="ml-auto text-xs text-muted-foreground whitespace-nowrap pl-2">
+                                        {linkNotice
+                                            ? <span className="text-amber-500">{linkNotice}</span>
+                                            : t('instance_details.search.showing_results', { count: searchResults.length })}
+                                    </div>
                                 </form>
 
-                                <div className="flex justify-between items-center mb-4">
-                                    <div className="text-sm text-muted-foreground">
-                                        {t('instance_details.search.showing_results', { count: searchResults.length })}
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex bg-muted p-1 rounded-xl border border-border">
-                                            <button
-                                                onClick={() => setProvider('modrinth')}
-                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'modrinth' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
-                                            >
-                                                Modrinth
-                                            </button>
-                                            <button
-                                                onClick={() => setProvider('curseforge')}
-                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${provider === 'curseforge' ? 'bg-primary text-black shadow-sm' : 'text-muted-foreground hover:text-accent-foreground'}`}
-                                            >
-                                                CurseForge
-                                            </button>
-                                        </div>
-                                        <div className="w-48">
-                                            <Dropdown
-                                                options={[
-                                                    { value: 'relevance', label: t('instance_details.search.relevance') },
-                                                    { value: 'downloads', label: t('instance_details.search.downloads') },
-                                                    { value: 'newest', label: t('instance_details.search.newest') },
-                                                    { value: 'updated', label: t('instance_details.search.updated') }
-                                                ]}
-                                                value={sortMethod}
-                                                onChange={setSortMethod}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                <div className="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
                                     {searching ? (
                                         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
                                     ) : searchResults.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                                             <div className="text-4xl mb-4">🔍</div>
-                                            <p>{t('instance_details.search.no_results', { query: searchQuery })}</p>
+                                            <p>{linkNotice || t('instance_details.search.no_results', { query: searchQuery })}</p>
                                         </div>
                                     ) : (
-                                        searchResults.map(result => (
-                                            <ProjectContextMenu key={result.project_id} project={result}>
-                                            <div className="bg-card p-4 rounded-xl flex items-center gap-4 border border-border hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleViewProject(result)}>
-                                                <img src={result.icon_url || 'https://cdn.modrinth.com/placeholder.svg'} alt="" className="w-12 h-12 rounded-lg bg-background" />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="font-bold text-lg text-foreground truncate">{result.title}</h3>
-                                                        <span className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded border border-border">{result.project_type}</span>
-                                                        {getSourceTags(result.source, result.sources).map((sourceTag) => (
-                                                            <span key={`${result.project_id}-${sourceTag}`} className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded border border-border uppercase">{sourceTag}</span>
-                                                        ))}
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground line-clamp-1">{result.description}</p>
-                                                    {result.project_type === 'shader' && (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handlePreview(result); }}
-                                                            className="text-xs bg-muted hover:bg-accent text-foreground px-3 py-1 rounded-lg mt-2 border border-border flex items-center gap-2 transition-colors w-fit"
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-3">
+                                            {searchResults.map(result => {
+                                                const status = installationStatus[result.project_id];
+                                                return (
+                                                    <ProjectContextMenu key={result.project_id} project={result}>
+                                                        <div
+                                                            className="group bg-card p-3 rounded-xl border border-border hover:border-primary/50 transition-colors cursor-pointer flex flex-col h-full min-h-[168px]"
+                                                            onClick={() => handleViewProject(result)}
                                                         >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                            Preview
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleInstall(result); }}
-                                                    disabled={installationStatus[result.project_id] === 'installing' || installationStatus[result.project_id] === 'success'}
-                                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all border border-border flex items-center gap-2 ${installationStatus[result.project_id] === 'success' ? 'bg-emerald-500 text-white shadow-sm' :
-                                                        installationStatus[result.project_id] === 'failed' ? 'bg-red-500/20 text-red-500' :
-                                                            installationStatus[result.project_id] === 'installing' ? 'bg-muted text-muted-foreground cursor-wait' :
-                                                                'bg-muted hover:bg-primary hover:text-black text-foreground'
-                                                        }`}
-                                                    title="Install latest version"
-                                                >
-                                                    {installationStatus[result.project_id] === 'installing' ? (
-                                                        <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                                                    ) : installationStatus[result.project_id] === 'success' ? (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                                                    ) : installationStatus[result.project_id] === 'failed' ? (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                                    ) : (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                                    )}
-                                                    {installationStatus[result.project_id] === 'installing' ? t('instance_details.search.installing') :
-                                                        installationStatus[result.project_id] === 'success' ? t('instance_details.search.installed') :
-                                                            installationStatus[result.project_id] === 'failed' ? t('instance_details.search.failed') : t('instance_details.search.install')}
-                                                </button>
-                                            </div>
-                                            </ProjectContextMenu>
-                                        ))
+                                                            <div className="flex items-start gap-2.5">
+                                                                <img
+                                                                    src={result.icon_url || 'https://cdn.modrinth.com/placeholder.svg'}
+                                                                    alt=""
+                                                                    loading="lazy"
+                                                                    className="w-11 h-11 rounded-lg bg-background object-cover shrink-0"
+                                                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://cdn.modrinth.com/placeholder.svg'; }}
+                                                                />
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h3 className="font-bold text-sm leading-tight text-foreground line-clamp-2" title={result.title}>{result.title}</h3>
+                                                                    {result.author && <p className="text-[11px] text-muted-foreground truncate mt-0.5">{result.author}</p>}
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground line-clamp-2 mt-2 leading-snug flex-1">{result.description}</p>
+                                                            <div className="flex items-center gap-1 mt-2 flex-wrap">
+                                                                {getSourceTags(result.source, result.sources).map((sourceTag) => (
+                                                                    <span key={`${result.project_id}-${sourceTag}`} className="text-[9px] bg-background text-muted-foreground px-1.5 py-0.5 rounded border border-border uppercase">{sourceTag}</span>
+                                                                ))}
+                                                                {Number(result.downloads) > 0 && (
+                                                                    <span className="text-[9px] bg-background text-muted-foreground px-1.5 py-0.5 rounded border border-border flex items-center gap-0.5">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                                                        {formatCompactNumber(result.downloads)}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 mt-2">
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); handleInstall(result); }}
+                                                                    disabled={status === 'installing' || status === 'success'}
+                                                                    className={`flex-1 h-8 rounded-lg font-bold text-xs transition-all border border-border flex items-center justify-center gap-1.5 ${status === 'success' ? 'bg-emerald-500 text-white' :
+                                                                        status === 'failed' ? 'bg-red-500/20 text-red-500' :
+                                                                            status === 'installing' ? 'bg-muted text-muted-foreground cursor-wait' :
+                                                                                'bg-muted hover:bg-primary hover:text-black text-foreground'
+                                                                        }`}
+                                                                    title="Install latest version"
+                                                                >
+                                                                    {status === 'installing' ? (
+                                                                        <div className="h-3.5 w-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                                                    ) : status === 'success' ? (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                                                    ) : status === 'failed' ? (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                    ) : (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                                                    )}
+                                                                    {status === 'installing' ? t('instance_details.search.installing') :
+                                                                        status === 'success' ? t('instance_details.search.installed') :
+                                                                            status === 'failed' ? t('instance_details.search.failed') : t('instance_details.search.install')}
+                                                                </button>
+                                                                {result.project_type === 'shader' && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handlePreview(result); }}
+                                                                        className="h-8 w-8 shrink-0 rounded-lg bg-muted hover:bg-accent text-foreground border border-border flex items-center justify-center transition-colors"
+                                                                        title="Preview"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </ProjectContextMenu>
+                                                );
+                                            })}
+                                        </div>
                                     )}
                                 </div>
 
                                 { }
-                                <div className="flex justify-between items-center bg-card p-2 rounded-xl border border-border shrink-0 mt-4">
+                                <div className="flex justify-between items-center bg-card p-1.5 rounded-xl border border-border shrink-0 mt-3">
                                     <button
                                         onClick={handlePrevPage}
                                         disabled={searchOffset === 0 || searching}

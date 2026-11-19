@@ -325,7 +325,7 @@
             "added_by": "Hinzugefügt von {{name}}"
         },
         "search": {
-            "placeholder": "Modrinth-ID eingeben oder nach Mod-Namen suchen...",
+            "placeholder": "Name suchen oder Modrinth- / CurseForge-Link einfügen...",
             "search_btn": "Suchen",
             "showing_results": "{{count}} Ergebnisse angezeigt",
             "relevance": "Relevanz",
@@ -339,7 +339,11 @@
             "install": "Installieren",
             "previous": "Zurück",
             "page_of": "Seite {{count}}",
-            "next": "Weiter"
+            "next": "Weiter",
+            "link_not_found": "Zu diesem Link wurde kein Projekt gefunden",
+            "link_fallback": "Genaues Projekt nicht gefunden, ähnliche Ergebnisse",
+            "link_unsupported": "Der Link zeigt auf ein {{type}}, das kann hier nicht zur Instanz hinzugefügt werden",
+            "link_needs_loader": "Mods brauchen einen Mod-Loader, diese Instanz ist Vanilla"
         },
         "worlds": {
             "local_worlds": "Lokale Welten",

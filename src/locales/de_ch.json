@@ -310,7 +310,7 @@
             "added_by": "Hinzugefügt von {{name}}"
         },
         "search": {
-            "placeholder": "Modrinth-ID iigäh oder nach Mod-Name sueche...",
+            "placeholder": "Name suchen oder Modrinth- / CurseForge-Link einfügen...",
             "search_btn": "Sueche",
             "showing_results": "{{count}} Resultat wird aazeigt",
             "relevance": "Relevant",
@@ -324,7 +324,11 @@
             "install": "Installiere",
             "previous": "Zrugg",
             "page_of": "Syte {{count}}",
-            "next": "Wyter"
+            "next": "Wyter",
+            "link_not_found": "Zu diesem Link wurde kein Projekt gefunden",
+            "link_fallback": "Genaues Projekt nicht gefunden, ähnliche Ergebnisse",
+            "link_unsupported": "Der Link zeigt auf ein {{type}}, das kann hier nicht zur Instanz hinzugefügt werden",
+            "link_needs_loader": "Mods brauchen einen Mod-Loader, diese Instanz ist Vanilla"
         },
         "worlds": {
             "local_worlds": "Lokali Wälte",
